@@ -698,7 +698,7 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   assert.match(html,/Interactive generic launch-vehicle structural atlas/);
 });
 
-test('site visual system exposes reusable semantic components and approved proof routes',()=>{
+test('site visual system exposes reusable components and themes every non-home route',()=>{
   const expected=['page-shell','section-header','concept-card','tool-card','equation-panel','engineering-note','warning-callout','assumption-callout','breadcrumbs','related-concept-links','hardware-topic-links','demo-container','chart-container','calculator-container'];
   assert.deepEqual(siteComponentInventory,expected);
   assert.match(renderPageShell('content',{variant:'chapter-proof'}),/site-page-shell-chapter-proof/);
@@ -707,11 +707,17 @@ test('site visual system exposes reusable semantic components and approved proof
   assert.match(renderCallout({tone:'warning',label:'Check',body:'Boundary'}),/site-callout-warning/);
   assert.match(renderLinkCollection({label:'Hardware',variant:'hardware',items:[{title:'Fairing',href:'#/cheat-sheet?section=payload-fairing-cavities'}]}),/site-hardware-links/);
   const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+  const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
   assert.match(css,/--site-color-canvas-deep:/);
   assert.match(css,/--site-space-8:/);
   assert.match(css,/--site-type-display:/);
   assert.match(css,/body\.site-system-route \.site-calculator-container/);
   assert.match(css,/body\.site-system-route \.site-concept-card/);
+  assert.match(css,/body\.site-system-route \.site-demo-card/);
+  assert.match(css,/body\.site-system-route \.site-case-card/);
+  assert.match(css,/body\.site-system-route \.reference-nav/);
+  assert.match(appSource,/classList\.toggle\('site-system-route',Boolean\(first\)\)/);
+  assert.match(appSource,/classList\.toggle\('home-route',!first\)/);
 });
 
 test('homepage atlas is data-driven, accessible, and linked to real content',()=>{
@@ -754,7 +760,7 @@ test('homepage atlas is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes the demo takeaway runtime',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v25'/);
+  assert.match(worker,/const CACHE = 'sau-v26'/);
   assert.match(worker,/\.\/assets\/homepage\/launch-vehicle-cutaway\.png/);
   assert.match(worker,/\.\/js\/homepage\.js/);
   assert.match(worker,/\.\/js\/site-components\.js/);

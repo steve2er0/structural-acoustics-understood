@@ -24,9 +24,10 @@ export function renderSectionHeader({ number = '', eyebrow = '', title, summary 
   return `<header class="section-heading site-section-header"${id ? ` id="${esc(id)}"` : ''}>${number ? `<span class="section-number">${esc(number)}</span>` : ''}<div><p class="eyebrow">${esc(eyebrow)}</p><h2>${esc(title)}</h2>${summary ? `<p>${esc(summary)}</p>` : ''}${action ? `<a class="concept-tool-link site-inline-link" href="${esc(action.href)}">${esc(action.label)} <span aria-hidden="true">→</span></a>` : ''}</div></header>`;
 }
 
-export function renderCallout({ tone = 'note', label, body }) {
+export function renderCallout({ tone = 'note', label, body, bodyHtml = '' }) {
   const safeTone = ['note', 'warning', 'assumption'].includes(tone) ? tone : 'note';
-  return `<aside class="site-callout site-callout-${safeTone}"><strong>${esc(label)}</strong><p>${esc(body)}</p></aside>`;
+  const calloutBody = bodyHtml || esc(body);
+  return `<aside class="site-callout site-callout-${safeTone}"><strong>${esc(label)}</strong><p>${calloutBody}</p></aside>`;
 }
 
 export function renderLinkCollection({ label, items, variant = 'related', className = '' }) {

@@ -1109,6 +1109,12 @@ body.site-system-route .site-footer {
 }
 body.site-system-route .site-footer strong,
 body.site-system-route .site-footer a { color: #dce8f7; }
+body.site-system-route .site-footer .footer-links a,
+body.site-system-route .site-footer .link-button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
 
 .site-page-shell { position: relative; }
 body.site-system-route .site-page-shell { max-width: 1540px; padding-top: var(--site-space-5); }
@@ -1369,6 +1375,272 @@ body.site-system-route .case-demo-embed {
   box-shadow: var(--site-shadow);
 }
 
+/* Full-site atlas theme: shared libraries, articles, demos, and references. */
+body.site-system-route {
+  color-scheme: dark;
+}
+body.site-system-route .page-shell {
+  position: relative;
+  max-width: 1540px;
+  padding-top: var(--site-space-5);
+}
+body.site-system-route .page-shell::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 5%;
+  width: 44%;
+  height: 260px;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse, rgba(111, 140, 255, .09), transparent 67%);
+  filter: blur(12px);
+}
+body.site-system-route .page-shell > * { position: relative; z-index: 1; }
+body.site-system-route .intro-aside > p,
+body.site-system-route .lede,
+body.site-system-route .tab-panel p,
+body.site-system-route .tab-panel li { color: var(--site-color-muted); }
+body.site-system-route code { color: #acd0ff; }
+
+body.site-system-route .filter-bar {
+  gap: .55rem;
+  margin: var(--site-space-5) 0;
+  padding: .85rem;
+  border: 1px solid var(--site-color-border);
+  border-radius: var(--site-radius);
+  background: rgba(4, 18, 33, .74);
+}
+body.site-system-route .filter-chip {
+  min-height: 44px;
+  padding: .45rem .72rem;
+  color: #9badc2;
+  border-color: var(--site-color-border);
+  background: rgba(13, 41, 68, .46);
+}
+body.site-system-route .filter-chip:hover,
+body.site-system-route .filter-chip.active {
+  color: #f5f8fc;
+  border-color: rgba(85, 184, 255, .62);
+  background: rgba(45, 86, 143, .62);
+  box-shadow: 0 0 20px rgba(85, 184, 255, .08);
+}
+body.site-system-route .tool-filter-search input {
+  min-height: 44px;
+  color: #edf4fc;
+  border-color: var(--site-color-border);
+  background: rgba(2, 13, 25, .82);
+}
+body.site-system-route .tool-filter-search input::placeholder { color: #6f839a; }
+body.site-system-route .filter-count { color: #7189a3; }
+body.site-system-route .tool-grid,
+body.site-system-route .demo-grid,
+body.site-system-route .case-grid {
+  gap: var(--site-space-3);
+  border: 0;
+  background: transparent;
+}
+body.site-system-route .site-tool-card,
+body.site-system-route .site-demo-card,
+body.site-system-route .site-case-card {
+  overflow: hidden;
+  color: var(--site-color-text);
+  border: 1px solid var(--site-color-border);
+  border-radius: var(--site-radius);
+  background: linear-gradient(145deg, rgba(11, 32, 55, .9), rgba(5, 19, 35, .84));
+  box-shadow: 0 16px 38px rgba(0, 5, 13, .18);
+}
+body.site-system-route .site-tool-card:hover,
+body.site-system-route .site-demo-card:hover,
+body.site-system-route .site-case-card:hover {
+  border-color: rgba(85, 184, 255, .48);
+  background: linear-gradient(145deg, rgba(16, 44, 73, .94), rgba(7, 25, 44, .92));
+  box-shadow: var(--site-shadow), var(--site-glow);
+}
+body.site-system-route .site-tool-card .tool-index,
+body.site-system-route .site-case-card .case-number { color: var(--site-color-cyan); }
+body.site-system-route .site-tool-card h3,
+body.site-system-route .site-demo-card h3,
+body.site-system-route .site-case-card h3 { color: #eef4fb; font-weight: 560; }
+body.site-system-route .site-tool-card p,
+body.site-system-route .site-demo-card p,
+body.site-system-route .site-case-card p { color: #9fb0c4; }
+body.site-system-route .site-tool-card footer,
+body.site-system-route .site-case-card footer { color: #8fb5ff; }
+body.site-system-route .demo-preview {
+  border-color: var(--site-color-border);
+  background:
+    linear-gradient(rgba(111, 140, 255, .035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(111, 140, 255, .035) 1px, transparent 1px),
+    #07192b;
+  background-size: 24px 24px;
+}
+
+body.site-system-route .demo-stage {
+  color: var(--site-color-text);
+  border-color: var(--site-color-border);
+  background: rgba(5, 19, 35, .88);
+}
+body.site-system-route .demo-controls,
+body.site-system-route .spatial-control-groups,
+body.site-system-route .spatial-control-group,
+body.site-system-route .sea-builder-toolbar,
+body.site-system-route .sea-builder-editor,
+body.site-system-route .acceptance-summary { border-color: var(--site-color-border); }
+body.site-system-route .demo-control label,
+body.site-system-route .spatial-control-group h2 { color: #94a8bf; }
+body.site-system-route .demo-control select,
+body.site-system-route .sea-node-editor input,
+body.site-system-route .sea-node-editor select {
+  min-height: 44px;
+  color: #edf4fc;
+  border-color: rgba(145, 181, 222, .28);
+  background: rgba(2, 13, 25, .82);
+}
+body.site-system-route .demo-control input[type="range"] { min-height: 44px; }
+body.site-system-route .demo-readout,
+body.site-system-route .sea-builder-summary,
+body.site-system-route .acceptance-summary { background: rgba(13, 41, 68, .44); }
+body.site-system-route .demo-takeaway {
+  color: #c3d8ea;
+  border-color: var(--site-color-border);
+  border-left-color: var(--site-color-cyan);
+  background: rgba(85, 184, 255, .09);
+}
+body.site-system-route .demo-takeaway .demo-takeaway-label { color: #83c9ff; }
+body.site-system-route .sea-builder-actions button,
+body.site-system-route .sea-node-editor header button {
+  min-height: 44px;
+  border-color: var(--site-color-border);
+  background: rgba(13, 41, 68, .58);
+}
+body.site-system-route .sea-builder-actions button:hover,
+body.site-system-route .sea-node-editor header button:hover {
+  border-color: var(--site-color-cyan);
+  background: rgba(19, 50, 80, .9);
+}
+
+body.site-system-route .site-article-shell { max-width: 1040px; }
+body.site-system-route .article-header {
+  padding-bottom: var(--site-space-6);
+  border-color: var(--site-color-border-strong);
+}
+body.site-system-route .article-header h1 {
+  max-width: 940px;
+  color: var(--site-color-text);
+  font-size: var(--site-type-h1);
+  font-weight: 410;
+  letter-spacing: -.045em;
+  line-height: var(--site-leading-tight);
+}
+body.site-system-route .article-meta { color: #7189a3; }
+body.site-system-route .article-body {
+  color: #c5d2e1;
+  font-family: var(--sans);
+  font-size: .98rem;
+  line-height: 1.72;
+}
+body.site-system-route .article-body h2,
+body.site-system-route .article-body h3 { color: #eef4fb; font-weight: 520; }
+body.site-system-route .article-body a { color: #8fb5ff; }
+body.site-system-route .article-body .equation {
+  color: #e7f1ff;
+  border-color: rgba(85, 184, 255, .18);
+  border-left-color: var(--site-color-cyan);
+  background: rgba(2, 13, 25, .84);
+}
+body.site-system-route .article-body .callout,
+body.site-system-route .mini-callout,
+body.site-system-route .interpretation {
+  color: #dfcdb3;
+  border-color: rgba(242, 198, 99, .35);
+  border-left-color: var(--site-color-gold);
+  background: rgba(242, 198, 99, .09);
+}
+body.site-system-route .case-demo-header { border-color: var(--site-color-border); background: rgba(13, 41, 68, .42); }
+body.site-system-route .case-demo-header h3 { color: #e7f1ff; }
+
+body.site-system-route .reference-nav {
+  padding: var(--site-space-4);
+  border: 1px solid var(--site-color-border);
+  border-radius: var(--site-radius);
+  background: rgba(4, 18, 33, .72);
+}
+body.site-system-route .reference-nav a {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: #9badc2;
+  border-color: var(--site-color-border);
+}
+body.site-system-route .reference-nav a:hover { color: var(--site-color-cyan); }
+body.site-system-route .reference-section { border-color: var(--site-color-border-strong); }
+body.site-system-route .reference-section h2 { color: #eef4fb; font-size: var(--site-type-h2); font-weight: 430; }
+body.site-system-route .reference-section p,
+body.site-system-route .reference-section li { color: #aab9cb; }
+body.site-system-route .reference-list li,
+body.site-system-route .glossary-item {
+  border-color: var(--site-color-border);
+  background: rgba(8, 25, 43, .76);
+}
+body.site-system-route .reference-list strong,
+body.site-system-route .glossary-item dt { color: #dce8f7; }
+body.site-system-route .reference-list span,
+body.site-system-route .glossary-item dd { color: #8fa2b9; }
+body.site-system-route .glossary-grid { gap: var(--site-space-2); border: 0; background: transparent; }
+
+body.site-system-route .table-wrap {
+  color: #bdcad9;
+  border-color: var(--site-color-border);
+  background: rgba(3, 16, 30, .7);
+}
+body.site-system-route th {
+  color: #9badc2;
+  background: #0d2944;
+}
+body.site-system-route th,
+body.site-system-route td { border-color: var(--site-color-border); }
+body.site-system-route .chart-shell { border-color: var(--site-color-border); background: #07192b; }
+body.site-system-route .chart-toolbar button { min-height: 44px; color: #8fb5ff; }
+body.site-system-route .calc-error { color: #ffb0aa; background: rgba(255, 136, 136, .1); }
+
+body.site-system-route .search-dialog {
+  color: var(--site-color-text);
+  border-color: var(--site-color-border-strong);
+  background: #07192b;
+  box-shadow: 0 34px 90px rgba(0, 4, 12, .7);
+}
+body.site-system-route .search-dialog::backdrop { background: rgba(0, 7, 16, .74); }
+body.site-system-route .search-input-wrap { border-color: var(--site-color-border); }
+body.site-system-route .search-input-wrap input { min-height: 44px; color: #edf4fc; }
+body.site-system-route .search-input-wrap input::placeholder { color: #7189a3; }
+body.site-system-route .kbd-button { min-width: 44px; min-height: 44px; border-color: var(--site-color-border); background: #0d2944; }
+body.site-system-route .search-result { min-height: 58px; color: #dce8f7; }
+body.site-system-route .search-result:hover { background: rgba(85, 184, 255, .09); }
+body.site-system-route .search-result p { color: #8fa2b9; }
+body.site-system-route .toast { color: #eef4fb; background: #102c49; }
+
+/* Existing SVG plots inherit the atlas palette without changing exported data. */
+body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [fill="#fff"],
+body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [fill="#faf8f2"] { fill: #07192b; }
+body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [fill="#e7e2d8"] { fill: #0d2944; }
+body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [fill="#172027"] { fill: #e8f1fb; }
+body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [fill="#5f6b70"],
+body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [fill="#657176"],
+body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [fill="#899296"] { fill: #9badc2; }
+body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [fill="#1e6077"] { fill: #55b8ff; }
+body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [fill="#164453"] { fill: #4f70ca; }
+body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [fill="#b96d37"] { fill: #f2c663; }
+body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [stroke="#172027"] { stroke: #dce8f7; }
+body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [stroke="#ada497"],
+body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [stroke="#d9d4ca"],
+body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [stroke="#eeeae3"] { stroke: #294660; }
+body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [stroke="#657176"],
+body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [stroke="#899296"] { stroke: #7189a3; }
+body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [stroke="#1e6077"] { stroke: #55b8ff; }
+body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [stroke="#164453"] { stroke: #6f8cff; }
+body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [stroke="#b96d37"] { stroke: #f2c663; }
+
 @media (max-width: 940px) {
   body.site-system-route .site-calculator-container { grid-template-columns: 1fr; }
   body.site-system-route .site-concept-grid { grid-template-columns: minmax(0, 1fr); }
@@ -1379,8 +1651,15 @@ body.site-system-route .case-demo-embed {
 }
 
 @media (max-width: 620px) {
-  body.site-system-route .site-page-shell { padding: var(--site-space-4) 15px var(--site-space-7); }
+  body.site-system-route .page-shell { padding: var(--site-space-4) 15px var(--site-space-7); }
+  body.site-system-route .page-shell::before { right: 0; width: 100%; height: 190px; }
   body.site-system-route .site-page-header h1 { font-size: 2.45rem; }
+  body.site-system-route .page-intro h1,
+  body.site-system-route .article-header h1 { font-size: 2.35rem; }
+  body.site-system-route .filter-bar { padding: .65rem; }
+  body.site-system-route .filter-chip { min-height: 44px; }
+  body.site-system-route .reference-nav { padding: .6rem; }
+  body.site-system-route .article-body { font-size: .92rem; }
   body.site-system-route .site-section-header { grid-template-columns: 34px minmax(0, 1fr); }
   body.site-system-route .site-section-header h2 { font-size: 1.85rem; }
   body.site-system-route .site-concept-card { min-height: 0; padding: var(--site-space-4); }
@@ -1403,7 +1682,7 @@ body.site-system-route .case-demo-embed {
   .navigation-card-grid, .featured-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-@media (max-width: 1220px) {
+@media (max-width: 1320px) {
   .site-header { grid-template-columns: 1fr auto; }
   .site-header .primary-nav { position: fixed; inset: var(--header-height) 0 auto; display: none; height: auto; padding: .8rem; background: rgba(3, 13, 25, .98); border-bottom: 1px solid rgba(145, 181, 222, .2); box-shadow: 0 18px 40px rgba(0, 5, 13, .3); }
   .site-header .primary-nav.open { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -16088,9 +16367,10 @@ function renderSectionHeader({ number = '', eyebrow = '', title, summary = '', a
   return `<header class="section-heading site-section-header"${id ? ` id="${esc(id)}"` : ''}>${number ? `<span class="section-number">${esc(number)}</span>` : ''}<div><p class="eyebrow">${esc(eyebrow)}</p><h2>${esc(title)}</h2>${summary ? `<p>${esc(summary)}</p>` : ''}${action ? `<a class="concept-tool-link site-inline-link" href="${esc(action.href)}">${esc(action.label)} <span aria-hidden="true">→</span></a>` : ''}</div></header>`;
 }
 
-function renderCallout({ tone = 'note', label, body }) {
+function renderCallout({ tone = 'note', label, body, bodyHtml = '' }) {
   const safeTone = ['note', 'warning', 'assumption'].includes(tone) ? tone : 'note';
-  return `<aside class="site-callout site-callout-${safeTone}"><strong>${esc(label)}</strong><p>${esc(body)}</p></aside>`;
+  const calloutBody = bodyHtml || esc(body);
+  return `<aside class="site-callout site-callout-${safeTone}"><strong>${esc(label)}</strong><p>${calloutBody}</p></aside>`;
 }
 
 function renderLinkCollection({ label, items, variant = 'related', className = '' }) {
@@ -16503,14 +16783,10 @@ function isCalculatorDesignProof(route) {
 }
 function renderConceptCard(concept, proof = false) {
   const interpretation = concept.interpretation
-    ? (proof
-      ? renderCallout({ tone: 'note', label: 'Engineering note', body: concept.interpretation })
-      : `<p><strong>Physical interpretation.</strong> ${esc(concept.interpretation)}</p>`)
+    ? renderCallout({ tone: 'note', label: 'Engineering note', bodyHtml: concept.interpretation })
     : '';
   const mistake = concept.mistake
-    ? (proof
-      ? renderCallout({ tone: 'warning', label: 'Common mistake', body: concept.mistake })
-      : `<div class="mini-callout"><strong>Common mistake:</strong> ${esc(concept.mistake)}</div>`)
+    ? renderCallout({ tone: 'warning', label: 'Common mistake', bodyHtml: concept.mistake })
     : '';
   return `<article class="concept-card site-concept-card${proof ? ' site-concept-card-proof' : ''}" id="concept-${slug(concept.title)}"><h3>${esc(concept.title)}</h3>${concept.equation ? `<div class="equation site-equation-panel">${concept.equation}</div>` : ''}<p>${esc(concept.body)}</p>${interpretation}${mistake}<div class="card-meta">${(concept.tags || []).map(tag => `<span class="tag">${esc(tag)}</span>`).join('')}</div>${concept.toolId && toolById.has(concept.toolId) ? `<a class="concept-tool-link site-inline-link" href="#/tool/${encodeURIComponent(concept.toolId)}">Open ${esc(toolById.get(concept.toolId).title)} <span aria-hidden="true">→</span></a>` : ''}</article>`;
 }
@@ -16531,14 +16807,16 @@ function renderCheat(route){
     const related=selectedProof?renderLinkCollection({label:'Continue the analysis',items:chapterRelatedLinks,variant:'related'}):'';
     return `<section class="cheat-section site-chapter-section${selectedProof?' site-design-proof-section':''}" id="section-${esc(section.id)}" data-section="${esc(section.id)}">${header}${hardware}<div class="concept-grid site-concept-grid">${section.concepts.map(concept=>renderConceptCard(concept,selectedProof)).join('')}</div>${related}</section>`;
   }).join('');
-  const breadcrumbs=proof?renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Hardware atlas',href:'#/cheat-sheet?section=shell-acoustics-deep-dive'},{label:'Cylindrical-shell structural acoustics'}]):'';
+  const selectedSection=sections.find(section=>section.id===route.params.get('section'));
+  const breadcrumbs=renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Working reference',href:'#/cheat-sheet'},...(selectedSection?[{label:selectedSection.title}]:[])]);
   const page=`${breadcrumbs}${intro({eyebrow:'The working reference',title:'Equations beside tools.<br>Physics beside assumptions.',lede:'A dense, continuously linked reference for structural dynamics, random vibration, shock, acoustics, shells, distributed loads, SEA, and measurement.',aside:'<p>Use the numbered chapters as a desk reference. Every calculation is explicit about its model, units, validity, and likely failure modes.</p>',metrics:[{value:sections.length,label:'chapters'},{value:toolCatalog.length,label:'calculators'},{value:demos.length,label:'interactive demos'}],buttons:[{label:'Browse all tools',href:'#/tools'},{label:'Print cheat sheet',action:'print',secondary:true}]})}<div class="cheat-layout"><aside class="section-rail" aria-label="Cheat-sheet chapters"><p class="rail-title">On this page</p>${rail}</aside><div class="cheat-content">${content}</div></div>`;
   return renderPageShell(page,{variant:proof?'chapter-proof':''});
 }
 function toolCard(t,index){return `<a class="tool-card site-tool-card" href="#/tool/${encodeURIComponent(t.id)}" data-category="${esc(t.category)}" data-search="${esc(`${t.title} ${t.description} ${(t.keywords||[]).join(' ')}`.toLowerCase())}"><span class="tool-index">${String(index+1).padStart(2,'0')}</span><h3>${esc(t.title)}</h3><p>${esc(t.description)}</p><footer><span>${esc(t.category)} · ${esc(t.complexity)}</span><span class="arrow">→</span></footer></a>`;}
 function renderTools(){
   const categories=['All',...new Set(toolCatalog.map(t=>t.category))];
-  return `<div class="page-shell">${intro({eyebrow:'Engineering calculators',title:'Tools for the work,<br>not just the lesson.',lede:'Each tool carries its equations, assumptions, worked example, numerical result, plots, tables, and exportable data.',aside:'<p>Calculations run locally in the browser. Imported engineering data is not uploaded by this static application.</p>',metrics:[{value:toolCatalog.length,label:'tools'},{value:categories.length-1,label:'disciplines'},{value:'Local',label:'data processing'}],buttons:[{label:'Open cheat sheet',href:'#/cheat-sheet'},{label:'Search tools',action:'search',secondary:true}]})}<div class="filter-bar" aria-label="Tool filters">${categories.map((c,i)=>`<button class="filter-chip ${i===0?'active':''}" data-filter="${esc(c)}">${esc(c)}</button>`).join('')}<label class="tool-filter-search"><span class="sr-only">Filter tools</span><input id="tool-filter-search" type="search" placeholder="Filter this library…"/></label><span id="tool-count" class="filter-count">${toolCatalog.length} shown</span></div><div class="tool-grid">${toolCatalog.map(toolCard).join('')}</div></div>`;
+  const page=`${renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Engineering calculators'}])}${intro({eyebrow:'Engineering calculators',title:'Tools for the work,<br>not just the lesson.',lede:'Each tool carries its equations, assumptions, worked example, numerical result, plots, tables, and exportable data.',aside:'<p>Calculations run locally in the browser. Imported engineering data is not uploaded by this static application.</p>',metrics:[{value:toolCatalog.length,label:'tools'},{value:categories.length-1,label:'disciplines'},{value:'Local',label:'data processing'}],buttons:[{label:'Open cheat sheet',href:'#/cheat-sheet'},{label:'Search tools',action:'search',secondary:true}]})}<div class="filter-bar" aria-label="Tool filters">${categories.map((c,i)=>`<button class="filter-chip ${i===0?'active':''}" data-filter="${esc(c)}">${esc(c)}</button>`).join('')}<label class="tool-filter-search"><span class="sr-only">Filter tools</span><input id="tool-filter-search" type="search" placeholder="Filter this library…"/></label><span id="tool-count" class="filter-count">${toolCatalog.length} shown</span></div><div class="tool-grid">${toolCatalog.map(toolCard).join('')}</div>`;
+  return renderPageShell(page,{variant:'tool-library'});
 }
 function fieldHtml(field,value){
   const key=esc(field.key),label=`<label for="field-${key}">${esc(field.label)}${field.unit?`<span>${esc(field.unit)}</span>`:''}</label>`;
@@ -16562,18 +16840,16 @@ function renderTool(route){
   const refs=relevantReferences(meta.category);
   const breadcrumbs=renderBreadcrumbs([{label:'Tools',href:'#/tools'},{label:meta.category,href:'#/tools'},{label:meta.title}]);
   const context=proof?`<section class="site-context-grid" aria-label="Calculator context">${renderLinkCollection({label:'Related concepts',items:calculatorRelatedLinks,variant:'related'})}${renderLinkCollection({label:'Applied hardware',items:chapterHardwareLinks.slice(0,3),variant:'hardware'})}</section>`:'';
-  const assumptionRule=proof
-    ? renderCallout({tone:'assumption',label:'Use rule',body:'A polished numerical result does not expand the validity of its governing model.'})
-    : '<div class="mini-callout"><strong>Use rule:</strong> a polished numerical result does not expand the validity of its governing model.</div>';
+  const assumptionRule=renderCallout({tone:'assumption',label:'Use rule',body:'A polished numerical result does not expand the validity of its governing model.'});
   const page=`${breadcrumbs}<section class="tool-hero site-page-header"><div class="tool-hero-copy"><p class="eyebrow">${esc(meta.category)} · ${esc(meta.complexity)}</p><h1>${esc(meta.title)}</h1><p>${esc(meta.description)}</p></div><aside class="tool-status site-status-panel"><dl><dt>Basis</dt><dd>${esc(calc.basis||'Documented engineering relation')}</dd><dt>Result</dt><dd>${esc(calc.confidence||'Screening calculation')}</dd><dt>Execution</dt><dd>Local browser</dd><dt>Route</dt><dd><code>${esc(id)}</code></dd></dl></aside></section>${context}<div class="calculator-layout site-calculator-container"><section class="calc-panel site-calculator-panel"><header class="calc-panel-header site-panel-header"><h2>Inputs</h2><button class="button-quiet" data-action="reset-calculator">Reset</button></header><form class="calc-form" id="calculator-form">${(calc.inputs||[]).map(f=>fieldHtml(f,values[f.key])).join('')}<div class="calc-form-actions"><button class="button" type="submit">Calculate</button><button class="button-secondary" type="button" data-action="share-calculation">Copy share link</button></div></form></section><section class="calc-panel site-calculator-panel"><header class="calc-panel-header site-panel-header"><h2>Results</h2><div><button class="button-quiet" data-action="copy-results">Copy engineering result</button><button class="button-quiet" data-action="print">Print / PDF</button></div></header><div class="calc-results" id="calculator-results"><div class="calc-empty">Enter values and calculate.</div></div></section></div><section class="tabs site-tabs"><div class="tab-list" role="tablist"><button class="tab-button active" data-tab="theory" role="tab">Theory</button><button class="tab-button" data-tab="example" role="tab">Worked example</button><button class="tab-button" data-tab="assumptions" role="tab">Assumptions</button><button class="tab-button" data-tab="references" role="tab">References</button></div><div class="tab-panel site-theory-panel" id="tab-panel"><h2>Governing model</h2>${calc.theory||'<p>This calculator implements the documented governing relationship shown in the cheat sheet.</p>'}<h3>Inputs and units</h3><div class="variable-table">${(calc.inputs||[]).map(f=>`<div>${esc(f.key)}</div><div>${esc(f.label)}${f.unit?` · ${esc(f.unit)}`:''}</div>`).join('')}</div></div><template id="tab-theory"><h2>Governing model</h2>${calc.theory||''}<h3>Inputs and units</h3><div class="variable-table">${(calc.inputs||[]).map(f=>`<div>${esc(f.key)}</div><div>${esc(f.label)}${f.unit?` · ${esc(f.unit)}`:''}</div>`).join('')}</div></template><template id="tab-example"><h2>Worked example</h2><p>${esc(calc.example||'Load the defaults and compare the reported primary result with a hand calculation using the governing equation.')}</p><p><a class="concept-tool-link site-inline-link" href="#/cheat-sheet">Open the linked cheat-sheet context <span aria-hidden="true">→</span></a></p></template><template id="tab-assumptions"><h2>Assumptions and validity</h2><ul>${(calc.assumptions||['Linear response and consistent units.']).map(a=>`<li>${esc(a)}</li>`).join('')}</ul>${assumptionRule}</template><template id="tab-references"><h2>References for this topic</h2><ul class="reference-list">${refs.map(r=>`<li><strong>${esc(r.title)}</strong><span>${esc(r.note)}</span></li>`).join('')}</ul><p>Also verify the controlled analysis method, handbook revision, material data, and program-specific statistical convention used by the actual deliverable.</p></template></section>`;
   return renderPageShell(page,{variant:proof?'calculator-proof':''});
 }
-function renderDemos(){return `<div class="page-shell">${intro({eyebrow:'Interactive physics',title:'Move the variables.<br>Watch the model answer.',lede:'Compact demonstrations expose the physical behavior behind the equations: resonance, damping, coupled modes, beam waves, dispersion, coincidence, radiation, shell curvature, response spectra, spatial coherence, and energy flow.',aside:'<p>These are visual thought experiments. The paired calculators provide the numerical result, tables, and exports.</p>',metrics:[{value:demos.length,label:'demos'},{value:'Canvas / SVG',label:'original graphics'},{value:'Live',label:'parameter response'}]})}<div class="demo-grid">${demos.map(d=>`<a class="demo-card" href="#/demo/${encodeURIComponent(d.id)}"><div class="demo-preview">${demoPreviewSvg(d.id)}</div><div class="demo-card-copy"><p class="eyebrow">${esc(d.topic)}</p><h3>${esc(d.title)}</h3><p>${esc(d.description)}</p><span class="concept-tool-link">Open demo →</span></div></a>`).join('')}</div></div>`;}
-function renderDemo(route){const id=decodeURIComponent(route.segments[1]||''),d=demos.find(x=>x.id===id);if(!d)return renderNotFound('Demo not found','The requested interactive demonstration is not in this build.');return `<div class="page-shell site-page-shell">${renderBreadcrumbs([{label:'Demos',href:'#/demos'},{label:d.topic},{label:d.title}])}<section class="tool-hero"><div class="tool-hero-copy"><p class="eyebrow">${esc(d.topic)} · Interactive demonstration</p><h1>${esc(d.title)}</h1><p>${esc(d.description)}</p><div class="button-row"><a class="button" href="#/tool/${encodeURIComponent(d.toolId)}">Open paired calculator</a><a class="button-secondary" href="#/demos">All demos</a></div></div><aside class="tool-status"><dl><dt>Purpose</dt><dd>Physical intuition</dd><dt>Rendering</dt><dd>Live canvas / SVG</dd><dt>Data</dt><dd>No upload</dd></dl></aside></section><section class="demo-stage site-demo-container" id="demo-mount"></section></div>`;}
-function renderCaseNotes(){return `<div class="page-shell">${intro({eyebrow:'Applied engineering notes',title:'Where the equation<br>meets the messy system.',lede:'Short case notes on the mistakes, judgment calls, and cross-checks that matter in real structural-acoustic analysis.',aside:'<p>The notes connect measurement, numerical methods, statistics, and interpretation—especially where one convenient shortcut can become a bad conclusion.</p>',metrics:[{value:caseNotes.length,label:'case notes'},{value:'Applied',label:'engineering depth'},{value:'Linked',label:'to tools'}]})}<div class="case-grid">${caseNotes.map(c=>`<a class="case-card" href="#/case-note/${encodeURIComponent(c.id)}"><span class="case-number">CASE ${esc(c.number)}</span><h3>${esc(c.title)}</h3><p>${esc(c.summary)}</p><div class="card-meta">${c.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div><footer>${esc(c.readTime)} read →</footer></a>`).join('')}</div></div>`;}
-function renderCaseNote(route){const id=decodeURIComponent(route.segments[1]||''),c=caseNotes.find(x=>x.id===id);if(!c)return renderNotFound('Case note not found','The requested engineering note is not in this build.');return `<div class="page-shell"><article class="article-shell"><div class="breadcrumbs"><a href="#/case-notes">Case Notes</a><span>›</span><span>Case ${esc(c.number)}</span></div><header class="article-header"><p class="eyebrow">Applied engineering · Case ${esc(c.number)}</p><h1>${esc(c.title)}</h1><p class="lede">${esc(c.summary)}</p><div class="article-meta"><span>${esc(c.readTime)} read</span>${c.tags.map(t=>`<span>${esc(t)}</span>`).join('')}</div></header><div class="article-body">${c.body}</div></article></div>`;}
-function renderReferences(){return `<div class="page-shell">${intro({eyebrow:'Methodology and source trail',title:'Know what the model<br>assumes before trusting it.',lede:'References, nomenclature, unit conventions, verification principles, and calculator limitations are part of the product—not footnotes hidden after the answer.',aside:'<p>Representative material properties and compact formulas are for screening. Production work must use controlled methods and traceable inputs.</p>',metrics:[{value:referenceGroups.length,label:'reference groups'},{value:glossary.length,label:'defined terms'},{value:'Explicit',label:'validity labels'}],buttons:[{label:'Open tool library',href:'#/tools'},{label:'Print this page',action:'print',secondary:true}]})}<div class="reference-layout"><nav class="reference-nav" aria-label="Reference sections"><a href="#reference-method">Methodology</a>${referenceGroups.map(g=>`<a href="#reference-${slug(g.group)}">${esc(g.group)}</a>`).join('')}<a href="#reference-glossary">Glossary</a></nav><div><section class="reference-section" id="reference-method"><h2>Methodology and verification</h2><p>Every calculator separates a governing model from its interface. Inputs are normalized to coherent units, invalid domains are rejected, limiting cases are checked, and outputs identify whether they are exact within the model, numerical, empirical, or screening-level.</p><ul><li>Match response quantity, units, frequency range, duration, and statistical basis before combining environments.</li><li>Use complex cross terms when sources are correlated.</li><li>Run convergence checks for FFT, SRS, VRS, FDS, modal truncation, and spatial-pattern truncation.</li><li>Check thin-structure, plane-wave, diffuse-field, weak-coupling, and high-modal-overlap assumptions rather than applying them by habit.</li><li>Verify material data at the applicable temperature, orientation, fabrication state, and uncertainty basis.</li></ul><div class="mini-callout"><strong>Scope:</strong> this site is an analysis companion and calculation record—not an authority for qualification limits, certification, or program-controlled design allowables.</div></section>${referenceGroups.map(g=>`<section class="reference-section" id="reference-${slug(g.group)}"><h2>${esc(g.group)}</h2><ul class="reference-list">${g.items.map(r=>`<li><strong>${esc(r.title)}</strong><span>${esc(r.note)}</span></li>`).join('')}</ul></section>`).join('')}<section class="reference-section" id="reference-glossary"><h2>Glossary</h2><dl class="glossary-grid">${glossary.map(([term,def])=>`<div class="glossary-item"><dt>${esc(term)}</dt><dd>${esc(def)}</dd></div>`).join('')}</dl></section></div></div></div>`;}
-function renderNotFound(title='Page not found',text='That route does not exist.'){return `<div class="page-shell"><div class="not-found"><div><p class="eyebrow">404</p><h1>${esc(title)}</h1><p class="lede">${esc(text)}</p><div class="button-row"><a class="button" href="#/cheat-sheet">Open cheat sheet</a><a class="button-secondary" href="#/tools">Browse tools</a></div></div></div></div>`;}
+function renderDemos(){const page=`${renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Interactive demos'}])}${intro({eyebrow:'Interactive physics',title:'Move the variables.<br>Watch the model answer.',lede:'Compact demonstrations expose the physical behavior behind the equations: resonance, damping, coupled modes, beam waves, dispersion, coincidence, radiation, shell curvature, response spectra, spatial coherence, and energy flow.',aside:'<p>These are visual thought experiments. The paired calculators provide the numerical result, tables, and exports.</p>',metrics:[{value:demos.length,label:'demos'},{value:'Canvas / SVG',label:'original graphics'},{value:'Live',label:'parameter response'}]})}<div class="demo-grid">${demos.map(d=>`<a class="demo-card site-demo-card" href="#/demo/${encodeURIComponent(d.id)}"><div class="demo-preview">${demoPreviewSvg(d.id)}</div><div class="demo-card-copy"><p class="eyebrow">${esc(d.topic)}</p><h3>${esc(d.title)}</h3><p>${esc(d.description)}</p><span class="concept-tool-link site-inline-link">Open demo →</span></div></a>`).join('')}</div>`;return renderPageShell(page,{variant:'demo-library'});}
+function renderDemo(route){const id=decodeURIComponent(route.segments[1]||''),d=demos.find(x=>x.id===id);if(!d)return renderNotFound('Demo not found','The requested interactive demonstration is not in this build.');const page=`${renderBreadcrumbs([{label:'Demos',href:'#/demos'},{label:d.topic},{label:d.title}])}<section class="tool-hero site-page-header"><div class="tool-hero-copy"><p class="eyebrow">${esc(d.topic)} · Interactive demonstration</p><h1>${esc(d.title)}</h1><p>${esc(d.description)}</p><div class="button-row"><a class="button" href="#/tool/${encodeURIComponent(d.toolId)}">Open paired calculator</a><a class="button-secondary" href="#/demos">All demos</a></div></div><aside class="tool-status site-status-panel"><dl><dt>Purpose</dt><dd>Physical intuition</dd><dt>Rendering</dt><dd>Live canvas / SVG</dd><dt>Data</dt><dd>No upload</dd></dl></aside></section><section class="demo-stage site-demo-container" id="demo-mount"></section>`;return renderPageShell(page,{variant:'demo'});}
+function renderCaseNotes(){const page=`${renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Applied case notes'}])}${intro({eyebrow:'Applied engineering notes',title:'Where the equation<br>meets the messy system.',lede:'Short case notes on the mistakes, judgment calls, and cross-checks that matter in real structural-acoustic analysis.',aside:'<p>The notes connect measurement, numerical methods, statistics, and interpretation—especially where one convenient shortcut can become a bad conclusion.</p>',metrics:[{value:caseNotes.length,label:'case notes'},{value:'Applied',label:'engineering depth'},{value:'Linked',label:'to tools'}]})}<div class="case-grid">${caseNotes.map(c=>`<a class="case-card site-case-card" href="#/case-note/${encodeURIComponent(c.id)}"><span class="case-number">CASE ${esc(c.number)}</span><h3>${esc(c.title)}</h3><p>${esc(c.summary)}</p><div class="card-meta">${c.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div><footer>${esc(c.readTime)} read →</footer></a>`).join('')}</div>`;return renderPageShell(page,{variant:'case-library'});}
+function renderCaseNote(route){const id=decodeURIComponent(route.segments[1]||''),c=caseNotes.find(x=>x.id===id);if(!c)return renderNotFound('Case note not found','The requested engineering note is not in this build.');const page=`<article class="article-shell site-article-shell">${renderBreadcrumbs([{label:'Case notes',href:'#/case-notes'},{label:`Case ${c.number}`}])}<header class="article-header"><p class="eyebrow">Applied engineering · Case ${esc(c.number)}</p><h1>${esc(c.title)}</h1><p class="lede">${esc(c.summary)}</p><div class="article-meta"><span>${esc(c.readTime)} read</span>${c.tags.map(t=>`<span>${esc(t)}</span>`).join('')}</div></header><div class="article-body">${c.body}</div></article>`;return renderPageShell(page,{variant:'article'});}
+function renderReferences(){const page=`${renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Assumptions and references'}])}${intro({eyebrow:'Methodology and source trail',title:'Know what the model<br>assumes before trusting it.',lede:'References, nomenclature, unit conventions, verification principles, and calculator limitations are part of the product—not footnotes hidden after the answer.',aside:'<p>Representative material properties and compact formulas are for screening. Production work must use controlled methods and traceable inputs.</p>',metrics:[{value:referenceGroups.length,label:'reference groups'},{value:glossary.length,label:'defined terms'},{value:'Explicit',label:'validity labels'}],buttons:[{label:'Open tool library',href:'#/tools'},{label:'Print this page',action:'print',secondary:true}]})}<div class="reference-layout site-reference-layout"><nav class="reference-nav" aria-label="Reference sections"><a href="#reference-method">Methodology</a>${referenceGroups.map(g=>`<a href="#reference-${slug(g.group)}">${esc(g.group)}</a>`).join('')}<a href="#reference-glossary">Glossary</a></nav><div><section class="reference-section" id="reference-method"><h2>Methodology and verification</h2><p>Every calculator separates a governing model from its interface. Inputs are normalized to coherent units, invalid domains are rejected, limiting cases are checked, and outputs identify whether they are exact within the model, numerical, empirical, or screening-level.</p><ul><li>Match response quantity, units, frequency range, duration, and statistical basis before combining environments.</li><li>Use complex cross terms when sources are correlated.</li><li>Run convergence checks for FFT, SRS, VRS, FDS, modal truncation, and spatial-pattern truncation.</li><li>Check thin-structure, plane-wave, diffuse-field, weak-coupling, and high-modal-overlap assumptions rather than applying them by habit.</li><li>Verify material data at the applicable temperature, orientation, fabrication state, and uncertainty basis.</li></ul>${renderCallout({tone:'warning',label:'Scope',body:'this site is an analysis companion and calculation record—not an authority for qualification limits, certification, or program-controlled design allowables.'})}</section>${referenceGroups.map(g=>`<section class="reference-section" id="reference-${slug(g.group)}"><h2>${esc(g.group)}</h2><ul class="reference-list">${g.items.map(r=>`<li><strong>${esc(r.title)}</strong><span>${esc(r.note)}</span></li>`).join('')}</ul></section>`).join('')}<section class="reference-section" id="reference-glossary"><h2>Glossary</h2><dl class="glossary-grid">${glossary.map(([term,def])=>`<div class="glossary-item"><dt>${esc(term)}</dt><dd>${esc(def)}</dd></div>`).join('')}</dl></section></div></div>`;return renderPageShell(page,{variant:'references'});}
+function renderNotFound(title='Page not found',text='That route does not exist.'){return renderPageShell(`<div class="not-found"><div><p class="eyebrow">404</p><h1>${esc(title)}</h1><p class="lede">${esc(text)}</p><div class="button-row"><a class="button" href="#/cheat-sheet">Open cheat sheet</a><a class="button-secondary" href="#/tools">Browse tools</a></div></div></div>`,{variant:'not-found'});}
 
 function collectForm(form){const values={};form.querySelectorAll('[data-key]').forEach(el=>values[el.dataset.key]=el.value);return values;}
 function renderTable(table){return `<div class="result-block"><h3>${esc(table.title||'Results table')}</h3><div class="table-wrap"><table><thead><tr>${(table.columns||[]).map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${(table.rows||[]).map(row=>`<tr>${row.map((v,i)=>`<td>${i===0&&typeof v==='string'?esc(v):esc(formatNumber(v))}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;}
@@ -16666,11 +16942,13 @@ function render(){
   else if(first==='case-note')main=renderCaseNote(route);
   else if(first==='references')main=renderReferences();
   else main=renderNotFound();
-  const designProof=isChapterDesignProof(route)||isCalculatorDesignProof(route);
   document.body.classList.toggle('home-route',!first);
-  document.body.classList.toggle('site-system-route',designProof);
-  document.body.classList.toggle('site-system-chapter',isChapterDesignProof(route));
-  document.body.classList.toggle('site-system-calculator',isCalculatorDesignProof(route));
+  document.body.classList.toggle('site-system-route',Boolean(first));
+  document.body.classList.toggle('site-system-chapter',first==='cheat-sheet');
+  document.body.classList.toggle('site-system-calculator',first==='tool'||first==='tools');
+  document.body.classList.toggle('site-system-demo',first==='demo'||first==='demos');
+  document.body.classList.toggle('site-system-article',first==='case-note'||first==='case-notes');
+  document.body.classList.toggle('site-system-reference',first==='references');
   app.innerHTML=shell(main,route);bindGlobal(route);
   const retainScroll=(first==='cheat-sheet'&&route.params.has('section'));
   if(!retainScroll)window.scrollTo({top:0,behavior:'instant'});
