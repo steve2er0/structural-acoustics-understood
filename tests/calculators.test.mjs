@@ -88,6 +88,14 @@ import {
   renderHomepage
 } from '../js/homepage.js';
 import {
+  renderBreadcrumbs,
+  renderCallout,
+  renderLinkCollection,
+  renderPageShell,
+  renderSectionHeader,
+  siteComponentInventory
+} from '../js/site-components.js';
+import {
   experimentalSeaInverse,
   honeycombCoincidenceFrequency,
   honeycombPreset,
@@ -681,9 +689,29 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   assert.match(html,/function installedFairingSeaState\(input = \{\}\)/);
   assert.match(html,/function mountFairing\(root\)/);
   assert.match(html,/const __homepage=\(\(\)=>\{/);
+  assert.match(html,/const __siteComponents=\(\(\)=>\{/);
+  assert.match(html,/function renderBreadcrumbs\(items/);
+  assert.match(html,/site-system-calculator/);
+  assert.match(html,/site-system-chapter/);
   assert.match(html,/function renderHomepage\(stats = \{\}\)/);
   assert.match(html,/function bindHomepage\(root = document\)/);
   assert.match(html,/Interactive generic launch-vehicle structural atlas/);
+});
+
+test('site visual system exposes reusable semantic components and approved proof routes',()=>{
+  const expected=['page-shell','section-header','concept-card','tool-card','equation-panel','engineering-note','warning-callout','assumption-callout','breadcrumbs','related-concept-links','hardware-topic-links','demo-container','chart-container','calculator-container'];
+  assert.deepEqual(siteComponentInventory,expected);
+  assert.match(renderPageShell('content',{variant:'chapter-proof'}),/site-page-shell-chapter-proof/);
+  assert.match(renderBreadcrumbs([{label:'Tools',href:'#/tools'},{label:'Result'}]),/aria-current="page"/);
+  assert.match(renderSectionHeader({number:'15',eyebrow:'Shells',title:'Modes',summary:'Summary'}),/site-section-header/);
+  assert.match(renderCallout({tone:'warning',label:'Check',body:'Boundary'}),/site-callout-warning/);
+  assert.match(renderLinkCollection({label:'Hardware',variant:'hardware',items:[{title:'Fairing',href:'#/cheat-sheet?section=payload-fairing-cavities'}]}),/site-hardware-links/);
+  const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+  assert.match(css,/--site-color-canvas-deep:/);
+  assert.match(css,/--site-space-8:/);
+  assert.match(css,/--site-type-display:/);
+  assert.match(css,/body\.site-system-route \.site-calculator-container/);
+  assert.match(css,/body\.site-system-route \.site-concept-card/);
 });
 
 test('homepage atlas is data-driven, accessible, and linked to real content',()=>{
@@ -726,9 +754,10 @@ test('homepage atlas is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes the demo takeaway runtime',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v24'/);
+  assert.match(worker,/const CACHE = 'sau-v25'/);
   assert.match(worker,/\.\/assets\/homepage\/launch-vehicle-cutaway\.png/);
   assert.match(worker,/\.\/js\/homepage\.js/);
+  assert.match(worker,/\.\/js\/site-components\.js/);
   assert.match(worker,/\.\/js\/demo-takeaways\.js/);
   assert.match(worker,/\.\/js\/workflow-expansion-data\.js/);
   assert.match(worker,/\.\/js\/workflow-expansion-demos\.js/);
