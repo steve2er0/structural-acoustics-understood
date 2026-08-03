@@ -47,7 +47,8 @@ export const atlasSections = [
     subjects: ['Turbomachinery forcing', 'Pyroshock', 'Mount loads'],
     href: '#/cheat-sheet?section=launch-acoustic-sources-deep-dive',
     accent: '#ff9b7a',
-    callout: { x: 61, y: 75, align: 'right' }
+    hotspot: 'M95 790 390 650 585 665 525 955 165 1010 95 940Z',
+    callout: { x: 41, y: 80, align: 'right', line: 235 }
   },
   {
     id: 'lower-tank',
@@ -58,7 +59,8 @@ export const atlasSections = [
     subjects: ['Wet-wall modes', 'Slosh coupling', 'Axial response'],
     href: '#/cheat-sheet?section=wet-tank-dynamics-deep-dive',
     accent: '#55b8ff',
-    callout: { x: 66, y: 58, align: 'right' }
+    hotspot: 'M390 555 745 390 925 505 600 800 445 830Z',
+    callout: { x: 20, y: 57, align: 'left', line: 0 }
   },
   {
     id: 'intertank',
@@ -69,7 +71,8 @@ export const atlasSections = [
     subjects: ['Shell vibration', 'Acoustic coupling', 'Joint transmission'],
     href: '#/cheat-sheet?section=wave-matching-deep-dive',
     accent: '#58d59b',
-    callout: { x: 23, y: 42, align: 'left' }
+    hotspot: 'M740 390 905 315 1018 455 885 585 760 535Z',
+    callout: { x: 22, y: 40, align: 'left', line: 55 }
   },
   {
     id: 'upper-tank',
@@ -80,7 +83,8 @@ export const atlasSections = [
     subjects: ['Bending waves', 'Ring frequency', 'Acoustic radiation'],
     href: '#/cheat-sheet?section=shell-acoustics-deep-dive',
     accent: '#9478ff',
-    callout: { x: 18, y: 23, align: 'left' }
+    hotspot: 'M900 255 1115 165 1260 315 1030 475 930 415Z',
+    callout: { x: 30, y: 25, align: 'left', line: 105 }
   },
   {
     id: 'forward-skirt',
@@ -91,7 +95,8 @@ export const atlasSections = [
     subjects: ['Structural modes', 'Shock transmission', 'Joint behavior'],
     href: '#/cheat-sheet?section=modal-testing-deep-dive',
     accent: '#f2c663',
-    callout: { x: 24, y: 9, align: 'left' }
+    hotspot: 'M1085 160 1265 95 1360 255 1215 355 1115 305Z',
+    callout: { x: 42, y: 8, align: 'left', line: 85 }
   },
   {
     id: 'fairing',
@@ -102,7 +107,8 @@ export const atlasSections = [
     subjects: ['Acoustic environment', 'Panel response', 'Cavity coupling'],
     href: '#/cheat-sheet?section=payload-fairing-cavities',
     accent: '#6f8cff',
-    callout: { x: 72, y: 13, align: 'right' }
+    hotspot: 'M1050 170 1175 55 1450 15 1485 55 1370 205 1240 305 1110 345 1185 245Z',
+    callout: { x: 83, y: 9, align: 'right', line: 108 }
   }
 ];
 
@@ -134,6 +140,7 @@ export const featuredItems = [
 ];
 
 const defaultAtlasSectionId = 'fairing';
+const launchVehicleAsset = './assets/homepage/launch-vehicle-cutaway.png';
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -173,41 +180,28 @@ function featuredMotif(name) {
 
 function segmentMarkup(section) {
   const common = `class="atlas-region atlas-region-${section.id}" data-atlas-section="${section.id}" href="${section.href}" tabindex="0" aria-label="${esc(section.title)}. ${esc(section.summary)}" style="--region-accent:${section.accent}"`;
-  const internals = {
-    engine: '<path class="atlas-segment-shell" d="M56-54h160v108H56z"/><path class="atlas-structure" d="M74-47v94m34-94v94m36-94v94m36-94v94M56-26h160M56 0h160M56 26h160"/><path class="atlas-engine-bell" d="M58-43 4-61v42l54-11zm0 13L6-20v40l52-10zm0 13L4 19v42l54-18zm0 27L6 20v40l52-10z"/>',
-    'lower-tank': '<path class="atlas-segment-shell" d="M216-62h218v124H216z"/><ellipse class="atlas-tank" cx="325" cy="0" rx="98" ry="50"/><path class="atlas-fluid" d="M235 4c42 9 77 13 105 8 31-6 48-11 76-2v38H235z"/><path class="atlas-structure" d="M242-58v116m48-120v124m48-124v124m48-120v116M216-35h218M216 35h218"/>',
-    intertank: '<path class="atlas-segment-shell" d="M434-68h76v136h-76z"/><path class="atlas-structure atlas-truss" d="M438-62 506 62m0-124L438 62m34-126V64M438-34h68M438 0h68M438 34h68"/>',
-    'upper-tank': '<path class="atlas-segment-shell" d="M510-63h202v126H510z"/><ellipse class="atlas-tank atlas-tank-upper" cx="611" cy="0" rx="88" ry="48"/><path class="atlas-structure" d="M535-59v118m48-122v126m48-126v126m52-122v118M510-34h202M510 34h202"/>',
-    'forward-skirt': '<path class="atlas-segment-shell" d="M712-58 790-48v96l-78 10z"/><path class="atlas-structure" d="m718-52 64 96m2-89-66 96m26-106v110M714-29l72-8M712 0h76m-74 29 72 8"/>',
-    fairing: '<path class="atlas-segment-shell atlas-fairing-shell" d="M790-54c74-17 145 6 191 54-46 48-117 71-191 54z"/><path class="atlas-payload" d="M810-29h63l45 29-45 29h-63z"/><path class="atlas-structure" d="M812-48v96m31-101v106m31-99v92M790 0h188"/><path class="atlas-fairing-seam" d="M794-50c70-14 135 8 181 50M794 50c70 14 135-8 181-50"/>'
-  };
-  return `<a ${common}>${internals[section.id]}</a>`;
+  return `<a ${common}><path class="atlas-hit-region" d="${section.hotspot}" vector-effect="non-scaling-stroke"/></a>`;
 }
 
 function launchVehicleSvg() {
-  return `<svg class="launch-vehicle-svg" viewBox="0 0 1040 620" role="img" aria-labelledby="atlas-svg-title atlas-svg-description">
+  return `<svg class="launch-vehicle-svg" viewBox="0 0 1536 1024" preserveAspectRatio="none" role="img" aria-labelledby="atlas-svg-title atlas-svg-description">
     <title id="atlas-svg-title">Interactive generic launch-vehicle structural atlas</title>
     <desc id="atlas-svg-description">A sectioned launch vehicle shown diagonally with interactive engine, lower tank, intertank, upper tank, forward skirt, and payload fairing regions.</desc>
     <defs>
-      <linearGradient id="atlas-shell" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#dbe7f5" stop-opacity=".5"/><stop offset=".35" stop-color="#294767" stop-opacity=".76"/><stop offset=".65" stop-color="#0b1d31" stop-opacity=".9"/><stop offset="1" stop-color="#9bb5d1" stop-opacity=".36"/></linearGradient>
-      <linearGradient id="atlas-tank" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#6f8cff" stop-opacity=".18"/><stop offset=".5" stop-color="#c2d1e6" stop-opacity=".3"/><stop offset="1" stop-color="#102943" stop-opacity=".5"/></linearGradient>
-      <linearGradient id="atlas-fluid" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#55b8ff" stop-opacity=".2"/><stop offset="1" stop-color="#55b8ff" stop-opacity=".55"/></linearGradient>
-      <radialGradient id="atlas-plume" cx="1" cy=".5" r="1"><stop stop-color="#fff" stop-opacity=".9"/><stop offset=".18" stop-color="#f2c663" stop-opacity=".8"/><stop offset=".52" stop-color="#9478ff" stop-opacity=".38"/><stop offset="1" stop-color="#55b8ff" stop-opacity="0"/></radialGradient>
-      <filter id="atlas-glow"><feGaussianBlur stdDeviation="7"/></filter>
+      <radialGradient id="atlas-plume" cx="1" cy=".5" r="1"><stop stop-color="#fff" stop-opacity=".82"/><stop offset=".16" stop-color="#f2c663" stop-opacity=".72"/><stop offset=".48" stop-color="#9478ff" stop-opacity=".32"/><stop offset="1" stop-color="#55b8ff" stop-opacity="0"/></radialGradient>
+      <radialGradient id="atlas-plume-core" cx="1" cy=".5" r="1"><stop stop-color="#fff"/><stop offset=".24" stop-color="#fff0c7" stop-opacity=".92"/><stop offset=".55" stop-color="#f2c663" stop-opacity=".48"/><stop offset="1" stop-color="#9478ff" stop-opacity="0"/></radialGradient>
+      <filter id="atlas-glow"><feGaussianBlur stdDeviation="8"/></filter>
     </defs>
-    <g class="atlas-orbit-lines" aria-hidden="true"><path d="M85 501C303 356 533 186 967 95"/><path d="M62 529C348 426 560 211 996 124"/><path d="M131 548C347 460 643 255 1001 192"/></g>
-    <g class="atlas-plume" transform="translate(145 455) rotate(-29)"><ellipse cx="-70" cy="0" rx="112" ry="58" fill="url(#atlas-plume)" filter="url(#atlas-glow)"/><path d="M0-36C-48-42-97-31-153 0-97 31-48 42 0 36z" fill="url(#atlas-plume)"/></g>
-    <g class="atlas-vehicle" transform="translate(86 445) rotate(-29)">
-      ${atlasSections.map(segmentMarkup).join('')}
-      <path class="atlas-centerline" d="M-10 0h1000" aria-hidden="true"/>
-      <g class="atlas-fasteners" aria-hidden="true">${Array.from({length: 22}, (_, index) => `<circle cx="${205 + index * 31}" cy="${index % 2 ? 57 : -57}" r="2"/>`).join('')}</g>
-    </g>
+    <g class="atlas-orbit-lines" aria-hidden="true"><path d="M90 935C420 670 860 300 1450 65"/><path d="M35 980C470 790 880 330 1510 115"/><path d="M170 1010C530 845 980 425 1500 225"/></g>
+    <g class="atlas-plume" aria-hidden="true"><ellipse cx="42" cy="930" rx="185" ry="82" fill="url(#atlas-plume)" filter="url(#atlas-glow)"/><path d="M155 860C95 872 22 899-85 952 34 974 102 967 180 930Z" fill="url(#atlas-plume)"/><ellipse class="atlas-plume-core" cx="86" cy="922" rx="118" ry="38" fill="url(#atlas-plume-core)"/><path class="atlas-plume-core" d="M180 878C118 886 52 907-24 946c83 7 145-2 216-32Z" fill="url(#atlas-plume-core)"/></g>
+    <image class="atlas-generated-vehicle" href="${launchVehicleAsset}" x="0" y="0" width="1536" height="1024" preserveAspectRatio="none"/>
+    <g class="atlas-hotspots">${atlasSections.map(segmentMarkup).join('')}</g>
   </svg>`;
 }
 
 function renderAtlasDetails() {
   return atlasSections.map(section => `<article class="atlas-detail" data-atlas-detail="${section.id}" ${section.id === defaultAtlasSectionId ? '' : 'hidden'}>
-    <p class="atlas-detail-kicker">${esc(section.descriptor)}</p>
+    <p class="atlas-detail-kicker">Structural atlas · ${esc(section.descriptor)}</p>
     <h3>${esc(section.title)}</h3>
     <p>${esc(section.summary)}</p>
     <ul>${section.subjects.map(subject => `<li>${esc(subject)}</li>`).join('')}</ul>
@@ -215,28 +209,36 @@ function renderAtlasDetails() {
   </article>`).join('');
 }
 
+function renderAtlasMiniature() {
+  return `<svg class="atlas-detail-silhouette" viewBox="0 0 52 184" aria-hidden="true">
+    <path d="M26 4c-8 12-12 29-12 48v36l-5 14v54h34v-54l-5-14V52C38 33 34 16 26 4Z"/>
+    <path d="M14 52h24M14 72h24M14 88h24M9 112h34M9 132h34M9 150h34M16 102v54m10-68v68m10-54v54M14 52l24 20M38 52 14 72M14 72l24 16M38 72 14 88"/>
+    <path d="m14 156-7 20h12l7-20 7 20h12l-7-20"/>
+  </svg>`;
+}
+
 function renderAtlas() {
   return `<section class="vehicle-atlas" id="vehicle-atlas" data-launch-atlas data-selected="${defaultAtlasSectionId}" aria-labelledby="atlas-heading">
     <div class="atlas-heading-row"><div><p class="home-kicker">Interactive structural atlas</p><h2 id="atlas-heading">Follow energy through the vehicle.</h2></div><p>Hover, focus, or tap a region.</p></div>
     <div class="atlas-visual">
       ${launchVehicleSvg()}
-      <div class="atlas-callouts" aria-label="Launch vehicle regions">${atlasSections.map(section => `<a class="atlas-callout atlas-callout-${section.callout.align}" data-atlas-section="${section.id}" href="${section.href}" style="--callout-x:${section.callout.x}%;--callout-y:${section.callout.y}%;--region-accent:${section.accent}"><strong>${esc(section.title)}</strong><span>${esc(section.subjects.join(' · '))}</span></a>`).join('')}</div>
-      <div class="atlas-detail-stack" aria-live="polite">${renderAtlasDetails()}</div>
+      <div class="atlas-callouts" aria-label="Launch vehicle regions">${atlasSections.map(section => `<a class="atlas-callout atlas-callout-${section.id} atlas-callout-${section.callout.align}" data-atlas-section="${section.id}" href="${section.href}" style="--callout-x:${section.callout.x}%;--callout-y:${section.callout.y}%;--line-width:${section.callout.line}px;--region-accent:${section.accent}"><strong>${esc(section.title)}</strong><span>${esc(section.subjects.join(' · '))}</span></a>`).join('')}</div>
+      <div class="atlas-detail-stack" aria-live="polite">${renderAtlasDetails()}${renderAtlasMiniature()}</div>
     </div>
     <div class="atlas-region-key" aria-label="Select vehicle region">${atlasSections.map(section => `<button type="button" data-atlas-section="${section.id}" class="${section.id === defaultAtlasSectionId ? 'is-active' : ''}" style="--region-accent:${section.accent}">${esc(section.shortTitle)}</button>`).join('')}</div>
   </section>`;
 }
 
 function renderQuickStart() {
-  return `<aside class="quick-start" aria-labelledby="quick-start-title"><header><p class="home-kicker">Choose an entry point</p><h2 id="quick-start-title">Quick start</h2></header><div class="quick-start-list">${quickStartItems.map(item => `<a href="${item.href}" class="quick-start-item quick-start-${item.id}"><span class="quick-start-icon">${lineIcon(item.icon)}</span><span><strong>${esc(item.title)}</strong><small>${esc(item.descriptor)}</small></span><span class="quick-start-arrow" aria-hidden="true">›</span></a>`).join('')}</div></aside>`;
+  return `<aside class="quick-start" aria-labelledby="quick-start-title"><header><h2 id="quick-start-title">Quick start</h2><p>Choose how you want to begin.</p></header><div class="quick-start-list">${quickStartItems.map(item => `<a href="${item.href}" class="quick-start-item quick-start-${item.id}"><span class="quick-start-icon">${lineIcon(item.icon)}</span><span><strong>${esc(item.title)}</strong><small>${esc(item.descriptor)}</small></span><span class="quick-start-arrow" aria-hidden="true">›</span></a>`).join('')}</div></aside>`;
 }
 
 function renderNavigationCards() {
-  return `<section class="home-section nav-ways" aria-labelledby="navigation-ways-title"><div class="home-section-heading"><p class="home-kicker">Choose the shape of your question</p><h2 id="navigation-ways-title">Six ways to navigate</h2></div><div class="navigation-card-grid">${navigationCards.map(card => `<a class="navigation-card navigation-${card.id}" href="${card.href}"><div><h3>${esc(card.title)}</h3><p>${esc(card.descriptor)}</p></div><div class="navigation-motif">${motifSvg(card.motif)}</div><span>${esc(card.action)} <b aria-hidden="true">→</b></span></a>`).join('')}</div></section>`;
+  return `<section class="home-section nav-ways" aria-labelledby="navigation-ways-title"><div class="home-section-heading"><h2 id="navigation-ways-title">Six ways to navigate</h2></div><div class="navigation-card-grid">${navigationCards.map(card => `<a class="navigation-card navigation-${card.id}" href="${card.href}"><div><h3>${esc(card.title)}</h3><p>${esc(card.descriptor)}</p></div><div class="navigation-motif">${motifSvg(card.motif)}</div><span>${esc(card.action)} <b aria-hidden="true">→</b></span></a>`).join('')}</div></section>`;
 }
 
 function renderFeaturedItems() {
-  return `<section class="home-section featured-library" aria-labelledby="featured-library-title"><div class="featured-heading"><div><p class="home-kicker">Real calculators and live models</p><h2 id="featured-library-title">Featured demos & tools</h2></div><a href="#/demos">View the full interactive library <span aria-hidden="true">→</span></a></div><div class="featured-strip">${featuredItems.map(item => `<a class="featured-item" href="${item.href}"><div><h3>${esc(item.title)}</h3><p>${esc(item.purpose)}</p></div><div class="featured-visual">${featuredMotif(item.motif)}</div></a>`).join('')}</div></section>`;
+  return `<section class="home-section featured-library" aria-labelledby="featured-library-title"><div class="featured-heading"><h2 id="featured-library-title">Featured demos & tools</h2><a href="#/demos">View the full interactive library <span aria-hidden="true">→</span></a></div><div class="featured-strip">${featuredItems.map(item => `<a class="featured-item" href="${item.href}"><div><h3>${esc(item.title)}</h3><p>${esc(item.purpose)}</p></div><div class="featured-visual">${featuredMotif(item.motif)}</div></a>`).join('')}</div></section>`;
 }
 
 export function renderHomepage(stats = {}) {

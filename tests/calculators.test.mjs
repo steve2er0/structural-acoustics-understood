@@ -719,12 +719,15 @@ test('homepage atlas is data-driven, accessible, and linked to real content',()=
   assert.match(html,/aria-labelledby="atlas-heading"/);
   assert.match(html,/aria-live="polite"/);
   assert.match(html,/data-atlas-section="fairing"/);
+  assert.match(html,/assets\/homepage\/launch-vehicle-cutaway\.png/);
+  assert.match(html,/class="atlas-hit-region"/);
   assert.match(html,/113 tools/);
 });
 
 test('offline cache includes the demo takeaway runtime',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v20'/);
+  assert.match(worker,/const CACHE = 'sau-v24'/);
+  assert.match(worker,/\.\/assets\/homepage\/launch-vehicle-cutaway\.png/);
   assert.match(worker,/\.\/js\/homepage\.js/);
   assert.match(worker,/\.\/js\/demo-takeaways\.js/);
   assert.match(worker,/\.\/js\/workflow-expansion-data\.js/);
