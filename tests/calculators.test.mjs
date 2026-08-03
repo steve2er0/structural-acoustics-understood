@@ -11,6 +11,18 @@ import { workflowExpansionSections, workflowExpansionToolCatalog, workflowExpans
 import { workflowExpansionCalculatorRegistry } from '../js/workflow-expansion-calculators.js';
 import { programExpansionSections, programExpansionToolCatalog, programExpansionDemos, programExpansionCaseNotes } from '../js/program-expansion-data.js';
 import { programExpansionCalculatorRegistry } from '../js/program-expansion-calculators.js';
+import { seaParameterSections, seaParameterToolCatalog, seaParameterDemos, seaParameterCaseNotes } from '../js/sea-parameters-data.js';
+import { seaParameterCalculatorRegistry } from '../js/sea-parameters-calculators.js';
+import {
+  clfMechanismState,
+  equipmentLoadingState,
+  equivalentPowerInjectionState,
+  installedFairingSeaState,
+  modalDensityAtlasState,
+  seaParameterWorkbenchState,
+  seaResponseRecoveryState,
+  tblConvectionState
+} from '../js/sea-parameters-physics.js';
 import {
   nonstationaryEnvironmentState,
   mimoTestState,
@@ -84,17 +96,17 @@ import {
   twoSubsystemEnergyBalance
 } from '../js/sea-coupling.js';
 
-const sections=[...baseSections,...acs519Sections,...workflowExpansionSections,...programExpansionSections];
-const catalog=[...toolCatalog,...extraToolCatalog,...acs519ToolCatalog,...workflowExpansionToolCatalog,...programExpansionToolCatalog];
-const registry={...calculatorRegistry,...extraCalculatorRegistry,...acs519CalculatorRegistry,...workflowExpansionCalculatorRegistry,...programExpansionCalculatorRegistry};
-const demos=[...baseDemos,...acs519Demos,...workflowExpansionDemos,...programExpansionDemos];
-const caseNotes=[...baseCaseNotes,...acs519CaseNotes,...workflowExpansionCaseNotes,...programExpansionCaseNotes];
+const sections=[...baseSections,...acs519Sections,...workflowExpansionSections,...programExpansionSections,...seaParameterSections];
+const catalog=[...toolCatalog,...extraToolCatalog,...acs519ToolCatalog,...workflowExpansionToolCatalog,...programExpansionToolCatalog,...seaParameterToolCatalog];
+const registry={...calculatorRegistry,...extraCalculatorRegistry,...acs519CalculatorRegistry,...workflowExpansionCalculatorRegistry,...programExpansionCalculatorRegistry,...seaParameterCalculatorRegistry};
+const demos=[...baseDemos,...acs519Demos,...workflowExpansionDemos,...programExpansionDemos,...seaParameterDemos];
+const caseNotes=[...baseCaseNotes,...acs519CaseNotes,...workflowExpansionCaseNotes,...programExpansionCaseNotes,...seaParameterCaseNotes];
 const defaults=id=>Object.fromEntries(registry[id].inputs.map(f=>[f.key,f.default]));
 const metric=(result,label)=>result.values.find(x=>x.label===label)?.value;
 const close=(actual,expected,rel=1e-6)=>assert.ok(Math.abs(actual-expected)<=rel*Math.max(1,Math.abs(expected)),`${actual} ≠ ${expected}`);
 
 test('every catalog entry has a calculator and every default case runs',()=>{
-  assert.equal(catalog.length,103);
+  assert.equal(catalog.length,113);
   assert.deepEqual(catalog.filter(t=>!registry[t.id]),[]);
   assert.deepEqual(Object.keys(registry).filter(id=>!catalog.some(t=>t.id===id)),[]);
   for(const tool of catalog){
@@ -170,18 +182,56 @@ test('zero correlation combines PSD RMS by root-sum-square',()=>{
 
 
 test('content architecture matches the approved full build',()=>{
-  assert.equal(sections.length,57);
-  assert.equal(sections.reduce((n,s)=>n+s.concepts.length,0),353);
-  assert.equal(demos.length,69);
-  assert.equal(caseNotes.length,60);
+  assert.equal(sections.length,63);
+  assert.equal(sections.reduce((n,s)=>n+s.concepts.length,0),389);
+  assert.equal(demos.length,79);
+  assert.equal(caseNotes.length,66);
   assert.deepEqual(demos.map(d=>d.id).sort(),[...supportedDemoIds].sort());
   assert.deepEqual(demos.filter(d=>!catalog.some(t=>t.id===d.toolId)),[]);
   assert.deepEqual(sections.flatMap(s=>s.concepts).filter(c=>c.toolId&&!catalog.some(t=>t.id===c.toolId)),[]);
   assert.deepEqual(acs519Sections.filter(section=>!acs519CaseNotes.some(note=>note.id===section.deepDiveId)),[]);
   assert.deepEqual(workflowExpansionSections.filter(section=>!workflowExpansionCaseNotes.some(note=>note.id===section.deepDiveId)),[]);
   assert.deepEqual(programExpansionSections.filter(section=>!programExpansionCaseNotes.some(note=>note.id===section.deepDiveId)),[]);
+  assert.deepEqual(seaParameterSections.filter(section=>!seaParameterCaseNotes.some(note=>note.id===section.deepDiveId)),[]);
   const embeddedDemos=caseNotes.flatMap(note=>[...note.body.matchAll(/data-embedded-demo="([^"]+)"/g)].map(match=>match[1]));
   assert.deepEqual(embeddedDemos.filter(id=>!supportedDemoIds.includes(id)),[]);
+});
+
+test('SEA parameter models preserve dimensional, reciprocity, power, and recovery limits',()=>{
+  const pipeLow=modalDensityAtlasState({type:'acoustic-1d',frequency:100,length:10,soundSpeed:340});
+  const pipeHigh=modalDensityAtlasState({type:'acoustic-1d',frequency:5000,length:10,soundSpeed:340});
+  close(pipeLow.modalDensity,20/340,1e-12);
+  close(pipeHigh.modalDensity,pipeLow.modalDensity,1e-12);
+  const roomLow=modalDensityAtlasState({type:'acoustic-3d',frequency:100,length:4,width:3,height:2,soundSpeed:343});
+  const roomHigh=modalDensityAtlasState({type:'acoustic-3d',frequency:1000,length:4,width:3,height:2,soundSpeed:343});
+  assert.ok(roomHigh.modalDensity>roomLow.modalDensity);
+
+  const coupling=clfMechanismState({mechanism:'line-joint',frequency:1000,modalDensity1:.04,modalDensity2:.16});
+  close(coupling.forward*.04,coupling.reverse*.16,1e-12);
+  close(coupling.reciprocityResidual,0,1e-12);
+
+  const point=equivalentPowerInjectionState({source:'point-force',forceRms:10,conductance:2e-4});
+  close(point.injectedPower,.5*10**2*2e-4,1e-12);
+  const unloaded=equipmentLoadingState({unloadedResponse:12,equipmentMass:0});
+  close(unloaded.globalResponse,12,1e-12);
+  close(unloaded.localResponse,12,1e-12);
+
+  const lowReduced=tblConvectionState({model:'totaro',frequency:20,freeStreamVelocity:300,displacementThickness:.01});
+  const highReduced=tblConvectionState({model:'totaro',frequency:10000,freeStreamVelocity:300,displacementThickness:.01});
+  assert.ok(lowReduced.convectionFraction>highReduced.convectionFraction);
+  assert.ok(highReduced.convectionFraction>=.6&&lowReduced.convectionFraction<=1);
+
+  const response=seaResponseRecoveryState({kind:'structural',energy:.02,mass:100,frequency:500});
+  close(100*response.velocityRms**2,.02,1e-12);
+  assert.ok(response.concentrationAmplitudeFactor>=1);
+
+  const fairing=installedFairingSeaState();
+  assert.ok(Math.abs(fairing.network.balanceError)<1e-8);
+  const tight=installedFairingSeaState({blanketCoverage:1,blanketInsertionLoss:25,leakAreaFraction:0});
+  const leaky=installedFairingSeaState({blanketCoverage:1,blanketInsertionLoss:25,leakAreaFraction:.01});
+  assert.ok(tight.installedNoiseReduction>leaky.installedNoiseReduction);
+  const workbench=seaParameterWorkbenchState();
+  assert.ok(workbench.externalPower>0&&workbench.energy>0&&workbench.provenance.length>=7);
 });
 
 test('program-level launch models preserve limiting behavior and end-to-end directionality',()=>{
@@ -615,11 +665,17 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   assert.match(html,/function nonstationaryEnvironmentState\(input = \{\}\)/);
   assert.match(html,/function capstoneState\(input = \{\}\)/);
   assert.match(html,/function mountCapstone\(root\)/);
+  assert.match(html,/const __seaParameterData=\(\(\)=>\{/);
+  assert.match(html,/const __seaParameterPhysics=\(\(\)=>\{/);
+  assert.match(html,/id: 'sea-parameter-provenance'/);
+  assert.match(html,/function seaParameterWorkbenchState\(input = \{\}\)/);
+  assert.match(html,/function installedFairingSeaState\(input = \{\}\)/);
+  assert.match(html,/function mountFairing\(root\)/);
 });
 
 test('offline cache includes the demo takeaway runtime',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v18'/);
+  assert.match(worker,/const CACHE = 'sau-v19'/);
   assert.match(worker,/\.\/js\/demo-takeaways\.js/);
   assert.match(worker,/\.\/js\/workflow-expansion-data\.js/);
   assert.match(worker,/\.\/js\/workflow-expansion-demos\.js/);
@@ -627,6 +683,10 @@ test('offline cache includes the demo takeaway runtime',()=>{
   assert.match(worker,/\.\/js\/program-expansion-calculators\.js/);
   assert.match(worker,/\.\/js\/program-expansion-data\.js/);
   assert.match(worker,/\.\/js\/program-expansion-demos\.js/);
+  assert.match(worker,/\.\/js\/sea-parameters-physics\.js/);
+  assert.match(worker,/\.\/js\/sea-parameters-calculators\.js/);
+  assert.match(worker,/\.\/js\/sea-parameters-data\.js/);
+  assert.match(worker,/\.\/js\/sea-parameters-demos\.js/);
 });
 
 test('default result payloads are finite and structurally consistent',()=>{

@@ -4288,6 +4288,171 @@ const programExpansionReferenceGroups = [{
 return {programExpansionSections,programExpansionToolCatalog,programExpansionDemos,programExpansionCaseNotes,programExpansionReferenceGroups};
 })();
 
+const __seaParameterData=(()=>{
+/* SEA parameter curriculum derived from SEA_parameters_revAB. */
+
+const modules = [
+  {
+    id: 'sea-parameter-provenance', number: '58', caseNumber: '61', toolId: 'sea-parameter-workbench', demoId: 'sea-parameter-chain',
+    title: 'SEA Parameter Definition, Provenance & Uncertainty', eyebrow: 'The solver is the easy part',
+    summary: 'Turn geometry, construction, environment, and test evidence into a traceable banded SEA parameter set before solving for energy.',
+    equation: 'geometry → n(f), η, σ → ηᵢⱼ, Πin → E → response',
+    mechanism: 'SEA power balance needs modal density, dissipation loss, coupling loss, external power, mass or volume, and response-recovery properties. These parameters are linked: wave speed changes modal density and coincidence; radiation efficiency produces radiation resistance and a panel-air CLF; mobility converts point force into input power; energy and physical mass or compressibility recover velocity or pressure.',
+    intuition: 'The SEA matrix rarely causes the largest prediction uncertainty. The fragile step is translating a real shell, joint, blanket, flow field, and payload installation into the numbers placed in that matrix. A parameter with a clear name but unknown pedigree is still an unknown.',
+    launch: 'Fairing, interstage, deck, barrel, tank, and payload-cavity models often mix analytical geometry, coupon damping, empirical radiation, inferred CLFs, test-derived source power, and flight extrapolation. Each band needs an audit trail so a design change can be traced to physics rather than hidden tuning.',
+    findings: ['Parameter provenance should be stored per band, not only in a model-level note.', 'Measured values are not automatically superior if their boundary, field, averaging, or installed configuration differs from flight.', 'Reciprocity, dimensional consistency, power balance, passivity, and limiting cases provide independent checks before correlation.', 'Uncertainty should be attached to the parameter-generating relationship so it propagates to every network that consumes it.'],
+    decisions: ['Classify each parameter as analytical, empirical, measured, inferred, or assumed.', 'Expose the geometry and field variables that generated every banded parameter.', 'Promote a handbook value to design use only after sensitivity and applicable evidence are documented.'],
+    limitation: 'The workbench synthesizes one representative subsystem at one band. Full programs need correlated uncertainty, configuration control, spatial variation, measured datasets, and batch processing across the complete network.',
+    source: 'SEA_parameters_revAB introduction and Appendices A–T'
+  },
+  {
+    id: 'modal-density-wave-regime-atlas', number: '59', caseNumber: '62', toolId: 'modal-density-atlas', demoId: 'modal-density-regime-map',
+    title: 'Structural & Acoustic Modal-Density Atlas', eyebrow: 'Count the right wave family',
+    summary: 'Compare one-, two-, and three-dimensional acoustic density with beam, plate, honeycomb, in-plane, circular-panel, and shell mode populations.',
+    equation: 'Nband=n(f)Δf;  M=n(f)ηf',
+    mechanism: 'Modal density is the derivative of mode count with frequency. Its frequency dependence reveals dimensionality and dispersion: a 1D acoustic pipe has constant density, a 2D cavity rises with frequency, a 3D cavity rises with frequency squared, plate bending is nearly constant asymptotically, and sandwich shear or shell curvature changes the structural trend.',
+    intuition: 'Modal density is a traffic count, not a universal property of the hardware. The same fairing bay can carry sparse in-plane waves and dense bending waves; the same thin cavity can behave as a 2D sheet of sound below cross-gap cut-on and a 3D room above it.',
+    launch: 'Large fairing skins can support many bending modes where frames remain deterministic. Payload cavities, purge ducts, interstage gaps, honeycomb decks, and barrel shells cross their statistical transition at different frequencies and should not be assigned one global SEA boundary.',
+    findings: ['Modes per analysis band and modal overlap answer different questions and should be displayed together.', 'Boundary corrections matter near the transition even when the asymptotic density is simple.', 'Acoustic dimensional transitions and honeycomb shear transitions can occur inside a qualification band.', 'Cylinder ring frequency changes the structural mode-count trend and the validity of equal-area flat-plate approximations.'],
+    decisions: ['Select wave family and boundary condition before quoting modal density.', 'Bracket both models within a half octave of a dimensional, shear, or ring transition.', 'Use exact eigensolutions or hybrid FE–SEA when the band population remains sparse.'],
+    limitation: 'Asymptotic counting smooths individual low-order modes, degeneracy, frames, cutouts, orthotropy, and local attachments. The cylinder high-frequency continuation is a screening approximation.',
+    source: 'SEA_parameters_revAB Appendices A, B, H, I, and J'
+  },
+  {
+    id: 'sea-mobility-radiation-coupling', number: '60', caseNumber: '63', toolId: 'clf-mechanism-library', demoId: 'sea-coupling-mechanisms',
+    title: 'Mobility, Radiation & CLF Mechanism Library', eyebrow: 'Derive the arrow in the network',
+    summary: 'Build directional SEA couplings from point impedance, plate and shell mobility, radiation resistance, line joints, bolts, frames, and nonresonant transmission.',
+    equation: 'Πᵢ→ⱼ=ωηᵢⱼEᵢ;  ηⱼᵢ=ηᵢⱼnᵢ/nⱼ',
+    mechanism: 'A CLF converts stored energy into directional gross power. Mechanical junction models combine incident wave speed, transmission, junction extent, impedance, and modal normalization. Panel-air coupling uses radiation resistance. Nonresonant fairing transmission uses a transmission coefficient and acoustic-volume normalization. Reciprocity then fixes the reverse CLF for passive connections.',
+    intuition: 'A network arrow is not a dial labeled “coupling.” It represents a physical gate: a point bridge samples drive mobility, a bolt array adds discrete gates, a frame behaves as a line, and a radiating panel exchanges energy over an area. The gate can transmit strongly while net flow remains small because gross power also returns.',
+    launch: 'Fairing frames, longerons, bolted payload adapters, equipment feet, line joints, shell–cavity radiation, and direct mass-law paths need different coupling models. Improving one attachment can simply expose a parallel frame, leak, or nonresonant acoustic path.',
+    findings: ['Equal directional CLFs generally violate reciprocity when modal densities differ.', 'A high transmission coefficient need not imply a high CLF because junction extent and stored-energy normalization matter.', 'Panel-air radiation efficiency, resistance, and CLF are three representations of the same energy path.', 'Weak-coupling checks belong after the CLF is derived, not before.'],
+    decisions: ['Name the physical mechanism for every network link.', 'Preserve directional modal-density normalization and test reciprocity numerically.', 'Split point, line, area, resonant, and nonresonant paths instead of combining them into one fitted CLF.'],
+    limitation: 'The library treats ideal homogeneous members and real-valued impedances. Complex joints, angle ensembles, multiple wave families, nonlinear fasteners, stiffeners, and strongly coupled interfaces need measured or higher-fidelity models.',
+    source: 'SEA_parameters_revAB Appendices C, D, and G'
+  },
+  {
+    id: 'equivalent-sea-source-power', number: '61', caseNumber: '64', toolId: 'equivalent-power-injection', demoId: 'environment-to-sea-power',
+    title: 'External Environment to Equivalent SEA Power', eyebrow: 'Pressure is not watts',
+    summary: 'Convert diffuse liftoff acoustics, ascent TBL pressure, Corcos coherence, and localized force into the band-power vector required by SEA.',
+    equation: 'Πdiffuse∝σ⟨p²⟩n/(f²m″);  Πforce=½F²Re{Y}',
+    mechanism: 'An environment does work only through the part of pressure or force that is accepted by structural motion. Diffuse acoustic injection depends on radiation reciprocity and modal density. TBL injection depends on convection speed relative to bending speed, spatial correlation, aerodynamic coincidence, and empirical coefficients. A point force injects power through drive-point conductance.',
+    intuition: 'Two fields with identical pressure RMS can inject very different structural power. A pressure pattern that reverses across neighboring modal lobes can cancel, while a lower-pressure pattern moving at the accepted wavenumber can drive the structure efficiently.',
+    launch: 'Liftoff produces directional and reverberant acoustic loading; atmospheric ascent adds convecting wall pressure; protuberances and separation create different coherence; engines, actuators, and equipment add local force. These sources should enter the SEA vector through different models.',
+    findings: ['Converting dB SPL directly to SEA watts without modal and field information hides the dominant acceptance assumptions.', 'TBL empirical constants can change predicted power by factors of three or more.', 'Frequency-dependent convection velocity moves both correlation length and aerodynamic coincidence.', 'Point-force power must use drive-point conductance, not a transfer-FRF magnitude.'],
+    decisions: ['Select source conversion by physical flight event and vehicle station.', 'Carry wall-pressure PSD, convection, coherence, modal properties, and field classification as separate inputs.', 'Compare equivalent power with measured power injection or energy balance wherever practical.'],
+    limitation: 'The Corcos implementation uses a frequency-averaged acceptance screen rather than the full wavenumber integral. Separated flow, shocks, nonstationarity, curvature, and detailed shell modes require program-specific data.',
+    source: 'SEA_parameters_revAB Appendices K and T'
+  },
+  {
+    id: 'sea-response-recovery-concentration', number: '62', caseNumber: '65', toolId: 'sea-response-recovery', demoId: 'sea-local-response',
+    title: 'SEA Response Recovery & Statistical Concentration', eyebrow: 'From average energy to a local design quantity',
+    summary: 'Recover velocity, acceleration, pressure, SPL, and bending stress from subsystem energy, then estimate local statistical concentration and boundary risk.',
+    equation: 'E=M⟨v²⟩;  E=V⟨p²⟩/(ρc²);  Vmax²/Vrms²=f(n,η,Δf,D)',
+    mechanism: 'SEA solves a spatial or ensemble average. Structural mass converts energy into mean-square velocity; acoustic compressibility converts cavity energy into pressure; frequency converts velocity to acceleration; wave curvature converts displacement into a stress screen. Response concentration estimates the maximum-to-average ratio from dimensionality, modal population, loss, and bandwidth.',
+    intuition: 'An average is not a location. A payload foot near a boundary, antinode, frame, or sparse dominant mode may experience more response than the subsystem mean even when the energy solution is exact.',
+    launch: 'Payload equipment limits, fastener loads, bracket fatigue, panel strain, and microphone levels are local quantities. Fairing SEA often supplies only the average shell or cavity state, so the recovery and concentration step must be visible in qualification flowdown.',
+    findings: ['Pure-tone concentration is more severe than broadband concentration because frequency averaging supplies fewer independent samples.', 'Dimensionality changes the expected mode-shape maximum.', 'The interior average is biased within approximately one-quarter wavelength of a boundary.', 'A local concentration factor is a statistical statement, not a deterministic certification of the maximum location.'],
+    decisions: ['State whether every reported response is spatial average, ensemble average, percentile, or local maximum screen.', 'Use deterministic local models for critical receivers and boundary regions.', 'Validate stress and acceleration recovery with representative sensor placement and spatial averaging.'],
+    limitation: 'The concentration equations assume ideal statistical mode shapes and diffuse energy. Attachments, local stiffness, deterministic modes, nonlinear contacts, and correlated response points require local FE or test evidence.',
+    source: 'SEA_parameters_revAB introduction and Appendix S'
+  },
+  {
+    id: 'installed-fairing-sea-parameters', number: '63', caseNumber: '66', toolId: 'installed-fairing-sea', demoId: 'fairing-blanket-network',
+    title: 'Installed Fairing SEA Parameters', eyebrow: 'Component TL is not payload attenuation',
+    summary: 'Combine equipment loading, shell radiation, nonresonant transmission, blanket IL and absorption, coverage, leakage, and payload-cavity loss in one auditable network.',
+    equation: 'NR=10log₁₀(1+α/τ);  τinstalled=Σ(Sᵢ/S)τᵢ',
+    mechanism: 'The resonant path drives the shell and reradiates into the cavity. A nonresonant mass-law path crosses the wall without waiting for resonant energy storage. Blankets reduce transmitted power and add absorption, untreated areas remain parallel paths, openings leak, installed equipment changes structural inertia, and cavity loss sets the received energy.',
+    intuition: 'A 20 dB blanket does not create 20 dB payload benefit when twenty percent of the area is untreated or a small opening dominates. Once one path is reduced, the next strongest path becomes the ceiling.',
+    launch: 'Payload fairings contain blankets, seams, purge paths, access doors, separation joints, vents, frames, large equipment, and changing gas conditions. Installed payload-cavity level is the result of all these power paths, not a coupon TL or absorption number.',
+    findings: ['Component mass-law TL and installed noise reduction must be reported separately.', 'Blanket coverage combines in linear transmission space, not by multiplying coverage by dB.', 'Blanket absorption changes cavity loss while blanket IL changes transmission; they are different benefits.', 'Added equipment can lower shell velocity without removing direct acoustic leakage.'],
+    decisions: ['Track resonant, nonresonant, leak, and flanking power separately.', 'Use measured blanket IL and absorption for the actual mounting, compression, purge, and temperature state.', 'Stop improving the shell path when the direct or opening path controls installed response.'],
+    limitation: 'The paired model uses one shell and two diffuse acoustic subsystems. Real fairings may need multiple bays, frames, axial variation, payload scattering, vents with flow, spatial source fields, and measured banded blanket data.',
+    source: 'SEA_parameters_revAB Appendices E, P, Q, and R'
+  }
+];
+
+const concept = (title, equation, body, interpretation, mistake, toolId, tags) => ({ title, equation, body, interpretation, mistake, toolId, tags });
+
+const seaParameterSections = modules.map(module => ({
+  id: module.id,
+  number: module.number,
+  title: module.title,
+  eyebrow: module.eyebrow,
+  summary: module.summary,
+  deepDiveId: `sea-parameters-${module.id}`,
+  concepts: [
+    concept('Governing parameter chain', module.equation, module.mechanism, module.intuition, 'Entering a plausible scalar without retaining the physical model and provenance that produced it.', module.toolId, ['SEA parameters', 'energy flow']),
+    concept('Engineering intuition', '', module.intuition, module.mechanism, 'Treating a band-averaged quantity as though it were a deterministic local response.', module.toolId, ['intuition', 'statistical dynamics']),
+    concept('Launch-vehicle application', '', module.launch, module.findings.join(' '), 'Transferring a coupon, room, or ideal-member parameter directly to an installed launch vehicle without a configuration check.', module.toolId, ['launch vehicles', 'fairing']),
+    concept('Deep-dive findings', '', module.findings.join(' '), 'Use these findings to select source models, subsystem boundaries, sensitivity variables, and validation evidence.', 'Using one threshold or handbook curve as a universal pass/fail rule.', module.toolId, ['findings', 'model selection']),
+    concept('Engineering decisions', '', module.decisions.join(' '), 'Each decision should be linked to the parameter or response that could reverse it.', 'Reporting numerical precision without decision sensitivity or uncertainty.', module.toolId, ['design', 'verification']),
+    concept('Model boundary', '', module.limitation, `Source basis: ${module.source}.`, 'Extending a screening relation beyond its geometry, field, wave-family, or statistical assumptions.', module.toolId, ['assumptions', 'validity'])
+  ]
+}));
+
+const seaParameterToolCatalog = [
+  { id: 'sea-parameter-workbench', title: 'SEA Parameter Workbench', category: 'SEA & Energy', description: 'Build a traceable geometry-to-modal-density-to-loss-to-coupling-to-power-to-response parameter chain.', complexity: 'Advanced', keywords: ['SEA parameters', 'provenance', 'launch vehicle', 'uncertainty'] },
+  { id: 'modal-density-atlas', title: 'Structural & Acoustic Modal-Density Atlas', category: 'SEA & Energy', description: 'Compare 1D/2D/3D acoustic, beam, plate, in-plane, circular, honeycomb, and cylindrical modal density.', complexity: 'Advanced', keywords: ['modal density', 'Weyl', 'honeycomb', 'cylinder'] },
+  { id: 'sea-impedance-library', title: 'SEA Driving-Point Impedance Library', category: 'SEA & Energy', description: 'Calculate analytical plate, shell, rod, and high-frequency driving-point mobility and injected force power.', complexity: 'Core', keywords: ['mobility', 'impedance', 'conductance', 'point force'] },
+  { id: 'clf-mechanism-library', title: 'CLF Mechanism Library', category: 'SEA & Energy', description: 'Derive reciprocal CLFs for beams, plates, point bridges, bolts, line joints, radiation, and fairing mass-law paths.', complexity: 'Advanced', keywords: ['CLF', 'reciprocity', 'junction', 'radiation coupling'] },
+  { id: 'equivalent-power-injection', title: 'Equivalent SEA Power Injection', category: 'SEA & Energy', description: 'Convert diffuse acoustic, TBL, Corcos, and point-force environments into watts per analysis band.', complexity: 'Advanced', keywords: ['equivalent power', 'TBL', 'Corcos', 'diffuse field'] },
+  { id: 'tbl-convection-model', title: 'TBL Convection-Velocity Models', category: 'Aero / Distributed Loads', description: 'Compare constant, Totaro, attached-flow, and separated-flow convection velocity and wavenumber.', complexity: 'Core', keywords: ['convection velocity', 'Totaro', 'attached flow', 'separated flow'] },
+  { id: 'equipment-loading', title: 'Equipment Loading & Smearing', category: 'SEA & Energy', description: 'Compare global mass-ratio and local footprint-area response corrections for installed equipment.', complexity: 'Core', keywords: ['equipment mass', 'footprint', 'smearing', 'payload'] },
+  { id: 'sea-response-recovery', title: 'SEA Response Recovery & Concentration', category: 'SEA & Energy', description: 'Recover velocity, acceleration, pressure, SPL, stress, and statistical local concentration from subsystem energy.', complexity: 'Advanced', keywords: ['SEA response', 'concentration', 'local maximum', 'boundary'] },
+  { id: 'radiation-efficiency-atlas', title: 'Radiation-Efficiency Atlas', category: 'Structural Acoustics', description: 'Compare baffled, free, honeycomb, ribbed, shell, and forced-field radiation and panel-air CLF.', complexity: 'Advanced', keywords: ['radiation efficiency', 'shell', 'honeycomb', 'forced radiation'] },
+  { id: 'installed-fairing-sea', title: 'Installed Fairing SEA', category: 'SEA & Energy', description: 'Trade blanket coverage, IL, absorption, leakage, equipment, resonant power, direct power, shell velocity, and cavity SPL.', complexity: 'Advanced', keywords: ['fairing', 'blanket', 'noise reduction', 'payload cavity'] }
+];
+
+const seaParameterDemos = [
+  { id: 'sea-parameter-chain', title: 'Build the SEA Parameter Chain', description: 'Move from launch-vehicle construction and environment through derived parameters, stored energy, and recovered response.', topic: 'SEA Parameters', toolId: 'sea-parameter-workbench' },
+  { id: 'modal-density-regime-map', title: 'Watch Modal Density Change Regime', description: 'Switch wave family and frequency while modes per band, overlap, and dimensional transitions move together.', topic: 'Modal Density', toolId: 'modal-density-atlas' },
+  { id: 'sea-driving-point-mobility', title: 'Where a Force Enters the SEA Model', description: 'Compare plate center, edge, shell, rod, and high-frequency conductance as force becomes band power.', topic: 'Mobility', toolId: 'sea-impedance-library' },
+  { id: 'sea-coupling-mechanisms', title: 'Build a CLF from the Physical Junction', description: 'Change point, line, bolt, frame, radiation, and mass-law mechanisms while reciprocal directional CLFs update.', topic: 'SEA Coupling', toolId: 'clf-mechanism-library' },
+  { id: 'environment-to-sea-power', title: 'Turn Pressure and Force into SEA Watts', description: 'Compare diffuse, TBL, Corcos, and point-force power accepted by the same launch-vehicle panel.', topic: 'SEA Excitation', toolId: 'equivalent-power-injection' },
+  { id: 'tbl-convection-velocity-map', title: 'Convection Velocity Is Not One Constant', description: 'Compare Totaro, constant, attached, and separated flow models while wavenumber and coherence scales move.', topic: 'TBL', toolId: 'tbl-convection-model' },
+  { id: 'equipment-smearing-map', title: 'Global Mass or Local Footprint?', description: 'Change equipment mass and footprint to see when smearing hides a local payload-interface response.', topic: 'Equipment Loading', toolId: 'equipment-loading' },
+  { id: 'sea-local-response', title: 'From SEA Average to Local Response', description: 'Recover response from energy and compare broadband, pure-tone, interior, and boundary concentration.', topic: 'Response Recovery', toolId: 'sea-response-recovery' },
+  { id: 'radiation-efficiency-construction-map', title: 'Which Radiation Model Fits the Hardware?', description: 'Move across fundamental, ring, critical, and forced-field regions for panel, honeycomb, ribbed, and shell construction.', topic: 'Radiation', toolId: 'radiation-efficiency-atlas' },
+  { id: 'fairing-blanket-network', title: 'Make a Blanket Work in the Full Fairing Network', description: 'Trade coverage, IL, absorption, openings, and equipment while resonant and direct power set payload-cavity level.', topic: 'Fairing SEA', toolId: 'installed-fairing-sea' }
+];
+
+const esc = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+
+function deepDiveBody(module) {
+  return `<p>${esc(module.mechanism)}</p>
+<h2>Engineering intuition</h2><p>${esc(module.intuition)}</p>
+<div class="callout"><strong>Launch-vehicle application.</strong> ${esc(module.launch)}</div>
+<h2>Findings from the SEA parameter deep dive</h2><ol>${module.findings.map(item => `<li>${esc(item)}</li>`).join('')}</ol>
+<h2>Interactive engineering model</h2><div class="case-demo"><div class="case-demo-header"><div><p class="eyebrow">SEA parameter laboratory</p><h3>${esc(module.title)}</h3></div><a class="concept-tool-link" href="#/tool/${encodeURIComponent(module.toolId)}">Open paired calculator →</a></div><div data-embedded-demo="${esc(module.demoId)}"></div></div>
+<h2>Design and analysis decisions</h2><ul>${module.decisions.map(item => `<li>${esc(item)}</li>`).join('')}</ul>
+<h2>Assumptions and model boundary</h2><p>${esc(module.limitation)}</p>
+<div class="callout"><strong>Engineering takeaway.</strong> A credible SEA prediction retains the origin, direction, bandwidth, field assumption, configuration, and uncertainty of every parameter—not only the solved energy.</div>
+<h2>Source trail</h2><p>${esc(module.source)}. Local reference: <code>references/SEA_parameters_revAB.pdf</code>. Source equations were independently screened for units, limiting behavior, reciprocity, and typographical risk before implementation.</p>`;
+}
+
+const seaParameterCaseNotes = modules.map(module => ({
+  id: `sea-parameters-${module.id}`,
+  number: module.caseNumber,
+  title: module.title,
+  summary: `${module.summary} Includes launch-vehicle applications and findings from the complete parameter-note review.`,
+  readTime: '11 min',
+  tags: ['SEA parameters', 'launch vehicles', module.eyebrow],
+  body: deepDiveBody(module)
+}));
+
+const seaParameterReferenceGroups = [{
+  group: 'SEA parameter handbook expansion',
+  items: [
+    { title: 'Statistical Energy Analysis Parameters, Revision AB', author: 'Tom Irvine', note: 'Local 62-page reference covering SEA inputs, excitation conversion, response recovery, blankets, and TBL convection velocity.' },
+    { title: 'Theory and Application of Statistical Energy Analysis', author: 'Lyon & DeJong', note: 'Primary SEA theory source cited throughout the parameter handbook.' },
+    { title: 'Random Vibrations in Spacecraft Structure Design', author: 'Jaap Wijker', note: 'Aerospace SEA, modal density, equipment loading, radiation, and qualification context.' }
+  ]
+}];
+
+return {seaParameterSections,seaParameterToolCatalog,seaParameterDemos,seaParameterCaseNotes,seaParameterReferenceGroups};
+})();
+
 const __calculators=(()=>{
 const G0 = 9.80665;
 const AIR_RHO = 1.204;
@@ -6852,6 +7017,9 @@ function doubleWindowSeaState(input = {}) {
   const etaPaneRoom = positive(input.etaPaneRoom, 0.012);
   const etaPaneCavityAir = positive(input.etaPaneCavityAir, 0.018);
   const bypass = Math.max(0, number(input.bypass, 0));
+  const nonresonantPath = input.nonresonantPath === true || input.nonresonantPath === 'enabled';
+  const blanketCoverage = clamp(number(input.blanketCoverage, 0), 0, 1);
+  const blanketInsertionLoss = Math.max(0, number(input.blanketInsertionLoss, 0));
   const pane1SurfaceMass = paneDensity * pane1Thickness;
   const pane2SurfaceMass = paneDensity * pane2Thickness;
   const pane1Mass = paneArea * pane1SurfaceMass;
@@ -6876,6 +7044,13 @@ function doubleWindowSeaState(input = {}) {
   const massFluidMassOffset = Math.log2(frequency / massFluidMassFrequency);
   const massFluidMassGain = 1 + 8 * Math.exp(-0.5 * (massFluidMassOffset / 0.18) ** 2);
   const etaPaneCavity = clamp(etaPaneCavityAir * impedanceRatio * massFluidMassGain, 1e-8, 0.5);
+  const componentMassLawTl = Math.max(0, 20 * Math.log10(Math.max(1, TAU * frequency * (pane1SurfaceMass + pane2SurfaceMass) / (2 * AIR_RHO * AIR_C))) - 5);
+  const blanketTransmission = 10 ** (-blanketInsertionLoss / 10);
+  const coverageTransmission = (1 - blanketCoverage) + blanketCoverage * blanketTransmission;
+  const nonresonantClf = nonresonantPath
+    ? AIR_C * paneArea / (8 * Math.PI * frequency * sourceRoomVolume) * 10 ** (-componentMassLawTl / 10) * coverageTransmission
+    : 0;
+  const effectiveBypass = bypass + nonresonantClf;
   const subsystems = [
     { name: 'Source room', kind: 'acoustic', modalDensity: sourceRoomModalDensity, lossFactor: roomLossFactor, volume: sourceRoomVolume, density: AIR_RHO, soundSpeed: AIR_C, inputPower: sourcePower },
     { name: 'Pane 1', kind: 'structural', modalDensity: pane1ModalDensity, lossFactor: paneLossFactor, mass: pane1Mass },
@@ -6889,13 +7064,15 @@ function doubleWindowSeaState(input = {}) {
     { i: 2, j: 3, forward: etaPaneCavity * pane2ModalDensity / cavityModalDensity },
     { i: 3, j: 4, forward: etaPaneRoom }
   ];
-  if (bypass > 0) links.push({ i: 0, j: 4, forward: bypass });
+  if (effectiveBypass > 0) links.push({ i: 0, j: 4, forward: effectiveBypass });
   const network = seaNetworkState({ frequency, subsystems, links, sourceIndex: 0, receiverIndex: 4 });
   return {
     frequency, mediumKey, medium, paneLength, paneWidth, paneArea, panePerimeter, gap,
     pane1Thickness, pane2Thickness, paneDensity, paneModulus, panePoisson, paneLossFactor,
     cavityLossFactor, roomLossFactor, sourceRoomVolume, receiverRoomVolume, sourcePower,
-    etaPaneRoom, etaPaneCavityAir, etaPaneCavity, bypass, pane1SurfaceMass, pane2SurfaceMass,
+    etaPaneRoom, etaPaneCavityAir, etaPaneCavity, bypass, effectiveBypass, nonresonantPath,
+    blanketCoverage, blanketInsertionLoss, blanketTransmission, coverageTransmission,
+    componentMassLawTl, nonresonantClf, pane1SurfaceMass, pane2SurfaceMass,
     pane1Mass, pane2Mass, pane1Rigidity, pane2Rigidity, pane1ModalDensity, pane2ModalDensity,
     sourceRoomModalDensity, receiverRoomModalDensity, cavityVolume, crossGapCuton,
     belowCutonModalDensity, fullCavityModalDensity, cavityModalDensity, impedanceRatio,
@@ -7474,8 +7651,689 @@ const ACS519_DEFAULTS = Object.freeze({
 return {SEA_MEDIA,seaNetworkState,doubleWindowSeaState,modalRadiationState,besselJ1,struveH1,pistonRadiationState,shellAcousticsState,feBePlannerState,panelTransmissionState,orthotropicPanelState,lossFactorBudgetState,modalTestState,seaValidityState,doublePanelSeaState,khiePatchState,pipeNoiseState,waveMatchingState,drivenRadiationState,soundIntensityProbeState,dynamicStressEnvironmentState,launchAcousticSourceState,wetTankDynamicsState,qualificationTestState,ACS519_DEFAULTS};
 })();
 
+const __seaParameterPhysics=(()=>{
+const {seaNetworkState}=__acs519Physics;
+/* Reusable SEA parameter models derived from SEA_parameters_revAB.
+ * These are band-screening relations. Every exported state reports the
+ * quantities needed to audit how an SEA input was obtained.
+ */
+const TAU = 2 * Math.PI;
+const AIR_RHO = 1.204;
+const AIR_C = 343;
+const PREF = 20e-6;
+const number = (value, fallback) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+const positive = (value, fallback) => Math.max(1e-12, number(value, fallback));
+const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
+const logspace = (low, high, count = 96) => Array.from({ length: count }, (_, index) => low * (high / low) ** (index / Math.max(1, count - 1)));
+
+function interpolateLog(points, frequency) {
+  const f = positive(frequency, points[0][0]);
+  if (f <= points[0][0]) return points[0][1];
+  if (f >= points.at(-1)[0]) return points.at(-1)[1];
+  const upper = points.findIndex(point => point[0] >= f);
+  const [f0, y0] = points[upper - 1];
+  const [f1, y1] = points[upper];
+  const ratio = Math.log(f / f0) / Math.log(f1 / f0);
+  return y0 + ratio * (y1 - y0);
+}
+
+function plateProperties(input = {}) {
+  const length = positive(input.length, 2.4);
+  const width = positive(input.width, 1.4);
+  const thickness = positive(input.thickness, 0.003);
+  const modulus = positive(input.modulus, 70e9);
+  const density = positive(input.density, 2700);
+  const poisson = clamp(number(input.poisson, 0.33), -0.49, 0.49);
+  const area = length * width;
+  const perimeter = 2 * (length + width);
+  const surfaceMass = density * thickness;
+  const bendingStiffness = modulus * thickness ** 3 / (12 * (1 - poisson ** 2));
+  const longitudinalSpeed = Math.sqrt(modulus / (density * (1 - poisson ** 2)));
+  const shearSpeed = Math.sqrt(modulus / (2 * density * (1 + poisson)));
+  return { length, width, thickness, modulus, density, poisson, area, perimeter, surfaceMass, bendingStiffness, longitudinalSpeed, shearSpeed, mass: surfaceMass * area };
+}
+
+const SEA_PARAMETER_PRESETS = Object.freeze({
+  aluminumPlate: Object.freeze({ label: 'Aluminum skin panel', subsystem: 'plate-bending', construction: 'homogeneous-panel', length: 2.4, width: 1.4, thickness: 0.003, modulus: 70e9, density: 2700, poisson: 0.33 }),
+  honeycombFairing: Object.freeze({ label: 'Honeycomb fairing bay', subsystem: 'honeycomb', construction: 'built-up-sandwich', length: 2.4, width: 1.4, thickness: 0.026, modulus: 70e9, density: 520, poisson: 0.31, faceThickness: 0.0006, coreThickness: 0.0248, coreShearModulus: 85e6 }),
+  cylindricalShell: Object.freeze({ label: 'Unstiffened cylindrical shell', subsystem: 'cylinder', construction: 'cylindrical-shell', length: 7.5, width: 11.3, radius: 1.8, thickness: 0.004, modulus: 70e9, density: 2700, poisson: 0.33 }),
+  acousticCavity: Object.freeze({ label: 'Payload acoustic cavity', subsystem: 'acoustic-3d', construction: 'acoustic-room', length: 7.5, width: 3.6, height: 3.6, soundSpeed: AIR_C, fluidDensity: AIR_RHO })
+});
+
+const LOSS_FACTOR_FAMILIES = Object.freeze({
+  'homogeneous-panel': { label: 'Bare homogeneous panel', points: [[63, 0.018], [125, 0.014], [250, 0.011], [500, 0.009], [1000, 0.007], [2000, 0.0055], [4000, 0.0045], [8000, 0.004]] },
+  'bare-sandwich': { label: 'Bare sandwich panel', points: [[63, 0.016], [125, 0.013], [250, 0.011], [500, 0.009], [1000, 0.008], [2000, 0.007], [4000, 0.006], [8000, 0.006]] },
+  'built-up-sandwich': { label: 'Built-up sandwich panel', points: [[63, 0.045], [125, 0.038], [250, 0.032], [500, 0.027], [1000, 0.023], [2000, 0.020], [4000, 0.018], [8000, 0.017]] },
+  'stowed-solar-array': { label: 'Stowed solar array', points: [[63, 0.090], [125, 0.080], [250, 0.068], [500, 0.058], [1000, 0.050], [2000, 0.043], [4000, 0.038], [8000, 0.035]] },
+  'cylindrical-shell': { label: 'Built-up cylindrical shell', points: [[63, 0.030], [125, 0.025], [250, 0.021], [500, 0.018], [1000, 0.015], [2000, 0.012], [4000, 0.010], [8000, 0.009]] }
+});
+
+function empiricalLossFactorState(input = {}) {
+  const frequency = positive(input.frequency, 1000);
+  const construction = Object.hasOwn(LOSS_FACTOR_FAMILIES, input.construction) ? input.construction : 'homogeneous-panel';
+  const family = LOSS_FACTOR_FAMILIES[construction];
+  const frequencies = logspace(63, 8000, 96);
+  const lossFactor = interpolateLog(family.points, frequency);
+  return {
+    frequency, construction, label: family.label, lossFactor,
+    dampingRatio: lossFactor / 2,
+    qFactor: 1 / lossFactor,
+    frequencies,
+    curve: frequencies.map(value => interpolateLog(family.points, value)),
+    provenance: 'Empirical construction-family screen digitized as representative octave-band trends; replace with configuration-specific test data when available.'
+  };
+}
+
+function modalDensityAtlasState(input = {}) {
+  const frequency = positive(input.frequency, 1000);
+  const lossFactor = positive(input.lossFactor, 0.02);
+  const bandFraction = positive(input.bandFraction, 2 ** (1 / 6) - 2 ** (-1 / 6));
+  const type = String(input.type ?? 'plate-bending');
+  const boundary = String(input.boundary ?? 'simply-supported');
+  const properties = plateProperties(input);
+  const height = positive(input.height, 1.5);
+  const radius = positive(input.radius, properties.width / (2 * Math.PI));
+  const soundSpeed = positive(input.soundSpeed, AIR_C);
+  const omega = TAU * frequency;
+  let modalDensity = 0;
+  let waveSpeed = properties.longitudinalSpeed;
+  let dimension = 2;
+  let basis = '';
+  let transitionFrequency = null;
+
+  if (type === 'acoustic-1d') {
+    modalDensity = 2 * properties.length / soundSpeed;
+    waveSpeed = soundSpeed;
+    dimension = 1;
+    transitionFrequency = soundSpeed / (2 * Math.max(properties.width, height));
+    basis = 'One-dimensional pipe density n=2L/c';
+  } else if (type === 'acoustic-2d') {
+    modalDensity = 2 * Math.PI * frequency * properties.area / soundSpeed ** 2 + properties.perimeter / soundSpeed;
+    waveSpeed = soundSpeed;
+    dimension = 2;
+    transitionFrequency = soundSpeed / (2 * height);
+    basis = 'Two-dimensional rectangular acoustic Weyl density';
+  } else if (type === 'acoustic-3d') {
+    const volume = properties.area * height;
+    const surfaceArea = 2 * (properties.area + properties.length * height + properties.width * height);
+    const totalEdges = 4 * (properties.length + properties.width + height);
+    modalDensity = 4 * Math.PI * frequency ** 2 * volume / soundSpeed ** 3 + Math.PI * frequency * surfaceArea / (2 * soundSpeed ** 2) + totalEdges / (8 * soundSpeed);
+    waveSpeed = soundSpeed;
+    dimension = 3;
+    basis = 'Three-dimensional rectangular acoustic Weyl density with surface and edge corrections';
+  } else if (type === 'beam-bending') {
+    const crossWidth = positive(input.beamWidth, properties.width);
+    const area = crossWidth * properties.thickness;
+    const inertia = crossWidth * properties.thickness ** 3 / 12;
+    const radiusGyration = Math.sqrt(inertia / area);
+    modalDensity = properties.length / Math.sqrt(2 * Math.PI * frequency * radiusGyration * Math.sqrt(properties.modulus / properties.density));
+    const k = (properties.density * area * omega ** 2 / (properties.modulus * inertia)) ** 0.25;
+    waveSpeed = omega / k;
+    dimension = 1;
+    basis = 'Euler–Bernoulli beam bending modal density';
+  } else if (type === 'beam-longitudinal') {
+    modalDensity = 2 * properties.length / Math.sqrt(properties.modulus / properties.density);
+    waveSpeed = Math.sqrt(properties.modulus / properties.density);
+    dimension = 1;
+    basis = 'Longitudinal beam mode spacing';
+  } else if (type === 'plate-inplane') {
+    modalDensity = properties.area * omega * (1 / properties.longitudinalSpeed ** 2 + 1 / properties.shearSpeed ** 2);
+    waveSpeed = properties.longitudinalSpeed;
+    dimension = 2;
+    basis = 'Two-dimensional in-plane longitudinal-plus-shear Weyl density';
+  } else if (type === 'circular-plate') {
+    const rectangular = properties.area / 2 * Math.sqrt(properties.surfaceMass / properties.bendingStiffness);
+    modalDensity = 8 / Math.PI ** 2 * rectangular;
+    const k = (properties.surfaceMass * omega ** 2 / properties.bendingStiffness) ** 0.25;
+    waveSpeed = omega / k;
+    basis = 'Equal-area circular-plate correction applied to bending density';
+  } else if (type === 'honeycomb') {
+    const faceThickness = positive(input.faceThickness, 0.0006);
+    const coreThickness = positive(input.coreThickness, Math.max(properties.thickness - 2 * faceThickness, 0.001));
+    const coreShearModulus = positive(input.coreShearModulus, 85e6);
+    const shearStiffness = coreShearModulus * coreThickness * (1 + faceThickness / coreThickness) ** 2;
+    const sandwichBending = properties.modulus * faceThickness * (coreThickness + faceThickness) ** 2 / (2 * (1 - properties.poisson ** 2));
+    const term = (properties.surfaceMass ** 2 * omega ** 4 + 4 * properties.surfaceMass * omega ** 2 * shearStiffness ** 2 / sandwichBending) ** -0.5;
+    modalDensity = Math.PI * properties.area * properties.surfaceMass * frequency / shearStiffness * (1 + term * (properties.surfaceMass * omega ** 2 + 2 * shearStiffness ** 2 / sandwichBending));
+    const bendingK = (properties.surfaceMass * omega ** 2 / sandwichBending) ** 0.25;
+    const shearSpeed = Math.sqrt(shearStiffness / properties.surfaceMass);
+    waveSpeed = Math.min(omega / bendingK, shearSpeed);
+    transitionFrequency = shearStiffness / (TAU * Math.sqrt(properties.surfaceMass * sandwichBending));
+    basis = 'Shear-corrected honeycomb sandwich modal density';
+  } else if (type === 'cylinder') {
+    const longitudinalSpeed = properties.longitudinalSpeed;
+    const ringFrequency = longitudinalSpeed / (TAU * radius);
+    const ratio = frequency / ringFrequency;
+    const bandShape = ratio <= 0.48 ? 2.5 * Math.sqrt(ratio) : ratio <= 0.83 ? 3.6 * ratio : 2.4 * Math.sqrt(ratio) + 0.8 * ratio;
+    modalDensity = Math.max(1e-12, bandShape * properties.length / (Math.PI * properties.thickness * ringFrequency));
+    const k = (properties.surfaceMass * omega ** 2 / properties.bendingStiffness) ** 0.25;
+    waveSpeed = omega / k;
+    transitionFrequency = ringFrequency;
+    basis = 'Unstiffened-cylinder band-density screen referenced to ring frequency';
+  } else {
+    const baseOmegaDensity = properties.area / (4 * Math.PI) * Math.sqrt(properties.surfaceMass / properties.bendingStiffness);
+    const edgeScale = (properties.surfaceMass / properties.bendingStiffness) ** 0.25 * ((properties.length + properties.width) / Math.PI) / Math.sqrt(omega);
+    const coefficient = boundary === 'free' ? 0.5 : boundary === 'clamped' ? -0.5 : boundary === 'generic' ? 0 : -0.25;
+    modalDensity = TAU * Math.max(1e-12, baseOmegaDensity + coefficient * edgeScale);
+    const k = (properties.surfaceMass * omega ** 2 / properties.bendingStiffness) ** 0.25;
+    waveSpeed = omega / k;
+    basis = `${boundary.replaceAll('-', ' ')} rectangular-plate bending density with boundary correction`;
+  }
+
+  const bandwidth = frequency * bandFraction;
+  const averageSpacing = 1 / modalDensity;
+  const modesInBand = modalDensity * bandwidth;
+  const modalOverlap = modalDensity * lossFactor * frequency;
+  const wavelength = waveSpeed / frequency;
+  const frequencies = logspace(Math.max(10, frequency / 16), frequency * 16, 100);
+  const curve = frequencies.map(value => modalDensityAtlasStateNoCurve({ ...input, type, frequency: value }).modalDensity);
+  return {
+    type, boundary, frequency, lossFactor, bandFraction, bandwidth, modalDensity, averageSpacing,
+    modesInBand, modalOverlap, waveSpeed, wavelength, dimension, basis, transitionFrequency,
+    properties, frequencies, curve,
+    readiness: modesInBand >= 5 && modalOverlap >= 1 ? 'well-populated statistical band' : modesInBand >= 2 && modalOverlap >= 0.3 ? 'transitional statistical band' : 'sparse or weakly overlapping band'
+  };
+}
+
+function modalDensityAtlasStateNoCurve(input) {
+  const state = modalDensityAtlasStateCore(input);
+  return state;
+}
+
+function modalDensityAtlasStateCore(input = {}) {
+  /* Avoid recursive curve construction by asking the public model at one
+     frequency through the same equations with a private sentinel. */
+  if (input.__core) return input.__core;
+  const copy = { ...input };
+  const originalLogspace = copy.frequency;
+  // Re-evaluate with a compact inline call by temporarily using the public
+  // model's selected-frequency result and suppressing further curve creation.
+  return modalDensityScalar(copy, originalLogspace);
+}
+
+function modalDensityScalar(input, frequency) {
+  const stateInput = { ...input, frequency };
+  const properties = plateProperties(stateInput);
+  const type = String(stateInput.type ?? 'plate-bending');
+  const boundary = String(stateInput.boundary ?? 'simply-supported');
+  const f = positive(frequency, 1000);
+  const omega = TAU * f;
+  const height = positive(stateInput.height, 1.5);
+  const radius = positive(stateInput.radius, properties.width / (2 * Math.PI));
+  const soundSpeed = positive(stateInput.soundSpeed, AIR_C);
+  let modalDensity;
+  if (type === 'acoustic-1d') modalDensity = 2 * properties.length / soundSpeed;
+  else if (type === 'acoustic-2d') modalDensity = 2 * Math.PI * f * properties.area / soundSpeed ** 2 + properties.perimeter / soundSpeed;
+  else if (type === 'acoustic-3d') {
+    const volume = properties.area * height;
+    const surfaceArea = 2 * (properties.area + properties.length * height + properties.width * height);
+    const totalEdges = 4 * (properties.length + properties.width + height);
+    modalDensity = 4 * Math.PI * f ** 2 * volume / soundSpeed ** 3 + Math.PI * f * surfaceArea / (2 * soundSpeed ** 2) + totalEdges / (8 * soundSpeed);
+  } else if (type === 'beam-bending') {
+    const crossWidth = positive(stateInput.beamWidth, properties.width);
+    const area = crossWidth * properties.thickness;
+    const inertia = crossWidth * properties.thickness ** 3 / 12;
+    modalDensity = properties.length / Math.sqrt(2 * Math.PI * f * Math.sqrt(inertia / area) * Math.sqrt(properties.modulus / properties.density));
+  } else if (type === 'beam-longitudinal') modalDensity = 2 * properties.length / Math.sqrt(properties.modulus / properties.density);
+  else if (type === 'plate-inplane') modalDensity = properties.area * omega * (1 / properties.longitudinalSpeed ** 2 + 1 / properties.shearSpeed ** 2);
+  else if (type === 'circular-plate') modalDensity = 8 / Math.PI ** 2 * properties.area / 2 * Math.sqrt(properties.surfaceMass / properties.bendingStiffness);
+  else if (type === 'honeycomb') {
+    const faceThickness = positive(stateInput.faceThickness, 0.0006);
+    const coreThickness = positive(stateInput.coreThickness, Math.max(properties.thickness - 2 * faceThickness, 0.001));
+    const shearStiffness = positive(stateInput.coreShearModulus, 85e6) * coreThickness * (1 + faceThickness / coreThickness) ** 2;
+    const bending = properties.modulus * faceThickness * (coreThickness + faceThickness) ** 2 / (2 * (1 - properties.poisson ** 2));
+    const term = (properties.surfaceMass ** 2 * omega ** 4 + 4 * properties.surfaceMass * omega ** 2 * shearStiffness ** 2 / bending) ** -0.5;
+    modalDensity = Math.PI * properties.area * properties.surfaceMass * f / shearStiffness * (1 + term * (properties.surfaceMass * omega ** 2 + 2 * shearStiffness ** 2 / bending));
+  } else if (type === 'cylinder') {
+    const ringFrequency = properties.longitudinalSpeed / (TAU * radius);
+    const ratio = f / ringFrequency;
+    const bandShape = ratio <= 0.48 ? 2.5 * Math.sqrt(ratio) : ratio <= 0.83 ? 3.6 * ratio : 2.4 * Math.sqrt(ratio) + 0.8 * ratio;
+    modalDensity = bandShape * properties.length / (Math.PI * properties.thickness * ringFrequency);
+  } else {
+    const base = properties.area / (4 * Math.PI) * Math.sqrt(properties.surfaceMass / properties.bendingStiffness);
+    const edge = (properties.surfaceMass / properties.bendingStiffness) ** 0.25 * ((properties.length + properties.width) / Math.PI) / Math.sqrt(omega);
+    const coefficient = boundary === 'free' ? 0.5 : boundary === 'clamped' ? -0.5 : boundary === 'generic' ? 0 : -0.25;
+    modalDensity = TAU * Math.max(1e-12, base + coefficient * edge);
+  }
+  return { modalDensity: Math.max(1e-12, modalDensity) };
+}
+
+function radiationEfficiencyAtlasState(input = {}) {
+  const model = String(input.model ?? 'baffled-panel');
+  const frequency = positive(input.frequency, 1000);
+  const fluidDensity = positive(input.fluidDensity, AIR_RHO);
+  const soundSpeed = positive(input.soundSpeed, AIR_C);
+  const lossFactor = positive(input.lossFactor, 0.02);
+  const properties = plateProperties(input);
+  const omega = TAU * frequency;
+  const criticalFrequency = soundSpeed ** 2 / TAU * Math.sqrt(properties.surfaceMass / properties.bendingStiffness);
+  const fundamentalFrequency = Math.sqrt(properties.bendingStiffness / properties.surfaceMass) * ((Math.PI / properties.length) ** 2 + (Math.PI / properties.width) ** 2) / TAU;
+  const ringFrequency = properties.longitudinalSpeed / (TAU * positive(input.radius, 1.8));
+  const boundaryFactor = String(input.boundary ?? 'simply-supported') === 'clamped' ? 2 : 1;
+
+  const baffled = f => {
+    const xi = Math.sqrt(Math.min(f / criticalFrequency, 0.999999));
+    if (f < fundamentalFrequency) return 4 * properties.area * f ** 2 / soundSpeed ** 2;
+    if (f < 0.99 * criticalFrequency) {
+      const root = Math.sqrt(Math.max(1e-12, 1 - xi ** 2));
+      const delta1 = (((1 - xi ** 2) * Math.log((1 + xi) / Math.max(1e-12, 1 - xi)) + 2 * xi) / Math.max(root ** 3, 1e-12)) / (4 * Math.PI ** 2);
+      const delta2 = f < criticalFrequency / 2 ? Math.max(0, 4 / Math.PI ** 4 * (1 - 2 * xi ** 2) / Math.max(xi * root, 1e-12)) : 0;
+      return boundaryFactor * (properties.perimeter * soundSpeed / (criticalFrequency * properties.area) * delta1 + 2 * soundSpeed ** 2 / (criticalFrequency ** 2 * properties.area) * delta2);
+    }
+    if (f <= 1.01 * criticalFrequency) return Math.sqrt(properties.length * criticalFrequency / soundSpeed) + Math.sqrt(properties.width * criticalFrequency / soundSpeed);
+    return 1 / Math.sqrt(Math.max(1e-12, 1 - criticalFrequency / f));
+  };
+
+  const free = f => {
+    const breakFrequency = criticalFrequency + 5 * soundSpeed / properties.perimeter;
+    if (f <= breakFrequency) return properties.perimeter * soundSpeed / (Math.PI ** 2 * properties.area * criticalFrequency) * Math.sqrt(f / criticalFrequency);
+    return 1 / Math.sqrt(Math.max(1e-12, 1 - criticalFrequency / f));
+  };
+
+  const evaluate = f => {
+    const modal = model === 'free-panel' ? free(f) : baffled(f);
+    if (model === 'honeycomb') {
+      const phaseSpeed = (properties.bendingStiffness / properties.surfaceMass) ** 0.25 * Math.sqrt(TAU * f);
+      const ratio = phaseSpeed / soundSpeed;
+      return ratio < 1.5 ? 0.47 * ratio ** 2.24 : 1;
+    }
+    if (model === 'ribbed-panel') {
+      const ribLength = Math.max(0, number(input.ribLength, 8));
+      const ratio = f / criticalFrequency;
+      const g3 = ratio ** 2 / (1 + ratio ** 2);
+      const panelResistance = fluidDensity * soundSpeed * properties.area * modal;
+      const ribResistance = fluidDensity * soundSpeed * Math.sqrt(soundSpeed ** 2 / (criticalFrequency * f)) * g3 * ribLength;
+      return (panelResistance + ribResistance) / (fluidDensity * soundSpeed * properties.area);
+    }
+    if (model === 'cylindrical-shell') {
+      const base = Math.max(0.1, baffled(f));
+      const ringPeak = 1.8 * Math.exp(-0.5 * (Math.log2(f / ringFrequency) / 0.32) ** 2);
+      const criticalPeak = 1.2 * Math.exp(-0.5 * (Math.log2(f / criticalFrequency) / 0.28) ** 2);
+      const lowSlope = f < ringFrequency ? 0.1 * (f / ringFrequency) ** (5 / 6) : 0;
+      return Math.max(lowSlope, base + ringPeak + criticalPeak);
+    }
+    if (model === 'forced-field') {
+      const pointImpedance = positive(input.pointImpedance, 5000);
+      const reverberationTime = positive(input.reverberationTime, 0.25);
+      const forced = 13.8 * pointImpedance / (TAU * soundSpeed ** 2 * properties.surfaceMass * reverberationTime);
+      return modal + forced;
+    }
+    return modal;
+  };
+
+  const modalEfficiency = Math.max(1e-9, evaluate(frequency));
+  const baseModal = Math.max(1e-9, model === 'free-panel' ? free(frequency) : baffled(frequency));
+  const forcedEfficiency = model === 'forced-field' ? Math.max(0, modalEfficiency - baseModal) : 0;
+  const radiationResistance = fluidDensity * soundSpeed * properties.area * modalEfficiency;
+  const panelAirClf = radiationResistance / (properties.mass * omega);
+  const frequencies = logspace(Math.max(10, frequency / 16), frequency * 16, 120);
+  return {
+    model, frequency, fluidDensity, soundSpeed, lossFactor, properties, criticalFrequency, fundamentalFrequency,
+    ringFrequency, modalEfficiency, forcedEfficiency, totalEfficiency: modalEfficiency, radiationResistance,
+    panelAirClf, frequencies, curve: frequencies.map(evaluate),
+    regime: frequency < fundamentalFrequency ? 'below the first panel mode' : frequency < 0.99 * criticalFrequency ? 'subcritical radiation' : frequency <= 1.01 * criticalFrequency ? 'coincidence transition' : 'supercritical radiation'
+  };
+}
+
+function drivingPointImpedanceState(input = {}) {
+  const model = String(input.model ?? 'plate-center');
+  const frequency = positive(input.frequency, 1000);
+  const properties = plateProperties(input);
+  const radius = positive(input.radius, 1.8);
+  const omega = TAU * frequency;
+  const modalDensity = positive(input.modalDensity, properties.area / 2 * Math.sqrt(properties.surfaceMass / properties.bendingStiffness));
+  let impedance;
+  let basis;
+  let firstFrequency = null;
+  let ringFrequency = properties.longitudinalSpeed / (TAU * radius);
+  if (model === 'plate-edge') {
+    impedance = 3.5 * Math.sqrt(properties.bendingStiffness * properties.surfaceMass);
+    basis = 'Thin plate, force at an edge';
+  } else if (model === 'rod-longitudinal') {
+    const sectionArea = positive(input.sectionArea, properties.width * properties.thickness);
+    impedance = sectionArea * Math.sqrt(properties.modulus * properties.density);
+    basis = 'Semi-infinite rod longitudinal impedance';
+  } else if (model === 'cylindrical-shell') {
+    firstFrequency = 0.375 / properties.length * Math.sqrt(properties.modulus * properties.thickness / (properties.density * radius));
+    if (frequency <= firstFrequency) impedance = 2.5 * properties.modulus * properties.thickness * Math.sqrt(radius / properties.length) * (properties.thickness / radius) ** 1.25 / omega;
+    else if (frequency <= ringFrequency) impedance = 4 / Math.sqrt(3) * properties.density * properties.thickness ** 2 * Math.sqrt(properties.modulus / (properties.density * radius)) * (properties.modulus / properties.density) ** 0.25 / Math.sqrt(omega);
+    else impedance = 4 / Math.sqrt(3) * properties.thickness ** 2 * Math.sqrt(properties.modulus * properties.density);
+    basis = 'Unstiffened cylindrical-shell piecewise point impedance';
+  } else if (model === 'high-frequency-general') {
+    const mass = positive(input.mass, properties.mass);
+    const mobility = modalDensity / (4 * mass);
+    impedance = 1 / mobility;
+    basis = 'General high-frequency mobility Y=n/(4M)';
+  } else {
+    impedance = 8 * Math.sqrt(properties.bendingStiffness * properties.surfaceMass);
+    basis = 'Thin plate, force at the middle point';
+  }
+  const mobility = 1 / positive(impedance, 1);
+  const inputForce = positive(input.forceRms, 10);
+  const inputPower = 0.5 * inputForce ** 2 * mobility;
+  const frequencies = logspace(Math.max(10, frequency / 16), frequency * 16, 100);
+  const mobilityCurve = frequencies.map(value => {
+    if (model !== 'cylindrical-shell') return mobility;
+    return drivingPointImpedanceStateNoCurve({ ...input, model, frequency: value }).mobility;
+  });
+  return { model, frequency, properties, radius, modalDensity, impedance, mobility, conductance: mobility, inputForce, inputPower, basis, firstFrequency, ringFrequency, frequencies, mobilityCurve };
+}
+
+function drivingPointImpedanceStateNoCurve(input = {}) {
+  const model = String(input.model ?? 'plate-center');
+  const frequency = positive(input.frequency, 1000);
+  const properties = plateProperties(input);
+  const radius = positive(input.radius, 1.8);
+  const omega = TAU * frequency;
+  const ringFrequency = properties.longitudinalSpeed / (TAU * radius);
+  let impedance;
+  if (model === 'cylindrical-shell') {
+    const first = 0.375 / properties.length * Math.sqrt(properties.modulus * properties.thickness / (properties.density * radius));
+    if (frequency <= first) impedance = 2.5 * properties.modulus * properties.thickness * Math.sqrt(radius / properties.length) * (properties.thickness / radius) ** 1.25 / omega;
+    else if (frequency <= ringFrequency) impedance = 4 / Math.sqrt(3) * properties.density * properties.thickness ** 2 * Math.sqrt(properties.modulus / (properties.density * radius)) * (properties.modulus / properties.density) ** 0.25 / Math.sqrt(omega);
+    else impedance = 4 / Math.sqrt(3) * properties.thickness ** 2 * Math.sqrt(properties.modulus * properties.density);
+  } else impedance = 1;
+  return { mobility: 1 / positive(impedance, 1) };
+}
+
+function clfMechanismState(input = {}) {
+  const mechanism = String(input.mechanism ?? 'panel-air');
+  const frequency = positive(input.frequency, 1000);
+  const omega = TAU * frequency;
+  const n1 = positive(input.modalDensity1, 0.04);
+  const n2 = positive(input.modalDensity2, 0.18);
+  const properties = plateProperties(input);
+  const properties2 = plateProperties({ ...input, thickness: positive(input.thickness2, 0.004), density: positive(input.density2, 2700), modulus: positive(input.modulus2, 70e9) });
+  const transmission = clamp(number(input.transmission, 0.15), 0, 1);
+  const junctionLength = positive(input.junctionLength, properties.width);
+  const points = Math.max(1, Math.round(number(input.pointCount, 12)));
+  const angle = clamp(number(input.junctionAngle, 90), 0, 180) * Math.PI / 180;
+  let forward;
+  let coefficient = transmission;
+  let basis;
+
+  if (mechanism === 'l-beam') {
+    const phaseSpeed = (properties.bendingStiffness / properties.surfaceMass) ** 0.25 * Math.sqrt(omega);
+    const beta = phaseSpeed / properties.longitudinalSpeed;
+    const family = String(input.waveConversion ?? 'bb');
+    const denominator = 9 * beta ** 2 + 6 * beta + 2;
+    coefficient = family === 'll' ? beta ** 2 / denominator : family === 'bl' ? (8 * beta ** 2 + 5 * beta) / denominator : (2 * beta ** 2 + 1) / denominator;
+    forward = phaseSpeed * coefficient / (omega * properties.length);
+    basis = `L-beam ${family.toUpperCase()} wave conversion`;
+  } else if (mechanism === 'l-plates') {
+    const phaseSpeed = (properties.bendingStiffness / properties.surfaceMass) ** 0.25 * Math.sqrt(omega);
+    const psi = properties.density * properties.longitudinalSpeed ** 1.5 * properties.thickness ** 2.5 / (properties2.density * properties2.longitudinalSpeed ** 1.5 * properties2.thickness ** 2.5);
+    const normal = 2 / (Math.sqrt(psi) + 1 / Math.sqrt(psi)) ** 2;
+    const thicknessRatio = properties.thickness / properties2.thickness;
+    coefficient = normal * 2.754 * thicknessRatio / (1 + 3.24 * thicknessRatio) * Math.sin(angle) ** 2;
+    forward = 2 / Math.PI * phaseSpeed * junctionLength / (omega * properties.area) * coefficient;
+    basis = 'L-shaped plate junction with thickness/impedance mismatch';
+  } else if (mechanism === 'point-bridge') {
+    const z1 = positive(input.impedance1, 4000);
+    const z2 = positive(input.impedance2, 7500);
+    const nOmega = n1 / TAU;
+    coefficient = 4 * z1 * z2 / (z1 + z2) ** 2;
+    forward = points * 2 / (Math.PI * omega * nOmega) * z1 * z2 / (z1 + z2) ** 2;
+    basis = 'Point bridge between real mechanical impedances';
+  } else if (mechanism === 'bolted-plates') {
+    const cL1 = properties.longitudinalSpeed;
+    const cL2 = properties2.longitudinalSpeed;
+    const a = properties2.density * properties2.thickness ** 2 * cL2;
+    const b = properties.density * properties.thickness ** 2 * cL1;
+    forward = 4 * points / (properties.area * Math.sqrt(3)) * (properties.thickness * cL1 / omega) * (a * b) / (a + b) ** 2;
+    coefficient = 4 * a * b / (a + b) ** 2;
+    basis = 'Discrete bolted plate junction';
+  } else if (mechanism === 'line-joint') {
+    const phaseSpeed = (properties.bendingStiffness / properties.surfaceMass) ** 0.25 * Math.sqrt(omega);
+    const groupSpeed = 2 * phaseSpeed;
+    const thicknessRatio = properties2.thickness / properties.thickness;
+    coefficient = 2 / (thicknessRatio ** -1.25 + thicknessRatio ** 1.25);
+    forward = groupSpeed * junctionLength / (omega * Math.PI * properties.area) * coefficient;
+    basis = 'Same-material plate line joint';
+  } else if (mechanism === 'fairing-masslaw') {
+    const volume = positive(input.volume, 60);
+    const transmissionLoss = number(input.transmissionLoss, 28);
+    coefficient = 10 ** (-transmissionLoss / 10);
+    forward = AIR_C * properties.area / (8 * Math.PI * frequency * volume) * coefficient;
+    basis = 'Nonresonant fairing mass-law acoustic path';
+  } else {
+    const radiationEfficiency = positive(input.radiationEfficiency, 0.35);
+    const resistance = AIR_RHO * AIR_C * properties.area * radiationEfficiency;
+    forward = resistance / (properties.mass * omega);
+    coefficient = radiationEfficiency;
+    basis = 'Panel-to-acoustic-space radiation coupling';
+  }
+  forward = Math.max(0, forward);
+  const reverse = forward * n1 / n2;
+  const reciprocityResidual = forward * n1 / Math.max(reverse * n2, 1e-30) - 1;
+  return { mechanism, frequency, n1, n2, forward, reverse, coefficient, basis, properties, properties2, junctionLength, points, reciprocityResidual, couplingToLossRatio: forward / positive(input.internalLossFactor, 0.02) };
+}
+
+function tblConvectionState(input = {}) {
+  const model = String(input.model ?? 'totaro');
+  const frequency = positive(input.frequency, 1000);
+  const freeStreamVelocity = positive(input.freeStreamVelocity, 300);
+  const displacementThickness = positive(input.displacementThickness, 0.012);
+  const fixedFraction = clamp(number(input.fixedFraction, 0.75), 0.1, 1.2);
+  const evaluateFraction = f => {
+    const reducedFrequency = TAU * f * displacementThickness / freeStreamVelocity;
+    if (model === 'constant') return fixedFraction;
+    if (model === 'attached-envelope') return clamp(0.68 + 0.12 * Math.exp(-0.7 * reducedFrequency), 0.55, 0.82);
+    if (model === 'separated-envelope') return clamp(0.42 + 0.16 * Math.exp(-0.35 * reducedFrequency), 0.35, 0.62);
+    return 0.6 + 0.4 * Math.exp(-2.2 * reducedFrequency);
+  };
+  const convectionFraction = evaluateFraction(frequency);
+  const convectionVelocity = convectionFraction * freeStreamVelocity;
+  const convectiveWavenumber = TAU * frequency / convectionVelocity;
+  const frequencies = logspace(20, 10000, 120);
+  const fractions = frequencies.map(evaluateFraction);
+  return { model, frequency, freeStreamVelocity, displacementThickness, fixedFraction, convectionFraction, convectionVelocity, convectiveWavenumber, convectiveWavelength: convectionVelocity / frequency, reducedFrequency: TAU * frequency * displacementThickness / freeStreamVelocity, frequencies, fractions, velocities: fractions.map(value => value * freeStreamVelocity), flowRegime: model.includes('separated') ? 'separated-flow screening envelope' : model.includes('attached') ? 'attached-boundary-layer screening envelope' : model === 'totaro' ? 'Totaro frequency-dependent relation' : 'constant convection fraction' };
+}
+
+function equivalentPowerInjectionState(input = {}) {
+  const source = String(input.source ?? 'diffuse');
+  const frequency = positive(input.frequency, 1000);
+  const bandwidth = positive(input.bandwidth, frequency * (2 ** (1 / 6) - 2 ** (-1 / 6)));
+  const pressureRms = positive(input.pressureRms, 200);
+  const pressureSquared = pressureRms ** 2;
+  const properties = plateProperties(input);
+  const modalDensity = positive(input.modalDensity, properties.area / 2 * Math.sqrt(properties.surfaceMass / properties.bendingStiffness));
+  const radiationEfficiency = positive(input.radiationEfficiency, 0.3);
+  const convectionVelocity = positive(input.convectionVelocity, 220);
+  const phaseSpeed = (properties.bendingStiffness / properties.surfaceMass) ** 0.25 * Math.sqrt(TAU * frequency);
+  const supportLength = positive(input.supportLength, properties.length);
+  const a1 = positive(input.a1, 1);
+  const a2 = positive(input.a2, 1);
+  const alphaX = positive(input.alphaX, 0.12);
+  const alphaZ = positive(input.alphaZ, 0.7);
+  const omega = TAU * frequency;
+  const correlationLengthX = convectionVelocity / (alphaX * omega);
+  const correlationLengthZ = convectionVelocity / (alphaZ * omega);
+  const coincidenceFrequency = convectionVelocity ** 2 / TAU * Math.sqrt(properties.surfaceMass / properties.bendingStiffness);
+  const coincidenceRatio = frequency / coincidenceFrequency;
+  const corcosAcceptance = 1 / (1 + (Math.log(Math.max(coincidenceRatio, 1e-12)) / 0.65) ** 2);
+  let injectedPower;
+  let basis;
+  if (source === 'tbl-slow') {
+    injectedPower = properties.area * pressureSquared / (Math.PI ** 2 * frequency * properties.surfaceMass) * (convectionVelocity / phaseSpeed);
+    basis = 'Lyon–DeJong hydrodynamically slow TBL power';
+  } else if (source === 'tbl-fast') {
+    injectedPower = properties.area * pressureSquared / (TAU * frequency * properties.surfaceMass) * (convectionVelocity / phaseSpeed) ** 3 * (a1 / 6 + a2 * (convectionVelocity / (TAU * frequency * supportLength)) ** 2);
+    basis = 'Lyon–DeJong hydrodynamically fast TBL power';
+  } else if (source === 'corcos') {
+    const pressurePsd = pressureSquared / bandwidth;
+    injectedPower = convectionVelocity ** 2 * properties.area * pressurePsd * bandwidth / (2 * alphaX * alphaZ * Math.PI * Math.sqrt(properties.surfaceMass * properties.bendingStiffness) * omega ** 2) * corcosAcceptance;
+    basis = 'Corcos frequency-averaged injected-power screen';
+  } else if (source === 'point-force') {
+    const forceRms = positive(input.forceRms, 10);
+    const conductance = positive(input.conductance, 1e-4);
+    injectedPower = 0.5 * forceRms ** 2 * conductance;
+    basis = 'Point-force input power from drive-point conductance';
+  } else {
+    const modalSpacing = 1 / modalDensity;
+    injectedPower = AIR_C ** 2 * radiationEfficiency * pressureSquared / (4 * Math.PI * frequency ** 2 * modalSpacing * properties.surfaceMass);
+    basis = 'Diffuse acoustic field equivalent power';
+  }
+  const incidentAcousticPower = pressureSquared * properties.area / (4 * AIR_RHO * AIR_C);
+  const acceptance = injectedPower / Math.max(incidentAcousticPower, 1e-30);
+  const velocities = logspace(40, 500, 100);
+  const velocityCurve = velocities.map(value => {
+    if (source === 'corcos') {
+      const fc = value ** 2 / TAU * Math.sqrt(properties.surfaceMass / properties.bendingStiffness);
+      const accept = 1 / (1 + (Math.log(Math.max(frequency / fc, 1e-12)) / 0.65) ** 2);
+      return value ** 2 * properties.area * (pressureSquared / bandwidth) * bandwidth / (2 * alphaX * alphaZ * Math.PI * Math.sqrt(properties.surfaceMass * properties.bendingStiffness) * omega ** 2) * accept;
+    }
+    return injectedPower;
+  });
+  return { source, frequency, bandwidth, pressureRms, pressureSquared, properties, modalDensity, radiationEfficiency, convectionVelocity, phaseSpeed, supportLength, a1, a2, alphaX, alphaZ, correlationLengthX, correlationLengthZ, coincidenceFrequency, coincidenceRatio, corcosAcceptance, injectedPower, incidentAcousticPower, acceptance, basis, velocities, velocityCurve, regime: source.startsWith('tbl') || source === 'corcos' ? (convectionVelocity > phaseSpeed ? 'convective field is faster than the selected bending phase speed' : 'convective field is slower than the selected bending phase speed') : source === 'point-force' ? 'localized mechanical power input' : 'diffuse-field resonant power input' };
+}
+
+function equipmentLoadingState(input = {}) {
+  const unloadedResponse = positive(input.unloadedResponse, 12);
+  const bareStructureMass = positive(input.bareStructureMass, 180);
+  const equipmentMass = Math.max(0, number(input.equipmentMass, 45));
+  const structureSurfaceMass = positive(input.structureSurfaceMass, 12);
+  const footprintArea = positive(input.footprintArea, 0.35);
+  const equipmentAreaDensity = equipmentMass / footprintArea;
+  const globalMeanSquareFactor = bareStructureMass / (bareStructureMass + equipmentMass);
+  const localMeanSquareFactor = structureSurfaceMass / (structureSurfaceMass + equipmentAreaDensity);
+  const globalResponse = unloadedResponse * Math.sqrt(globalMeanSquareFactor);
+  const localResponse = unloadedResponse * Math.sqrt(localMeanSquareFactor);
+  return { unloadedResponse, bareStructureMass, equipmentMass, structureSurfaceMass, footprintArea, equipmentAreaDensity, globalMeanSquareFactor, localMeanSquareFactor, globalResponse, localResponse, conservativeResponse: Math.max(globalResponse, localResponse), methodSpreadDb: 20 * Math.log10(Math.max(globalResponse, localResponse) / Math.max(Math.min(globalResponse, localResponse), 1e-30)), localMassRatio: equipmentAreaDensity / structureSurfaceMass, globalMassRatio: equipmentMass / bareStructureMass };
+}
+
+function seaResponseRecoveryState(input = {}) {
+  const kind = String(input.kind ?? 'structural');
+  const responseType = String(input.responseType ?? 'broadband');
+  const frequency = positive(input.frequency, 1000);
+  const energy = positive(input.energy, 0.02);
+  const mass = positive(input.mass, 120);
+  const volume = positive(input.volume, 45);
+  const fluidDensity = positive(input.fluidDensity, AIR_RHO);
+  const soundSpeed = positive(input.soundSpeed, AIR_C);
+  const modalDensity = positive(input.modalDensity, 0.04);
+  const lossFactor = positive(input.lossFactor, 0.02);
+  const bandwidth = positive(input.bandwidth, frequency * (2 ** (1 / 6) - 2 ** (-1 / 6)));
+  const dimension = clamp(Math.round(number(input.dimension, 2)), 1, 3);
+  const wavelength = positive(input.wavelength, soundSpeed / frequency);
+  const boundaryDistance = Math.max(0, number(input.boundaryDistance, wavelength));
+  const omega = TAU * frequency;
+  const velocityRms = kind === 'structural' ? Math.sqrt(energy / mass) : Math.sqrt(energy / (fluidDensity * volume));
+  const accelerationRms = omega * velocityRms;
+  const pressureRms = kind === 'acoustic' ? Math.sqrt(energy * fluidDensity * soundSpeed ** 2 / volume) : null;
+  const levelDb = pressureRms === null ? null : 20 * Math.log10(pressureRms / PREF);
+  const properties = plateProperties(input);
+  const bendingWavenumber = (properties.surfaceMass * omega ** 2 / properties.bendingStiffness) ** 0.25;
+  const displacementRms = velocityRms / omega;
+  const bendingStressRms = kind === 'structural' ? properties.modulus * properties.thickness / 2 * bendingWavenumber ** 2 * displacementRms : null;
+  const modalSpacing = 1 / modalDensity;
+  const participatingModes = Math.PI / 2 * frequency * lossFactor / modalSpacing;
+  const modeShapeMaximumSquared = 2 * dimension;
+  const pureToneMeanSquareRatio = Math.max(1, participatingModes * modeShapeMaximumSquared);
+  const broadbandMeanSquareRatio = Math.max(1, 1 + (Math.PI * lossFactor * frequency / (2 * modalSpacing) * modeShapeMaximumSquared - 1) * Math.PI * lossFactor * frequency / (2 * bandwidth));
+  const concentrationMeanSquareRatio = responseType === 'pure-tone' ? pureToneMeanSquareRatio : broadbandMeanSquareRatio;
+  const concentrationAmplitudeFactor = Math.sqrt(concentrationMeanSquareRatio);
+  const boundaryRegion = boundaryDistance < wavelength / 4;
+  return { kind, responseType, frequency, energy, mass, volume, fluidDensity, soundSpeed, modalDensity, lossFactor, bandwidth, dimension, wavelength, boundaryDistance, velocityRms, accelerationRms, pressureRms, levelDb, displacementRms, bendingStressRms, bendingWavenumber, modalSpacing, participatingModes, modeShapeMaximumSquared, pureToneMeanSquareRatio, broadbandMeanSquareRatio, concentrationMeanSquareRatio, concentrationAmplitudeFactor, localVelocityEstimate: velocityRms * concentrationAmplitudeFactor, localAccelerationEstimate: accelerationRms * concentrationAmplitudeFactor, localPressureEstimate: pressureRms === null ? null : pressureRms * concentrationAmplitudeFactor, boundaryRegion };
+}
+
+function installedFairingSeaState(input = {}) {
+  const frequency = positive(input.frequency, 1000);
+  const outsideLevel = number(input.outsideLevel, 145);
+  const area = positive(input.area, 55);
+  const interiorVolume = positive(input.interiorVolume, 75);
+  const exteriorVolume = positive(input.exteriorVolume, 150);
+  const surfaceMass = positive(input.surfaceMass, 8.5);
+  const shellModalDensity = positive(input.shellModalDensity, 0.045);
+  const shellLossFactor = positive(input.shellLossFactor, 0.018);
+  const radiationEfficiency = positive(input.radiationEfficiency, 0.35);
+  const blanketCoverage = clamp(number(input.blanketCoverage, 0.8), 0, 1);
+  const blanketInsertionLoss = Math.max(0, number(input.blanketInsertionLoss, 18));
+  const blanketAbsorption = clamp(number(input.blanketAbsorption, 0.65), 0, 1);
+  const equipmentMass = Math.max(0, number(input.equipmentMass, 250));
+  const leakAreaFraction = clamp(number(input.leakAreaFraction, 0.0005), 0, 0.2);
+  const omega = TAU * frequency;
+  const shellMass = surfaceMass * area + equipmentMass;
+  const exteriorLength = Math.cbrt(exteriorVolume);
+  const interiorLength = Math.cbrt(interiorVolume);
+  const acousticDensity = length => 4 * Math.PI * length ** 3 * frequency ** 2 / AIR_C ** 3 + 3 * Math.PI * length ** 2 * frequency / AIR_C ** 2 + 12 * length / (8 * AIR_C);
+  const exteriorModalDensity = acousticDensity(exteriorLength);
+  const interiorModalDensity = acousticDensity(interiorLength);
+  const exteriorLoss = positive(input.exteriorLossFactor, 0.04);
+  const baselineInteriorLoss = positive(input.interiorLossFactor, 0.018);
+  const addedAbsorptionLoss = AIR_C * blanketCoverage * area * blanketAbsorption / (4 * omega * interiorVolume);
+  const interiorLoss = baselineInteriorLoss + addedAbsorptionLoss;
+  const panelAirClf = AIR_RHO * AIR_C * area * radiationEfficiency / (shellMass * omega);
+  const componentMassLawTl = Math.max(0, 20 * Math.log10(Math.max(1, omega * surfaceMass / (2 * AIR_RHO * AIR_C))) - 5);
+  const blanketTransmission = 10 ** (-blanketInsertionLoss / 10);
+  const coverageTransmission = (1 - blanketCoverage) + blanketCoverage * blanketTransmission;
+  const panelTransmission = 10 ** (-componentMassLawTl / 10);
+  const effectiveTransmission = panelTransmission * coverageTransmission + leakAreaFraction;
+  const directClf = AIR_C * area / (8 * Math.PI * frequency * exteriorVolume) * effectiveTransmission;
+  const outsidePressure = PREF * 10 ** (outsideLevel / 20);
+  const targetExteriorEnergy = exteriorVolume * outsidePressure ** 2 / (AIR_RHO * AIR_C ** 2);
+  const sourcePower = omega * exteriorLoss * targetExteriorEnergy;
+  const subsystems = [
+    { name: 'Exterior acoustic field', kind: 'acoustic', modalDensity: exteriorModalDensity, lossFactor: exteriorLoss, volume: exteriorVolume, density: AIR_RHO, soundSpeed: AIR_C, inputPower: sourcePower },
+    { name: 'Fairing shell and installed equipment', kind: 'structural', modalDensity: shellModalDensity, lossFactor: shellLossFactor, mass: shellMass, inputPower: 0 },
+    { name: 'Blanketed payload cavity', kind: 'acoustic', modalDensity: interiorModalDensity, lossFactor: interiorLoss, volume: interiorVolume, density: AIR_RHO, soundSpeed: AIR_C, inputPower: 0 }
+  ];
+  const links = [
+    { i: 0, j: 1, forward: panelAirClf * shellModalDensity / exteriorModalDensity },
+    { i: 1, j: 2, forward: panelAirClf },
+    { i: 0, j: 2, forward: directClf }
+  ];
+  const network = seaNetworkState({ frequency, subsystems, links, sourceIndex: 0, receiverIndex: 2 });
+  const sourceLevel = network.subsystemResults[0].levelDb;
+  const receiverLevel = network.subsystemResults[2].levelDb;
+  const installedNoiseReduction = sourceLevel - receiverLevel;
+  return { frequency, outsideLevel, area, interiorVolume, exteriorVolume, surfaceMass, shellModalDensity, shellLossFactor, radiationEfficiency, blanketCoverage, blanketInsertionLoss, blanketAbsorption, equipmentMass, leakAreaFraction, shellMass, exteriorModalDensity, interiorModalDensity, exteriorLoss, baselineInteriorLoss, addedAbsorptionLoss, interiorLoss, panelAirClf, componentMassLawTl, blanketTransmission, coverageTransmission, panelTransmission, effectiveTransmission, directClf, sourcePower, network, sourceLevel, receiverLevel, installedNoiseReduction, shellVelocity: network.subsystemResults[1].velocityRms, directPower: network.powerFlows.find(flow => flow.i === 0 && flow.j === 2)?.net ?? 0, resonantPower: network.powerFlows.find(flow => flow.i === 0 && flow.j === 1)?.net ?? 0 };
+}
+
+function seaParameterWorkbenchState(input = {}) {
+  const presetKey = Object.hasOwn(SEA_PARAMETER_PRESETS, input.preset) ? input.preset : 'honeycombFairing';
+  const preset = SEA_PARAMETER_PRESETS[presetKey];
+  const frequency = positive(input.frequency, 1000);
+  const lossSource = String(input.lossSource ?? 'empirical');
+  const source = String(input.source ?? 'diffuse');
+  const common = { ...preset, ...input, type: input.type ?? preset.subsystem, frequency };
+  const modal = modalDensityAtlasState(common);
+  const empirical = empiricalLossFactorState({ frequency, construction: input.construction ?? preset.construction });
+  const selectedLossFactor = lossSource === 'measured' ? positive(input.measuredLossFactor, empirical.lossFactor) : lossSource === 'assumed' ? positive(input.assumedLossFactor, 0.02) : empirical.lossFactor;
+  const acoustic = preset.subsystem === 'acoustic-3d';
+  let radiation = null;
+  let coupling = null;
+  let injection = null;
+  if (!acoustic) {
+    const radiationModel = preset.subsystem === 'honeycomb' ? 'honeycomb' : preset.subsystem === 'cylinder' ? 'cylindrical-shell' : 'baffled-panel';
+    radiation = radiationEfficiencyAtlasState({ ...common, model: radiationModel, lossFactor: selectedLossFactor });
+    coupling = clfMechanismState({ ...common, mechanism: 'panel-air', modalDensity1: modal.modalDensity, modalDensity2: positive(input.acousticModalDensity, 0.18), radiationEfficiency: radiation.totalEfficiency, internalLossFactor: selectedLossFactor });
+    const convection = tblConvectionState({ frequency, model: input.convectionModel ?? 'totaro', freeStreamVelocity: input.freeStreamVelocity, displacementThickness: input.displacementThickness });
+    injection = equivalentPowerInjectionState({ ...common, source, modalDensity: modal.modalDensity, radiationEfficiency: radiation.totalEfficiency, pressureRms: input.pressureRms, forceRms: input.forceRms, conductance: input.conductance, convectionVelocity: convection.convectionVelocity });
+  }
+  const externalPower = acoustic ? positive(input.externalPower, 1) : injection.injectedPower;
+  const totalLoss = selectedLossFactor + (coupling?.forward ?? 0);
+  const energy = externalPower / (TAU * frequency * Math.max(totalLoss, 1e-12));
+  const recovery = seaResponseRecoveryState({ ...common, kind: acoustic ? 'acoustic' : 'structural', energy, mass: modal.properties.mass, volume: positive(input.height, preset.height ?? 1.5) * modal.properties.area, modalDensity: modal.modalDensity, lossFactor: totalLoss, wavelength: modal.wavelength, responseType: input.responseType ?? 'broadband' });
+  const sourceScores = { measured: 0.92, empirical: 0.7, assumed: 0.45 };
+  const confidenceScore = 100 * sourceScores[lossSource in sourceScores ? lossSource : 'empirical'] * (modal.modesInBand >= 5 ? 1 : modal.modesInBand >= 2 ? 0.75 : 0.5) * (modal.modalOverlap >= 1 ? 1 : modal.modalOverlap >= 0.3 ? 0.8 : 0.55);
+  return { presetKey, preset, frequency, lossSource, source, modal, empirical, selectedLossFactor, acoustic, radiation, coupling, injection, externalPower, totalLoss, energy, recovery, confidenceScore, provenance: [
+    ['Geometry and material', 'Entered or launch-vehicle preset', preset.label],
+    ['Modal density', 'Analytical', modal.basis],
+    ['Dissipation loss', lossSource, lossSource === 'empirical' ? empirical.label : `${lossSource} value`],
+    ['Radiation efficiency', acoustic ? 'Not applicable' : 'Analytical/empirical screen', acoustic ? 'Acoustic subsystem' : radiation.model],
+    ['Coupling loss factor', acoustic ? 'Not applicable' : 'Derived', acoustic ? 'Acoustic subsystem' : coupling.basis],
+    ['External power', acoustic ? 'Entered' : 'Derived', acoustic ? 'Direct band power' : injection.basis],
+    ['Recovered response', 'Derived from subsystem energy', acoustic ? 'Pressure and SPL' : 'Velocity, acceleration, stress, concentration']
+  ] };
+}
+
+return {SEA_PARAMETER_PRESETS,empiricalLossFactorState,modalDensityAtlasState,radiationEfficiencyAtlasState,drivingPointImpedanceState,clfMechanismState,tblConvectionState,equivalentPowerInjectionState,equipmentLoadingState,seaResponseRecoveryState,installedFairingSeaState,seaParameterWorkbenchState};
+})();
+
 const __acs519Calculators=(()=>{
 const {SEA_MEDIA,seaNetworkState,doubleWindowSeaState,modalRadiationState,besselJ1,struveH1,pistonRadiationState,shellAcousticsState,feBePlannerState,panelTransmissionState,orthotropicPanelState,lossFactorBudgetState,modalTestState,seaValidityState,doublePanelSeaState,khiePatchState,pipeNoiseState,waveMatchingState,drivenRadiationState,soundIntensityProbeState,dynamicStressEnvironmentState,launchAcousticSourceState,wetTankDynamicsState,qualificationTestState,ACS519_DEFAULTS}=__acs519Physics;
+const {empiricalLossFactorState}=__seaParameterPhysics;
 /* Calculators paired with the ACS 519 deep-dive modules and chapter expansions. */
 const stat = (label, value, unit = '', tone = '', note = '') => ({ label, value, unit, tone, note });
 const trace = (name, x, y, extra = {}) => ({ name, x, y, ...extra });
@@ -7688,6 +8546,7 @@ const acs519CalculatorDefinitions = {
     confidence: 'Exact conversions within light-damping single-band assumptions',
     inputs: [
       { key: 'frequency', label: 'Band or modal frequency', unit: 'Hz', type: 'number', default: 500, min: 0.1 },
+      { key: 'construction', label: 'Reference construction family', type: 'select', default: 'homogeneous-panel', options: [{ value: 'homogeneous-panel', label: 'Bare homogeneous panel' }, { value: 'bare-sandwich', label: 'Bare sandwich panel' }, { value: 'built-up-sandwich', label: 'Built-up sandwich panel' }, { value: 'stowed-solar-array', label: 'Stowed solar array' }, { value: 'cylindrical-shell', label: 'Built-up cylindrical shell' }] },
       { key: 'internal', label: 'Internal material loss factor', type: 'number', default: 0.012, min: 0 },
       { key: 'radiation', label: 'Radiation loss factor', type: 'number', default: 0.006, min: 0 },
       { key: 'joint', label: 'Joint / interface loss factor', type: 'number', default: 0.004, min: 0 },
@@ -7703,15 +8562,20 @@ const acs519CalculatorDefinitions = {
     example: 'If the total damping measured in air greatly exceeds the material-only estimate, radiation, joints, and attachments may dominate the flight configuration.',
     compute(values) {
       const state = lossFactorBudgetState({ frequency: values.frequency, internal: values.internal, radiation: values.radiation, joint: values.joint, fluid: values.fluid, coupling: values.coupling, measuredBandwidth: values.measured_bandwidth, decayTime: values.decay_time, inputPower: values.input_power, storedEnergy: values.stored_energy });
+      const reference = empiricalLossFactorState({ frequency: values.frequency, construction: values.construction });
       const estimates = [state.halfPowerEstimate, state.decayEstimate, state.powerInjectionEstimate];
       const spread = Math.max(...estimates) / Math.max(Math.min(...estimates), 1e-12);
+      const referenceRatio = state.internal / reference.lossFactor;
+      const warnings = [spread > 2 ? 'Half-power, decay, and power-injection estimates disagree by more than 2×; check modal overlap, spatial energy estimation, leakage, and non-exponential decay.' : 'Measurement methods are reasonably consistent, but the total still depends on the tested boundary and installation state.'];
+      if (referenceRatio > 2.5 || referenceRatio < 0.4) warnings.push(`The entered internal loss differs from the ${reference.label.toLowerCase()} reference by ${Math.max(referenceRatio, 1 / referenceRatio).toFixed(1)}×. Treat the empirical family as a sensitivity bound, not a replacement for installed data.`);
       return {
-        values: [stat('Total loss factor', state.total), stat('Equivalent damping ratio', state.dampingRatio), stat('Equivalent Q', state.qFactor), stat('Predicted half-power bandwidth', state.halfPowerBandwidth, 'Hz'), stat('Predicted T60', state.t60, 's'), stat('Measurement-method spread', spread, '×', spread > 2 ? 'warn' : 'good')],
-        interpretation: `The entered loss paths sum to η=${state.total.toFixed(4)}. The independent measurement estimates span ${Math.min(...estimates).toFixed(4)} to ${Math.max(...estimates).toFixed(4)}, a ${spread.toFixed(2)}× range that should be explained before assigning analysis damping.`,
+        values: [stat('Total loss factor', state.total), stat('Reference construction loss', reference.lossFactor), stat('Equivalent damping ratio', state.dampingRatio), stat('Equivalent Q', state.qFactor), stat('Predicted half-power bandwidth', state.halfPowerBandwidth, 'Hz'), stat('Predicted T60', state.t60, 's'), stat('Measurement-method spread', spread, '×', spread > 2 ? 'warn' : 'good')],
+        interpretation: `The entered loss paths sum to η=${state.total.toFixed(4)}. The independent measurement estimates span ${Math.min(...estimates).toFixed(4)} to ${Math.max(...estimates).toFixed(4)}, while the ${reference.label.toLowerCase()} screen gives η=${reference.lossFactor.toFixed(4)} at this frequency.`,
         engineeringConsiderations: launchConsideration('Launch-vehicle damping is configuration- and environment-dependent: joints, purge gas, acoustic radiation, tank fill state, blankets, and installed hardware can outweigh coupon material damping.'),
-        warnings: [spread > 2 ? 'Half-power, decay, and power-injection estimates disagree by more than 2×; check modal overlap, spatial energy estimation, leakage, and non-exponential decay.' : 'Measurement methods are reasonably consistent, but the total still depends on the tested boundary and installation state.'],
+        warnings,
         tables: [{ title: 'Loss-factor budget and measurement cross-check', columns: ['Item', 'Loss factor', 'Role'], rows: [
           ...state.labels.map((label, index) => [label, state.components[index], 'Budget contribution']),
+          [reference.label, reference.lossFactor, 'Empirical construction-family sensitivity reference'],
           ['Half-power estimate', state.halfPowerEstimate, 'Δf / fn'],
           ['Decay estimate', state.decayEstimate, '2.2 / (f T60)'],
           ['Power-injection estimate', state.powerInjectionEstimate, 'P / (ω E)']
@@ -7813,6 +8677,9 @@ const acs519CalculatorDefinitions = {
       { key: 'room_loss', label: 'Room acoustic loss factor', type: 'number', default: 0.01, min: 0.000001 },
       { key: 'pane_room_coupling', label: 'Pane → room reference CLF', type: 'number', default: 0.012, min: 0.000001 },
       { key: 'pane_gap_air_coupling', label: 'Pane → air-gap reference CLF', type: 'number', default: 0.018, min: 0.000001 },
+      { key: 'nonresonant_path', label: 'Derived nonresonant mass-law path', type: 'select', default: 'enabled', options: [{ value: 'enabled', label: 'Enabled' }, { value: 'disabled', label: 'Disabled' }] },
+      { key: 'blanket_coverage', label: 'Receiver-side blanket coverage', unit: '%', type: 'number', default: 0, min: 0, max: 100 },
+      { key: 'blanket_il', label: 'Measured blanket insertion loss', unit: 'dB', type: 'number', default: 0, min: 0 },
       { key: 'bypass', label: 'Direct / flanking CLF', type: 'number', default: 0, min: 0 },
       { key: 'source_power', label: 'Source-room input power', unit: 'W', type: 'number', default: 1, min: 0.000001 },
       { key: 'source_volume', label: 'Source-room volume', unit: 'm³', type: 'number', default: 80, min: 0.01 },
@@ -7822,7 +8689,7 @@ const acs519CalculatorDefinitions = {
     assumptions: ['Steady band-averaged diffuse energy and reciprocal passive coupling.', 'Thin isotropic panes with asymptotic flexural modal density and dry structural mass.', 'The medium is homogeneous and quiescent; seals, frame paths, leaks, trim, and detailed radiation efficiency are not resolved.', 'The displayed TL is the source-to-receiver pressure-level difference; room-absorption corrections must be added when the test definition requires them.'],
     example: 'Switch the gap from air to helium, argon, carbon dioxide, or water. Watch the gap modal density, impedance-scaled coupling, mass–fluid–mass resonance, pane velocity, and received level change together.',
     compute(values) {
-      const baseInput = { frequency: values.frequency, medium: values.medium, paneLength: values.pane_length, paneWidth: values.pane_width, gap: mm(values.gap), pane1Thickness: mm(values.pane1_thickness), pane2Thickness: mm(values.pane2_thickness), paneDensity: values.pane_density, paneModulus: gpa(values.pane_modulus), paneLossFactor: values.panel_loss, cavityLossFactor: values.cavity_loss, roomLossFactor: values.room_loss, etaPaneRoom: values.pane_room_coupling, etaPaneCavityAir: values.pane_gap_air_coupling, bypass: values.bypass, sourcePower: values.source_power, sourceRoomVolume: values.source_volume, receiverRoomVolume: values.receiver_volume };
+      const baseInput = { frequency: values.frequency, medium: values.medium, paneLength: values.pane_length, paneWidth: values.pane_width, gap: mm(values.gap), pane1Thickness: mm(values.pane1_thickness), pane2Thickness: mm(values.pane2_thickness), paneDensity: values.pane_density, paneModulus: gpa(values.pane_modulus), paneLossFactor: values.panel_loss, cavityLossFactor: values.cavity_loss, roomLossFactor: values.room_loss, etaPaneRoom: values.pane_room_coupling, etaPaneCavityAir: values.pane_gap_air_coupling, nonresonantPath: values.nonresonant_path, blanketCoverage: num(values.blanket_coverage, 0) / 100, blanketInsertionLoss: values.blanket_il, bypass: values.bypass, sourcePower: values.source_power, sourceRoomVolume: values.source_volume, receiverRoomVolume: values.receiver_volume };
       const state = doubleWindowSeaState(baseInput);
       const network = state.network;
       const frequencies = Array.from({ length: 100 }, (_, index) => 10 ** (Math.log10(50) + index / 99 * (Math.log10(16000) - Math.log10(50))));
@@ -7832,10 +8699,10 @@ const acs519CalculatorDefinitions = {
       if (sparse.length) warnings.push(`Fewer than five modes occupy the selected band in: ${sparse.join(', ')}. Treat their SEA averages as transitional or replace them with deterministic subsystems.`);
       if (state.impedanceRatio > 10) warnings.push('The inter-pane fluid impedance is far above air. Fluid-added mass and two-way hydroelastic loading can invalidate dry-pane modal density and weak-coupling assumptions.');
       if (state.etaPaneCavity / state.paneLossFactor > 1) warnings.push(state.couplingWarning);
-      if (state.bypass > 0) warnings.push('The direct/flanking path bypasses both panes and the gap; it can cap TL even when the resonant chain is improved.');
-      warnings.push('The screening model does not resolve pane coincidence, finite frame modes, seal leakage, nonresonant mass-law transmission, or measured room-absorption corrections.');
+      if (state.effectiveBypass > 0) warnings.push('The direct/flanking path bypasses both panes and the gap; it can cap TL even when the resonant chain is improved.');
+      warnings.push('The derived nonresonant path is a mass-law screen; finite pane coincidence, frame modes, seals, and measured room-absorption corrections still require separate evidence.');
       return {
-        values: [stat('SEA transmission loss', state.transmissionLoss, 'dB'), stat('Source-room level', state.sourceLevel, 'dB SPL'), stat('Receiving-room level', state.receiverLevel, 'dB SPL'), stat('Pane 1 velocity', state.pane1Velocity * 1000, 'mm/s RMS'), stat('Pane 2 velocity', state.pane2Velocity * 1000, 'mm/s RMS'), stat('Mass–fluid–mass resonance', state.massFluidMassFrequency, 'Hz'), stat('First cross-gap mode', state.crossGapCuton, 'Hz'), stat('Gap modal density', state.cavityModalDensity, 'modes/Hz'), stat('Medium impedance / air', state.impedanceRatio), stat('Power-balance error', 100 * network.balanceError, '%', Math.abs(network.balanceError) > 1e-6 ? 'warn' : 'good')],
+        values: [stat('Installed SEA level reduction', state.transmissionLoss, 'dB'), stat('Component mass-law TL', state.componentMassLawTl, 'dB'), stat('Derived nonresonant CLF', state.nonresonantClf), stat('Source-room level', state.sourceLevel, 'dB SPL'), stat('Receiving-room level', state.receiverLevel, 'dB SPL'), stat('Pane 1 velocity', state.pane1Velocity * 1000, 'mm/s RMS'), stat('Pane 2 velocity', state.pane2Velocity * 1000, 'mm/s RMS'), stat('Mass–fluid–mass resonance', state.massFluidMassFrequency, 'Hz'), stat('First cross-gap mode', state.crossGapCuton, 'Hz'), stat('Gap modal density', state.cavityModalDensity, 'modes/Hz'), stat('Medium impedance / air', state.impedanceRatio), stat('Power-balance error', 100 * network.balanceError, '%', Math.abs(network.balanceError) > 1e-6 ? 'warn' : 'good')],
         interpretation: `The ${state.medium.label.toLowerCase()}-filled gap produces ${state.transmissionLoss.toFixed(1)} dB source-to-receiver pressure-level difference at ${state.frequency.toFixed(0)} Hz. Pane velocities are ${(state.pane1Velocity * 1000).toFixed(3)} and ${(state.pane2Velocity * 1000).toFixed(3)} mm/s RMS. ${state.regime}; the mass–fluid–mass scale is ${state.massFluidMassFrequency.toFixed(1)} Hz.`,
         engineeringConsiderations: launchConsideration('Use the editable demo to partition payload windows, fairing liners, double walls, equipment enclosures, and cavities by stored-energy mechanism. Carry explicit frame, seal, vent, attachment, and direct-field paths when they bypass the nominal pane–gap chain.'),
         warnings,
@@ -7850,6 +8717,8 @@ const acs519CalculatorDefinitions = {
             ['Density (kg/m³)', state.medium.density, 'Acoustic impedance and fluid loading'],
             ['Sound speed (m/s)', state.medium.soundSpeed, 'Modal density and cross-gap cut-on'],
             ['Pane-to-gap CLF', state.etaPaneCavity, 'Air-reference coupling scaled by impedance and mass–fluid–mass proximity'],
+            ['Component mass-law TL (dB)', state.componentMassLawTl, 'Nonresonant panel-pair transmission screen'],
+            ['Blanket/open-area transmission', state.coverageTransmission, 'Coverage combined in linear power space'],
             ['Gap regime', state.regime, 'Price–Crocker cavity modal-density selection']
           ] }
         ],
@@ -9926,19 +10795,41 @@ function acousticTreatmentState(input = {}) {
   const coverage = clamp(num(input.coverage, 0.7), 0, 1);
   const blanketMass = Math.max(0, num(input.blanketMass, 1.8));
   const baselineAbsorption = clamp(num(input.baselineAbsorption, 0.08), 0.001, 0.99);
+  const blanketBasis = String(input.blanketBasis ?? 'porous-model');
   const normalAbsorption = porousAbsorption(frequency, flowResistivity, thickness, airGap);
-  const installedAbsorption = clamp((1 - coverage) * baselineAbsorption + coverage * normalAbsorption, 0.001, 0.99);
+  const thicknessInches = thickness / 0.0254;
+  const empiricalPeakAbsorption = Math.min(1, thicknessInches / 3 + 0.0005);
+  const empiricalPeakFrequency = 10 ** (-0.201 * thicknessInches + 3.302);
+  const empiricalBlanketAbsorption = empiricalPeakAbsorption * Math.min(frequency / empiricalPeakFrequency, empiricalPeakFrequency / frequency);
+  const selectedAbsorption = blanketBasis === 'empirical-blanket' ? empiricalBlanketAbsorption : normalAbsorption;
+  const installedAbsorption = clamp((1 - coverage) * baselineAbsorption + coverage * selectedAbsorption, 0.001, 0.99);
   const decayReductionDb = 10 * Math.log10(installedAbsorption / baselineAbsorption);
   const massLawTl = db20(TAU * frequency * blanketMass / (2 * RHO_AIR * C_AIR));
-  const insertionLoss = Math.max(0, decayReductionDb + 0.35 * Math.max(0, massLawTl));
+  const measuredIlPoints = [[63,2],[80,2],[100,2],[125,2],[160,4],[200,6],[250,7.7],[315,11.9],[400,16.1],[500,19.6],[630,23.1],[800,25.2],[1000,27.3],[1250,28],[1600,28],[2000,28],[2500,28],[3150,28],[4000,28],[5000,28]];
+  const measuredAt = sample => {
+    if (sample <= measuredIlPoints[0][0]) return measuredIlPoints[0][1];
+    if (sample >= measuredIlPoints.at(-1)[0]) return measuredIlPoints.at(-1)[1];
+    const upper = measuredIlPoints.findIndex(point => point[0] >= sample);
+    const [f0, y0] = measuredIlPoints[upper - 1], [f1, y1] = measuredIlPoints[upper];
+    return y0 + Math.log(sample / f0) / Math.log(f1 / f0) * (y1 - y0);
+  };
+  const measuredBlanketIl = measuredAt(frequency);
+  const measuredCoverageTransmission = (1 - coverage) + coverage * 10 ** (-measuredBlanketIl / 10);
+  const measuredCoverageIl = -10 * Math.log10(measuredCoverageTransmission);
+  const insertionLoss = blanketBasis === 'measured-il' ? measuredCoverageIl : Math.max(0, decayReductionDb + 0.35 * Math.max(0, massLawTl));
   const quarterWaveFrequency = C_AIR / (4 * Math.max(thickness + airGap, 1e-6));
   const frequencies = logspace(63, 4000, 160);
   const absorptionCurve = frequencies.map(sample => porousAbsorption(sample, flowResistivity, thickness, airGap));
-  const installedCurve = absorptionCurve.map(alpha => clamp((1 - coverage) * baselineAbsorption + coverage * alpha, 0.001, 0.99));
+  const selectedAbsorptionCurve = blanketBasis === 'empirical-blanket'
+    ? frequencies.map(sample => empiricalPeakAbsorption * Math.min(sample / empiricalPeakFrequency, empiricalPeakFrequency / sample))
+    : absorptionCurve;
+  const installedCurve = selectedAbsorptionCurve.map(alpha => clamp((1 - coverage) * baselineAbsorption + coverage * alpha, 0.001, 0.99));
+  const measuredIlCurve = frequencies.map(measuredAt);
   return {
-    frequency, flowResistivity, thickness, airGap, coverage, blanketMass, baselineAbsorption,
-    normalAbsorption, installedAbsorption, decayReductionDb, massLawTl, insertionLoss, quarterWaveFrequency,
-    frequencies, absorptionCurve, installedCurve,
+    frequency, flowResistivity, thickness, airGap, coverage, blanketMass, baselineAbsorption, blanketBasis,
+    normalAbsorption, empiricalPeakAbsorption, empiricalPeakFrequency, empiricalBlanketAbsorption, selectedAbsorption,
+    installedAbsorption, decayReductionDb, massLawTl, measuredBlanketIl, measuredCoverageTransmission,
+    measuredCoverageIl, insertionLoss, quarterWaveFrequency, frequencies, absorptionCurve, selectedAbsorptionCurve, installedCurve, measuredIlCurve,
     regime: frequency < 0.45 * quarterWaveFrequency ? 'thickness-limited low-frequency treatment' : frequency < 1.8 * quarterWaveFrequency ? 'near the absorber depth resonance' : 'resistive porous absorption regime'
   };
 }
@@ -10629,6 +11520,7 @@ const definitions = {
     category: 'Noise Control', basis: 'Delany–Bazley porous impedance with coverage, air-gap depth, and limp-mass screening', confidence: 'Normal-incidence material and installed-area screening model',
     inputs: [
       { key: 'frequency', label: 'Frequency', unit: 'Hz', type: 'number', default: 500, min: 20 },
+      { key: 'blanket_basis', label: 'Treatment evidence basis', type: 'select', default: 'porous-model', options: [{ value: 'porous-model', label: 'Porous impedance model' }, { value: 'empirical-blanket', label: 'Empirical blanket absorption' }, { value: 'measured-il', label: 'Representative measured blanket IL' }] },
       { key: 'flow_resistivity', label: 'Flow resistivity', unit: 'Pa·s/m²', type: 'number', default: 18000, min: 100 },
       { key: 'thickness', label: 'Absorber thickness', unit: 'mm', type: 'number', default: 50, min: 1 },
       { key: 'air_gap', label: 'Backing air gap', unit: 'mm', type: 'number', default: 25, min: 0 },
@@ -10640,8 +11532,8 @@ const definitions = {
     assumptions: ['Normal incidence and empirical Delany–Bazley behavior.', 'The air gap is represented through an effective depth correction.', 'Seams, compression, curvature, venting, and flanking are omitted.'],
     example: 'Hold mass fixed and increase absorber depth to move useful absorption into a lower payload-fairing band.',
     compute(v) {
-      const s = acousticTreatmentState({ frequency: v.frequency, flowResistivity: v.flow_resistivity, thicknessMm: v.thickness, airGapMm: v.air_gap, coverage: v.coverage, blanketMass: v.blanket_mass, baselineAbsorption: v.baseline_absorption });
-      return { summary: [stat('Material absorption', s.normalAbsorption), stat('Installed-area absorption', s.installedAbsorption), stat('Decay reduction', s.decayReductionDb, 'dB'), stat('Limp-mass TL screen', s.massLawTl, 'dB'), stat('Combined insertion-loss screen', s.insertionLoss, 'dB'), stat('Depth quarter-wave frequency', s.quarterWaveFrequency, 'Hz'), stat('Regime', s.regime)], interpretation: `At ${s.frequency.toFixed(0)} Hz, the material absorbs ${(100 * s.normalAbsorption).toFixed(0)}% at normal incidence, but coverage reduces the installed average to ${(100 * s.installedAbsorption).toFixed(0)}%. The treatment is in the ${s.regime}.`, engineeringConsiderations: programChecks('Fairing blankets and liners must retain acoustic impedance after compression, seams, purge flow, temperature, contamination, and flight installation.'), warnings: [s.frequency < 0.45 * s.quarterWaveFrequency ? 'The treatment is shallow relative to wavelength; low-frequency benefit is thickness limited.' : 'Validate diffuse-incidence absorption and installed insertion loss in a representative cavity.'], plots: [{ title: 'Porous absorption versus frequency', xLabel: 'Frequency (Hz)', yLabel: 'Absorption coefficient', xScale: 'log', traces: [trace('Material', s.frequencies, s.absorptionCurve, { emphasis: true }), trace('Installed-area average', s.frequencies, s.installedCurve)] }] };
+      const s = acousticTreatmentState({ frequency: v.frequency, blanketBasis: v.blanket_basis, flowResistivity: v.flow_resistivity, thicknessMm: v.thickness, airGapMm: v.air_gap, coverage: v.coverage, blanketMass: v.blanket_mass, baselineAbsorption: v.baseline_absorption });
+      return { summary: [stat('Selected blanket absorption', s.selectedAbsorption), stat('Installed-area absorption', s.installedAbsorption), stat('Decay reduction', s.decayReductionDb, 'dB'), stat('Limp-mass TL screen', s.massLawTl, 'dB'), stat('Representative measured blanket IL', s.measuredBlanketIl, 'dB'), stat('Coverage-corrected measured IL', s.measuredCoverageIl, 'dB'), stat('Selected insertion-loss result', s.insertionLoss, 'dB'), stat('Empirical absorption peak', s.empiricalPeakFrequency, 'Hz'), stat('Depth quarter-wave frequency', s.quarterWaveFrequency, 'Hz'), stat('Regime', s.regime)], interpretation: `At ${s.frequency.toFixed(0)} Hz, the selected ${s.blanketBasis.replaceAll('-', ' ')} basis gives ${(100 * s.selectedAbsorption).toFixed(0)}% blanket absorption and ${s.insertionLoss.toFixed(1)} dB selected IL after the applicable coverage treatment.`, engineeringConsiderations: programChecks('Fairing blankets and liners must retain acoustic impedance after compression, seams, purge flow, temperature, contamination, and flight installation.'), warnings: [s.blanketBasis === 'measured-il' ? 'The representative IL curve is an example from the SEA parameter reference; replace it with the actual blanket, mounting, compression, purge, and temperature test.' : s.frequency < 0.45 * s.quarterWaveFrequency ? 'The treatment is shallow relative to wavelength; low-frequency benefit is thickness limited.' : 'Validate diffuse-incidence absorption and installed insertion loss in a representative cavity.'], plots: [{ title: 'Selected absorption versus frequency', xLabel: 'Frequency (Hz)', yLabel: 'Absorption coefficient', xScale: 'log', traces: [trace('Selected material model', s.frequencies, s.selectedAbsorptionCurve, { emphasis: true }), trace('Installed-area average', s.frequencies, s.installedCurve)] }, { title: 'Representative measured blanket insertion loss', xLabel: 'Frequency (Hz)', yLabel: 'Insertion loss (dB)', xScale: 'log', traces: [trace('Reference blanket IL', s.frequencies, s.measuredIlCurve, { emphasis: true })] }] };
     }
   },
   'source-identification-array': {
@@ -11456,6 +12348,595 @@ function mountProgramExpansionDemo(root, id) {
 }
 
 return {programExpansionPreviewSvg,mountProgramExpansionDemo,programExpansionSupportedDemoIds};
+})();
+
+const __seaParameterCalculators=(()=>{
+const {SEA_PARAMETER_PRESETS,empiricalLossFactorState,modalDensityAtlasState,radiationEfficiencyAtlasState,drivingPointImpedanceState,clfMechanismState,tblConvectionState,equivalentPowerInjectionState,equipmentLoadingState,seaResponseRecoveryState,installedFairingSeaState,seaParameterWorkbenchState}=__seaParameterPhysics;
+/* Calculators for the SEA parameter handbook expansion. */
+const stat = (label, value, unit = '', tone = '', note = '') => ({ label, value, unit, tone, note });
+const trace = (name, x, y, extra = {}) => ({ name, x, y, ...extra });
+const mm = value => Number(value) / 1000;
+const gpa = value => Number(value) * 1e9;
+const launchConsiderations = primary => [
+  primary,
+  'Preserve the frequency-band definition, subsystem boundary, units, direction, and parameter provenance when transferring this result into an SEA model.',
+  'Replace screening or handbook values with installed-configuration test data when the design decision is sensitive to the selected parameter.'
+];
+
+const materialInputs = [
+  { key: 'length', label: 'Length', unit: 'm', type: 'number', default: 2.4, min: 0.05 },
+  { key: 'width', label: 'Width', unit: 'm', type: 'number', default: 1.4, min: 0.05 },
+  { key: 'thickness', label: 'Thickness', unit: 'mm', type: 'number', default: 3, min: 0.02 },
+  { key: 'modulus', label: 'Young’s modulus', unit: 'GPa', type: 'number', default: 70, min: 0.01 },
+  { key: 'density', label: 'Material density', unit: 'kg/m³', type: 'number', default: 2700, min: 1 },
+  { key: 'poisson', label: 'Poisson ratio', type: 'number', default: 0.33, min: -0.49, max: 0.49 }
+];
+
+const materialValues = values => ({ length: values.length, width: values.width, thickness: mm(values.thickness), modulus: gpa(values.modulus), density: values.density, poisson: values.poisson });
+
+const definitions = {
+  'sea-parameter-workbench': {
+    category: 'SEA & Energy',
+    basis: 'Traceable geometry-to-SEA-parameter-to-response synthesis',
+    confidence: 'Integrated band-screening workflow with explicit input provenance',
+    inputs: [
+      { key: 'preset', label: 'Launch subsystem preset', type: 'select', default: 'honeycombFairing', options: Object.entries(SEA_PARAMETER_PRESETS).map(([value, item]) => ({ value, label: item.label })) },
+      { key: 'frequency', label: 'Band center frequency', unit: 'Hz', type: 'number', default: 1000, min: 1 },
+      { key: 'source', label: 'External excitation', type: 'select', default: 'diffuse', options: [{ value: 'diffuse', label: 'Diffuse acoustic field' }, { value: 'tbl-slow', label: 'TBL: Uc > bending speed' }, { value: 'tbl-fast', label: 'TBL: Uc < bending speed' }, { value: 'corcos', label: 'Corcos TBL' }, { value: 'point-force', label: 'Point force' }] },
+      { key: 'loss_source', label: 'Dissipation-loss source', type: 'select', default: 'empirical', options: [{ value: 'empirical', label: 'Empirical construction family' }, { value: 'measured', label: 'Measured installed value' }, { value: 'assumed', label: 'Assumed screening value' }] },
+      { key: 'measured_loss', label: 'Measured / assumed loss factor', type: 'number', default: 0.022, min: 0.00001 },
+      { key: 'pressure', label: 'Band pressure RMS', unit: 'Pa', type: 'number', default: 200, min: 0.0001 },
+      { key: 'force', label: 'Point force RMS', unit: 'N', type: 'number', default: 10, min: 0.0001 },
+      { key: 'conductance', label: 'Drive-point conductance', unit: 'm/(N·s)', type: 'number', default: 0.0001, min: 1e-12 },
+      { key: 'external_power', label: 'Acoustic-cavity input power', unit: 'W', type: 'number', default: 1, min: 1e-12 },
+      { key: 'freestream', label: 'Free-stream velocity', unit: 'm/s', type: 'number', default: 300, min: 1 },
+      { key: 'displacement_thickness', label: 'Boundary-layer displacement thickness', unit: 'mm', type: 'number', default: 12, min: 0.01 }
+    ],
+    theory: '<p>An SEA solve is only as defensible as its parameter chain. This workbench derives modal density, damping, radiation, coupling, equivalent power, subsystem energy, and recovered response while retaining the source of each quantity.</p>',
+    assumptions: ['Steady one-third-octave band energy and linear passive response.', 'Preset geometry represents one energetically homogeneous subsystem.', 'Handbook and empirical inputs are screening values until replaced by installed evidence.'],
+    example: 'Compare the honeycomb fairing and cylindrical shell presets under the same 1 kHz pressure field, then change loss-factor provenance from empirical to measured.',
+    compute(values) {
+      const state = seaParameterWorkbenchState({ preset: values.preset, frequency: values.frequency, source: values.source, lossSource: values.loss_source, measuredLossFactor: values.measured_loss, assumedLossFactor: values.measured_loss, pressureRms: values.pressure, forceRms: values.force, conductance: values.conductance, externalPower: values.external_power, freeStreamVelocity: values.freestream, displacementThickness: mm(values.displacement_thickness) });
+      const responseLabel = state.acoustic ? 'Recovered pressure' : 'Recovered velocity';
+      const responseValue = state.acoustic ? state.recovery.pressureRms : state.recovery.velocityRms;
+      const responseUnit = state.acoustic ? 'Pa RMS' : 'm/s RMS';
+      const warnings = [];
+      if (state.modal.modesInBand < 5) warnings.push(`Only ${state.modal.modesInBand.toFixed(2)} modes occupy the selected band; the parameter chain is transitional or deterministic.`);
+      if (state.modal.modalOverlap < 1) warnings.push(`Modal overlap is ${state.modal.modalOverlap.toFixed(2)}; do not use M>1 as the sole validity gate, but explicitly justify averaging and subsystem diffuse behavior.`);
+      if (state.lossSource !== 'measured') warnings.push('The selected dissipation loss is not an installed measurement; sweep it and retain the resulting response range.');
+      return {
+        values: [stat('Modal density', state.modal.modalDensity, 'modes/Hz'), stat('Modes in band', state.modal.modesInBand), stat('Modal overlap', state.modal.modalOverlap), stat('Selected loss factor', state.selectedLossFactor), stat('Radiation efficiency', state.radiation?.totalEfficiency ?? 'Not applicable'), stat('Outgoing radiation CLF', state.coupling?.forward ?? 'Not applicable'), stat('Equivalent input power', state.externalPower, 'W'), stat('Subsystem energy', state.energy, 'J'), stat(responseLabel, responseValue, responseUnit), stat('Parameter confidence score', state.confidenceScore, '/100', state.confidenceScore < 55 ? 'warn' : 'good')],
+        interpretation: `${state.preset.label} stores ${state.energy.toExponential(3)} J in the selected band and produces ${responseValue.toExponential(3)} ${responseUnit}. The controlling credibility issue is ${state.modal.readiness}; the loss factor is ${state.lossSource}.`,
+        engineeringConsiderations: launchConsiderations('Use this chain as the audit record for a fairing, shell bay, deck, equipment panel, or cavity: a response change must be traceable to geometry, excitation, damping, radiation, or coupling rather than an unexplained tuning factor.'),
+        warnings,
+        plots: [{ title: 'Modal density around the selected band', xLabel: 'Frequency (Hz)', yLabel: 'Modal density (modes/Hz)', xScale: 'log', yScale: 'log', traces: [trace(state.modal.basis, state.modal.frequencies, state.modal.curve, { emphasis: true })] }],
+        tables: [{ title: 'SEA parameter provenance', columns: ['Parameter block', 'Source class', 'Selected basis'], rows: state.provenance }]
+      };
+    }
+  },
+
+  'modal-density-atlas': {
+    category: 'SEA & Energy',
+    basis: 'One-, two-, and three-dimensional acoustic and structural modal-density relations',
+    confidence: 'Analytical asymptotic relations with stated boundary and wave-family assumptions',
+    inputs: [
+      { key: 'type', label: 'Subsystem / wave family', type: 'select', default: 'plate-bending', options: [
+        { value: 'acoustic-1d', label: 'Acoustic 1D pipe' }, { value: 'acoustic-2d', label: 'Acoustic 2D cavity' }, { value: 'acoustic-3d', label: 'Acoustic 3D cavity' },
+        { value: 'beam-bending', label: 'Beam bending' }, { value: 'beam-longitudinal', label: 'Beam longitudinal' }, { value: 'plate-bending', label: 'Rectangular plate bending' },
+        { value: 'plate-inplane', label: 'Plate in-plane' }, { value: 'circular-plate', label: 'Circular plate bending' }, { value: 'honeycomb', label: 'Honeycomb sandwich' }, { value: 'cylinder', label: 'Unstiffened cylinder' }
+      ] },
+      { key: 'boundary', label: 'Plate boundary', type: 'select', default: 'simply-supported', options: [{ value: 'generic', label: 'Asymptotic / generic' }, { value: 'simply-supported', label: 'Simply supported' }, { value: 'free', label: 'Free' }, { value: 'clamped', label: 'Fully clamped' }] },
+      { key: 'frequency', label: 'Band center frequency', unit: 'Hz', type: 'number', default: 1000, min: 1 },
+      { key: 'loss_factor', label: 'Loss factor', type: 'number', default: 0.02, min: 0.000001 },
+      { key: 'height', label: 'Cavity height / depth', unit: 'm', type: 'number', default: 1.5, min: 0.001 },
+      { key: 'radius', label: 'Cylinder radius', unit: 'm', type: 'number', default: 1.8, min: 0.01 },
+      { key: 'sound_speed', label: 'Acoustic sound speed', unit: 'm/s', type: 'number', default: 343, min: 1 },
+      ...materialInputs,
+      { key: 'face_thickness', label: 'Honeycomb face thickness', unit: 'mm', type: 'number', default: 0.6, min: 0.01 },
+      { key: 'core_thickness', label: 'Honeycomb core thickness', unit: 'mm', type: 'number', default: 24.8, min: 0.1 },
+      { key: 'core_shear', label: 'Core shear modulus', unit: 'MPa', type: 'number', default: 85, min: 0.01 }
+    ],
+    theory: '<p>Modal density counts resonances per hertz for a selected wave family. Dimensionality, boundary corrections, shear dispersion, curvature, and wave type determine whether the density is constant, rises with frequency, or changes regime.</p>',
+    assumptions: ['Uniform subsystem geometry and material properties.', 'Asymptotic mode counting rather than exact low-order eigensolutions.', 'Each wave family is counted consistently and not combined without an explicit energy model.'],
+    example: 'Move an acoustic gap from 2D to 3D at its cross-gap cut-on, or compare plate bending with plate in-plane density in the same fairing bay.',
+    compute(values) {
+      const state = modalDensityAtlasState({ ...materialValues(values), type: values.type, boundary: values.boundary, frequency: values.frequency, lossFactor: values.loss_factor, height: values.height, radius: values.radius, soundSpeed: values.sound_speed, faceThickness: mm(values.face_thickness), coreThickness: mm(values.core_thickness), coreShearModulus: Number(values.core_shear) * 1e6 });
+      const warnings = [];
+      if (state.modesInBand < 5) warnings.push('Fewer than five modes occupy the one-third-octave band; use exact modes or hybrid FE–SEA evidence near this frequency.');
+      if (state.transitionFrequency && Math.abs(Math.log2(state.frequency / state.transitionFrequency)) < 0.5) warnings.push('The selected band lies within half an octave of a dimensional, shear, or ring-frequency transition; bracket both adjacent models.');
+      return {
+        values: [stat('Modal density', state.modalDensity, 'modes/Hz'), stat('Average modal spacing', state.averageSpacing, 'Hz'), stat('Modes in one-third-octave band', state.modesInBand), stat('Modal overlap', state.modalOverlap), stat('Wave speed', state.waveSpeed, 'm/s'), stat('Wavelength', state.wavelength, 'm'), stat('Dimensionality', `${state.dimension}D`), stat('Transition frequency', state.transitionFrequency ?? 'Not defined', state.transitionFrequency ? 'Hz' : '')],
+        interpretation: `${state.basis} gives ${state.modalDensity.toExponential(3)} modes/Hz and ${state.modesInBand.toFixed(2)} modes in the selected band. This is a ${state.readiness}.`,
+        engineeringConsiderations: launchConsiderations('Partition fairing cavities, shells, honeycomb bays, beams, decks, and in-plane junction waves separately; one subsystem can be statistically dense in bending and sparse in extension at the same frequency.'),
+        warnings,
+        plots: [{ title: 'Modal-density atlas', xLabel: 'Frequency (Hz)', yLabel: 'Modal density (modes/Hz)', xScale: 'log', yScale: 'log', traces: [trace(state.basis, state.frequencies, state.curve, { emphasis: true })] }]
+      };
+    }
+  },
+
+  'sea-impedance-library': {
+    category: 'SEA & Energy',
+    basis: 'Analytical driving-point impedance and high-frequency mobility relations',
+    confidence: 'Closed-form infinite/member/shell screening relations',
+    inputs: [
+      { key: 'model', label: 'Mobility model', type: 'select', default: 'plate-center', options: [{ value: 'plate-center', label: 'Thin plate, center' }, { value: 'plate-edge', label: 'Thin plate, edge' }, { value: 'cylindrical-shell', label: 'Unstiffened cylinder' }, { value: 'rod-longitudinal', label: 'Semi-infinite rod' }, { value: 'high-frequency-general', label: 'General Y=n/(4M)' }] },
+      { key: 'frequency', label: 'Frequency', unit: 'Hz', type: 'number', default: 1000, min: 1 },
+      { key: 'radius', label: 'Cylinder radius', unit: 'm', type: 'number', default: 1.8, min: 0.01 },
+      { key: 'modal_density', label: 'Modal density', unit: 'modes/Hz', type: 'number', default: 0.04, min: 1e-8 },
+      { key: 'mass', label: 'Subsystem mass', unit: 'kg', type: 'number', default: 120, min: 0.001 },
+      { key: 'force', label: 'RMS point force', unit: 'N', type: 'number', default: 10, min: 0.001 },
+      ...materialInputs
+    ],
+    theory: '<p>Driving-point mobility converts force into velocity and its real part converts force squared into injected power. Plate center, plate edge, shell, rod, and modal-density averages represent different load-spreading mechanisms.</p>',
+    assumptions: ['Real high-frequency impedance with no narrow individual resonances.', 'Uniform plate, rod, or unstiffened cylindrical shell.', 'Point attachment is small relative to wavelength and the model geometry.'],
+    example: 'Compare plate center and edge mobility, then switch a fairing barrel through its fundamental and ring-frequency shell regimes.',
+    compute(values) {
+      const state = drivingPointImpedanceState({ ...materialValues(values), model: values.model, frequency: values.frequency, radius: values.radius, modalDensity: values.modal_density, mass: values.mass, forceRms: values.force });
+      return {
+        values: [stat('Mechanical impedance', state.impedance, 'N·s/m'), stat('Driving-point mobility', state.mobility, 'm/(N·s)'), stat('Conductance', state.conductance, 'm/(N·s)'), stat('Point-force input power', state.inputPower, 'W'), stat('Shell fundamental scale', state.firstFrequency ?? 'Not applicable', state.firstFrequency ? 'Hz' : ''), stat('Shell ring frequency', state.model === 'cylindrical-shell' ? state.ringFrequency : 'Not applicable', state.model === 'cylindrical-shell' ? 'Hz' : '')],
+        interpretation: `${state.basis} gives Y=${state.mobility.toExponential(3)} m/(N·s). The entered force injects ${state.inputPower.toExponential(3)} W when the real-conductance assumption is valid.`,
+        engineeringConsiderations: launchConsiderations('Use the mobility at engine, actuator, bracket, umbilical, or equipment interfaces to convert force into power; do not substitute a transfer FRF magnitude for drive-point conductance.'),
+        warnings: ['Individual resonances, attachment compliance, finite boundaries, shell frames, and complex phase can make measured mobility depart strongly from the high-frequency real-valued screen.'],
+        plots: [{ title: 'Driving-point mobility versus frequency', xLabel: 'Frequency (Hz)', yLabel: 'Mobility (m/N·s)', xScale: 'log', yScale: 'log', traces: [trace(state.basis, state.frequencies, state.mobilityCurve, { emphasis: true })] }]
+      };
+    }
+  },
+
+  'clf-mechanism-library': {
+    category: 'SEA & Energy',
+    basis: 'Mechanism-specific analytical coupling loss factors with reciprocity',
+    confidence: 'Closed-form beam, plate, point, line, bolt, radiation, and mass-law screens',
+    inputs: [
+      { key: 'mechanism', label: 'Coupling mechanism', type: 'select', default: 'panel-air', options: [{ value: 'l-beam', label: 'L-beam wave conversion' }, { value: 'l-plates', label: 'L-shaped plates' }, { value: 'point-bridge', label: 'Point bridge' }, { value: 'bolted-plates', label: 'Bolted plates' }, { value: 'line-joint', label: 'Plate line joint' }, { value: 'panel-air', label: 'Panel-to-air radiation' }, { value: 'fairing-masslaw', label: 'Fairing nonresonant path' }] },
+      { key: 'wave_conversion', label: 'L-beam conversion', type: 'select', default: 'bb', options: [{ value: 'bb', label: 'Bending → bending' }, { value: 'bl', label: 'Bending ↔ longitudinal' }, { value: 'll', label: 'Longitudinal → longitudinal' }] },
+      { key: 'frequency', label: 'Frequency', unit: 'Hz', type: 'number', default: 1000, min: 1 },
+      { key: 'modal_density_1', label: 'Subsystem 1 modal density', unit: 'modes/Hz', type: 'number', default: 0.04, min: 1e-8 },
+      { key: 'modal_density_2', label: 'Subsystem 2 modal density', unit: 'modes/Hz', type: 'number', default: 0.18, min: 1e-8 },
+      { key: 'internal_loss', label: 'Subsystem 1 internal loss', type: 'number', default: 0.02, min: 1e-8 },
+      { key: 'transmission', label: 'Junction transmission coefficient', type: 'number', default: 0.15, min: 0, max: 1 },
+      { key: 'junction_length', label: 'Junction length', unit: 'm', type: 'number', default: 1.4, min: 0.001 },
+      { key: 'point_count', label: 'Bolts / point bridges', type: 'number', default: 12, min: 1, step: 1 },
+      { key: 'impedance_1', label: 'Point impedance 1', unit: 'N·s/m', type: 'number', default: 4000, min: 0.001 },
+      { key: 'impedance_2', label: 'Point impedance 2', unit: 'N·s/m', type: 'number', default: 7500, min: 0.001 },
+      { key: 'radiation_efficiency', label: 'Radiation efficiency', type: 'number', default: 0.35, min: 0.000001 },
+      { key: 'transmission_loss', label: 'Mass-law TL', unit: 'dB', type: 'number', default: 28 },
+      { key: 'volume', label: 'Acoustic volume', unit: 'm³', type: 'number', default: 60, min: 0.001 },
+      { key: 'thickness_2', label: 'Receiving-plate thickness', unit: 'mm', type: 'number', default: 4, min: 0.02 },
+      ...materialInputs
+    ],
+    theory: '<p>A CLF is not a generic percentage. It embeds wave transmission, conductance or radiation resistance, junction extent, modal density, direction, and subsystem energy normalization.</p>',
+    assumptions: ['Linear passive reciprocal junction.', 'Subsystems retain identifiable diffuse modal energy.', 'The selected ideal mechanism dominates the modeled connection.'],
+    example: 'Compare a continuous frame joint with twelve discrete bolts, then convert a fairing mass-law transmission path into an acoustic CLF.',
+    compute(values) {
+      const state = clfMechanismState({ ...materialValues(values), mechanism: values.mechanism, waveConversion: values.wave_conversion, frequency: values.frequency, modalDensity1: values.modal_density_1, modalDensity2: values.modal_density_2, internalLossFactor: values.internal_loss, transmission: values.transmission, junctionLength: values.junction_length, pointCount: values.point_count, impedance1: values.impedance_1, impedance2: values.impedance_2, radiationEfficiency: values.radiation_efficiency, transmissionLoss: values.transmission_loss, volume: values.volume, thickness2: mm(values.thickness_2) });
+      const warnings = [];
+      if (state.couplingToLossRatio > 0.5) warnings.push('The forward CLF exceeds half the internal loss factor; weak-coupling and subsystem-identity assumptions need explicit validation.');
+      if (values.mechanism === 'fairing-masslaw') warnings.push('The transmission coefficient is evaluated as 10^(−TL/10); a positive exponent would violate the positive-TL convention and is a known source-transcription risk.');
+      return {
+        values: [stat('Forward CLF η₁₂', state.forward), stat('Reciprocal reverse CLF η₂₁', state.reverse), stat('Transmission / efficiency factor', state.coefficient), stat('Forward CLF / internal loss', state.couplingToLossRatio), stat('Reciprocity residual', state.reciprocityResidual, '', Math.abs(state.reciprocityResidual) > 1e-10 ? 'warn' : 'good')],
+        interpretation: `${state.basis} produces η₁₂=${state.forward.toExponential(3)} and reciprocal η₂₁=${state.reverse.toExponential(3)}. The modal-density ratio—not an assumption of equal directional CLFs—sets the reverse value.`,
+        engineeringConsiderations: launchConsiderations('Assign separate mechanisms to fairing frames, longerons, bolted equipment interfaces, line joints, point bridges, panel-air radiation, and nonresonant transmission; parallel paths must remain explicit.'),
+        warnings
+      };
+    }
+  },
+
+  'equivalent-power-injection': {
+    category: 'SEA & Energy',
+    basis: 'Diffuse-field, turbulent-boundary-layer, Corcos, and point-force power conversion',
+    confidence: 'Analytical band-power screen with empirical TBL acceptance parameters',
+    inputs: [
+      { key: 'source', label: 'Excitation source', type: 'select', default: 'diffuse', options: [{ value: 'diffuse', label: 'Diffuse acoustic field' }, { value: 'tbl-slow', label: 'TBL: Uc > bending speed' }, { value: 'tbl-fast', label: 'TBL: Uc < bending speed' }, { value: 'corcos', label: 'Corcos TBL' }, { value: 'point-force', label: 'Point force' }] },
+      { key: 'frequency', label: 'Band center frequency', unit: 'Hz', type: 'number', default: 1000, min: 1 },
+      { key: 'pressure', label: 'Band pressure RMS', unit: 'Pa', type: 'number', default: 200, min: 0.0001 },
+      { key: 'modal_density', label: 'Structural modal density', unit: 'modes/Hz', type: 'number', default: 0.04, min: 1e-8 },
+      { key: 'radiation_efficiency', label: 'Radiation efficiency', type: 'number', default: 0.35, min: 1e-8 },
+      { key: 'convection_velocity', label: 'Convection velocity', unit: 'm/s', type: 'number', default: 220, min: 1 },
+      { key: 'alpha_x', label: 'Corcos streamwise coefficient', type: 'number', default: 0.12, min: 0.001 },
+      { key: 'alpha_z', label: 'Corcos lateral coefficient', type: 'number', default: 0.7, min: 0.001 },
+      { key: 'force', label: 'Point force RMS', unit: 'N', type: 'number', default: 10, min: 0.001 },
+      { key: 'conductance', label: 'Drive-point conductance', unit: 'm/(N·s)', type: 'number', default: 0.0001, min: 1e-12 },
+      ...materialInputs
+    ],
+    theory: '<p>SEA requires watts per band, while environments are commonly specified as pressure, pressure PSD, or force. Equivalent-power relations apply the modal, radiation, mobility, phase-speed, and spatial-coherence filters that determine how much of the environment actually enters the subsystem.</p>',
+    assumptions: ['Stationary band-limited random excitation.', 'Uniform panel or cylinder represented by plate wave properties.', 'TBL coefficients and convection velocity match the applicable flow state.'],
+    example: 'Compare diffuse liftoff acoustics with attached-flow ascent TBL at the same pressure RMS; the accepted structural power need not rank the same as pressure level.',
+    compute(values) {
+      const state = equivalentPowerInjectionState({ ...materialValues(values), source: values.source, frequency: values.frequency, pressureRms: values.pressure, modalDensity: values.modal_density, radiationEfficiency: values.radiation_efficiency, convectionVelocity: values.convection_velocity, alphaX: values.alpha_x, alphaZ: values.alpha_z, forceRms: values.force, conductance: values.conductance });
+      const warnings = [];
+      if (values.source.includes('tbl') || values.source === 'corcos') warnings.push('TBL power can vary by factors of three or more with flow state, mode shape, Corcos coefficients, and convection model; carry those as explicit uncertainty.');
+      if (state.acceptance > 1 && values.source !== 'point-force') warnings.push('Equivalent injected power exceeds the plane-wave incident-power reference; verify pressure convention, modal density, bandwidth, and the field model rather than clipping the result.');
+      return {
+        values: [stat('Equivalent injected power', state.injectedPower, 'W'), stat('Incident acoustic-power reference', state.incidentAcousticPower, 'W'), stat('Accepted / incident reference', state.acceptance), stat('Panel bending phase speed', state.phaseSpeed, 'm/s'), stat('Convection / bending speed', state.convectionVelocity / state.phaseSpeed), stat('Streamwise correlation length', state.correlationLengthX, 'm'), stat('Lateral correlation length', state.correlationLengthZ, 'm'), stat('Aerodynamic-coincidence frequency', state.coincidenceFrequency, 'Hz')],
+        interpretation: `${state.basis} injects ${state.injectedPower.toExponential(3)} W into the selected band. ${state.regime}; pressure level alone therefore does not determine the structural SEA source power.`,
+        engineeringConsiderations: launchConsiderations('Use diffuse acoustic conversion for liftoff/reverberant fields, Corcos or TBL relations for attached ascent flow, separated-flow bounds where applicable, and conductance for localized engine or equipment forces.'),
+        warnings,
+        plots: [{ title: 'Injected power versus convection velocity', xLabel: 'Convection velocity (m/s)', yLabel: 'Injected power (W)', xScale: 'log', yScale: 'log', traces: [trace(state.source, state.velocities, state.velocityCurve, { emphasis: true })] }]
+      };
+    }
+  },
+
+  'tbl-convection-model': {
+    category: 'Aero / Distributed Loads',
+    basis: 'Constant, Totaro, attached-flow, and separated-flow convection-velocity models',
+    confidence: 'Exact Totaro relation plus clearly labeled screening envelopes',
+    inputs: [
+      { key: 'model', label: 'Convection model', type: 'select', default: 'totaro', options: [{ value: 'constant', label: 'Constant fraction' }, { value: 'totaro', label: 'Totaro frequency-dependent' }, { value: 'attached-envelope', label: 'Attached-flow envelope' }, { value: 'separated-envelope', label: 'Separated-flow envelope' }] },
+      { key: 'frequency', label: 'Frequency', unit: 'Hz', type: 'number', default: 1000, min: 1 },
+      { key: 'freestream', label: 'Free-stream velocity', unit: 'm/s', type: 'number', default: 300, min: 1 },
+      { key: 'displacement_thickness', label: 'Displacement thickness', unit: 'mm', type: 'number', default: 12, min: 0.001 },
+      { key: 'fixed_fraction', label: 'Constant Uc/U∞', type: 'number', default: 0.75, min: 0.1, max: 1.2 }
+    ],
+    theory: '<p>Convection velocity controls TBL phase, correlation lengths, convective wavelength, modal acceptance, and injected power. The Totaro relation moves from approximately U∞ at low reduced frequency toward 0.6U∞ at high reduced frequency.</p>',
+    assumptions: ['Locally defined external velocity and displacement thickness.', 'Stationary boundary layer over the selected band.', 'Attached/separated envelopes are sensitivity models, not substitutes for flight or CFD-derived wall-pressure data.'],
+    example: 'Compare the Totaro curve with a constant 0.75U∞ model, then switch to the separated-flow envelope for a shoulder or protuberance region.',
+    compute(values) {
+      const state = tblConvectionState({ model: values.model, frequency: values.frequency, freeStreamVelocity: values.freestream, displacementThickness: mm(values.displacement_thickness), fixedFraction: values.fixed_fraction });
+      return {
+        values: [stat('Convection velocity', state.convectionVelocity, 'm/s'), stat('Convection fraction Uc/U∞', state.convectionFraction), stat('Convective wavenumber', state.convectiveWavenumber, 'rad/m'), stat('Convective wavelength', state.convectiveWavelength, 'm'), stat('Reduced frequency ωδ*/U∞', state.reducedFrequency), stat('Flow-model regime', state.flowRegime)],
+        interpretation: `${state.flowRegime} gives Uc=${state.convectionVelocity.toFixed(1)} m/s (${state.convectionFraction.toFixed(3)}U∞) at ${state.frequency.toFixed(0)} Hz. This value moves both the Corcos coherence lengths and the modal wavenumber match.`,
+        engineeringConsiderations: launchConsiderations('Select convection behavior by vehicle station and flight event: smooth attached acreage, protuberance wakes, shoulders, separated regions, and buffet zones should not share one unqualified Uc/U∞ value.'),
+        warnings: [values.model.includes('envelope') ? 'The attached/separated option is a screening envelope. Replace it with program flow data or a cited wall-pressure model for flight prediction.' : 'Even a cited convection relation does not define wall-pressure PSD or coherence coefficients; those inputs require separate evidence.'],
+        plots: [{ title: 'TBL convection velocity versus frequency', xLabel: 'Frequency (Hz)', yLabel: 'Convection velocity (m/s)', xScale: 'log', traces: [trace(state.flowRegime, state.frequencies, state.velocities, { emphasis: true })] }]
+      };
+    }
+  },
+
+  'equipment-loading': {
+    category: 'SEA & Energy',
+    basis: 'Global mass-ratio and local footprint-area response corrections',
+    confidence: 'Exact algebra within the added-inertial-mass screening model',
+    inputs: [
+      { key: 'unloaded_response', label: 'Unloaded response RMS', unit: 'g', type: 'number', default: 12, min: 0.0001 },
+      { key: 'structure_mass', label: 'Bare structure mass', unit: 'kg', type: 'number', default: 180, min: 0.001 },
+      { key: 'equipment_mass', label: 'Added equipment mass', unit: 'kg', type: 'number', default: 45, min: 0 },
+      { key: 'surface_mass', label: 'Local structural surface mass', unit: 'kg/m²', type: 'number', default: 12, min: 0.001 },
+      { key: 'footprint_area', label: 'Equipment footprint area', unit: 'm²', type: 'number', default: 0.35, min: 0.0001 }
+    ],
+    theory: '<p>Added equipment reduces an ideal mean-square response through either total subsystem mass or local footprint mass per area. The two corrections answer different smearing questions and can diverge dramatically.</p>',
+    assumptions: ['Equipment behaves as added inertia without a local resonance.', 'Bare and loaded responses use consistent spectral or RMS conventions.', 'No attachment compliance, dynamic absorber effect, or load-path redistribution.'],
+    example: 'Keep equipment mass fixed and shrink its footprint: the local-area method predicts stronger local inertial reduction while the global method is unchanged.',
+    compute(values) {
+      const state = equipmentLoadingState({ unloadedResponse: values.unloaded_response, bareStructureMass: values.structure_mass, equipmentMass: values.equipment_mass, structureSurfaceMass: values.surface_mass, footprintArea: values.footprint_area });
+      return {
+        values: [stat('Global mass-ratio response', state.globalResponse, 'g RMS'), stat('Local footprint response', state.localResponse, 'g RMS'), stat('Conservative screened response', state.conservativeResponse, 'g RMS'), stat('Global mean-square factor', state.globalMeanSquareFactor), stat('Local mean-square factor', state.localMeanSquareFactor), stat('Equipment footprint density', state.equipmentAreaDensity, 'kg/m²'), stat('Method spread', state.methodSpreadDb, 'dB')],
+        interpretation: `The global and footprint methods predict ${state.globalResponse.toFixed(2)} and ${state.localResponse.toFixed(2)} g RMS. The ${state.methodSpreadDb.toFixed(1)} dB spread is a model-form decision, not random numerical scatter.`,
+        engineeringConsiderations: launchConsiderations('Use the global result as the conservative smearing screen for fairing/deck averages, but resolve local equipment feet, panels, inserts, and attachment modes when footprint loading drives qualification response.'),
+        warnings: [state.localMassRatio > 5 ? 'Equipment mass per footprint area greatly exceeds the panel surface mass; attachment stiffness and local modes are likely more important than a pure inertial correction.' : 'Confirm that the equipment behaves as attached mass rather than an independently resonant subsystem.']
+      };
+    }
+  },
+
+  'sea-response-recovery': {
+    category: 'SEA & Energy',
+    basis: 'Subsystem energy recovery with statistical maximum-response concentration',
+    confidence: 'Exact energy recovery plus statistical concentration relations within diffuse-band assumptions',
+    inputs: [
+      { key: 'kind', label: 'Subsystem type', type: 'select', default: 'structural', options: [{ value: 'structural', label: 'Structural' }, { value: 'acoustic', label: 'Acoustic' }] },
+      { key: 'response_type', label: 'Concentration case', type: 'select', default: 'broadband', options: [{ value: 'broadband', label: 'Broadband' }, { value: 'pure-tone', label: 'Pure tone' }] },
+      { key: 'energy', label: 'Band subsystem energy', unit: 'J', type: 'number', default: 0.02, min: 1e-12 },
+      { key: 'frequency', label: 'Band center frequency', unit: 'Hz', type: 'number', default: 1000, min: 1 },
+      { key: 'mass', label: 'Structural mass', unit: 'kg', type: 'number', default: 120, min: 0.001 },
+      { key: 'volume', label: 'Acoustic volume', unit: 'm³', type: 'number', default: 45, min: 0.001 },
+      { key: 'modal_density', label: 'Modal density', unit: 'modes/Hz', type: 'number', default: 0.04, min: 1e-8 },
+      { key: 'loss_factor', label: 'Net loss factor', type: 'number', default: 0.02, min: 1e-8 },
+      { key: 'dimension', label: 'Subsystem dimension', type: 'select', default: '2', options: [{ value: '1', label: '1D' }, { value: '2', label: '2D' }, { value: '3', label: '3D' }] },
+      { key: 'wavelength', label: 'Relevant wavelength', unit: 'm', type: 'number', default: 0.5, min: 0.0001 },
+      { key: 'boundary_distance', label: 'Distance from boundary', unit: 'm', type: 'number', default: 0.2, min: 0 },
+      ...materialInputs
+    ],
+    theory: '<p>SEA solves spatially averaged band energy. Mass or acoustic compressibility recovers velocity and pressure, while statistical concentration estimates how a local maximum can exceed the subsystem average. Boundary regions remain biased within roughly one-quarter wavelength.</p>',
+    assumptions: ['Diffuse statistical mode ensemble with consistent spatial averaging.', 'Broadband or pure-tone concentration relation selected correctly.', 'Structural stress recovery uses thin isotropic bending and a representative bending wavenumber.'],
+    example: 'Move a payload attachment from the subsystem interior to within a quarter wavelength of a boundary and compare broadband with pure-tone concentration.',
+    compute(values) {
+      const state = seaResponseRecoveryState({ ...materialValues(values), kind: values.kind, responseType: values.response_type, energy: values.energy, frequency: values.frequency, mass: values.mass, volume: values.volume, modalDensity: values.modal_density, lossFactor: values.loss_factor, dimension: Number(values.dimension), wavelength: values.wavelength, boundaryDistance: values.boundary_distance });
+      const warnings = [];
+      if (state.boundaryRegion) warnings.push('The response location is within one-quarter wavelength of a boundary; the interior spatial-average concentration relation may be biased.');
+      if (state.participatingModes < 1) warnings.push('The effective participating-mode count is below one; use deterministic modal response rather than interpreting the statistical maximum literally.');
+      return {
+        values: [stat('Spatial-average velocity', state.velocityRms, 'm/s RMS'), stat('Spatial-average acceleration', state.accelerationRms, 'm/s² RMS'), stat('Acoustic pressure', state.pressureRms ?? 'Not applicable', state.pressureRms === null ? '' : 'Pa RMS'), stat('Sound pressure level', state.levelDb ?? 'Not applicable', state.levelDb === null ? '' : 'dB SPL'), stat('Bending stress screen', state.bendingStressRms ?? 'Not applicable', state.bendingStressRms === null ? '' : 'Pa RMS'), stat('Concentration amplitude factor', state.concentrationAmplitudeFactor), stat('Estimated local velocity maximum', state.localVelocityEstimate, 'm/s RMS-equivalent'), stat('Effective participating modes', state.participatingModes), stat('Boundary region', state.boundaryRegion ? 'Inside λ/4' : 'Interior screen')],
+        interpretation: `The spatial-average velocity is ${state.velocityRms.toExponential(3)} m/s RMS, while the ${state.responseType} concentration model gives a ${state.concentrationAmplitudeFactor.toFixed(2)}× local-amplitude factor. ${state.boundaryRegion ? 'The selected point is also inside the boundary-bias region.' : 'The selected point passes the interior-distance screen.'}`,
+        engineeringConsiderations: launchConsiderations('Translate SEA averages into payload equipment, bracket, panel, and cavity design quantities explicitly; qualification limits are often local while the analysis state variable is an ensemble/spatial average.'),
+        warnings
+      };
+    }
+  },
+
+  'radiation-efficiency-atlas': {
+    category: 'Structural Acoustics',
+    basis: 'Baffled, freely suspended, honeycomb, ribbed, shell, and forced radiation-efficiency relations',
+    confidence: 'Analytical and heritage empirical screening models',
+    inputs: [
+      { key: 'model', label: 'Radiator model', type: 'select', default: 'baffled-panel', options: [{ value: 'baffled-panel', label: 'Homogeneous baffled panel' }, { value: 'free-panel', label: 'Freely suspended panel' }, { value: 'honeycomb', label: 'Honeycomb sandwich' }, { value: 'ribbed-panel', label: 'Ribbed panel' }, { value: 'cylindrical-shell', label: 'Cylindrical shell' }, { value: 'forced-field', label: 'Panel plus point-drive field' }] },
+      { key: 'frequency', label: 'Frequency', unit: 'Hz', type: 'number', default: 1000, min: 1 },
+      { key: 'loss_factor', label: 'Loss factor', type: 'number', default: 0.02, min: 1e-8 },
+      { key: 'radius', label: 'Shell radius', unit: 'm', type: 'number', default: 1.8, min: 0.01 },
+      { key: 'rib_length', label: 'Total rib length', unit: 'm', type: 'number', default: 8, min: 0 },
+      { key: 'point_impedance', label: 'Point-drive impedance', unit: 'N·s/m', type: 'number', default: 5000, min: 0.001 },
+      { key: 'reverberation_time', label: 'Structural reverberation time', unit: 's', type: 'number', default: 0.25, min: 0.001 },
+      ...materialInputs
+    ],
+    theory: '<p>Radiation efficiency converts mean-square surface velocity into sound power, while radiation resistance and panel-air CLF place the same mechanism into mechanical and SEA energy language.</p>',
+    assumptions: ['Uniform ideal panel or unstiffened cylinder.', 'Quiescent air and band-averaged radiation.', 'Ribbed, shell, and forced components are heritage screening models rather than full FE/BE radiation solutions.'],
+    example: 'Compare a baffled homogeneous fairing bay with honeycomb, ribbed, shell, and local point-drive descriptions across ring and critical frequencies.',
+    compute(values) {
+      const state = radiationEfficiencyAtlasState({ ...materialValues(values), model: values.model, frequency: values.frequency, lossFactor: values.loss_factor, radius: values.radius, ribLength: values.rib_length, pointImpedance: values.point_impedance, reverberationTime: values.reverberation_time });
+      return {
+        values: [stat('Radiation efficiency', state.totalEfficiency), stat('Forced-field component', state.forcedEfficiency), stat('Radiation resistance', state.radiationResistance, 'N·s/m'), stat('Panel-to-air CLF', state.panelAirClf), stat('Critical frequency', state.criticalFrequency, 'Hz'), stat('Fundamental panel frequency', state.fundamentalFrequency, 'Hz'), stat('Shell ring frequency', state.model === 'cylindrical-shell' ? state.ringFrequency : 'Not applicable', state.model === 'cylindrical-shell' ? 'Hz' : ''), stat('Radiation regime', state.regime)],
+        interpretation: `${state.model.replaceAll('-', ' ')} radiation gives σ=${state.totalEfficiency.toFixed(3)} and ηpanel→air=${state.panelAirClf.toExponential(3)} in the ${state.regime} regime. Motion, radiated power, and radiation loss are therefore three related but distinct quantities.`,
+        engineeringConsiderations: launchConsiderations('Use shell behavior around ring frequency, honeycomb dispersion, ribs/frames, and localized drive fields when converting fairing or equipment-panel vibration into payload-cavity sound.'),
+        warnings: ['Finite frames, cutouts, blankets, curvature, orthotropy, unbaffled edges, and coherent low-order modes can shift radiation by orders of magnitude; compare with measured or FE/BE radiation where the path controls design.'],
+        plots: [{ title: 'Radiation-efficiency atlas', xLabel: 'Frequency (Hz)', yLabel: 'Radiation efficiency', xScale: 'log', yScale: 'log', traces: [trace(state.model, state.frequencies, state.curve, { emphasis: true })] }]
+      };
+    }
+  },
+
+  'installed-fairing-sea': {
+    category: 'SEA & Energy',
+    basis: 'Exterior–shell–payload-cavity SEA with resonant, nonresonant, blanket, leak, and equipment effects',
+    confidence: 'Exact energy balance for a three-subsystem screening network with derived band parameters',
+    inputs: [
+      { key: 'frequency', label: 'Band center frequency', unit: 'Hz', type: 'number', default: 1000, min: 1 },
+      { key: 'outside_level', label: 'Exterior acoustic level', unit: 'dB SPL', type: 'number', default: 145 },
+      { key: 'area', label: 'Fairing radiating area', unit: 'm²', type: 'number', default: 55, min: 0.1 },
+      { key: 'volume', label: 'Payload cavity volume', unit: 'm³', type: 'number', default: 75, min: 0.1 },
+      { key: 'surface_mass', label: 'Fairing surface mass', unit: 'kg/m²', type: 'number', default: 8.5, min: 0.01 },
+      { key: 'shell_modal_density', label: 'Shell modal density', unit: 'modes/Hz', type: 'number', default: 0.045, min: 1e-8 },
+      { key: 'shell_loss', label: 'Shell loss factor', type: 'number', default: 0.018, min: 1e-8 },
+      { key: 'radiation_efficiency', label: 'Shell radiation efficiency', type: 'number', default: 0.35, min: 1e-8 },
+      { key: 'blanket_coverage', label: 'Blanket coverage', unit: '%', type: 'number', default: 80, min: 0, max: 100 },
+      { key: 'blanket_il', label: 'Measured blanket insertion loss', unit: 'dB', type: 'number', default: 18, min: 0 },
+      { key: 'blanket_absorption', label: 'Blanket absorption coefficient', type: 'number', default: 0.65, min: 0, max: 1 },
+      { key: 'equipment_mass', label: 'Installed equipment mass', unit: 'kg', type: 'number', default: 250, min: 0 },
+      { key: 'leak_fraction', label: 'Leak / opening area fraction', unit: '%', type: 'number', default: 0.05, min: 0, max: 20 }
+    ],
+    theory: '<p>Installed payload-cavity attenuation combines resonant shell–air coupling, nonresonant mass-law transmission, blanket coverage and absorption, leakage, equipment-loaded shell velocity, and cavity loss. Component TL and installed noise reduction are deliberately reported separately.</p>',
+    assumptions: ['Diffuse exterior and interior acoustic subsystems.', 'One statistically homogeneous shell subsystem.', 'Blanket IL is a power-transmission reduction and coverage is spatially uniform.'],
+    example: 'Increase blanket coverage until leakage becomes dominant, then add equipment mass and observe that shell velocity and installed NR change through different mechanisms.',
+    compute(values) {
+      const state = installedFairingSeaState({ frequency: values.frequency, outsideLevel: values.outside_level, area: values.area, interiorVolume: values.volume, surfaceMass: values.surface_mass, shellModalDensity: values.shell_modal_density, shellLossFactor: values.shell_loss, radiationEfficiency: values.radiation_efficiency, blanketCoverage: Number(values.blanket_coverage) / 100, blanketInsertionLoss: values.blanket_il, blanketAbsorption: values.blanket_absorption, equipmentMass: values.equipment_mass, leakAreaFraction: Number(values.leak_fraction) / 100 });
+      const warnings = [];
+      if (state.directPower > state.resonantPower) warnings.push('The nonresonant/leak path carries more net power than the resonant shell path; further shell damping or radiation improvement will have limited installed benefit.');
+      if (state.network.subsystemResults.some(item => item.modesInBand < 5)) warnings.push('At least one subsystem has fewer than five modes in band; replace it with a deterministic or hybrid representation where local response matters.');
+      return {
+        values: [stat('Component mass-law TL', state.componentMassLawTl, 'dB'), stat('Installed noise reduction', state.installedNoiseReduction, 'dB'), stat('Payload-cavity level', state.receiverLevel, 'dB SPL'), stat('Equipment-loaded shell velocity', state.shellVelocity, 'm/s RMS'), stat('Resonant shell-path power', state.resonantPower, 'W'), stat('Direct / nonresonant power', state.directPower, 'W'), stat('Effective blanket/opening transmission', state.effectiveTransmission), stat('Interior acoustic loss factor', state.interiorLoss), stat('Network power-balance error', 100 * state.network.balanceError, '%', Math.abs(state.network.balanceError) > 1e-6 ? 'warn' : 'good')],
+        interpretation: `The fairing has ${state.componentMassLawTl.toFixed(1)} dB component mass-law TL but only ${state.installedNoiseReduction.toFixed(1)} dB installed source-to-cavity reduction. The payload cavity reaches ${state.receiverLevel.toFixed(1)} dB SPL, with ${state.directPower > state.resonantPower ? 'the direct/nonresonant path' : 'the resonant shell path'} carrying the larger net power.`,
+        engineeringConsiderations: launchConsiderations('Trade blanket coverage, measured IL, absorption, openings, shell loss, radiation, modal density, and installed equipment in one power-flow model; never apply coupon blanket IL or panel TL directly as payload-cavity attenuation.'),
+        warnings,
+        plots: [{ title: 'Fairing subsystem band energy', xLabel: 'Subsystem', yLabel: 'Energy (J)', yScale: 'log', traces: [trace('Band energy', [1, 2, 3], state.network.subsystemResults.map(item => item.energy), { emphasis: true })] }],
+        tables: [
+          { title: 'Subsystem solution', columns: ['Subsystem', 'Energy (J)', 'Velocity (m/s)', 'SPL (dB)', 'Dissipation (W)'], rows: state.network.subsystemResults.map(item => [item.name, item.energy, item.velocityRms, item.levelDb ?? '—', item.dissipatedPower]) },
+          { title: 'Power paths', columns: ['Path', 'Gross forward (W)', 'Gross reverse (W)', 'Net (W)'], rows: state.network.powerFlows.map(flow => [`${flow.from} → ${flow.to}`, flow.grossForward, flow.grossReverse, flow.net]) }
+        ]
+      };
+    }
+  }
+};
+
+const seaParameterCalculatorRegistry = definitions;
+
+return {seaParameterCalculatorRegistry};
+})();
+
+const __seaParameterDemos=(()=>{
+const {SEA_PARAMETER_PRESETS,empiricalLossFactorState,modalDensityAtlasState,radiationEfficiencyAtlasState,drivingPointImpedanceState,clfMechanismState,tblConvectionState,equivalentPowerInjectionState,equipmentLoadingState,seaResponseRecoveryState,installedFairingSeaState,seaParameterWorkbenchState}=__seaParameterPhysics;
+const C = Object.freeze({ ink: '#172027', teal: '#1e6077', dark: '#164453', rust: '#b96d37', muted: '#657176', grid: '#ada497', paper: '#faf8f2', wash: '#e7e2d8', pale: '#dce9ec', green: '#376e56' });
+const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
+const fmt = (value, digits = 2) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '—';
+  if (Math.abs(n) >= 1e4 || (Math.abs(n) > 0 && Math.abs(n) < 1e-3)) return n.toExponential(2);
+  return n.toFixed(digits).replace(/\.0+$|(?<=\.[0-9]*?)0+$/g, '');
+};
+const logPosition = (value, low, high, x, width) => x + (Math.log10(Math.max(value, low)) - Math.log10(low)) / Math.log10(high / low) * width;
+
+function field(control) {
+  if (control.type === 'select') return `<div class="demo-control"><label for="sea-${control.key}">${esc(control.label)}</label><select id="sea-${control.key}" data-acs-key="${control.stateKey ?? control.key}">${control.options.map(option => `<option value="${esc(option.value)}" ${option.value === control.value ? 'selected' : ''}>${esc(option.label)}</option>`).join('')}</select></div>`;
+  return `<div class="demo-control"><label for="sea-${control.key}">${esc(control.label)} <output id="sea-out-${control.key}">${esc(control.value)}${esc(control.unit ?? '')}</output></label><input id="sea-${control.key}" data-acs-key="${control.stateKey ?? control.key}" type="range" min="${control.min}" max="${control.max}" step="${control.step}" value="${control.value}"></div>`;
+}
+
+function mountLab(root, controls, caption, draw) {
+  root.innerHTML = `<div class="demo-controls">${controls.map(field).join('')}</div><div class="demo-canvas-wrap"><svg data-sea-parameters-svg viewBox="0 0 1000 440" role="img" aria-label="Interactive SEA parameter visualization"></svg></div><div class="demo-caption">${caption}</div>`;
+  const inputs = Object.fromEntries(controls.map(control => [control.key, root.querySelector(`#sea-${control.key}`)]));
+  const render = () => {
+    const values = Object.fromEntries(Object.entries(inputs).map(([key, element]) => [key, element.type === 'range' ? Number(element.value) : element.value]));
+    controls.filter(control => control.type !== 'select').forEach(control => {
+      const output = root.querySelector(`#sea-out-${control.key}`);
+      if (output) output.textContent = `${fmt(values[control.key], control.step < 0.01 ? 3 : control.step < 1 ? 2 : 0)}${control.unit ?? ''}`;
+    });
+    draw(root.querySelector('[data-sea-parameters-svg]'), values);
+  };
+  Object.values(inputs).forEach(input => { input.addEventListener('input', render); input.addEventListener('change', render); });
+  render();
+  return () => {};
+}
+
+function previewFrame(inner) { return `<svg viewBox="0 0 520 180" aria-hidden="true"><rect width="520" height="180" fill="${C.wash}"/>${inner}</svg>`; }
+
+const previewMap = Object.freeze({
+  'sea-parameter-chain': previewFrame('<rect x="18" y="64" width="82" height="52" fill="#164453"/><rect x="132" y="64" width="82" height="52" fill="#1e6077"/><rect x="246" y="64" width="82" height="52" fill="#b96d37"/><rect x="360" y="64" width="82" height="52" fill="#376e56"/><path d="M100 90 H132 M214 90 H246 M328 90 H360" stroke="#172027" stroke-width="6"/><circle cx="480" cy="90" r="24" fill="#dce9ec" stroke="#172027" stroke-width="4"/>'),
+  'modal-density-regime-map': previewFrame('<path d="M35 145 C145 135 190 115 255 70 S400 35 490 24" fill="none" stroke="#1e6077" stroke-width="6"/><path d="M35 132 H490" stroke="#b96d37" stroke-width="4"/><line x1="285" y1="22" x2="285" y2="150" stroke="#172027" stroke-dasharray="6 5"/>'),
+  'sea-driving-point-mobility': previewFrame('<rect x="26" y="52" width="145" height="76" fill="#164453"/><path d="M171 90 H276" stroke="#b96d37" stroke-width="7"/><circle cx="308" cy="90" r="32" fill="#dce9ec" stroke="#1e6077" stroke-width="5"/><path d="M340 90 H490" stroke="#1e6077" stroke-width="5"/><path d="M410 55 C430 75 430 105 410 125" fill="none" stroke="#b96d37" stroke-width="4"/>'),
+  'sea-coupling-mechanisms': previewFrame('<rect x="24" y="47" width="150" height="88" fill="#164453"/><rect x="346" y="65" width="150" height="70" fill="#1e6077"/><path d="M182 73 H335 M320 62 L338 73 L320 84" stroke="#b96d37" stroke-width="8" fill="none"/><path d="M335 112 H182 M198 103 L180 112 L198 121" stroke="#657176" stroke-width="4" fill="none"/><circle cx="260" cy="92" r="14" fill="#172027"/>'),
+  'environment-to-sea-power': previewFrame('<path d="M24 45 C75 20 110 70 156 45 S230 70 276 45" fill="none" stroke="#1e6077" stroke-width="14" opacity=".7"/><rect x="32" y="100" width="244" height="28" fill="#164453"/><path d="M292 90 H390" stroke="#b96d37" stroke-width="9"/><rect x="405" y="45" width="78" height="90" fill="#376e56"/><text x="444" y="98" text-anchor="middle" fill="#faf8f2" font-size="18">W</text>'),
+  'tbl-convection-velocity-map': previewFrame('<path d="M35 38 H492" stroke="#b96d37" stroke-width="4"/><path d="M35 25 C125 30 175 65 260 90 S410 110 492 112" fill="none" stroke="#1e6077" stroke-width="6"/><path d="M35 70 C150 82 280 120 492 135" fill="none" stroke="#657176" stroke-width="4"/><path d="M55 155 H470 M450 144 L472 155 L450 166" fill="none" stroke="#172027" stroke-width="4"/>'),
+  'equipment-smearing-map': previewFrame('<rect x="26" y="88" width="468" height="32" fill="#164453"/><rect x="195" y="45" width="130" height="44" fill="#b96d37"/><circle cx="220" cy="120" r="9" fill="#172027"/><circle cx="300" cy="120" r="9" fill="#172027"/><path d="M80 145 H440" stroke="#1e6077" stroke-width="5" stroke-dasharray="8 6"/>'),
+  'sea-local-response': previewFrame('<rect x="28" y="35" width="464" height="112" fill="#faf8f2" stroke="#ada497"/><rect x="28" y="35" width="70" height="112" fill="#b96d37" opacity=".25"/><path d="M28 95 C82 26 140 145 198 82 S315 25 374 95 S442 120 492 52" fill="none" stroke="#1e6077" stroke-width="10" opacity=".75"/><circle cx="374" cy="95" r="9" fill="#172027"/>'),
+  'radiation-efficiency-construction-map': previewFrame('<rect x="25" y="92" width="190" height="30" fill="#164453"/><path d="M215 92 C275 45 335 45 495 80 M215 108 C295 85 380 95 495 125" fill="none" stroke="#1e6077" stroke-width="5"/><line x1="345" y1="28" x2="345" y2="152" stroke="#b96d37" stroke-dasharray="6 5"/>'),
+  'fairing-blanket-network': previewFrame('<rect x="18" y="44" width="115" height="92" fill="#1e6077"/><rect x="202" y="30" width="35" height="120" fill="#164453"/><rect x="246" y="30" width="28" height="120" fill="#b96d37"/><rect x="350" y="60" width="150" height="76" fill="#dce9ec"/><path d="M133 70 H200 M274 70 H350" stroke="#b96d37" stroke-width="8"/><path d="M133 118 H350" stroke="#657176" stroke-width="4" stroke-dasharray="6 5"/>')
+});
+
+const seaParameterSupportedDemoIds = Object.freeze(Object.keys(previewMap));
+function seaParameterPreviewSvg(id) { return previewMap[id] || null; }
+
+function mountParameterChain(root) {
+  return mountLab(root, [
+    { key: 'preset', stateKey: 'preset', label: 'Subsystem', type: 'select', value: 'honeycombFairing', options: [{ value: 'aluminumPlate', label: 'Aluminum skin' }, { value: 'honeycombFairing', label: 'Honeycomb fairing' }, { value: 'cylindricalShell', label: 'Cylindrical shell' }, { value: 'acousticCavity', label: 'Payload cavity' }] },
+    { key: 'frequency', stateKey: 'frequency', label: 'Band center', min: 80, max: 8000, step: 20, value: 1000, unit: ' Hz' },
+    { key: 'pressure', stateKey: 'pressureRms', label: 'Pressure RMS', min: 2, max: 600, step: 2, value: 200, unit: ' Pa' }
+  ], 'Every block is a derived engineering input with a provenance class. Follow the chain from hardware and environment to stored energy and response.', (svg, v) => {
+    const state = seaParameterWorkbenchState({ preset: v.preset, frequency: v.frequency, pressureRms: v.pressure, source: 'diffuse', lossSource: 'empirical' });
+    const blocks = [
+      ['Modal density', state.modal.modalDensity, 'mode/Hz'],
+      ['Loss factor', state.selectedLossFactor, ''],
+      ['Input power', state.externalPower, 'W'],
+      ['Band energy', state.energy, 'J'],
+      [state.acoustic ? 'Pressure' : 'Velocity', state.acoustic ? state.recovery.pressureRms : state.recovery.velocityRms, state.acoustic ? 'Pa' : 'm/s']
+    ];
+    const rectangles = blocks.map((item, index) => {
+      const x = 35 + index * 190;
+      const color = [C.dark, C.teal, C.rust, C.green, C.ink][index];
+      return `<rect x="${x}" y="145" width="145" height="105" rx="7" fill="${color}"/><text x="${x + 72}" y="178" text-anchor="middle" font-size="12" fill="${C.paper}">${item[0]}</text><text x="${x + 72}" y="213" text-anchor="middle" font-size="20" font-weight="700" fill="${C.paper}">${fmt(item[1])}</text><text x="${x + 72}" y="235" text-anchor="middle" font-size="11" fill="${C.paper}">${item[2]}</text>${index < blocks.length - 1 ? `<path d="M${x + 145} 198 H${x + 186}" stroke="${C.grid}" stroke-width="6"/>` : ''}`;
+    }).join('');
+    svg.innerHTML = `<rect width="1000" height="440" fill="${C.paper}"/><text x="35" y="42" font-size="18" font-weight="700" fill="${C.ink}">${esc(state.preset.label)} · ${fmt(state.frequency, 0)} Hz</text><text x="35" y="76" font-size="13" fill="${C.muted}">${esc(state.modal.readiness)} · confidence ${fmt(state.confidenceScore, 0)}/100</text>${rectangles}<text x="35" y="330" font-size="13" fill="${C.ink}">Engineering takeaway</text><text x="35" y="360" font-size="12" fill="${C.muted}">The response is only as traceable as the least-defensible parameter in this chain.</text>`;
+  });
+}
+
+function mountModalDensity(root) {
+  return mountLab(root, [
+    { key: 'type', stateKey: 'type', label: 'Wave family', type: 'select', value: 'plate-bending', options: [{ value: 'acoustic-1d', label: 'Acoustic 1D' }, { value: 'acoustic-2d', label: 'Acoustic 2D' }, { value: 'acoustic-3d', label: 'Acoustic 3D' }, { value: 'beam-bending', label: 'Beam bending' }, { value: 'plate-bending', label: 'Plate bending' }, { value: 'plate-inplane', label: 'Plate in-plane' }, { value: 'honeycomb', label: 'Honeycomb' }, { value: 'cylinder', label: 'Cylinder' }] },
+    { key: 'frequency', stateKey: 'frequency', label: 'Frequency', min: 40, max: 10000, step: 20, value: 1000, unit: ' Hz' },
+    { key: 'loss', stateKey: 'lossFactor', label: 'Loss factor', min: 0.002, max: 0.1, step: 0.001, value: 0.02 }
+  ], 'Modal density, modes per band, and overlap are separate readiness measures. Switch wave family without changing the hardware dimensions.', (svg, v) => {
+    const state = modalDensityAtlasState({ type: v.type, frequency: v.frequency, lossFactor: v.loss, length: 2.4, width: 1.4, height: 0.3, thickness: v.type === 'honeycomb' ? 0.026 : 0.003, density: v.type === 'honeycomb' ? 520 : 2700, modulus: 70e9, radius: 1.8 });
+    const x0 = 70, y0 = 60, width = 610, height = 285;
+    const minF = state.frequencies[0], maxF = state.frequencies.at(-1), minY = Math.max(1e-6, Math.min(...state.curve) / 1.4), maxY = Math.max(...state.curve) * 1.4;
+    const sx = f => logPosition(f, minF, maxF, x0, width);
+    const sy = value => y0 + height - (Math.log10(value) - Math.log10(minY)) / Math.log10(maxY / minY) * height;
+    const path = state.frequencies.map((f, i) => `${i ? 'L' : 'M'}${sx(f).toFixed(1)},${sy(state.curve[i]).toFixed(1)}`).join(' ');
+    svg.innerHTML = `<rect width="1000" height="440" fill="${C.paper}"/><line x1="${x0}" y1="${y0 + height}" x2="${x0 + width}" y2="${y0 + height}" stroke="${C.muted}"/><line x1="${x0}" y1="${y0}" x2="${x0}" y2="${y0 + height}" stroke="${C.muted}"/><path d="${path}" fill="none" stroke="${C.teal}" stroke-width="6"/><line x1="${sx(state.frequency)}" y1="${y0}" x2="${sx(state.frequency)}" y2="${y0 + height}" stroke="${C.rust}" stroke-dasharray="6 5"/><circle cx="${sx(state.frequency)}" cy="${sy(state.modalDensity)}" r="8" fill="${C.rust}"/><text x="725" y="82" font-size="13" fill="${C.muted}">modal density</text><text x="725" y="114" font-size="25" font-weight="700" fill="${C.ink}">${fmt(state.modalDensity, 3)}</text><text x="725" y="158" font-size="13" fill="${C.muted}">modes / band</text><text x="725" y="190" font-size="25" font-weight="700" fill="${C.teal}">${fmt(state.modesInBand, 2)}</text><text x="725" y="234" font-size="13" fill="${C.muted}">modal overlap</text><text x="725" y="266" font-size="25" font-weight="700" fill="${C.rust}">${fmt(state.modalOverlap, 2)}</text><text x="725" y="326" font-size="12" fill="${C.ink}">${esc(state.readiness)}</text>`;
+  });
+}
+
+function mountMobility(root) {
+  return mountLab(root, [
+    { key: 'model', stateKey: 'model', label: 'Driving-point model', type: 'select', value: 'plate-center', options: [{ value: 'plate-center', label: 'Plate center' }, { value: 'plate-edge', label: 'Plate edge' }, { value: 'cylindrical-shell', label: 'Cylinder shell' }, { value: 'rod-longitudinal', label: 'Rod' }, { value: 'high-frequency-general', label: 'Y=n/(4M)' }] },
+    { key: 'frequency', stateKey: 'frequency', label: 'Frequency', min: 40, max: 8000, step: 20, value: 1000, unit: ' Hz' },
+    { key: 'force', stateKey: 'forceRms', label: 'Force RMS', min: 1, max: 100, step: 1, value: 10, unit: ' N' }
+  ], 'Conductance—not transfer-FRF magnitude—converts a localized force into SEA source power.', (svg, v) => {
+    const state = drivingPointImpedanceState({ model: v.model, frequency: v.frequency, forceRms: v.force, length: 7.5, width: 1.4, radius: 1.8, thickness: 0.004, modulus: 70e9, density: 2700, modalDensity: 0.04, mass: 120 });
+    const arrow = clamp(25 + 95 * Math.log10(1 + state.inputPower * 100), 25, 145);
+    svg.innerHTML = `<rect width="1000" height="440" fill="${C.paper}"/><rect x="70" y="142" width="260" height="128" rx="8" fill="${C.dark}"/><text x="200" y="193" text-anchor="middle" font-size="15" fill="${C.paper}">${esc(state.basis)}</text><text x="200" y="235" text-anchor="middle" font-size="24" font-weight="700" fill="${C.paper}">Y=${fmt(state.mobility, 4)}</text><path d="M350 206 H${350 + arrow}" stroke="${C.rust}" stroke-width="14"/><path d="M${340 + arrow} 190 L${365 + arrow} 206 L${340 + arrow} 222" fill="${C.rust}"/><rect x="555" y="132" width="330" height="150" rx="8" fill="${C.pale}"/><text x="720" y="178" text-anchor="middle" font-size="13" fill="${C.muted}">equivalent band input power</text><text x="720" y="225" text-anchor="middle" font-size="34" font-weight="700" fill="${C.ink}">${fmt(state.inputPower, 4)} W</text><text x="70" y="345" font-size="12" fill="${C.muted}">${fmt(v.force, 0)} N RMS × real drive mobility at ${fmt(v.frequency, 0)} Hz</text>`;
+  });
+}
+
+function mountClf(root) {
+  return mountLab(root, [
+    { key: 'mechanism', stateKey: 'mechanism', label: 'Junction mechanism', type: 'select', value: 'line-joint', options: [{ value: 'l-beam', label: 'L-beam' }, { value: 'l-plates', label: 'L-plates' }, { value: 'point-bridge', label: 'Point bridge' }, { value: 'bolted-plates', label: 'Bolted plates' }, { value: 'line-joint', label: 'Line joint' }, { value: 'panel-air', label: 'Panel-air' }, { value: 'fairing-masslaw', label: 'Mass-law path' }] },
+    { key: 'frequency', stateKey: 'frequency', label: 'Frequency', min: 80, max: 8000, step: 20, value: 1000, unit: ' Hz' },
+    { key: 'ratio', stateKey: 'modalDensityRatio', label: 'n₂ / n₁', min: 0.2, max: 8, step: 0.1, value: 4.5 }
+  ], 'The reverse CLF follows modal-density-weighted reciprocity. Gross coupling can remain strong even when net power is small.', (svg, v) => {
+    const state = clfMechanismState({ mechanism: v.mechanism, frequency: v.frequency, modalDensity1: 0.04, modalDensity2: 0.04 * v.ratio, length: 2.4, width: 1.4, thickness: 0.003, thickness2: 0.004, modulus: 70e9, density: 2700, pointCount: 12, junctionLength: 1.4, transmissionLoss: 28, volume: 60 });
+    const forwardWidth = clamp(4 + 20 * Math.log10(1 + state.forward * 1e4), 4, 24);
+    const reverseWidth = clamp(4 + 20 * Math.log10(1 + state.reverse * 1e4), 4, 24);
+    svg.innerHTML = `<rect width="1000" height="440" fill="${C.paper}"/><rect x="65" y="115" width="250" height="190" rx="8" fill="${C.dark}"/><rect x="685" y="145" width="250" height="160" rx="8" fill="${C.teal}"/><text x="190" y="182" text-anchor="middle" font-size="15" fill="${C.paper}">Subsystem 1</text><text x="190" y="224" text-anchor="middle" font-size="24" font-weight="700" fill="${C.paper}">n₁=0.04</text><text x="810" y="202" text-anchor="middle" font-size="15" fill="${C.paper}">Subsystem 2</text><text x="810" y="244" text-anchor="middle" font-size="24" font-weight="700" fill="${C.paper}">n₂=${fmt(0.04 * v.ratio, 3)}</text><path d="M335 165 H665" stroke="${C.rust}" stroke-width="${forwardWidth}"/><path d="M650 148 L676 165 L650 182" fill="${C.rust}"/><path d="M665 265 H335" stroke="${C.grid}" stroke-width="${reverseWidth}"/><path d="M350 248 L324 265 L350 282" fill="${C.grid}"/><text x="500" y="128" text-anchor="middle" font-size="13" fill="${C.rust}">η₁₂ ${fmt(state.forward, 5)}</text><text x="500" y="305" text-anchor="middle" font-size="13" fill="${C.muted}">η₂₁ ${fmt(state.reverse, 5)}</text><text x="500" y="374" text-anchor="middle" font-size="13" fill="${C.ink}">${esc(state.basis)}</text>`;
+  });
+}
+
+function mountPower(root) {
+  return mountLab(root, [
+    { key: 'source', stateKey: 'source', label: 'Source model', type: 'select', value: 'diffuse', options: [{ value: 'diffuse', label: 'Diffuse acoustic' }, { value: 'tbl-slow', label: 'TBL Uc>cp' }, { value: 'tbl-fast', label: 'TBL Uc<cp' }, { value: 'corcos', label: 'Corcos' }, { value: 'point-force', label: 'Point force' }] },
+    { key: 'frequency', stateKey: 'frequency', label: 'Frequency', min: 80, max: 8000, step: 20, value: 1000, unit: ' Hz' },
+    { key: 'velocity', stateKey: 'convectionVelocity', label: 'Convection velocity', min: 40, max: 450, step: 5, value: 220, unit: ' m/s' }
+  ], 'Hold the local pressure conceptually fixed and change the field model: accepted structural power can move by orders of magnitude.', (svg, v) => {
+    const sources = ['diffuse', 'tbl-slow', 'tbl-fast', 'corcos', 'point-force'];
+    const values = sources.map(source => equivalentPowerInjectionState({ source, frequency: v.frequency, pressureRms: 200, convectionVelocity: v.velocity, modalDensity: 0.04, radiationEfficiency: 0.35, forceRms: 10, conductance: 1e-4, length: 2.4, width: 1.4, thickness: 0.003, modulus: 70e9, density: 2700 }).injectedPower);
+    const max = Math.max(...values, 1e-12), selected = sources.indexOf(v.source);
+    const bars = values.map((value, index) => { const height = 245 * Math.log10(1 + 9 * value / max); const x = 80 + index * 150; return `<rect x="${x}" y="${340 - height}" width="92" height="${height}" fill="${index === selected ? C.rust : C.teal}"/><text x="${x + 46}" y="365" text-anchor="middle" font-size="11" fill="${C.muted}">${sources[index]}</text><text x="${x + 46}" y="${325 - height}" text-anchor="middle" font-size="11" fill="${C.ink}">${fmt(value, 4)} W</text>`; }).join('');
+    svg.innerHTML = `<rect width="1000" height="440" fill="${C.paper}"/><line x1="55" y1="340" x2="900" y2="340" stroke="${C.muted}"/>${bars}<text x="80" y="50" font-size="16" font-weight="700" fill="${C.ink}">Equivalent power into the same panel</text><text x="80" y="78" font-size="12" fill="${C.muted}">Selected: ${esc(v.source)} · ${fmt(v.frequency, 0)} Hz · Uc ${fmt(v.velocity, 0)} m/s</text>`;
+  });
+}
+
+function mountConvection(root) {
+  return mountLab(root, [
+    { key: 'model', stateKey: 'model', label: 'Convection model', type: 'select', value: 'totaro', options: [{ value: 'constant', label: 'Constant 0.75' }, { value: 'totaro', label: 'Totaro' }, { value: 'attached-envelope', label: 'Attached envelope' }, { value: 'separated-envelope', label: 'Separated envelope' }] },
+    { key: 'frequency', stateKey: 'frequency', label: 'Frequency', min: 20, max: 10000, step: 20, value: 1000, unit: ' Hz' },
+    { key: 'thickness', stateKey: 'displacementThicknessMm', label: 'Displacement thickness', min: 1, max: 50, step: 1, value: 12, unit: ' mm' }
+  ], 'Convection velocity controls phase, coherence length, modal acceptance, and equivalent power. Flow state and frequency belong in the model.', (svg, v) => {
+    const models = ['constant', 'totaro', 'attached-envelope', 'separated-envelope'];
+    const colors = [C.grid, C.teal, C.green, C.rust];
+    const states = models.map(model => tblConvectionState({ model, frequency: v.frequency, freeStreamVelocity: 300, displacementThickness: v.thickness / 1000, fixedFraction: 0.75 }));
+    const x0 = 70, y0 = 45, width = 650, height = 300, minF = 20, maxF = 10000;
+    const sx = f => logPosition(f, minF, maxF, x0, width), sy = velocity => y0 + height - (velocity - 90) / (320 - 90) * height;
+    const paths = states.map((state, index) => `<path d="${state.frequencies.map((f, i) => `${i ? 'L' : 'M'}${sx(f).toFixed(1)},${sy(state.velocities[i]).toFixed(1)}`).join(' ')}" fill="none" stroke="${colors[index]}" stroke-width="${models[index] === v.model ? 7 : 3}"/>`).join('');
+    const selected = states[models.indexOf(v.model)];
+    svg.innerHTML = `<rect width="1000" height="440" fill="${C.paper}"/><line x1="${x0}" y1="${y0 + height}" x2="${x0 + width}" y2="${y0 + height}" stroke="${C.muted}"/><line x1="${x0}" y1="${y0}" x2="${x0}" y2="${y0 + height}" stroke="${C.muted}"/>${paths}<line x1="${sx(v.frequency)}" y1="${y0}" x2="${sx(v.frequency)}" y2="${y0 + height}" stroke="${C.ink}" stroke-dasharray="6 5"/><circle cx="${sx(v.frequency)}" cy="${sy(selected.convectionVelocity)}" r="8" fill="${C.ink}"/><text x="770" y="92" font-size="13" fill="${C.muted}">selected Uc</text><text x="770" y="132" font-size="30" font-weight="700" fill="${C.ink}">${fmt(selected.convectionVelocity, 1)} m/s</text><text x="770" y="184" font-size="13" fill="${C.muted}">Uc/U∞</text><text x="770" y="220" font-size="25" font-weight="700" fill="${C.teal}">${fmt(selected.convectionFraction, 3)}</text><text x="770" y="285" font-size="12" fill="${C.ink}">${esc(selected.flowRegime)}</text>`;
+  });
+}
+
+function mountEquipment(root) {
+  return mountLab(root, [
+    { key: 'mass', stateKey: 'equipmentMass', label: 'Equipment mass', min: 0, max: 180, step: 2, value: 45, unit: ' kg' },
+    { key: 'footprint', stateKey: 'footprintArea', label: 'Footprint area', min: 0.05, max: 2, step: 0.05, value: 0.35, unit: ' m²' },
+    { key: 'surface', stateKey: 'structureSurfaceMass', label: 'Panel surface mass', min: 2, max: 45, step: 1, value: 12, unit: ' kg/m²' }
+  ], 'Global smearing and local footprint loading answer different questions. Their spread is a model-form uncertainty to resolve at critical equipment.', (svg, v) => {
+    const state = equipmentLoadingState({ unloadedResponse: 12, bareStructureMass: 180, equipmentMass: v.mass, footprintArea: v.footprint, structureSurfaceMass: v.surface });
+    const max = 12, globalHeight = 240 * state.globalResponse / max, localHeight = 240 * state.localResponse / max;
+    svg.innerHTML = `<rect width="1000" height="440" fill="${C.paper}"/><rect x="90" y="${340 - globalHeight}" width="220" height="${globalHeight}" fill="${C.teal}"/><rect x="390" y="${340 - localHeight}" width="220" height="${localHeight}" fill="${C.rust}"/><line x1="55" y1="340" x2="670" y2="340" stroke="${C.muted}"/><line x1="55" y1="100" x2="670" y2="100" stroke="${C.grid}" stroke-dasharray="6 5"/><text x="200" y="375" text-anchor="middle" font-size="13" fill="${C.muted}">global mass ratio</text><text x="500" y="375" text-anchor="middle" font-size="13" fill="${C.muted}">local footprint ratio</text><text x="200" y="${320 - globalHeight}" text-anchor="middle" font-size="22" font-weight="700" fill="${C.ink}">${fmt(state.globalResponse, 2)} g</text><text x="500" y="${320 - localHeight}" text-anchor="middle" font-size="22" font-weight="700" fill="${C.ink}">${fmt(state.localResponse, 2)} g</text><text x="735" y="118" font-size="13" fill="${C.muted}">method spread</text><text x="735" y="162" font-size="32" font-weight="700" fill="${C.ink}">${fmt(state.methodSpreadDb, 1)} dB</text><text x="735" y="220" font-size="12" fill="${C.muted}">equipment / panel area density</text><text x="735" y="252" font-size="23" font-weight="700" fill="${C.rust}">${fmt(state.localMassRatio, 1)}×</text>`;
+  });
+}
+
+function mountResponse(root) {
+  return mountLab(root, [
+    { key: 'responseType', stateKey: 'responseType', label: 'Response population', type: 'select', value: 'broadband', options: [{ value: 'broadband', label: 'Broadband' }, { value: 'pure-tone', label: 'Pure tone' }] },
+    { key: 'distance', stateKey: 'boundaryDistance', label: 'Distance from boundary', min: 0, max: 0.5, step: 0.01, value: 0.2, unit: ' m' },
+    { key: 'loss', stateKey: 'lossFactor', label: 'Net loss factor', min: 0.002, max: 0.1, step: 0.001, value: 0.02 }
+  ], 'SEA energy is a spatial average. Concentration and a quarter-wavelength boundary screen translate it toward a local engineering response.', (svg, v) => {
+    const state = seaResponseRecoveryState({ kind: 'structural', responseType: v.responseType, energy: 0.02, frequency: 1000, mass: 120, modalDensity: 0.04, lossFactor: v.loss, dimension: 2, wavelength: 0.5, boundaryDistance: v.distance, length: 2.4, width: 1.4, thickness: 0.003, modulus: 70e9, density: 2700 });
+    const points = Array.from({ length: 140 }, (_, index) => { const x = index / 139; const envelope = 0.35 + 0.65 * Math.sin(Math.PI * x) ** 2; return [70 + x * 650, 225 - 78 * envelope * Math.sin(5 * Math.PI * x)]; });
+    const path = points.map((point, index) => `${index ? 'L' : 'M'}${point[0].toFixed(1)},${point[1].toFixed(1)}`).join(' ');
+    const locationX = 70 + clamp(v.distance / 0.5, 0, 1) * 650;
+    svg.innerHTML = `<rect width="1000" height="440" fill="${C.paper}"/><rect x="70" y="95" width="162" height="245" fill="${C.rust}" opacity=".18"/><rect x="70" y="95" width="650" height="245" fill="none" stroke="${C.grid}"/><path d="${path}" fill="none" stroke="${C.teal}" stroke-width="10" opacity=".75"/><line x1="${locationX}" y1="75" x2="${locationX}" y2="350" stroke="${C.ink}" stroke-dasharray="6 5"/><circle cx="${locationX}" cy="225" r="9" fill="${state.boundaryRegion ? C.rust : C.green}"/><text x="775" y="92" font-size="13" fill="${C.muted}">average velocity</text><text x="775" y="125" font-size="22" font-weight="700" fill="${C.ink}">${fmt(state.velocityRms, 4)} m/s</text><text x="775" y="180" font-size="13" fill="${C.muted}">local concentration</text><text x="775" y="218" font-size="30" font-weight="700" fill="${C.rust}">${fmt(state.concentrationAmplitudeFactor, 2)}×</text><text x="775" y="275" font-size="13" fill="${state.boundaryRegion ? C.rust : C.green}">${state.boundaryRegion ? 'inside λ/4 boundary region' : 'interior-distance screen'}</text>`;
+  });
+}
+
+function mountRadiation(root) {
+  return mountLab(root, [
+    { key: 'model', stateKey: 'model', label: 'Radiator construction', type: 'select', value: 'baffled-panel', options: [{ value: 'baffled-panel', label: 'Baffled panel' }, { value: 'free-panel', label: 'Free panel' }, { value: 'honeycomb', label: 'Honeycomb' }, { value: 'ribbed-panel', label: 'Ribbed panel' }, { value: 'cylindrical-shell', label: 'Cylinder shell' }, { value: 'forced-field', label: 'Point-drive field' }] },
+    { key: 'frequency', stateKey: 'frequency', label: 'Frequency', min: 50, max: 10000, step: 20, value: 1000, unit: ' Hz' },
+    { key: 'thickness', stateKey: 'thicknessMm', label: 'Panel thickness', min: 0.5, max: 12, step: 0.1, value: 3, unit: ' mm' }
+  ], 'Radiation efficiency, resistance, and panel-air CLF express the same energy path with different normalizations.', (svg, v) => {
+    const state = radiationEfficiencyAtlasState({ model: v.model, frequency: v.frequency, length: 2.4, width: 1.4, thickness: v.thickness / 1000, modulus: 70e9, density: 2700, radius: 1.8, ribLength: 8, pointImpedance: 5000, reverberationTime: 0.25 });
+    const x0 = 70, y0 = 55, width = 610, height = 290, minF = state.frequencies[0], maxF = state.frequencies.at(-1), minY = Math.max(1e-5, Math.min(...state.curve) / 2), maxY = Math.max(...state.curve) * 1.5;
+    const sx = f => logPosition(f, minF, maxF, x0, width), sy = value => y0 + height - (Math.log10(Math.max(value, minY)) - Math.log10(minY)) / Math.log10(maxY / minY) * height;
+    const path = state.frequencies.map((f, i) => `${i ? 'L' : 'M'}${sx(f).toFixed(1)},${sy(state.curve[i]).toFixed(1)}`).join(' ');
+    svg.innerHTML = `<rect width="1000" height="440" fill="${C.paper}"/><line x1="${x0}" y1="${y0 + height}" x2="${x0 + width}" y2="${y0 + height}" stroke="${C.muted}"/><line x1="${x0}" y1="${y0}" x2="${x0}" y2="${y0 + height}" stroke="${C.muted}"/><path d="${path}" fill="none" stroke="${C.teal}" stroke-width="6"/><line x1="${sx(state.criticalFrequency)}" y1="${y0}" x2="${sx(state.criticalFrequency)}" y2="${y0 + height}" stroke="${C.rust}" stroke-dasharray="6 5"/><circle cx="${sx(state.frequency)}" cy="${sy(state.totalEfficiency)}" r="8" fill="${C.ink}"/><text x="735" y="92" font-size="13" fill="${C.muted}">radiation efficiency</text><text x="735" y="132" font-size="30" font-weight="700" fill="${C.ink}">${fmt(state.totalEfficiency, 3)}</text><text x="735" y="190" font-size="13" fill="${C.muted}">panel → air CLF</text><text x="735" y="228" font-size="24" font-weight="700" fill="${C.teal}">${fmt(state.panelAirClf, 5)}</text><text x="735" y="285" font-size="12" fill="${C.rust}">fc ${fmt(state.criticalFrequency, 0)} Hz</text><text x="735" y="320" font-size="12" fill="${C.ink}">${esc(state.regime)}</text>`;
+  });
+}
+
+function mountFairing(root) {
+  return mountLab(root, [
+    { key: 'coverage', stateKey: 'blanketCoverage', label: 'Blanket coverage', min: 0, max: 100, step: 1, value: 80, unit: '%' },
+    { key: 'il', stateKey: 'blanketInsertionLoss', label: 'Blanket IL', min: 0, max: 35, step: 1, value: 18, unit: ' dB' },
+    { key: 'leak', stateKey: 'leakAreaPercent', label: 'Leak / opening area', min: 0, max: 2, step: 0.02, value: 0.05, unit: '%' },
+    { key: 'equipment', stateKey: 'equipmentMass', label: 'Installed equipment', min: 0, max: 800, step: 10, value: 250, unit: ' kg' }
+  ], 'Coverage and openings combine in linear transmission space. Watch the direct path become the installed-performance ceiling.', (svg, v) => {
+    const state = installedFairingSeaState({ frequency: 1000, outsideLevel: 145, area: 55, interiorVolume: 75, surfaceMass: 8.5, shellModalDensity: 0.045, shellLossFactor: 0.018, radiationEfficiency: 0.35, blanketCoverage: v.coverage / 100, blanketInsertionLoss: v.il, blanketAbsorption: 0.65, equipmentMass: v.equipment, leakAreaFraction: v.leak / 100 });
+    const resonant = Math.max(state.resonantPower, 0), direct = Math.max(state.directPower, 0), max = Math.max(resonant, direct, 1e-12), rW = 20 + 26 * Math.log10(1 + 9 * resonant / max), dW = 20 + 26 * Math.log10(1 + 9 * direct / max);
+    svg.innerHTML = `<rect width="1000" height="440" fill="${C.paper}"/><rect x="45" y="120" width="190" height="190" rx="8" fill="${C.teal}"/><rect x="430" y="90" width="55" height="250" fill="${C.dark}"/><rect x="495" y="90" width="45" height="250" fill="${C.rust}"/><rect x="760" y="150" width="195" height="160" rx="8" fill="${C.pale}"/><text x="140" y="206" text-anchor="middle" font-size="15" fill="${C.paper}">exterior field</text><text x="140" y="242" text-anchor="middle" font-size="24" font-weight="700" fill="${C.paper}">${fmt(state.sourceLevel, 1)} dB</text><text x="858" y="215" text-anchor="middle" font-size="15" fill="${C.ink}">payload cavity</text><text x="858" y="255" text-anchor="middle" font-size="25" font-weight="700" fill="${C.ink}">${fmt(state.receiverLevel, 1)} dB</text><path d="M245 160 H420" stroke="${C.rust}" stroke-width="${rW}"/><path d="M540 160 H750" stroke="${C.rust}" stroke-width="${rW}"/><path d="M245 285 C400 390 620 390 750 285" fill="none" stroke="${C.grid}" stroke-width="${dW}"/><text x="340" y="125" font-size="12" fill="${C.rust}">resonant ${fmt(resonant, 4)} W</text><text x="500" y="405" text-anchor="middle" font-size="12" fill="${C.muted}">direct / opening ${fmt(direct, 4)} W</text><text x="585" y="58" text-anchor="middle" font-size="17" font-weight="700" fill="${C.ink}">Installed NR ${fmt(state.installedNoiseReduction, 1)} dB · component TL ${fmt(state.componentMassLawTl, 1)} dB</text>`;
+  });
+}
+
+const mounts = Object.freeze({
+  'sea-parameter-chain': mountParameterChain,
+  'modal-density-regime-map': mountModalDensity,
+  'sea-driving-point-mobility': mountMobility,
+  'sea-coupling-mechanisms': mountClf,
+  'environment-to-sea-power': mountPower,
+  'tbl-convection-velocity-map': mountConvection,
+  'equipment-smearing-map': mountEquipment,
+  'sea-local-response': mountResponse,
+  'radiation-efficiency-construction-map': mountRadiation,
+  'fairing-blanket-network': mountFairing
+});
+
+function mountSeaParameterDemo(root, id) {
+  const mount = mounts[id];
+  return mount ? mount(root) : null;
+}
+
+return {seaParameterPreviewSvg,mountSeaParameterDemo,seaParameterSupportedDemoIds};
 })();
 
 const __extraCalculators=(()=>{
@@ -12517,6 +13998,46 @@ const demoTakeawayRegistry = Object.freeze({
   'tuned-absorber-isolation-lab': state => {
     const mass = number(state, ['massRatio'], 0.05), tuning = number(state, ['tuningRatio'], 0.98), mount = number(state, ['isolationFrequency'], 12);
     return `The absorber uses ${(100 * mass).toFixed(1)}% mass at tuning ratio ${tuning.toFixed(3)}, while the mount resonance is ${mount.toFixed(1)} Hz. Check off-tune amplification, stroke, static deflection, temperature, and operating-speed sweep before claiming installed control.`;
+  },
+  'sea-parameter-chain': state => {
+    const frequency = number(state, ['frequency'], 1000), preset = choice(state, ['preset'], 'honeycombFairing');
+    return `At ${frequency.toFixed(0)} Hz the ${preset.replaceAll(/([A-Z])/g, ' $1').toLowerCase()} result depends on a linked modal-density, loss, radiation, coupling, power, and recovery chain. Audit the least-supported parameter before adding margin to the final response.`;
+  },
+  'modal-density-regime-map': state => {
+    const frequency = number(state, ['frequency'], 1000), loss = number(state, ['lossFactor'], 0.02), type = choice(state, ['type'], 'plate-bending');
+    return `The ${type.replaceAll('-', ' ')} population at ${frequency.toFixed(0)} Hz must be judged using both modes per band and overlap with η=${loss.toFixed(3)}. A dense bending family does not make every wave family or connected subsystem statistical.`;
+  },
+  'sea-driving-point-mobility': state => {
+    const model = choice(state, ['model'], 'plate-center'), force = number(state, ['forceRms'], 10);
+    return `The ${model.replaceAll('-', ' ')} model converts the ${force.toFixed(1)} N RMS force into power through drive-point conductance. A transfer-FRF magnitude cannot replace this real local power input without phase and impedance evidence.`;
+  },
+  'sea-coupling-mechanisms': state => {
+    const mechanism = choice(state, ['mechanism'], 'line-joint'), ratio = number(state, ['modalDensityRatio'], 4.5);
+    return `The ${mechanism.replaceAll('-', ' ')} link has n₂/n₁=${ratio.toFixed(2)}, so reciprocity requires unequal directional CLFs. Keep point, line, area, resonant, and nonresonant paths separate before ranking net receiver power.`;
+  },
+  'environment-to-sea-power': state => {
+    const source = choice(state, ['source'], 'diffuse'), frequency = number(state, ['frequency'], 1000), velocity = number(state, ['convectionVelocity'], 220);
+    return `At ${frequency.toFixed(0)} Hz the ${source.replaceAll('-', ' ')} source with Uc=${velocity.toFixed(0)} m/s is filtered by mobility, modal density, radiation, or spatial acceptance before becoming SEA watts. Equal pressure RMS does not imply equal injected power.`;
+  },
+  'tbl-convection-velocity-map': state => {
+    const model = choice(state, ['model'], 'totaro'), frequency = number(state, ['frequency'], 1000), thickness = number(state, ['displacementThicknessMm'], 12);
+    return `The ${model.replaceAll('-', ' ')} model at ${frequency.toFixed(0)} Hz and δ*=${thickness.toFixed(1)} mm changes convective wavelength, Corcos correlation length, and modal acceptance together. Select it by local attached or separated flow evidence.`;
+  },
+  'equipment-smearing-map': state => {
+    const mass = number(state, ['equipmentMass'], 45), footprint = number(state, ['footprintArea'], 0.35);
+    return `The ${mass.toFixed(0)} kg equipment item occupies ${footprint.toFixed(2)} m². Global mass smearing and local footprint loading answer different response questions; use the spread to decide where an explicit attachment or local panel model is required.`;
+  },
+  'sea-local-response': state => {
+    const type = choice(state, ['responseType'], 'broadband'), distance = number(state, ['boundaryDistance'], 0.2), loss = number(state, ['lossFactor'], 0.02);
+    return `The ${type.replaceAll('-', ' ')} concentration screen uses η=${loss.toFixed(3)} at a point ${distance.toFixed(2)} m from the boundary. Report the SEA spatial average separately from the local maximum estimate and replace boundary-critical receivers with deterministic evidence.`;
+  },
+  'radiation-efficiency-construction-map': state => {
+    const model = choice(state, ['model'], 'baffled-panel'), frequency = number(state, ['frequency'], 1000), thickness = number(state, ['thicknessMm'], 3);
+    return `The ${model.replaceAll('-', ' ')} at ${frequency.toFixed(0)} Hz and ${thickness.toFixed(1)} mm thickness has construction-specific radiation behavior. Use the same efficiency consistently when converting velocity to power, resistance, and panel-air CLF.`;
+  },
+  'fairing-blanket-network': state => {
+    const coverage = number(state, ['blanketCoverage'], 80), insertion = number(state, ['blanketInsertionLoss'], 18), leak = number(state, ['leakAreaPercent'], 0.05);
+    return `${coverage.toFixed(0)}% blanket coverage at ${insertion.toFixed(1)} dB IL still competes with ${leak.toFixed(2)}% opening area and the resonant shell path. Improve the largest solved power share; coupon IL and component TL are not installed payload-cavity reduction.`;
   }
 });
 
@@ -12590,6 +14111,7 @@ const {twoSubsystemEnergyBalance}=__seaCoupling;
 const {acs519PreviewSvg,mountAcs519Demo,acs519SupportedDemoIds}=__acs519Demos;
 const {workflowExpansionPreviewSvg,mountWorkflowExpansionDemo,workflowExpansionSupportedDemoIds}=__workflowExpansionDemos;
 const {programExpansionPreviewSvg,mountProgramExpansionDemo,programExpansionSupportedDemoIds}=__programExpansionDemos;
+const {seaParameterPreviewSvg,mountSeaParameterDemo,seaParameterSupportedDemoIds}=__seaParameterDemos;
 const {mountDemoTakeaway}=__demoTakeaways;
 const TAU = 2 * Math.PI;
 const G0 = 9.80665;
@@ -12616,6 +14138,8 @@ function axesSvg({x=60,y=35,w=760,h=330,xLabel='',yLabel=''}){
 function pathXY(xs,ys,sx,sy){return xs.map((x,i)=>`${i?'L':'M'}${sx(x).toFixed(2)},${sy(ys[i]).toFixed(2)}`).join(' ');}
 
 function demoPreviewSvg(id){
+  const seaParameterPreview=seaParameterPreviewSvg(id);
+  if(seaParameterPreview)return seaParameterPreview;
   const programPreview=programExpansionPreviewSvg(id);
   if(programPreview)return programPreview;
   const workflowPreview=workflowExpansionPreviewSvg(id);
@@ -13329,10 +14853,11 @@ function mountRadiation(root){
   function draw(now){const r=+rEl.value,n=Math.round(+nEl.value),speed=+sEl.value,sig=sigma(r),t=(now-start)/1000*speed,A=22*Math.sin(TAU*t),panelPts=Array.from({length:120},(_,i)=>{const x=i/119;return[115+x*285,220+A*Math.sin(Math.PI*n*x)];}),panelPath=panelPts.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');root.querySelector('#out-ratio').textContent=r.toFixed(2);root.querySelector('#out-order').textContent=String(n);root.querySelector('#out-speed').textContent=speed.toFixed(1)+'×';const waves=Array.from({length:5},(_,i)=>{const rad=55+i*48+10*Math.sin(TAU*t),op=clamp(sig*(1-i*.1),.03,1);return`<path d="M400 ${220-rad*.55} Q${500+rad*.55} ${220-rad} ${600+rad} 220 M400 ${220+rad*.55} Q${500+rad*.55} ${220+rad} ${600+rad} 220" fill="none" stroke="#1e6077" stroke-width="4" opacity="${op}"/>`;}).join(''),rs=Array.from({length:200},(_,i)=>.08+3.92*i/199),sx=x=>650+(x-.08)/3.92*300,sy=y=>360-y*270;svg.innerHTML=`<rect width="1000" height="440" fill="#faf8f2"/><rect x="100" y="135" width="320" height="170" fill="#e7e2d8" stroke="#657176"/><path d="${panelPath}" fill="none" stroke="#164453" stroke-width="9"/>${waves}<text x="260" y="70" text-anchor="middle" font-size="16" font-weight="700" fill="#172027">${r<1?'Subcritical bending':'Supercritical / radiating bending'}</text><text x="260" y="98" text-anchor="middle" font-size="13" fill="#5f6b70">screening radiation efficiency σ ≈ ${sig.toFixed(3)}</text>${axesSvg({x:650,y:55,w:300,h:305,xLabel:'f / fc',yLabel:'relative radiation efficiency'})}<path d="${pathXY(rs,rs.map(sigma),sx,sy)}" fill="none" stroke="#1e6077" stroke-width="4"/><line x1="${sx(1)}" y1="55" x2="${sx(1)}" y2="360" stroke="#b96d37" stroke-dasharray="6 5"/><circle cx="${sx(r)}" cy="${sy(sig)}" r="7" fill="#172027"/>`;raf=requestAnimationFrame(draw);}raf=requestAnimationFrame(draw);return()=>cancelAnimationFrame(raf);
 }
 
-const supportedDemoIds = ['sdof-motion','damping-transmissibility','two-mode','beam-wave','dispersion','coincidence','radiation-efficiency','ring','psd-response','srs-bank','sandwich-regimes','energy-bias','wavenumber-transmission','junction-transmission','joint-acceptance','spatial-field','sea-flow',...acs519SupportedDemoIds,...workflowExpansionSupportedDemoIds,...programExpansionSupportedDemoIds];
+const supportedDemoIds = ['sdof-motion','damping-transmissibility','two-mode','beam-wave','dispersion','coincidence','radiation-efficiency','ring','psd-response','srs-bank','sandwich-regimes','energy-bias','wavenumber-transmission','junction-transmission','joint-acceptance','spatial-field','sea-flow',...acs519SupportedDemoIds,...workflowExpansionSupportedDemoIds,...programExpansionSupportedDemoIds,...seaParameterSupportedDemoIds];
 
 function mountDemo(root,id){
-  let cleanup=mountProgramExpansionDemo(root,id);
+  let cleanup=mountSeaParameterDemo(root,id);
+  if(!cleanup)cleanup=mountProgramExpansionDemo(root,id);
   if(!cleanup)cleanup=mountWorkflowExpansionDemo(root,id);
   if(!cleanup)cleanup=mountAcs519Demo(root,id);
   if(!cleanup){
@@ -13647,22 +15172,24 @@ const {sections:baseSections,toolCatalog:baseToolCatalog,demos:baseDemos,caseNot
 const {acs519Sections,acs519ToolCatalog,acs519Demos,acs519CaseNotes,acs519ReferenceGroups}=__acs519Data;
 const {workflowExpansionSections,workflowExpansionToolCatalog,workflowExpansionDemos,workflowExpansionCaseNotes,workflowExpansionReferenceGroups}=__workflowExpansionData;
 const {programExpansionSections,programExpansionToolCatalog,programExpansionDemos,programExpansionCaseNotes,programExpansionReferenceGroups}=__programExpansionData;
+const {seaParameterSections,seaParameterToolCatalog,seaParameterDemos,seaParameterCaseNotes,seaParameterReferenceGroups}=__seaParameterData;
 const {calculatorRegistry:baseCalculatorRegistry}=__calculators;
 const {extraCalculatorRegistry}=__extraCalculators;
 const {acs519CalculatorRegistry}=__acs519Calculators;
 const {workflowExpansionCalculatorRegistry}=__workflowExpansionCalculators;
 const {programExpansionCalculatorRegistry}=__programExpansionCalculators;
+const {seaParameterCalculatorRegistry}=__seaParameterCalculators;
 const {extraToolCatalog}=__extraData;
 const {lineChartSvg,heatmapSvg,downloadCsv,downloadSvg,downloadText}=__charts;
 const {demoPreviewSvg,mountDemo}=__demosModule;
 const {createEngineeringRegistry,engineeringResultToText}=__engineeringResults;
 
-const sections = [...baseSections, ...acs519Sections, ...workflowExpansionSections, ...programExpansionSections];
-const calculatorRegistry = createEngineeringRegistry({ ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry });
-const toolCatalog = [...baseToolCatalog, ...extraToolCatalog, ...acs519ToolCatalog, ...workflowExpansionToolCatalog, ...programExpansionToolCatalog];
-const demos = [...baseDemos, ...acs519Demos, ...workflowExpansionDemos, ...programExpansionDemos];
-const caseNotes = [...baseCaseNotes, ...acs519CaseNotes, ...workflowExpansionCaseNotes, ...programExpansionCaseNotes];
-const referenceGroups = [...baseReferenceGroups, ...acs519ReferenceGroups, ...workflowExpansionReferenceGroups, ...programExpansionReferenceGroups];
+const sections = [...baseSections, ...acs519Sections, ...workflowExpansionSections, ...programExpansionSections, ...seaParameterSections];
+const calculatorRegistry = createEngineeringRegistry({ ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry });
+const toolCatalog = [...baseToolCatalog, ...extraToolCatalog, ...acs519ToolCatalog, ...workflowExpansionToolCatalog, ...programExpansionToolCatalog, ...seaParameterToolCatalog];
+const demos = [...baseDemos, ...acs519Demos, ...workflowExpansionDemos, ...programExpansionDemos, ...seaParameterDemos];
+const caseNotes = [...baseCaseNotes, ...acs519CaseNotes, ...workflowExpansionCaseNotes, ...programExpansionCaseNotes, ...seaParameterCaseNotes];
+const referenceGroups = [...baseReferenceGroups, ...acs519ReferenceGroups, ...workflowExpansionReferenceGroups, ...programExpansionReferenceGroups, ...seaParameterReferenceGroups];
 const toolById = new Map(toolCatalog.map(t => [t.id, t]));
 const app = document.querySelector('#app');
 let routeCleanup = () => {};

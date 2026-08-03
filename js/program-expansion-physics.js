@@ -138,19 +138,41 @@ export function acousticTreatmentState(input = {}) {
   const coverage = clamp(num(input.coverage, 0.7), 0, 1);
   const blanketMass = Math.max(0, num(input.blanketMass, 1.8));
   const baselineAbsorption = clamp(num(input.baselineAbsorption, 0.08), 0.001, 0.99);
+  const blanketBasis = String(input.blanketBasis ?? 'porous-model');
   const normalAbsorption = porousAbsorption(frequency, flowResistivity, thickness, airGap);
-  const installedAbsorption = clamp((1 - coverage) * baselineAbsorption + coverage * normalAbsorption, 0.001, 0.99);
+  const thicknessInches = thickness / 0.0254;
+  const empiricalPeakAbsorption = Math.min(1, thicknessInches / 3 + 0.0005);
+  const empiricalPeakFrequency = 10 ** (-0.201 * thicknessInches + 3.302);
+  const empiricalBlanketAbsorption = empiricalPeakAbsorption * Math.min(frequency / empiricalPeakFrequency, empiricalPeakFrequency / frequency);
+  const selectedAbsorption = blanketBasis === 'empirical-blanket' ? empiricalBlanketAbsorption : normalAbsorption;
+  const installedAbsorption = clamp((1 - coverage) * baselineAbsorption + coverage * selectedAbsorption, 0.001, 0.99);
   const decayReductionDb = 10 * Math.log10(installedAbsorption / baselineAbsorption);
   const massLawTl = db20(TAU * frequency * blanketMass / (2 * RHO_AIR * C_AIR));
-  const insertionLoss = Math.max(0, decayReductionDb + 0.35 * Math.max(0, massLawTl));
+  const measuredIlPoints = [[63,2],[80,2],[100,2],[125,2],[160,4],[200,6],[250,7.7],[315,11.9],[400,16.1],[500,19.6],[630,23.1],[800,25.2],[1000,27.3],[1250,28],[1600,28],[2000,28],[2500,28],[3150,28],[4000,28],[5000,28]];
+  const measuredAt = sample => {
+    if (sample <= measuredIlPoints[0][0]) return measuredIlPoints[0][1];
+    if (sample >= measuredIlPoints.at(-1)[0]) return measuredIlPoints.at(-1)[1];
+    const upper = measuredIlPoints.findIndex(point => point[0] >= sample);
+    const [f0, y0] = measuredIlPoints[upper - 1], [f1, y1] = measuredIlPoints[upper];
+    return y0 + Math.log(sample / f0) / Math.log(f1 / f0) * (y1 - y0);
+  };
+  const measuredBlanketIl = measuredAt(frequency);
+  const measuredCoverageTransmission = (1 - coverage) + coverage * 10 ** (-measuredBlanketIl / 10);
+  const measuredCoverageIl = -10 * Math.log10(measuredCoverageTransmission);
+  const insertionLoss = blanketBasis === 'measured-il' ? measuredCoverageIl : Math.max(0, decayReductionDb + 0.35 * Math.max(0, massLawTl));
   const quarterWaveFrequency = C_AIR / (4 * Math.max(thickness + airGap, 1e-6));
   const frequencies = logspace(63, 4000, 160);
   const absorptionCurve = frequencies.map(sample => porousAbsorption(sample, flowResistivity, thickness, airGap));
-  const installedCurve = absorptionCurve.map(alpha => clamp((1 - coverage) * baselineAbsorption + coverage * alpha, 0.001, 0.99));
+  const selectedAbsorptionCurve = blanketBasis === 'empirical-blanket'
+    ? frequencies.map(sample => empiricalPeakAbsorption * Math.min(sample / empiricalPeakFrequency, empiricalPeakFrequency / sample))
+    : absorptionCurve;
+  const installedCurve = selectedAbsorptionCurve.map(alpha => clamp((1 - coverage) * baselineAbsorption + coverage * alpha, 0.001, 0.99));
+  const measuredIlCurve = frequencies.map(measuredAt);
   return {
-    frequency, flowResistivity, thickness, airGap, coverage, blanketMass, baselineAbsorption,
-    normalAbsorption, installedAbsorption, decayReductionDb, massLawTl, insertionLoss, quarterWaveFrequency,
-    frequencies, absorptionCurve, installedCurve,
+    frequency, flowResistivity, thickness, airGap, coverage, blanketMass, baselineAbsorption, blanketBasis,
+    normalAbsorption, empiricalPeakAbsorption, empiricalPeakFrequency, empiricalBlanketAbsorption, selectedAbsorption,
+    installedAbsorption, decayReductionDb, massLawTl, measuredBlanketIl, measuredCoverageTransmission,
+    measuredCoverageIl, insertionLoss, quarterWaveFrequency, frequencies, absorptionCurve, selectedAbsorptionCurve, installedCurve, measuredIlCurve,
     regime: frequency < 0.45 * quarterWaveFrequency ? 'thickness-limited low-frequency treatment' : frequency < 1.8 * quarterWaveFrequency ? 'near the absorber depth resonance' : 'resistive porous absorption regime'
   };
 }

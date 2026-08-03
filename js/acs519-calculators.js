@@ -1,5 +1,6 @@
 /* Calculators paired with the ACS 519 deep-dive modules and chapter expansions. */
 import { createEngineeringRegistry } from './engineering-results.js';
+import { empiricalLossFactorState } from './sea-parameters-physics.js';
 import {
   SEA_MEDIA,
   doublePanelSeaState,
@@ -235,6 +236,7 @@ const acs519CalculatorDefinitions = {
     confidence: 'Exact conversions within light-damping single-band assumptions',
     inputs: [
       { key: 'frequency', label: 'Band or modal frequency', unit: 'Hz', type: 'number', default: 500, min: 0.1 },
+      { key: 'construction', label: 'Reference construction family', type: 'select', default: 'homogeneous-panel', options: [{ value: 'homogeneous-panel', label: 'Bare homogeneous panel' }, { value: 'bare-sandwich', label: 'Bare sandwich panel' }, { value: 'built-up-sandwich', label: 'Built-up sandwich panel' }, { value: 'stowed-solar-array', label: 'Stowed solar array' }, { value: 'cylindrical-shell', label: 'Built-up cylindrical shell' }] },
       { key: 'internal', label: 'Internal material loss factor', type: 'number', default: 0.012, min: 0 },
       { key: 'radiation', label: 'Radiation loss factor', type: 'number', default: 0.006, min: 0 },
       { key: 'joint', label: 'Joint / interface loss factor', type: 'number', default: 0.004, min: 0 },
@@ -250,15 +252,20 @@ const acs519CalculatorDefinitions = {
     example: 'If the total damping measured in air greatly exceeds the material-only estimate, radiation, joints, and attachments may dominate the flight configuration.',
     compute(values) {
       const state = lossFactorBudgetState({ frequency: values.frequency, internal: values.internal, radiation: values.radiation, joint: values.joint, fluid: values.fluid, coupling: values.coupling, measuredBandwidth: values.measured_bandwidth, decayTime: values.decay_time, inputPower: values.input_power, storedEnergy: values.stored_energy });
+      const reference = empiricalLossFactorState({ frequency: values.frequency, construction: values.construction });
       const estimates = [state.halfPowerEstimate, state.decayEstimate, state.powerInjectionEstimate];
       const spread = Math.max(...estimates) / Math.max(Math.min(...estimates), 1e-12);
+      const referenceRatio = state.internal / reference.lossFactor;
+      const warnings = [spread > 2 ? 'Half-power, decay, and power-injection estimates disagree by more than 2×; check modal overlap, spatial energy estimation, leakage, and non-exponential decay.' : 'Measurement methods are reasonably consistent, but the total still depends on the tested boundary and installation state.'];
+      if (referenceRatio > 2.5 || referenceRatio < 0.4) warnings.push(`The entered internal loss differs from the ${reference.label.toLowerCase()} reference by ${Math.max(referenceRatio, 1 / referenceRatio).toFixed(1)}×. Treat the empirical family as a sensitivity bound, not a replacement for installed data.`);
       return {
-        values: [stat('Total loss factor', state.total), stat('Equivalent damping ratio', state.dampingRatio), stat('Equivalent Q', state.qFactor), stat('Predicted half-power bandwidth', state.halfPowerBandwidth, 'Hz'), stat('Predicted T60', state.t60, 's'), stat('Measurement-method spread', spread, '×', spread > 2 ? 'warn' : 'good')],
-        interpretation: `The entered loss paths sum to η=${state.total.toFixed(4)}. The independent measurement estimates span ${Math.min(...estimates).toFixed(4)} to ${Math.max(...estimates).toFixed(4)}, a ${spread.toFixed(2)}× range that should be explained before assigning analysis damping.`,
+        values: [stat('Total loss factor', state.total), stat('Reference construction loss', reference.lossFactor), stat('Equivalent damping ratio', state.dampingRatio), stat('Equivalent Q', state.qFactor), stat('Predicted half-power bandwidth', state.halfPowerBandwidth, 'Hz'), stat('Predicted T60', state.t60, 's'), stat('Measurement-method spread', spread, '×', spread > 2 ? 'warn' : 'good')],
+        interpretation: `The entered loss paths sum to η=${state.total.toFixed(4)}. The independent measurement estimates span ${Math.min(...estimates).toFixed(4)} to ${Math.max(...estimates).toFixed(4)}, while the ${reference.label.toLowerCase()} screen gives η=${reference.lossFactor.toFixed(4)} at this frequency.`,
         engineeringConsiderations: launchConsideration('Launch-vehicle damping is configuration- and environment-dependent: joints, purge gas, acoustic radiation, tank fill state, blankets, and installed hardware can outweigh coupon material damping.'),
-        warnings: [spread > 2 ? 'Half-power, decay, and power-injection estimates disagree by more than 2×; check modal overlap, spatial energy estimation, leakage, and non-exponential decay.' : 'Measurement methods are reasonably consistent, but the total still depends on the tested boundary and installation state.'],
+        warnings,
         tables: [{ title: 'Loss-factor budget and measurement cross-check', columns: ['Item', 'Loss factor', 'Role'], rows: [
           ...state.labels.map((label, index) => [label, state.components[index], 'Budget contribution']),
+          [reference.label, reference.lossFactor, 'Empirical construction-family sensitivity reference'],
           ['Half-power estimate', state.halfPowerEstimate, 'Δf / fn'],
           ['Decay estimate', state.decayEstimate, '2.2 / (f T60)'],
           ['Power-injection estimate', state.powerInjectionEstimate, 'P / (ω E)']
@@ -360,6 +367,9 @@ const acs519CalculatorDefinitions = {
       { key: 'room_loss', label: 'Room acoustic loss factor', type: 'number', default: 0.01, min: 0.000001 },
       { key: 'pane_room_coupling', label: 'Pane → room reference CLF', type: 'number', default: 0.012, min: 0.000001 },
       { key: 'pane_gap_air_coupling', label: 'Pane → air-gap reference CLF', type: 'number', default: 0.018, min: 0.000001 },
+      { key: 'nonresonant_path', label: 'Derived nonresonant mass-law path', type: 'select', default: 'enabled', options: [{ value: 'enabled', label: 'Enabled' }, { value: 'disabled', label: 'Disabled' }] },
+      { key: 'blanket_coverage', label: 'Receiver-side blanket coverage', unit: '%', type: 'number', default: 0, min: 0, max: 100 },
+      { key: 'blanket_il', label: 'Measured blanket insertion loss', unit: 'dB', type: 'number', default: 0, min: 0 },
       { key: 'bypass', label: 'Direct / flanking CLF', type: 'number', default: 0, min: 0 },
       { key: 'source_power', label: 'Source-room input power', unit: 'W', type: 'number', default: 1, min: 0.000001 },
       { key: 'source_volume', label: 'Source-room volume', unit: 'm³', type: 'number', default: 80, min: 0.01 },
@@ -369,7 +379,7 @@ const acs519CalculatorDefinitions = {
     assumptions: ['Steady band-averaged diffuse energy and reciprocal passive coupling.', 'Thin isotropic panes with asymptotic flexural modal density and dry structural mass.', 'The medium is homogeneous and quiescent; seals, frame paths, leaks, trim, and detailed radiation efficiency are not resolved.', 'The displayed TL is the source-to-receiver pressure-level difference; room-absorption corrections must be added when the test definition requires them.'],
     example: 'Switch the gap from air to helium, argon, carbon dioxide, or water. Watch the gap modal density, impedance-scaled coupling, mass–fluid–mass resonance, pane velocity, and received level change together.',
     compute(values) {
-      const baseInput = { frequency: values.frequency, medium: values.medium, paneLength: values.pane_length, paneWidth: values.pane_width, gap: mm(values.gap), pane1Thickness: mm(values.pane1_thickness), pane2Thickness: mm(values.pane2_thickness), paneDensity: values.pane_density, paneModulus: gpa(values.pane_modulus), paneLossFactor: values.panel_loss, cavityLossFactor: values.cavity_loss, roomLossFactor: values.room_loss, etaPaneRoom: values.pane_room_coupling, etaPaneCavityAir: values.pane_gap_air_coupling, bypass: values.bypass, sourcePower: values.source_power, sourceRoomVolume: values.source_volume, receiverRoomVolume: values.receiver_volume };
+      const baseInput = { frequency: values.frequency, medium: values.medium, paneLength: values.pane_length, paneWidth: values.pane_width, gap: mm(values.gap), pane1Thickness: mm(values.pane1_thickness), pane2Thickness: mm(values.pane2_thickness), paneDensity: values.pane_density, paneModulus: gpa(values.pane_modulus), paneLossFactor: values.panel_loss, cavityLossFactor: values.cavity_loss, roomLossFactor: values.room_loss, etaPaneRoom: values.pane_room_coupling, etaPaneCavityAir: values.pane_gap_air_coupling, nonresonantPath: values.nonresonant_path, blanketCoverage: num(values.blanket_coverage, 0) / 100, blanketInsertionLoss: values.blanket_il, bypass: values.bypass, sourcePower: values.source_power, sourceRoomVolume: values.source_volume, receiverRoomVolume: values.receiver_volume };
       const state = doubleWindowSeaState(baseInput);
       const network = state.network;
       const frequencies = Array.from({ length: 100 }, (_, index) => 10 ** (Math.log10(50) + index / 99 * (Math.log10(16000) - Math.log10(50))));
@@ -379,10 +389,10 @@ const acs519CalculatorDefinitions = {
       if (sparse.length) warnings.push(`Fewer than five modes occupy the selected band in: ${sparse.join(', ')}. Treat their SEA averages as transitional or replace them with deterministic subsystems.`);
       if (state.impedanceRatio > 10) warnings.push('The inter-pane fluid impedance is far above air. Fluid-added mass and two-way hydroelastic loading can invalidate dry-pane modal density and weak-coupling assumptions.');
       if (state.etaPaneCavity / state.paneLossFactor > 1) warnings.push(state.couplingWarning);
-      if (state.bypass > 0) warnings.push('The direct/flanking path bypasses both panes and the gap; it can cap TL even when the resonant chain is improved.');
-      warnings.push('The screening model does not resolve pane coincidence, finite frame modes, seal leakage, nonresonant mass-law transmission, or measured room-absorption corrections.');
+      if (state.effectiveBypass > 0) warnings.push('The direct/flanking path bypasses both panes and the gap; it can cap TL even when the resonant chain is improved.');
+      warnings.push('The derived nonresonant path is a mass-law screen; finite pane coincidence, frame modes, seals, and measured room-absorption corrections still require separate evidence.');
       return {
-        values: [stat('SEA transmission loss', state.transmissionLoss, 'dB'), stat('Source-room level', state.sourceLevel, 'dB SPL'), stat('Receiving-room level', state.receiverLevel, 'dB SPL'), stat('Pane 1 velocity', state.pane1Velocity * 1000, 'mm/s RMS'), stat('Pane 2 velocity', state.pane2Velocity * 1000, 'mm/s RMS'), stat('Mass–fluid–mass resonance', state.massFluidMassFrequency, 'Hz'), stat('First cross-gap mode', state.crossGapCuton, 'Hz'), stat('Gap modal density', state.cavityModalDensity, 'modes/Hz'), stat('Medium impedance / air', state.impedanceRatio), stat('Power-balance error', 100 * network.balanceError, '%', Math.abs(network.balanceError) > 1e-6 ? 'warn' : 'good')],
+        values: [stat('Installed SEA level reduction', state.transmissionLoss, 'dB'), stat('Component mass-law TL', state.componentMassLawTl, 'dB'), stat('Derived nonresonant CLF', state.nonresonantClf), stat('Source-room level', state.sourceLevel, 'dB SPL'), stat('Receiving-room level', state.receiverLevel, 'dB SPL'), stat('Pane 1 velocity', state.pane1Velocity * 1000, 'mm/s RMS'), stat('Pane 2 velocity', state.pane2Velocity * 1000, 'mm/s RMS'), stat('Mass–fluid–mass resonance', state.massFluidMassFrequency, 'Hz'), stat('First cross-gap mode', state.crossGapCuton, 'Hz'), stat('Gap modal density', state.cavityModalDensity, 'modes/Hz'), stat('Medium impedance / air', state.impedanceRatio), stat('Power-balance error', 100 * network.balanceError, '%', Math.abs(network.balanceError) > 1e-6 ? 'warn' : 'good')],
         interpretation: `The ${state.medium.label.toLowerCase()}-filled gap produces ${state.transmissionLoss.toFixed(1)} dB source-to-receiver pressure-level difference at ${state.frequency.toFixed(0)} Hz. Pane velocities are ${(state.pane1Velocity * 1000).toFixed(3)} and ${(state.pane2Velocity * 1000).toFixed(3)} mm/s RMS. ${state.regime}; the mass–fluid–mass scale is ${state.massFluidMassFrequency.toFixed(1)} Hz.`,
         engineeringConsiderations: launchConsideration('Use the editable demo to partition payload windows, fairing liners, double walls, equipment enclosures, and cavities by stored-energy mechanism. Carry explicit frame, seal, vent, attachment, and direct-field paths when they bypass the nominal pane–gap chain.'),
         warnings,
@@ -397,6 +407,8 @@ const acs519CalculatorDefinitions = {
             ['Density (kg/m³)', state.medium.density, 'Acoustic impedance and fluid loading'],
             ['Sound speed (m/s)', state.medium.soundSpeed, 'Modal density and cross-gap cut-on'],
             ['Pane-to-gap CLF', state.etaPaneCavity, 'Air-reference coupling scaled by impedance and mass–fluid–mass proximity'],
+            ['Component mass-law TL (dB)', state.componentMassLawTl, 'Nonresonant panel-pair transmission screen'],
+            ['Blanket/open-area transmission', state.coverageTransmission, 'Coverage combined in linear power space'],
             ['Gap regime', state.regime, 'Price–Crocker cavity modal-density selection']
           ] }
         ],

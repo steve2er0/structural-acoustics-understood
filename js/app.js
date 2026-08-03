@@ -8,16 +8,18 @@ import { workflowExpansionCalculatorRegistry } from './workflow-expansion-calcul
 import { workflowExpansionSections, workflowExpansionToolCatalog, workflowExpansionDemos, workflowExpansionCaseNotes, workflowExpansionReferenceGroups } from './workflow-expansion-data.js';
 import { programExpansionCalculatorRegistry } from './program-expansion-calculators.js';
 import { programExpansionSections, programExpansionToolCatalog, programExpansionDemos, programExpansionCaseNotes, programExpansionReferenceGroups } from './program-expansion-data.js';
+import { seaParameterCalculatorRegistry } from './sea-parameters-calculators.js';
+import { seaParameterSections, seaParameterToolCatalog, seaParameterDemos, seaParameterCaseNotes, seaParameterReferenceGroups } from './sea-parameters-data.js';
 import { lineChartSvg, heatmapSvg, downloadCsv, downloadSvg, downloadText } from './charts.js';
 import { demoPreviewSvg, mountDemo } from './demos.js';
 import { engineeringResultToText } from './engineering-results.js';
 
-const sections = [...baseSections, ...acs519Sections, ...workflowExpansionSections, ...programExpansionSections];
-const calculatorRegistry = { ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry };
-const toolCatalog = [...baseToolCatalog, ...extraToolCatalog, ...acs519ToolCatalog, ...workflowExpansionToolCatalog, ...programExpansionToolCatalog];
-const demos = [...baseDemos, ...acs519Demos, ...workflowExpansionDemos, ...programExpansionDemos];
-const caseNotes = [...baseCaseNotes, ...acs519CaseNotes, ...workflowExpansionCaseNotes, ...programExpansionCaseNotes];
-const referenceGroups = [...baseReferenceGroups, ...acs519ReferenceGroups, ...workflowExpansionReferenceGroups, ...programExpansionReferenceGroups];
+const sections = [...baseSections, ...acs519Sections, ...workflowExpansionSections, ...programExpansionSections, ...seaParameterSections];
+const calculatorRegistry = { ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry };
+const toolCatalog = [...baseToolCatalog, ...extraToolCatalog, ...acs519ToolCatalog, ...workflowExpansionToolCatalog, ...programExpansionToolCatalog, ...seaParameterToolCatalog];
+const demos = [...baseDemos, ...acs519Demos, ...workflowExpansionDemos, ...programExpansionDemos, ...seaParameterDemos];
+const caseNotes = [...baseCaseNotes, ...acs519CaseNotes, ...workflowExpansionCaseNotes, ...programExpansionCaseNotes, ...seaParameterCaseNotes];
+const referenceGroups = [...baseReferenceGroups, ...acs519ReferenceGroups, ...workflowExpansionReferenceGroups, ...programExpansionReferenceGroups, ...seaParameterReferenceGroups];
 const toolById = new Map(toolCatalog.map(t => [t.id, t]));
 const app = document.querySelector('#app');
 let routeCleanup = () => {};

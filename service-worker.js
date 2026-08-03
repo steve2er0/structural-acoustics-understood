@@ -1,4 +1,4 @@
-const CACHE = 'sau-v18';
+const CACHE = 'sau-v19';
 const CORE = [
   './', './index.html', './styles.css', './manifest.webmanifest', './assets/favicon.svg',
   './js/app.js', './js/data.js', './js/calculators.js', './js/extra-calculators.js',
@@ -8,7 +8,9 @@ const CORE = [
   './js/workflow-expansion-physics.js', './js/workflow-expansion-calculators.js',
   './js/workflow-expansion-data.js', './js/workflow-expansion-demos.js',
   './js/program-expansion-physics.js', './js/program-expansion-calculators.js',
-  './js/program-expansion-data.js', './js/program-expansion-demos.js'
+  './js/program-expansion-data.js', './js/program-expansion-demos.js',
+  './js/sea-parameters-physics.js', './js/sea-parameters-calculators.js',
+  './js/sea-parameters-data.js', './js/sea-parameters-demos.js'
 ];
 
 self.addEventListener('install', event => {

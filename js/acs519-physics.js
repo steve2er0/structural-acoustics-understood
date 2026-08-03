@@ -561,6 +561,9 @@ export function doubleWindowSeaState(input = {}) {
   const etaPaneRoom = positive(input.etaPaneRoom, 0.012);
   const etaPaneCavityAir = positive(input.etaPaneCavityAir, 0.018);
   const bypass = Math.max(0, number(input.bypass, 0));
+  const nonresonantPath = input.nonresonantPath === true || input.nonresonantPath === 'enabled';
+  const blanketCoverage = clamp(number(input.blanketCoverage, 0), 0, 1);
+  const blanketInsertionLoss = Math.max(0, number(input.blanketInsertionLoss, 0));
   const pane1SurfaceMass = paneDensity * pane1Thickness;
   const pane2SurfaceMass = paneDensity * pane2Thickness;
   const pane1Mass = paneArea * pane1SurfaceMass;
@@ -585,6 +588,13 @@ export function doubleWindowSeaState(input = {}) {
   const massFluidMassOffset = Math.log2(frequency / massFluidMassFrequency);
   const massFluidMassGain = 1 + 8 * Math.exp(-0.5 * (massFluidMassOffset / 0.18) ** 2);
   const etaPaneCavity = clamp(etaPaneCavityAir * impedanceRatio * massFluidMassGain, 1e-8, 0.5);
+  const componentMassLawTl = Math.max(0, 20 * Math.log10(Math.max(1, TAU * frequency * (pane1SurfaceMass + pane2SurfaceMass) / (2 * AIR_RHO * AIR_C))) - 5);
+  const blanketTransmission = 10 ** (-blanketInsertionLoss / 10);
+  const coverageTransmission = (1 - blanketCoverage) + blanketCoverage * blanketTransmission;
+  const nonresonantClf = nonresonantPath
+    ? AIR_C * paneArea / (8 * Math.PI * frequency * sourceRoomVolume) * 10 ** (-componentMassLawTl / 10) * coverageTransmission
+    : 0;
+  const effectiveBypass = bypass + nonresonantClf;
   const subsystems = [
     { name: 'Source room', kind: 'acoustic', modalDensity: sourceRoomModalDensity, lossFactor: roomLossFactor, volume: sourceRoomVolume, density: AIR_RHO, soundSpeed: AIR_C, inputPower: sourcePower },
     { name: 'Pane 1', kind: 'structural', modalDensity: pane1ModalDensity, lossFactor: paneLossFactor, mass: pane1Mass },
@@ -598,13 +608,15 @@ export function doubleWindowSeaState(input = {}) {
     { i: 2, j: 3, forward: etaPaneCavity * pane2ModalDensity / cavityModalDensity },
     { i: 3, j: 4, forward: etaPaneRoom }
   ];
-  if (bypass > 0) links.push({ i: 0, j: 4, forward: bypass });
+  if (effectiveBypass > 0) links.push({ i: 0, j: 4, forward: effectiveBypass });
   const network = seaNetworkState({ frequency, subsystems, links, sourceIndex: 0, receiverIndex: 4 });
   return {
     frequency, mediumKey, medium, paneLength, paneWidth, paneArea, panePerimeter, gap,
     pane1Thickness, pane2Thickness, paneDensity, paneModulus, panePoisson, paneLossFactor,
     cavityLossFactor, roomLossFactor, sourceRoomVolume, receiverRoomVolume, sourcePower,
-    etaPaneRoom, etaPaneCavityAir, etaPaneCavity, bypass, pane1SurfaceMass, pane2SurfaceMass,
+    etaPaneRoom, etaPaneCavityAir, etaPaneCavity, bypass, effectiveBypass, nonresonantPath,
+    blanketCoverage, blanketInsertionLoss, blanketTransmission, coverageTransmission,
+    componentMassLawTl, nonresonantClf, pane1SurfaceMass, pane2SurfaceMass,
     pane1Mass, pane2Mass, pane1Rigidity, pane2Rigidity, pane1ModalDensity, pane2ModalDensity,
     sourceRoomModalDensity, receiverRoomModalDensity, cavityVolume, crossGapCuton,
     belowCutonModalDensity, fullCavityModalDensity, cavityModalDensity, impedanceRatio,

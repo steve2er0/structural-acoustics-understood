@@ -289,6 +289,46 @@ export const demoTakeawayRegistry = Object.freeze({
   'tuned-absorber-isolation-lab': state => {
     const mass = number(state, ['massRatio'], 0.05), tuning = number(state, ['tuningRatio'], 0.98), mount = number(state, ['isolationFrequency'], 12);
     return `The absorber uses ${(100 * mass).toFixed(1)}% mass at tuning ratio ${tuning.toFixed(3)}, while the mount resonance is ${mount.toFixed(1)} Hz. Check off-tune amplification, stroke, static deflection, temperature, and operating-speed sweep before claiming installed control.`;
+  },
+  'sea-parameter-chain': state => {
+    const frequency = number(state, ['frequency'], 1000), preset = choice(state, ['preset'], 'honeycombFairing');
+    return `At ${frequency.toFixed(0)} Hz the ${preset.replaceAll(/([A-Z])/g, ' $1').toLowerCase()} result depends on a linked modal-density, loss, radiation, coupling, power, and recovery chain. Audit the least-supported parameter before adding margin to the final response.`;
+  },
+  'modal-density-regime-map': state => {
+    const frequency = number(state, ['frequency'], 1000), loss = number(state, ['lossFactor'], 0.02), type = choice(state, ['type'], 'plate-bending');
+    return `The ${type.replaceAll('-', ' ')} population at ${frequency.toFixed(0)} Hz must be judged using both modes per band and overlap with η=${loss.toFixed(3)}. A dense bending family does not make every wave family or connected subsystem statistical.`;
+  },
+  'sea-driving-point-mobility': state => {
+    const model = choice(state, ['model'], 'plate-center'), force = number(state, ['forceRms'], 10);
+    return `The ${model.replaceAll('-', ' ')} model converts the ${force.toFixed(1)} N RMS force into power through drive-point conductance. A transfer-FRF magnitude cannot replace this real local power input without phase and impedance evidence.`;
+  },
+  'sea-coupling-mechanisms': state => {
+    const mechanism = choice(state, ['mechanism'], 'line-joint'), ratio = number(state, ['modalDensityRatio'], 4.5);
+    return `The ${mechanism.replaceAll('-', ' ')} link has n₂/n₁=${ratio.toFixed(2)}, so reciprocity requires unequal directional CLFs. Keep point, line, area, resonant, and nonresonant paths separate before ranking net receiver power.`;
+  },
+  'environment-to-sea-power': state => {
+    const source = choice(state, ['source'], 'diffuse'), frequency = number(state, ['frequency'], 1000), velocity = number(state, ['convectionVelocity'], 220);
+    return `At ${frequency.toFixed(0)} Hz the ${source.replaceAll('-', ' ')} source with Uc=${velocity.toFixed(0)} m/s is filtered by mobility, modal density, radiation, or spatial acceptance before becoming SEA watts. Equal pressure RMS does not imply equal injected power.`;
+  },
+  'tbl-convection-velocity-map': state => {
+    const model = choice(state, ['model'], 'totaro'), frequency = number(state, ['frequency'], 1000), thickness = number(state, ['displacementThicknessMm'], 12);
+    return `The ${model.replaceAll('-', ' ')} model at ${frequency.toFixed(0)} Hz and δ*=${thickness.toFixed(1)} mm changes convective wavelength, Corcos correlation length, and modal acceptance together. Select it by local attached or separated flow evidence.`;
+  },
+  'equipment-smearing-map': state => {
+    const mass = number(state, ['equipmentMass'], 45), footprint = number(state, ['footprintArea'], 0.35);
+    return `The ${mass.toFixed(0)} kg equipment item occupies ${footprint.toFixed(2)} m². Global mass smearing and local footprint loading answer different response questions; use the spread to decide where an explicit attachment or local panel model is required.`;
+  },
+  'sea-local-response': state => {
+    const type = choice(state, ['responseType'], 'broadband'), distance = number(state, ['boundaryDistance'], 0.2), loss = number(state, ['lossFactor'], 0.02);
+    return `The ${type.replaceAll('-', ' ')} concentration screen uses η=${loss.toFixed(3)} at a point ${distance.toFixed(2)} m from the boundary. Report the SEA spatial average separately from the local maximum estimate and replace boundary-critical receivers with deterministic evidence.`;
+  },
+  'radiation-efficiency-construction-map': state => {
+    const model = choice(state, ['model'], 'baffled-panel'), frequency = number(state, ['frequency'], 1000), thickness = number(state, ['thicknessMm'], 3);
+    return `The ${model.replaceAll('-', ' ')} at ${frequency.toFixed(0)} Hz and ${thickness.toFixed(1)} mm thickness has construction-specific radiation behavior. Use the same efficiency consistently when converting velocity to power, resistance, and panel-air CLF.`;
+  },
+  'fairing-blanket-network': state => {
+    const coverage = number(state, ['blanketCoverage'], 80), insertion = number(state, ['blanketInsertionLoss'], 18), leak = number(state, ['leakAreaPercent'], 0.05);
+    return `${coverage.toFixed(0)}% blanket coverage at ${insertion.toFixed(1)} dB IL still competes with ${leak.toFixed(2)}% opening area and the resonant shell path. Improve the largest solved power share; coupon IL and component TL are not installed payload-cavity reduction.`;
   }
 });
 

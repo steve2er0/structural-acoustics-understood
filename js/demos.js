@@ -12,6 +12,7 @@ import { twoSubsystemEnergyBalance } from './sea-coupling.js';
 import { acs519PreviewSvg, mountAcs519Demo, acs519SupportedDemoIds } from './acs519-demos.js';
 import { workflowExpansionPreviewSvg, mountWorkflowExpansionDemo, workflowExpansionSupportedDemoIds } from './workflow-expansion-demos.js';
 import { programExpansionPreviewSvg, mountProgramExpansionDemo, programExpansionSupportedDemoIds } from './program-expansion-demos.js';
+import { seaParameterPreviewSvg, mountSeaParameterDemo, seaParameterSupportedDemoIds } from './sea-parameters-demos.js';
 import { mountDemoTakeaway } from './demo-takeaways.js';
 
 const TAU = 2 * Math.PI;
@@ -39,6 +40,8 @@ function axesSvg({x=60,y=35,w=760,h=330,xLabel='',yLabel=''}){
 function pathXY(xs,ys,sx,sy){return xs.map((x,i)=>`${i?'L':'M'}${sx(x).toFixed(2)},${sy(ys[i]).toFixed(2)}`).join(' ');}
 
 export function demoPreviewSvg(id){
+  const seaParameterPreview=seaParameterPreviewSvg(id);
+  if(seaParameterPreview)return seaParameterPreview;
   const programPreview=programExpansionPreviewSvg(id);
   if(programPreview)return programPreview;
   const workflowPreview=workflowExpansionPreviewSvg(id);
@@ -752,10 +755,11 @@ function mountRadiation(root){
   function draw(now){const r=+rEl.value,n=Math.round(+nEl.value),speed=+sEl.value,sig=sigma(r),t=(now-start)/1000*speed,A=22*Math.sin(TAU*t),panelPts=Array.from({length:120},(_,i)=>{const x=i/119;return[115+x*285,220+A*Math.sin(Math.PI*n*x)];}),panelPath=panelPts.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');root.querySelector('#out-ratio').textContent=r.toFixed(2);root.querySelector('#out-order').textContent=String(n);root.querySelector('#out-speed').textContent=speed.toFixed(1)+'×';const waves=Array.from({length:5},(_,i)=>{const rad=55+i*48+10*Math.sin(TAU*t),op=clamp(sig*(1-i*.1),.03,1);return`<path d="M400 ${220-rad*.55} Q${500+rad*.55} ${220-rad} ${600+rad} 220 M400 ${220+rad*.55} Q${500+rad*.55} ${220+rad} ${600+rad} 220" fill="none" stroke="#1e6077" stroke-width="4" opacity="${op}"/>`;}).join(''),rs=Array.from({length:200},(_,i)=>.08+3.92*i/199),sx=x=>650+(x-.08)/3.92*300,sy=y=>360-y*270;svg.innerHTML=`<rect width="1000" height="440" fill="#faf8f2"/><rect x="100" y="135" width="320" height="170" fill="#e7e2d8" stroke="#657176"/><path d="${panelPath}" fill="none" stroke="#164453" stroke-width="9"/>${waves}<text x="260" y="70" text-anchor="middle" font-size="16" font-weight="700" fill="#172027">${r<1?'Subcritical bending':'Supercritical / radiating bending'}</text><text x="260" y="98" text-anchor="middle" font-size="13" fill="#5f6b70">screening radiation efficiency σ ≈ ${sig.toFixed(3)}</text>${axesSvg({x:650,y:55,w:300,h:305,xLabel:'f / fc',yLabel:'relative radiation efficiency'})}<path d="${pathXY(rs,rs.map(sigma),sx,sy)}" fill="none" stroke="#1e6077" stroke-width="4"/><line x1="${sx(1)}" y1="55" x2="${sx(1)}" y2="360" stroke="#b96d37" stroke-dasharray="6 5"/><circle cx="${sx(r)}" cy="${sy(sig)}" r="7" fill="#172027"/>`;raf=requestAnimationFrame(draw);}raf=requestAnimationFrame(draw);return()=>cancelAnimationFrame(raf);
 }
 
-export const supportedDemoIds = ['sdof-motion','damping-transmissibility','two-mode','beam-wave','dispersion','coincidence','radiation-efficiency','ring','psd-response','srs-bank','sandwich-regimes','energy-bias','wavenumber-transmission','junction-transmission','joint-acceptance','spatial-field','sea-flow',...acs519SupportedDemoIds,...workflowExpansionSupportedDemoIds,...programExpansionSupportedDemoIds];
+export const supportedDemoIds = ['sdof-motion','damping-transmissibility','two-mode','beam-wave','dispersion','coincidence','radiation-efficiency','ring','psd-response','srs-bank','sandwich-regimes','energy-bias','wavenumber-transmission','junction-transmission','joint-acceptance','spatial-field','sea-flow',...acs519SupportedDemoIds,...workflowExpansionSupportedDemoIds,...programExpansionSupportedDemoIds,...seaParameterSupportedDemoIds];
 
 export function mountDemo(root,id){
-  let cleanup=mountProgramExpansionDemo(root,id);
+  let cleanup=mountSeaParameterDemo(root,id);
+  if(!cleanup)cleanup=mountProgramExpansionDemo(root,id);
   if(!cleanup)cleanup=mountWorkflowExpansionDemo(root,id);
   if(!cleanup)cleanup=mountAcs519Demo(root,id);
   if(!cleanup){

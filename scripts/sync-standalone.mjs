@@ -33,6 +33,10 @@ const programExpansionDataModule = await read('js/program-expansion-data.js');
 const programExpansionPhysicsModule = await read('js/program-expansion-physics.js');
 const programExpansionCalculatorsModule = await read('js/program-expansion-calculators.js');
 const programExpansionDemosModule = await read('js/program-expansion-demos.js');
+const seaParameterDataModule = await read('js/sea-parameters-data.js');
+const seaParameterPhysicsModule = await read('js/sea-parameters-physics.js');
+const seaParameterCalculatorsModule = await read('js/sea-parameters-calculators.js');
+const seaParameterDemosModule = await read('js/sea-parameters-demos.js');
 const demoTakeawaysModule = await read('js/demo-takeaways.js');
 const demosModule = await read('js/demos.js');
 
@@ -47,7 +51,8 @@ const dataBlock = 'const __data=(()=>{\n'+moduleSource(dataModule)+'\nreturn {se
   + 'const __acs519Data=(()=>{\n'+moduleSource(acs519DataModule)+'\nreturn {acs519Sections,acs519ToolCatalog,acs519Demos,acs519CaseNotes,acs519ReferenceGroups};\n})();\n\n';
 const workflowExpansionDataBlock = 'const __workflowExpansionData=(()=>{\n'+moduleSource(workflowExpansionDataModule)+'\nreturn {workflowExpansionSections,workflowExpansionToolCatalog,workflowExpansionDemos,workflowExpansionCaseNotes,workflowExpansionReferenceGroups};\n})();\n\n';
 const programExpansionDataBlock = 'const __programExpansionData=(()=>{\n'+moduleSource(programExpansionDataModule)+'\nreturn {programExpansionSections,programExpansionToolCatalog,programExpansionDemos,programExpansionCaseNotes,programExpansionReferenceGroups};\n})();\n\n';
-standalone = replaceRange(standalone, 'const __data=(()=>{', 'const __calculators=(()=>{', dataBlock + workflowExpansionDataBlock + programExpansionDataBlock);
+const seaParameterDataBlock = 'const __seaParameterData=(()=>{\n'+moduleSource(seaParameterDataModule)+'\nreturn {seaParameterSections,seaParameterToolCatalog,seaParameterDemos,seaParameterCaseNotes,seaParameterReferenceGroups};\n})();\n\n';
+standalone = replaceRange(standalone, 'const __data=(()=>{', 'const __calculators=(()=>{', dataBlock + workflowExpansionDataBlock + programExpansionDataBlock + seaParameterDataBlock);
 
 const seaCouplingExports = [
   'reciprocalCoupling',
@@ -105,7 +110,7 @@ let acs519CalculatorsSource = moduleSource(acs519CalculatorsModule).replace(
   'const acs519CalculatorRegistry = createEngineeringRegistry(acs519CalculatorDefinitions);',
   'const acs519CalculatorRegistry = acs519CalculatorDefinitions;'
 );
-const acs519CalculatorsBlock = `const __acs519Calculators=(()=>{\n${acs519PhysicsImports}\n${acs519CalculatorsSource}\nreturn {acs519CalculatorRegistry};\n})();\n\n`;
+const acs519CalculatorsBlock = `const __acs519Calculators=(()=>{\n${acs519PhysicsImports}\nconst {empiricalLossFactorState}=__seaParameterPhysics;\n${acs519CalculatorsSource}\nreturn {acs519CalculatorRegistry};\n})();\n\n`;
 const acs519DemosBlock = `const __acs519Demos=(()=>{\n${acs519PhysicsImports}\n${moduleSource(acs519DemosModule)}\nreturn {acs519PreviewSvg,mountAcs519Demo,acs519SupportedDemoIds};\n})();\n\n`;
 const workflowExpansionPhysicsExports = [
   'modelTestCorrelationState', 'branchingSeaState', 'transferPathState', 'requirementsFlowdownState',
@@ -136,11 +141,25 @@ let programExpansionCalculatorsSource = moduleSource(programExpansionCalculators
 );
 const programExpansionCalculatorsBlock = `const __programExpansionCalculators=(()=>{\n${programExpansionPhysicsImports}\n${programExpansionCalculatorsSource}\nreturn {programExpansionCalculatorRegistry};\n})();\n\n`;
 const programExpansionDemosBlock = `const __programExpansionDemos=(()=>{\n${programExpansionPhysicsImports}\n${moduleSource(programExpansionDemosModule)}\nreturn {programExpansionPreviewSvg,mountProgramExpansionDemo,programExpansionSupportedDemoIds};\n})();\n\n`;
+const seaParameterPhysicsExports = [
+  'SEA_PARAMETER_PRESETS', 'empiricalLossFactorState', 'modalDensityAtlasState',
+  'radiationEfficiencyAtlasState', 'drivingPointImpedanceState', 'clfMechanismState',
+  'tblConvectionState', 'equivalentPowerInjectionState', 'equipmentLoadingState',
+  'seaResponseRecoveryState', 'installedFairingSeaState', 'seaParameterWorkbenchState'
+];
+const seaParameterPhysicsBlock = `const __seaParameterPhysics=(()=>{\nconst {seaNetworkState}=__acs519Physics;\n${moduleSource(seaParameterPhysicsModule)}\nreturn {${seaParameterPhysicsExports.join(',')}};\n})();\n\n`;
+const seaParameterPhysicsImports = `const {${seaParameterPhysicsExports.join(',')}}=__seaParameterPhysics;`;
+let seaParameterCalculatorsSource = moduleSource(seaParameterCalculatorsModule).replace(
+  'const seaParameterCalculatorRegistry = createEngineeringRegistry(definitions);',
+  'const seaParameterCalculatorRegistry = definitions;'
+);
+const seaParameterCalculatorsBlock = `const __seaParameterCalculators=(()=>{\n${seaParameterPhysicsImports}\n${seaParameterCalculatorsSource}\nreturn {seaParameterCalculatorRegistry};\n})();\n\n`;
+const seaParameterDemosBlock = `const __seaParameterDemos=(()=>{\n${seaParameterPhysicsImports}\n${moduleSource(seaParameterDemosModule)}\nreturn {seaParameterPreviewSvg,mountSeaParameterDemo,seaParameterSupportedDemoIds};\n})();\n\n`;
 const extraCalculatorsStart = 'const __extraCalculators=(()=>{';
 if (standalone.includes(honeycombStart)) {
-  standalone = replaceRange(standalone, honeycombStart, extraCalculatorsStart, honeycombBlock + acs519PhysicsBlock + acs519CalculatorsBlock + acs519DemosBlock + workflowExpansionPhysicsBlock + workflowExpansionCalculatorsBlock + workflowExpansionDemosBlock + programExpansionPhysicsBlock + programExpansionCalculatorsBlock + programExpansionDemosBlock);
+  standalone = replaceRange(standalone, honeycombStart, extraCalculatorsStart, honeycombBlock + acs519PhysicsBlock + seaParameterPhysicsBlock + acs519CalculatorsBlock + acs519DemosBlock + workflowExpansionPhysicsBlock + workflowExpansionCalculatorsBlock + workflowExpansionDemosBlock + programExpansionPhysicsBlock + programExpansionCalculatorsBlock + programExpansionDemosBlock + seaParameterCalculatorsBlock + seaParameterDemosBlock);
 } else {
-  standalone = standalone.replace(extraCalculatorsStart, honeycombBlock + acs519PhysicsBlock + acs519CalculatorsBlock + acs519DemosBlock + workflowExpansionPhysicsBlock + workflowExpansionCalculatorsBlock + workflowExpansionDemosBlock + programExpansionPhysicsBlock + programExpansionCalculatorsBlock + programExpansionDemosBlock + extraCalculatorsStart);
+  standalone = standalone.replace(extraCalculatorsStart, honeycombBlock + acs519PhysicsBlock + seaParameterPhysicsBlock + acs519CalculatorsBlock + acs519DemosBlock + workflowExpansionPhysicsBlock + workflowExpansionCalculatorsBlock + workflowExpansionDemosBlock + programExpansionPhysicsBlock + programExpansionCalculatorsBlock + programExpansionDemosBlock + seaParameterCalculatorsBlock + seaParameterDemosBlock + extraCalculatorsStart);
 }
 
 const honeycombImportNames = 'const {' + honeycombExports.join(',') + '}=__honeycomb;';
@@ -170,7 +189,7 @@ const demoTakeawaysBlock = `const __demoTakeaways=(()=>{\n${moduleSource(demoTak
 const demosBlock = `const __demosModule=(()=>{\nconst {${demoHoneycombNames.join(',')}}=__honeycomb;\nconst {twoSubsystemEnergyBalance}=__seaCoupling;\nconst {mountDemoTakeaway}=__demoTakeaways;\n${moduleSource(demosModule)}\nreturn {demoPreviewSvg,mountDemo,supportedDemoIds,spatialCoherence,jointAcceptance};\n})();\n\n`;
 const demosWithAcs519Block = demosBlock.replace(
   'const {twoSubsystemEnergyBalance}=__seaCoupling;',
-  'const {twoSubsystemEnergyBalance}=__seaCoupling;\nconst {acs519PreviewSvg,mountAcs519Demo,acs519SupportedDemoIds}=__acs519Demos;\nconst {workflowExpansionPreviewSvg,mountWorkflowExpansionDemo,workflowExpansionSupportedDemoIds}=__workflowExpansionDemos;\nconst {programExpansionPreviewSvg,mountProgramExpansionDemo,programExpansionSupportedDemoIds}=__programExpansionDemos;'
+  'const {twoSubsystemEnergyBalance}=__seaCoupling;\nconst {acs519PreviewSvg,mountAcs519Demo,acs519SupportedDemoIds}=__acs519Demos;\nconst {workflowExpansionPreviewSvg,mountWorkflowExpansionDemo,workflowExpansionSupportedDemoIds}=__workflowExpansionDemos;\nconst {programExpansionPreviewSvg,mountProgramExpansionDemo,programExpansionSupportedDemoIds}=__programExpansionDemos;\nconst {seaParameterPreviewSvg,mountSeaParameterDemo,seaParameterSupportedDemoIds}=__seaParameterDemos;'
 );
 const demoRuntimeStart = standalone.includes('const __demoTakeaways=(()=>{') ? 'const __demoTakeaways=(()=>{' : 'const __demosModule=(()=>{';
 standalone = replaceRange(standalone, demoRuntimeStart, 'const __engineeringResults=(()=>{', demoTakeawaysBlock + demosWithAcs519Block);
@@ -187,18 +206,20 @@ if (standalone.includes(frameworkStart)) {
   standalone = standalone.replace(appStartMarker, frameworkBlock + appStartMarker);
 }
 
-const oldRegistry = 'const calculatorRegistry = { ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry };';
-const newRegistry = 'const calculatorRegistry = createEngineeringRegistry({ ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry });';
+const oldRegistry = 'const calculatorRegistry = { ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry };';
+const newRegistry = 'const calculatorRegistry = createEngineeringRegistry({ ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry });';
 const appPrelude = [
   appImports,
   'const {acs519Sections,acs519ToolCatalog,acs519Demos,acs519CaseNotes,acs519ReferenceGroups}=__acs519Data;',
   'const {workflowExpansionSections,workflowExpansionToolCatalog,workflowExpansionDemos,workflowExpansionCaseNotes,workflowExpansionReferenceGroups}=__workflowExpansionData;',
   'const {programExpansionSections,programExpansionToolCatalog,programExpansionDemos,programExpansionCaseNotes,programExpansionReferenceGroups}=__programExpansionData;',
+  'const {seaParameterSections,seaParameterToolCatalog,seaParameterDemos,seaParameterCaseNotes,seaParameterReferenceGroups}=__seaParameterData;',
   'const {calculatorRegistry:baseCalculatorRegistry}=__calculators;',
   'const {extraCalculatorRegistry}=__extraCalculators;',
   'const {acs519CalculatorRegistry}=__acs519Calculators;',
   'const {workflowExpansionCalculatorRegistry}=__workflowExpansionCalculators;',
   'const {programExpansionCalculatorRegistry}=__programExpansionCalculators;',
+  'const {seaParameterCalculatorRegistry}=__seaParameterCalculators;',
   'const {extraToolCatalog}=__extraData;',
   'const {lineChartSvg,heatmapSvg,downloadCsv,downloadSvg,downloadText}=__charts;',
   'const {demoPreviewSvg,mountDemo}=__demosModule;',
