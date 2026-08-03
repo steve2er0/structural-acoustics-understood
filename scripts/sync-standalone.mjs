@@ -1,0 +1,211 @@
+import { readFile, writeFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const read = file => readFile(path.join(projectRoot, file), 'utf8');
+
+function replaceRange(source, startMarker, endMarker, replacement) {
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf(endMarker, start + startMarker.length);
+  if (start < 0 || end < 0) throw new Error(`Could not find standalone markers: ${startMarker} … ${endMarker}`);
+  return source.slice(0, start) + replacement + source.slice(end);
+}
+
+let standalone = await read('standalone.html');
+const styles = await read('styles.css');
+const app = await read('js/app.js');
+const frameworkModule = await read('js/engineering-results.js');
+const dataModule = await read('js/data.js');
+const seaCouplingModule = await read('js/sea-coupling.js');
+const honeycombModule = await read('js/honeycomb-paper.js');
+const extraCalculatorsModule = await read('js/extra-calculators.js');
+const extraDataModule = await read('js/extra-data.js');
+const acs519DataModule = await read('js/acs519-data.js');
+const acs519PhysicsModule = await read('js/acs519-physics.js');
+const acs519CalculatorsModule = await read('js/acs519-calculators.js');
+const acs519DemosModule = await read('js/acs519-demos.js');
+const workflowExpansionDataModule = await read('js/workflow-expansion-data.js');
+const workflowExpansionPhysicsModule = await read('js/workflow-expansion-physics.js');
+const workflowExpansionCalculatorsModule = await read('js/workflow-expansion-calculators.js');
+const workflowExpansionDemosModule = await read('js/workflow-expansion-demos.js');
+const programExpansionDataModule = await read('js/program-expansion-data.js');
+const programExpansionPhysicsModule = await read('js/program-expansion-physics.js');
+const programExpansionCalculatorsModule = await read('js/program-expansion-calculators.js');
+const programExpansionDemosModule = await read('js/program-expansion-demos.js');
+const demoTakeawaysModule = await read('js/demo-takeaways.js');
+const demosModule = await read('js/demos.js');
+
+standalone = replaceRange(standalone, '<style>\n', '</style>', `<style>\n${styles}`);
+standalone = standalone.replace(/(?:<\/style>)+/, '</style>');
+
+const stripImports = source => source.replace(/^import\s+[\s\S]*?;\s*/gm, '');
+const stripExports = source => source.replace(/^export /gm, '');
+const moduleSource = source => stripExports(stripImports(source));
+
+const dataBlock = 'const __data=(()=>{\n'+moduleSource(dataModule)+'\nreturn {sections,toolCatalog,demos,caseNotes,referenceGroups,glossary};\n})();\n\n'
+  + 'const __acs519Data=(()=>{\n'+moduleSource(acs519DataModule)+'\nreturn {acs519Sections,acs519ToolCatalog,acs519Demos,acs519CaseNotes,acs519ReferenceGroups};\n})();\n\n';
+const workflowExpansionDataBlock = 'const __workflowExpansionData=(()=>{\n'+moduleSource(workflowExpansionDataModule)+'\nreturn {workflowExpansionSections,workflowExpansionToolCatalog,workflowExpansionDemos,workflowExpansionCaseNotes,workflowExpansionReferenceGroups};\n})();\n\n';
+const programExpansionDataBlock = 'const __programExpansionData=(()=>{\n'+moduleSource(programExpansionDataModule)+'\nreturn {programExpansionSections,programExpansionToolCatalog,programExpansionDemos,programExpansionCaseNotes,programExpansionReferenceGroups};\n})();\n\n';
+standalone = replaceRange(standalone, 'const __data=(()=>{', 'const __calculators=(()=>{', dataBlock + workflowExpansionDataBlock + programExpansionDataBlock);
+
+const seaCouplingExports = [
+  'reciprocalCoupling',
+  'couplingPowerState',
+  'twoSubsystemEnergyBalance',
+  'forwardClfExperiment',
+  'identifyClfExperiment',
+  'histogram',
+  'clfIdentificationUncertainty'
+];
+const seaCouplingBlock = `const __seaCoupling=(()=>{\n${moduleSource(seaCouplingModule)}\nreturn {${seaCouplingExports.join(',')}};\n})();\n\n`;
+const seaCouplingStart = 'const __seaCoupling=(()=>{';
+const honeycombStart = 'const __honeycomb=(()=>{';
+if (standalone.includes(seaCouplingStart)) {
+  standalone = replaceRange(standalone, seaCouplingStart, honeycombStart, seaCouplingBlock);
+} else {
+  standalone = standalone.replace(honeycombStart, seaCouplingBlock + honeycombStart);
+}
+
+const honeycombExports = [
+  'HONEYCOMB_PAPER_REFERENCE',
+  'HONEYCOMB_PANEL_PRESETS',
+  'HONEYCOMB_MODE_DATA',
+  'PAPER_LAP_TRANSMISSION',
+  'honeycombPreset',
+  'honeycombProperties',
+  'honeycombWaveState',
+  'honeycombFrequencySeries',
+  'honeycombCoincidenceFrequency',
+  'idealLineTransmission',
+  'blockingMassTransmission',
+  'pointConnectionTransmission',
+  'paperLapTransmission',
+  'pointCouplingLossFactor',
+  'lineCouplingLossFactor',
+  'junctionTransmissionState',
+  'experimentalSeaInverse',
+  'seaForwardEnergies',
+  'inhomogeneousEnergyStudy',
+  'wavenumberTransmissionStudy'
+];
+const honeycombBlock = `const __honeycomb=(()=>{\n${moduleSource(honeycombModule)}\nreturn {${honeycombExports.join(',')}};\n})();\n\n`;
+const acs519PhysicsExports = [
+  'SEA_MEDIA', 'seaNetworkState', 'doubleWindowSeaState',
+  'modalRadiationState', 'besselJ1', 'struveH1', 'pistonRadiationState', 'shellAcousticsState',
+  'feBePlannerState', 'panelTransmissionState', 'orthotropicPanelState', 'lossFactorBudgetState',
+  'modalTestState', 'seaValidityState', 'doublePanelSeaState', 'khiePatchState', 'pipeNoiseState',
+  'waveMatchingState', 'drivenRadiationState', 'soundIntensityProbeState', 'dynamicStressEnvironmentState',
+  'launchAcousticSourceState', 'wetTankDynamicsState', 'qualificationTestState',
+  'ACS519_DEFAULTS'
+];
+const acs519PhysicsBlock = `const __acs519Physics=(()=>{\n${moduleSource(acs519PhysicsModule)}\nreturn {${acs519PhysicsExports.join(',')}};\n})();\n\n`;
+const acs519PhysicsImports = `const {${acs519PhysicsExports.join(',')}}=__acs519Physics;`;
+let acs519CalculatorsSource = moduleSource(acs519CalculatorsModule).replace(
+  'const acs519CalculatorRegistry = createEngineeringRegistry(acs519CalculatorDefinitions);',
+  'const acs519CalculatorRegistry = acs519CalculatorDefinitions;'
+);
+const acs519CalculatorsBlock = `const __acs519Calculators=(()=>{\n${acs519PhysicsImports}\n${acs519CalculatorsSource}\nreturn {acs519CalculatorRegistry};\n})();\n\n`;
+const acs519DemosBlock = `const __acs519Demos=(()=>{\n${acs519PhysicsImports}\n${moduleSource(acs519DemosModule)}\nreturn {acs519PreviewSvg,mountAcs519Demo,acs519SupportedDemoIds};\n})();\n\n`;
+const workflowExpansionPhysicsExports = [
+  'modelTestCorrelationState', 'branchingSeaState', 'transferPathState', 'requirementsFlowdownState',
+  'mitigationTradeState', 'nonlinearJointState', 'fairingCavityState', 'uncertaintySensitivityState',
+  'milesValidityState', 'extremeResponseState', 'WORKFLOW_DEFAULTS', 'G0'
+];
+const workflowExpansionPhysicsBlock = `const __workflowExpansionPhysics=(()=>{\n${moduleSource(workflowExpansionPhysicsModule)}\nreturn {${workflowExpansionPhysicsExports.join(',')}};\n})();\n\n`;
+const workflowExpansionPhysicsImports = `const {${workflowExpansionPhysicsExports.join(',')}}=__workflowExpansionPhysics;`;
+let workflowExpansionCalculatorsSource = moduleSource(workflowExpansionCalculatorsModule).replace(
+  'const workflowExpansionCalculatorRegistry = createEngineeringRegistry(workflowExpansionCalculatorDefinitions);',
+  'const workflowExpansionCalculatorRegistry = workflowExpansionCalculatorDefinitions;'
+);
+const workflowExpansionCalculatorsBlock = `const __workflowExpansionCalculators=(()=>{\n${workflowExpansionPhysicsImports}\n${workflowExpansionCalculatorsSource}\nreturn {workflowExpansionCalculatorRegistry};\n})();\n\n`;
+const workflowExpansionDemosBlock = `const __workflowExpansionDemos=(()=>{\n${workflowExpansionPhysicsImports}\n${moduleSource(workflowExpansionDemosModule)}\nreturn {workflowExpansionPreviewSvg,mountWorkflowExpansionDemo,workflowExpansionSupportedDemoIds};\n})();\n\n`;
+const programExpansionPhysicsExports = [
+  'nonstationaryEnvironmentState', 'mimoTestState', 'acousticTreatmentState', 'sourceIdentificationState',
+  'hybridMethodState', 'vibroacousticFatigueState', 'missionTimelineState', 'credibilityState',
+  'capstoneState', 'noiseControlPathState', 'psychoacousticState', 'noiseMetricsState',
+  'acousticMeasurementState', 'canonicalSourceState', 'sourceGeometryState', 'fanDuctState',
+  'outdoorPropagationState', 'barrierDiffractionState', 'roomFieldState', 'enclosureDesignState',
+  'absorberResonatorState', 'tunedAbsorberIsolationState', 'PROGRAM_DEFAULTS'
+];
+const programExpansionPhysicsBlock = `const __programExpansionPhysics=(()=>{\n${moduleSource(programExpansionPhysicsModule)}\nreturn {${programExpansionPhysicsExports.join(',')}};\n})();\n\n`;
+const programExpansionPhysicsImports = `const {${programExpansionPhysicsExports.join(',')}}=__programExpansionPhysics;`;
+let programExpansionCalculatorsSource = moduleSource(programExpansionCalculatorsModule).replace(
+  'const programExpansionCalculatorRegistry = createEngineeringRegistry(definitions);',
+  'const programExpansionCalculatorRegistry = definitions;'
+);
+const programExpansionCalculatorsBlock = `const __programExpansionCalculators=(()=>{\n${programExpansionPhysicsImports}\n${programExpansionCalculatorsSource}\nreturn {programExpansionCalculatorRegistry};\n})();\n\n`;
+const programExpansionDemosBlock = `const __programExpansionDemos=(()=>{\n${programExpansionPhysicsImports}\n${moduleSource(programExpansionDemosModule)}\nreturn {programExpansionPreviewSvg,mountProgramExpansionDemo,programExpansionSupportedDemoIds};\n})();\n\n`;
+const extraCalculatorsStart = 'const __extraCalculators=(()=>{';
+if (standalone.includes(honeycombStart)) {
+  standalone = replaceRange(standalone, honeycombStart, extraCalculatorsStart, honeycombBlock + acs519PhysicsBlock + acs519CalculatorsBlock + acs519DemosBlock + workflowExpansionPhysicsBlock + workflowExpansionCalculatorsBlock + workflowExpansionDemosBlock + programExpansionPhysicsBlock + programExpansionCalculatorsBlock + programExpansionDemosBlock);
+} else {
+  standalone = standalone.replace(extraCalculatorsStart, honeycombBlock + acs519PhysicsBlock + acs519CalculatorsBlock + acs519DemosBlock + workflowExpansionPhysicsBlock + workflowExpansionCalculatorsBlock + workflowExpansionDemosBlock + programExpansionPhysicsBlock + programExpansionCalculatorsBlock + programExpansionDemosBlock + extraCalculatorsStart);
+}
+
+const honeycombImportNames = 'const {' + honeycombExports.join(',') + '}=__honeycomb;';
+const seaCouplingImportNames = 'const {' + seaCouplingExports.join(',') + '}=__seaCoupling;';
+let extraCalculatorsSource = moduleSource(extraCalculatorsModule)
+  .replace(
+    'const extraCalculatorRegistry = createEngineeringRegistry(extraCalculatorDefinitions);',
+    'const extraCalculatorRegistry = extraCalculatorDefinitions;'
+  );
+const extraCalculatorsBlock = `const __extraCalculators=(()=>{\n${honeycombImportNames}\n${seaCouplingImportNames}\n${extraCalculatorsSource}\nreturn {extraCalculatorRegistry};\n})();\n\n`;
+standalone = replaceRange(standalone, extraCalculatorsStart, 'const __extraData=(()=>{', extraCalculatorsBlock);
+
+const extraDataBlock = `const __extraData=(()=>{\n${moduleSource(extraDataModule)}\nreturn {extraToolCatalog};\n})();\n\n`;
+standalone = replaceRange(standalone, 'const __extraData=(()=>{', 'const __charts=(()=>{', extraDataBlock);
+
+const demoHoneycombNames = [
+  'PAPER_LAP_TRANSMISSION',
+  'honeycombCoincidenceFrequency',
+  'honeycombFrequencySeries',
+  'honeycombPreset',
+  'honeycombWaveState',
+  'inhomogeneousEnergyStudy',
+  'junctionTransmissionState',
+  'wavenumberTransmissionStudy'
+];
+const demoTakeawaysBlock = `const __demoTakeaways=(()=>{\n${moduleSource(demoTakeawaysModule)}\nreturn {demoTakeawayRegistry,buildDemoTakeaway,assertDemoTakeaway,assertDemoTakeawayRegistry,mountDemoTakeaway};\n})();\n\n`;
+const demosBlock = `const __demosModule=(()=>{\nconst {${demoHoneycombNames.join(',')}}=__honeycomb;\nconst {twoSubsystemEnergyBalance}=__seaCoupling;\nconst {mountDemoTakeaway}=__demoTakeaways;\n${moduleSource(demosModule)}\nreturn {demoPreviewSvg,mountDemo,supportedDemoIds,spatialCoherence,jointAcceptance};\n})();\n\n`;
+const demosWithAcs519Block = demosBlock.replace(
+  'const {twoSubsystemEnergyBalance}=__seaCoupling;',
+  'const {twoSubsystemEnergyBalance}=__seaCoupling;\nconst {acs519PreviewSvg,mountAcs519Demo,acs519SupportedDemoIds}=__acs519Demos;\nconst {workflowExpansionPreviewSvg,mountWorkflowExpansionDemo,workflowExpansionSupportedDemoIds}=__workflowExpansionDemos;\nconst {programExpansionPreviewSvg,mountProgramExpansionDemo,programExpansionSupportedDemoIds}=__programExpansionDemos;'
+);
+const demoRuntimeStart = standalone.includes('const __demoTakeaways=(()=>{') ? 'const __demoTakeaways=(()=>{' : 'const __demosModule=(()=>{';
+standalone = replaceRange(standalone, demoRuntimeStart, 'const __engineeringResults=(()=>{', demoTakeawaysBlock + demosWithAcs519Block);
+
+const frameworkSource = frameworkModule.replace(/^export /gm, '');
+const frameworkBlock = `const __engineeringResults=(()=>{\n${frameworkSource}\nreturn {buildEngineeringResult,assertEngineeringResult,createEngineeringCalculator,createEngineeringRegistry,engineeringResultToText};\n})();\n\n`;
+const frameworkStart = 'const __engineeringResults=(()=>{';
+const legacyAppImports = 'const {sections,toolCatalog:baseToolCatalog,demos,caseNotes,referenceGroups,glossary}=__data;';
+const appImports = 'const {sections:baseSections,toolCatalog:baseToolCatalog,demos:baseDemos,caseNotes:baseCaseNotes,referenceGroups:baseReferenceGroups,glossary}=__data;';
+const appStartMarker = standalone.includes(appImports) ? appImports : legacyAppImports;
+if (standalone.includes(frameworkStart)) {
+  standalone = replaceRange(standalone, frameworkStart, appStartMarker, frameworkBlock);
+} else {
+  standalone = standalone.replace(appStartMarker, frameworkBlock + appStartMarker);
+}
+
+const oldRegistry = 'const calculatorRegistry = { ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry };';
+const newRegistry = 'const calculatorRegistry = createEngineeringRegistry({ ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry });';
+const appPrelude = [
+  appImports,
+  'const {acs519Sections,acs519ToolCatalog,acs519Demos,acs519CaseNotes,acs519ReferenceGroups}=__acs519Data;',
+  'const {workflowExpansionSections,workflowExpansionToolCatalog,workflowExpansionDemos,workflowExpansionCaseNotes,workflowExpansionReferenceGroups}=__workflowExpansionData;',
+  'const {programExpansionSections,programExpansionToolCatalog,programExpansionDemos,programExpansionCaseNotes,programExpansionReferenceGroups}=__programExpansionData;',
+  'const {calculatorRegistry:baseCalculatorRegistry}=__calculators;',
+  'const {extraCalculatorRegistry}=__extraCalculators;',
+  'const {acs519CalculatorRegistry}=__acs519Calculators;',
+  'const {workflowExpansionCalculatorRegistry}=__workflowExpansionCalculators;',
+  'const {programExpansionCalculatorRegistry}=__programExpansionCalculators;',
+  'const {extraToolCatalog}=__extraData;',
+  'const {lineChartSvg,heatmapSvg,downloadCsv,downloadSvg,downloadText}=__charts;',
+  'const {demoPreviewSvg,mountDemo}=__demosModule;',
+  'const {createEngineeringRegistry,engineeringResultToText}=__engineeringResults;'
+].join('\n');
+let appSource = stripImports(app).trim();
+appSource = appSource.replace(oldRegistry,newRegistry);
+standalone = replaceRange(standalone, appStartMarker, '</script>', appPrelude+'\n\n'+appSource+'\n');
+
+await writeFile(path.join(projectRoot, 'standalone.html'), standalone);

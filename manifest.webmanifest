@@ -1,0 +1,9 @@
+{
+  "name": "Structural Acoustics, Understood",
+  "short_name": "SA Understood",
+  "start_url": "./#/cheat-sheet",
+  "display": "standalone",
+  "background_color": "#f4f1ea",
+  "theme_color": "#17324d",
+  "icons": [{"src":"assets/favicon.svg","sizes":"any","type":"image/svg+xml"}]
+}
