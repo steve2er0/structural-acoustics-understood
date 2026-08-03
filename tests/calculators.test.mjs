@@ -79,6 +79,15 @@ import { jointAcceptance, spatialCoherence, supportedDemoIds } from '../js/demos
 import { assertDemoTakeawayRegistry, buildDemoTakeaway, demoTakeawayRegistry } from '../js/demo-takeaways.js';
 import { assertEngineeringResult, engineeringResultToText } from '../js/engineering-results.js';
 import {
+  atlasSections,
+  featuredItems,
+  homepageNavigation,
+  homepageNavKey,
+  navigationCards,
+  quickStartItems,
+  renderHomepage
+} from '../js/homepage.js';
+import {
   experimentalSeaInverse,
   honeycombCoincidenceFrequency,
   honeycombPreset,
@@ -671,11 +680,52 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   assert.match(html,/function seaParameterWorkbenchState\(input = \{\}\)/);
   assert.match(html,/function installedFairingSeaState\(input = \{\}\)/);
   assert.match(html,/function mountFairing\(root\)/);
+  assert.match(html,/const __homepage=\(\(\)=>\{/);
+  assert.match(html,/function renderHomepage\(stats = \{\}\)/);
+  assert.match(html,/function bindHomepage\(root = document\)/);
+  assert.match(html,/Interactive generic launch-vehicle structural atlas/);
+});
+
+test('homepage atlas is data-driven, accessible, and linked to real content',()=>{
+  const allSections=[...baseSections,...acs519Sections,...workflowExpansionSections,...programExpansionSections,...seaParameterSections];
+  const allTools=[...toolCatalog,...extraToolCatalog,...acs519ToolCatalog,...workflowExpansionToolCatalog,...programExpansionToolCatalog,...seaParameterToolCatalog];
+  const allDemos=[...baseDemos,...acs519Demos,...workflowExpansionDemos,...programExpansionDemos,...seaParameterDemos];
+  const sectionIds=new Set(allSections.map(section=>section.id));
+  const toolIds=new Set(allTools.map(tool=>tool.id));
+  const demoIds=new Set(allDemos.map(demo=>demo.id));
+  const routeItems=[...homepageNavigation,...atlasSections,...quickStartItems,...navigationCards,...featuredItems];
+  const verifyRoute=href=>{
+    const tool=href.match(/^#\/tool\/([^?]+)/)?.[1];
+    const demo=href.match(/^#\/demo\/([^?]+)/)?.[1];
+    const section=href.match(/[?&]section=([^&]+)/)?.[1];
+    if(tool)assert.ok(toolIds.has(tool),`homepage tool route ${tool} is missing`);
+    if(demo)assert.ok(demoIds.has(demo),`homepage demo route ${demo} is missing`);
+    if(section)assert.ok(sectionIds.has(section),`homepage section route ${section} is missing`);
+    assert.match(href,/^#\//,`homepage route ${href} must use the SPA router`);
+  };
+  assert.equal(homepageNavigation.length,6);
+  assert.equal(atlasSections.length,6);
+  assert.equal(quickStartItems.length,6);
+  assert.equal(navigationCards.length,6);
+  assert.equal(featuredItems.length,6);
+  assert.equal(new Set(atlasSections.map(section=>section.id)).size,atlasSections.length);
+  atlasSections.forEach(section=>assert.equal(section.subjects.length,3,`${section.id} must expose three engineering subjects`));
+  routeItems.forEach(item=>verifyRoute(item.href));
+  assert.equal(homepageNavKey('tool'),'tools');
+  assert.equal(homepageNavKey('cheat-sheet','shell-acoustics-deep-dive'),'hardware');
+  assert.equal(homepageNavKey('cheat-sheet','launch-vibroacoustic-capstone'),'workflows');
+  const html=renderHomepage({chapters:allSections.length,tools:allTools.length,demos:allDemos.length});
+  assert.match(html,/Understand how vibration and sound move through structures/);
+  assert.match(html,/aria-labelledby="atlas-heading"/);
+  assert.match(html,/aria-live="polite"/);
+  assert.match(html,/data-atlas-section="fairing"/);
+  assert.match(html,/113 tools/);
 });
 
 test('offline cache includes the demo takeaway runtime',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v19'/);
+  assert.match(worker,/const CACHE = 'sau-v20'/);
+  assert.match(worker,/\.\/js\/homepage\.js/);
   assert.match(worker,/\.\/js\/demo-takeaways\.js/);
   assert.match(worker,/\.\/js\/workflow-expansion-data\.js/);
   assert.match(worker,/\.\/js\/workflow-expansion-demos\.js/);

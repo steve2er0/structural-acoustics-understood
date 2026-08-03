@@ -13,6 +13,7 @@ import { seaParameterSections, seaParameterToolCatalog, seaParameterDemos, seaPa
 import { lineChartSvg, heatmapSvg, downloadCsv, downloadSvg, downloadText } from './charts.js';
 import { demoPreviewSvg, mountDemo } from './demos.js';
 import { engineeringResultToText } from './engineering-results.js';
+import { homepageNavigation, homepageNavKey, renderHomepage, bindHomepage } from './homepage.js';
 
 const sections = [...baseSections, ...acs519Sections, ...workflowExpansionSections, ...programExpansionSections, ...seaParameterSections];
 const calculatorRegistry = { ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry };
@@ -53,25 +54,20 @@ function icon(name) {
 }
 function brandMark(){return `<svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21"/><path d="M8 27c6-13 12-13 18 0s11 13 14 1"/><path d="M8 19c6 8 12 8 18 0s10-8 14-1"/></svg>`;}
 function routeInfo(){
-  const raw=(location.hash.slice(1)||'/cheat-sheet');
+  const raw=(location.hash.slice(1)||'/');
   const [pathPart, queryString='']=raw.split('?');
   const path=pathPart.startsWith('/')?pathPart:`/${pathPart}`;
   return { path, segments:path.split('/').filter(Boolean), params:new URLSearchParams(queryString), raw };
 }
 function navKey(route){
-  const first=route.segments[0]||'cheat-sheet';
-  if(first==='case-note')return 'case-notes';
-  if(first==='tool')return 'tools';
-  if(first==='demo')return 'demos';
-  return first;
+  return homepageNavKey(route.segments[0]||'',route.params.get('section')||'');
 }
 function shell(main, route) {
   const active=navKey(route);
-  const nav=[['cheat-sheet','Cheat Sheet'],['tools','Tools'],['demos','Demos'],['case-notes','Case Notes'],['references','References']];
   return `<header class="site-header">
-    <a class="brand" href="#/cheat-sheet">${brandMark()}<span class="brand-copy"><strong>Structural Acoustics, Understood</strong><small>Vibration · Shock · Acoustics · Coupled Response</small></span></a>
-    <nav class="primary-nav" aria-label="Primary">${nav.map(([id,label])=>`<a href="#/${id}" class="${active===id?'active':''}" ${active===id?'aria-current="page"':''}>${label}</a>`).join('')}</nav>
-    <div class="header-actions"><button class="icon-button" data-action="search" aria-label="Search">${icon('search')}</button><button class="icon-button" data-action="print" aria-label="Print current page">${icon('print')}</button><button class="menu-button" aria-label="Toggle navigation" aria-expanded="false"><span></span><span></span><span></span></button></div>
+    <a class="brand" href="#/">${brandMark()}<span class="brand-copy"><strong>Structural Acoustics</strong><small>Understood</small></span></a>
+    <nav class="primary-nav" aria-label="Primary">${homepageNavigation.map(item=>`<a href="${item.href}" class="${active===item.id?'active':''}" ${active===item.id?'aria-current="page"':''}><span>${item.label}</span><small>${item.descriptor}</small></a>`).join('')}</nav>
+    <div class="header-actions"><button class="icon-button header-search" data-action="search" aria-label="Search">${icon('search')}<span>Search</span></button><button class="icon-button header-print" data-action="print" aria-label="Print current page">${icon('print')}</button><button class="menu-button" aria-label="Toggle navigation" aria-expanded="false"><span></span><span></span><span></span></button></div>
   </header>
   <main id="main-content">${main}</main>
   <footer class="site-footer"><div><strong>Structural Acoustics, Understood</strong><p>Original engineering reference and browser-based screening tools. Verify controlled methods before design or qualification use.</p></div><div class="footer-links"><a href="#/references">Assumptions & references</a><a href="#/tools">${toolCatalog.length} tools</a><a href="#/demos">${demos.length} demos</a><button class="link-button" data-action="print">Print / PDF</button></div></footer>
@@ -179,6 +175,7 @@ function bindEmbeddedDemos(){
 }
 function bindGlobal(route){
   document.querySelector('.menu-button')?.addEventListener('click',e=>{const nav=document.querySelector('.primary-nav'),open=nav.classList.toggle('open');e.currentTarget.setAttribute('aria-expanded',open);});
+  document.querySelectorAll('.primary-nav a').forEach(link=>link.addEventListener('click',()=>{document.querySelector('.primary-nav')?.classList.remove('open');document.querySelector('.menu-button')?.setAttribute('aria-expanded','false');}));
   document.querySelectorAll('[data-action="search"]').forEach(b=>b.addEventListener('click',openSearch));
   document.querySelectorAll('[data-action="print"]').forEach(b=>b.addEventListener('click',()=>window.print()));
   document.querySelector('[data-action="close-search"]')?.addEventListener('click',()=>document.querySelector('.search-dialog')?.close());
@@ -188,7 +185,8 @@ function bindGlobal(route){
   if(route.segments[0]==='tool')bindTool(route);
   if(route.segments[0]==='demo'){const mount=document.querySelector('#demo-mount');if(mount)routeCleanup=mountDemo(mount,decodeURIComponent(route.segments[1]||''));}
   if(route.segments[0]==='case-note')bindEmbeddedDemos();
-  if(route.segments[0]==='cheat-sheet'||!route.segments.length)bindCheat(route);
+  if(route.segments[0]==='cheat-sheet')bindCheat(route);
+  if(!route.segments.length){const cleanup=bindHomepage();const old=routeCleanup;routeCleanup=()=>{old();cleanup();};}
 }
 function bindToolFilters(){const chips=[...document.querySelectorAll('.filter-chip')],cards=[...document.querySelectorAll('.tool-card')],input=document.querySelector('#tool-filter-search'),count=document.querySelector('#tool-count');let category='All';const update=()=>{const q=(input?.value||'').trim().toLowerCase();let shown=0;cards.forEach(card=>{const visible=(category==='All'||card.dataset.category===category)&&(!q||card.dataset.search.includes(q));card.hidden=!visible;if(visible)shown++;});count.textContent=`${shown} shown`;};chips.forEach(chip=>chip.addEventListener('click',()=>{category=chip.dataset.filter;chips.forEach(c=>c.classList.toggle('active',c===chip));update();}));input?.addEventListener('input',update);}
 function bindCheat(route){
@@ -199,7 +197,8 @@ function bindCheat(route){
 function render(){
   routeCleanup();routeCleanup=()=>{};const route=routeInfo();let main;
   const [first]=route.segments;
-  if(!first||first==='cheat-sheet')main=renderCheat(route);
+  if(!first)main=renderHomepage({chapters:sections.length,tools:toolCatalog.length,demos:demos.length});
+  else if(first==='cheat-sheet')main=renderCheat(route);
   else if(first==='tools')main=renderTools();
   else if(first==='tool')main=renderTool(route);
   else if(first==='demos')main=renderDemos();
@@ -208,10 +207,11 @@ function render(){
   else if(first==='case-note')main=renderCaseNote(route);
   else if(first==='references')main=renderReferences();
   else main=renderNotFound();
+  document.body.classList.toggle('home-route',!first);
   app.innerHTML=shell(main,route);bindGlobal(route);
   const retainScroll=(first==='cheat-sheet'&&route.params.has('section'));
   if(!retainScroll)window.scrollTo({top:0,behavior:'instant'});
-  document.title=`${first==='tool'&&toolById.get(route.segments[1])?`${toolById.get(route.segments[1]).title} · `:''}Structural Acoustics, Understood`;
+  document.title=`${!first?'Structural Acoustics, Understood · Interactive Launch-Vehicle Atlas':`${first==='tool'&&toolById.get(route.segments[1])?`${toolById.get(route.segments[1]).title} · `:''}Structural Acoustics, Understood`}`;
 }
 
 window.addEventListener('hashchange',render);

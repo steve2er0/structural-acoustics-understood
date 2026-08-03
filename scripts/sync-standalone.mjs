@@ -39,6 +39,17 @@ const seaParameterCalculatorsModule = await read('js/sea-parameters-calculators.
 const seaParameterDemosModule = await read('js/sea-parameters-demos.js');
 const demoTakeawaysModule = await read('js/demo-takeaways.js');
 const demosModule = await read('js/demos.js');
+const homepageModule = await read('js/homepage.js');
+
+standalone = standalone
+  .replace(/<meta name="theme-color" content="[^"]*" \/>/, '<meta name="theme-color" content="#04101f" />')
+  .replace(/<meta name="color-scheme" content="[^"]*" \/>/, '<meta name="color-scheme" content="dark light" />');
+if (!standalone.includes('name="color-scheme"')) {
+  standalone = standalone.replace(
+    '<meta name="theme-color" content="#04101f" />',
+    '<meta name="theme-color" content="#04101f" />\n<meta name="color-scheme" content="dark light" />'
+  );
+}
 
 standalone = replaceRange(standalone, '<style>\n', '</style>', `<style>\n${styles}`);
 standalone = standalone.replace(/(?:<\/style>)+/, '</style>');
@@ -191,8 +202,9 @@ const demosWithAcs519Block = demosBlock.replace(
   'const {twoSubsystemEnergyBalance}=__seaCoupling;',
   'const {twoSubsystemEnergyBalance}=__seaCoupling;\nconst {acs519PreviewSvg,mountAcs519Demo,acs519SupportedDemoIds}=__acs519Demos;\nconst {workflowExpansionPreviewSvg,mountWorkflowExpansionDemo,workflowExpansionSupportedDemoIds}=__workflowExpansionDemos;\nconst {programExpansionPreviewSvg,mountProgramExpansionDemo,programExpansionSupportedDemoIds}=__programExpansionDemos;\nconst {seaParameterPreviewSvg,mountSeaParameterDemo,seaParameterSupportedDemoIds}=__seaParameterDemos;'
 );
+const homepageBlock = `const __homepage=(()=>{\n${moduleSource(homepageModule)}\nreturn {homepageNavigation,homepageNavKey,atlasSections,quickStartItems,navigationCards,featuredItems,renderHomepage,bindHomepage};\n})();\n\n`;
 const demoRuntimeStart = standalone.includes('const __demoTakeaways=(()=>{') ? 'const __demoTakeaways=(()=>{' : 'const __demosModule=(()=>{';
-standalone = replaceRange(standalone, demoRuntimeStart, 'const __engineeringResults=(()=>{', demoTakeawaysBlock + demosWithAcs519Block);
+standalone = replaceRange(standalone, demoRuntimeStart, 'const __engineeringResults=(()=>{', demoTakeawaysBlock + demosWithAcs519Block + homepageBlock);
 
 const frameworkSource = frameworkModule.replace(/^export /gm, '');
 const frameworkBlock = `const __engineeringResults=(()=>{\n${frameworkSource}\nreturn {buildEngineeringResult,assertEngineeringResult,createEngineeringCalculator,createEngineeringRegistry,engineeringResultToText};\n})();\n\n`;
@@ -223,6 +235,7 @@ const appPrelude = [
   'const {extraToolCatalog}=__extraData;',
   'const {lineChartSvg,heatmapSvg,downloadCsv,downloadSvg,downloadText}=__charts;',
   'const {demoPreviewSvg,mountDemo}=__demosModule;',
+  'const {homepageNavigation,homepageNavKey,renderHomepage,bindHomepage}=__homepage;',
   'const {createEngineeringRegistry,engineeringResultToText}=__engineeringResults;'
 ].join('\n');
 let appSource = stripImports(app).trim();

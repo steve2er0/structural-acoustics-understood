@@ -4,7 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="description" content="Structural Acoustics, Understood — an interactive engineering reference for vibration, shock, acoustics, structural dynamics, and aerospace vibroacoustics." />
-<meta name="theme-color" content="#f3efe6" />
+<meta name="theme-color" content="#04101f" />
+<meta name="color-scheme" content="dark light" />
 <title>Structural Acoustics, Understood</title>
 <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+CiAgPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMxNzNjNGEiLz4KICA8cGF0aCBkPSJNOCAzNGM4IDAgOC0xNCAxNi0xNHM4IDI0IDE2IDI0IDgtMTggMTYtMTgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2Y1ZWZlMiIgc3Ryb2tlLXdpZHRoPSI1IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJNMTMgNDloMzgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2Q1OGE0YiIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+Cg==" type="image/svg+xml" />
 <style>
@@ -615,6 +616,450 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
 .reference-section li { color: var(--muted); }
 .cheat-section:target { scroll-margin-top: calc(var(--header-height) + 20px); }
 @media (max-width: 820px) { .tool-filter-search { order: 20; width: 100%; margin-left: 0; } .filter-count { margin-left: auto; } }
+
+/* Homepage atlas redesign */
+.site-header {
+  grid-template-columns: minmax(250px, .8fr) minmax(650px, auto) minmax(116px, .35fr);
+  gap: clamp(.6rem, 1.4vw, 1.5rem);
+  padding-inline: clamp(16px, 2.2vw, 38px);
+  background: rgba(3, 13, 25, .94);
+  border-bottom-color: rgba(145, 181, 222, .2);
+  color: #f3f7fc;
+  box-shadow: 0 10px 34px rgba(0, 5, 13, .14);
+}
+.brand { gap: .65rem; }
+.brand-mark { width: 39px; height: 39px; }
+.brand-mark circle { stroke: rgba(85, 184, 255, .28); }
+.brand-mark path:first-of-type { stroke: #55b8ff; }
+.brand-mark path:last-of-type { stroke: #9478ff; }
+.brand-copy { line-height: 1.05; text-transform: uppercase; }
+.brand-copy strong { color: #f3f7fc; font-size: .88rem; font-weight: 570; letter-spacing: .075em; }
+.brand-copy small { margin-top: .22rem; color: #7ca8ff; font-family: var(--sans); font-size: .69rem; font-weight: 650; letter-spacing: .25em; }
+.primary-nav { height: 100%; gap: clamp(.05rem, .35vw, .35rem); }
+.primary-nav a {
+  min-width: 92px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: .08rem;
+  padding: .42rem clamp(.45rem, .75vw, .75rem);
+  color: #eef5ff;
+  font-size: .74rem;
+  font-weight: 600;
+  letter-spacing: .065em;
+  text-transform: uppercase;
+  border-radius: 0;
+}
+.primary-nav a small { color: #8fa2b9; font-size: .57rem; font-weight: 450; letter-spacing: .01em; text-transform: none; white-space: nowrap; }
+.primary-nav a:hover, .primary-nav a.active { color: #fff; background: rgba(111, 140, 255, .09); }
+.primary-nav a:hover small, .primary-nav a.active small { color: #a9c7ff; }
+.primary-nav a.active { box-shadow: inset 0 -2px #6f8cff; }
+.header-actions { gap: .2rem; }
+.site-header .icon-button, .site-header .menu-button { color: #dce8f7; }
+.site-header .icon-button:hover, .site-header .menu-button:hover { border-color: rgba(145, 181, 222, .25); background: rgba(111, 140, 255, .08); }
+.header-search { width: auto; padding-inline: .65rem; gap: .42rem; border-radius: 3px; }
+.header-search span { font-size: .65rem; letter-spacing: .08em; text-transform: uppercase; }
+
+body.home-route {
+  --home-deep: #03101e;
+  --home-bg: #06172a;
+  --home-surface: rgba(10, 29, 50, .8);
+  --home-surface-strong: #0b2037;
+  --home-border: rgba(145, 181, 222, .22);
+  --home-text: #f3f7fc;
+  --home-muted: #a4b5ca;
+  --home-cyan: #55b8ff;
+  --home-blue: #6f8cff;
+  --home-violet: #9478ff;
+  --home-gold: #f2c663;
+  --home-green: #58d59b;
+  --home-coral: #ff8888;
+  background: var(--home-deep);
+  color: var(--home-text);
+}
+body.home-route::before {
+  opacity: .32;
+  background-image:
+    radial-gradient(circle at 64% 12%, rgba(68, 119, 189, .16), transparent 31%),
+    radial-gradient(circle at 21% 36%, rgba(69, 105, 202, .1), transparent 28%),
+    radial-gradient(rgba(147, 192, 239, .38) .55px, transparent .7px);
+  background-size: auto, auto, 17px 17px;
+  mix-blend-mode: screen;
+}
+body.home-route main { min-height: 0; overflow: hidden; }
+body.home-route .site-footer { max-width: none; padding-inline: clamp(20px, 3vw, 54px); color: #8fa2b9; background: #020c18; border-color: rgba(145, 181, 222, .18); }
+body.home-route .site-footer strong, body.home-route .site-footer a { color: #dce8f7; }
+
+.atlas-home {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(111, 140, 255, .025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(111, 140, 255, .025) 1px, transparent 1px),
+    radial-gradient(circle at 52% 16%, rgba(85, 184, 255, .09), transparent 31%),
+    linear-gradient(180deg, #03101e 0%, #07192c 48%, #041323 100%);
+  background-size: 72px 72px, 72px 72px, auto, auto;
+}
+.atlas-home::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 8% 18%, rgba(211, 230, 255, .62) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 23% 9%, rgba(211, 230, 255, .5) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 38% 22%, rgba(211, 230, 255, .45) 0 1px, transparent 1.4px),
+    radial-gradient(circle at 57% 7%, rgba(211, 230, 255, .56) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 72% 27%, rgba(211, 230, 255, .46) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 88% 14%, rgba(211, 230, 255, .58) 0 1px, transparent 1.5px);
+  background-size: 340px 270px;
+  opacity: .6;
+}
+.atlas-hero {
+  position: relative;
+  max-width: 1640px;
+  min-height: 670px;
+  display: grid;
+  grid-template-columns: minmax(250px, .62fr) minmax(610px, 1.72fr) minmax(292px, .67fr);
+  align-items: center;
+  gap: clamp(18px, 2vw, 36px);
+  margin: 0 auto;
+  padding: clamp(34px, 4vw, 62px) clamp(24px, 3vw, 52px) 32px;
+}
+.home-kicker {
+  margin: 0 0 .65rem;
+  color: #7ba9ff;
+  font-family: var(--mono);
+  font-size: .66rem;
+  font-weight: 650;
+  letter-spacing: .12em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+.home-message { position: relative; z-index: 5; align-self: center; }
+.home-message h1 {
+  max-width: 430px;
+  margin-bottom: 1.2rem;
+  color: #f7faff;
+  font-size: clamp(2.35rem, 3.25vw, 4.05rem);
+  font-weight: 390;
+  letter-spacing: -.045em;
+  line-height: 1.07;
+}
+.home-lede { max-width: 420px; margin-bottom: 1.5rem; color: var(--home-muted); font-size: clamp(.96rem, 1.12vw, 1.08rem); line-height: 1.65; }
+.home-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+.home-primary-action, .home-search-action {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .75rem;
+  padding: .65rem 1rem;
+  color: #dce8ff;
+  font-size: .69rem;
+  font-weight: 650;
+  letter-spacing: .08em;
+  text-decoration: none;
+  text-transform: uppercase;
+  border: 1px solid #5978db;
+  border-radius: 3px;
+  background: rgba(45, 72, 141, .14);
+  cursor: pointer;
+}
+.home-primary-action:hover { background: rgba(91, 116, 218, .24); box-shadow: 0 0 30px rgba(85, 184, 255, .12); }
+.home-search-action { color: #9fb1c7; border-color: transparent; background: transparent; }
+.home-search-action:hover { color: #eef5ff; border-color: rgba(145, 181, 222, .2); }
+.home-counts { display: flex; flex-wrap: wrap; gap: .7rem 1rem; margin: 1.35rem 0 0; color: #7189a3; font-family: var(--mono); font-size: .59rem; text-transform: uppercase; }
+.home-counts span + span::before { content: "·"; margin-right: 1rem; color: #48627e; }
+
+.vehicle-atlas { min-width: 0; align-self: stretch; display: flex; flex-direction: column; justify-content: center; }
+.atlas-heading-row { display: flex; align-items: end; justify-content: space-between; gap: 1rem; padding: 0 4%; }
+.atlas-heading-row h2 { margin: 0; color: #e9f1fb; font-size: 1.03rem; font-weight: 500; letter-spacing: -.015em; }
+.atlas-heading-row > p { margin: 0; color: #7189a3; font-size: .66rem; }
+.atlas-visual { position: relative; height: 538px; min-height: 0; }
+.launch-vehicle-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.atlas-orbit-lines { fill: none; stroke: rgba(85, 184, 255, .12); stroke-width: 1; stroke-dasharray: 2 8; }
+.atlas-vehicle { filter: drop-shadow(0 18px 28px rgba(0, 4, 12, .55)); }
+.atlas-region { outline: none; cursor: pointer; }
+.atlas-segment-shell { fill: url(#atlas-shell); stroke: rgba(202, 222, 245, .62); stroke-width: 1.35; transition: fill .18s ease, stroke .18s ease, filter .18s ease; }
+.atlas-tank { fill: url(#atlas-tank); stroke: rgba(165, 198, 232, .43); stroke-width: 1; }
+.atlas-fluid { fill: url(#atlas-fluid); stroke: rgba(85, 184, 255, .32); stroke-width: 1; }
+.atlas-structure { fill: none; stroke: rgba(194, 215, 237, .42); stroke-width: 1; }
+.atlas-truss { stroke: rgba(242, 198, 99, .55); }
+.atlas-engine-bell { fill: rgba(172, 187, 207, .3); stroke: rgba(233, 241, 250, .62); stroke-width: 1; }
+.atlas-payload { fill: rgba(242, 198, 99, .16); stroke: rgba(242, 198, 99, .62); stroke-width: 1; }
+.atlas-fairing-seam { fill: none; stroke: rgba(225, 236, 249, .45); stroke-width: 1; }
+.atlas-centerline { fill: none; stroke: rgba(111, 140, 255, .25); stroke-width: .75; stroke-dasharray: 5 7; pointer-events: none; }
+.atlas-fasteners { fill: #b8cee5; opacity: .56; pointer-events: none; }
+.atlas-region:hover .atlas-segment-shell,
+.atlas-region:focus-visible .atlas-segment-shell,
+.atlas-region.is-active .atlas-segment-shell { fill: color-mix(in srgb, var(--region-accent) 29%, #17324d); stroke: var(--region-accent); filter: drop-shadow(0 0 12px color-mix(in srgb, var(--region-accent) 52%, transparent)); }
+.atlas-region:focus-visible .atlas-segment-shell { stroke-width: 3; }
+.atlas-region:hover .atlas-structure,
+.atlas-region:focus-visible .atlas-structure,
+.atlas-region.is-active .atlas-structure { stroke: color-mix(in srgb, var(--region-accent) 72%, white); }
+.atlas-callouts { position: absolute; inset: 0; pointer-events: none; }
+.atlas-callout {
+  --line-width: 56px;
+  position: absolute;
+  left: var(--callout-x);
+  top: var(--callout-y);
+  width: 164px;
+  display: grid;
+  gap: .15rem;
+  color: #f0f5fb;
+  font-size: .64rem;
+  line-height: 1.4;
+  text-decoration: none;
+  pointer-events: auto;
+  transform: translateY(-50%);
+}
+.atlas-callout strong { font-size: .66rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+.atlas-callout span { color: #95a9c0; }
+.atlas-callout::before { content: ""; position: absolute; top: .48rem; width: var(--line-width); border-top: 1px solid color-mix(in srgb, var(--region-accent) 72%, transparent); }
+.atlas-callout::after { content: ""; position: absolute; top: calc(.48rem - 3px); width: 7px; height: 7px; border: 1px solid var(--region-accent); border-radius: 50%; background: #07182a; box-shadow: 0 0 9px var(--region-accent); }
+.atlas-callout-left { text-align: right; transform: translate(-100%, -50%); }
+.atlas-callout-left::before { right: calc(-1 * var(--line-width) - 9px); }
+.atlas-callout-left::after { right: calc(-1 * var(--line-width) - 16px); }
+.atlas-callout-right::before { left: calc(-1 * var(--line-width) - 9px); }
+.atlas-callout-right::after { left: calc(-1 * var(--line-width) - 16px); }
+.atlas-callout:hover strong, .atlas-callout:focus-visible strong, .atlas-callout.is-active strong { color: var(--region-accent); }
+.atlas-callout:focus-visible { outline: 2px solid var(--region-accent); outline-offset: 5px; }
+.atlas-detail-stack {
+  position: absolute;
+  right: 1.5%;
+  bottom: 1.5%;
+  width: min(270px, 34%);
+  min-height: 188px;
+  padding: 1rem 1.05rem;
+  background: linear-gradient(145deg, rgba(11, 32, 55, .92), rgba(5, 19, 35, .88));
+  border: 1px solid rgba(145, 181, 222, .24);
+  border-radius: 6px;
+  box-shadow: 0 18px 44px rgba(0, 5, 13, .3);
+  backdrop-filter: blur(14px);
+}
+.atlas-detail-kicker { margin: 0 0 .35rem; color: #8fa9ff; font-family: var(--mono); font-size: .57rem; letter-spacing: .1em; text-transform: uppercase; }
+.atlas-detail h3 { margin-bottom: .45rem; color: #f2f7fd; font-size: .98rem; }
+.atlas-detail p { margin-bottom: .55rem; color: #9fb1c7; font-size: .68rem; line-height: 1.5; }
+.atlas-detail ul { display: flex; flex-wrap: wrap; gap: .25rem .45rem; margin: 0 0 .7rem; padding: 0; list-style: none; }
+.atlas-detail li { color: #c1cfe0; font-size: .58rem; }
+.atlas-detail li + li::before { content: "·"; margin-right: .45rem; color: #617a98; }
+.atlas-detail a { color: #8bb8ff; font-size: .62rem; font-weight: 650; letter-spacing: .04em; text-decoration: none; text-transform: uppercase; }
+.atlas-detail a:hover { color: #fff; }
+.atlas-region-key { display: flex; flex-wrap: wrap; justify-content: center; gap: .35rem; padding: 0 5%; }
+.atlas-region-key button {
+  min-height: 30px;
+  padding: .3rem .52rem;
+  color: #8fa2ba;
+  font-size: .58rem;
+  border: 1px solid rgba(145, 181, 222, .16);
+  border-radius: 999px;
+  background: rgba(8, 25, 43, .66);
+  cursor: pointer;
+}
+.atlas-region-key button:hover, .atlas-region-key button.is-active { color: #f3f7fc; border-color: var(--region-accent); box-shadow: inset 0 0 18px color-mix(in srgb, var(--region-accent) 12%, transparent); }
+.atlas-region-key button:focus-visible { outline: 2px solid var(--region-accent); outline-offset: 2px; }
+
+.quick-start {
+  align-self: center;
+  padding: 1rem;
+  background: linear-gradient(155deg, rgba(10, 31, 54, .86), rgba(6, 20, 36, .82));
+  border: 1px solid var(--home-border);
+  border-radius: 7px;
+  box-shadow: 0 22px 55px rgba(0, 5, 13, .24);
+  backdrop-filter: blur(15px);
+}
+.quick-start header { padding: .1rem .15rem .75rem; border-bottom: 1px solid rgba(145, 181, 222, .14); }
+.quick-start header .home-kicker { margin-bottom: .2rem; }
+.quick-start h2 { margin: 0; color: #eaf1fa; font-size: 1.08rem; font-weight: 520; letter-spacing: .02em; text-transform: uppercase; }
+.quick-start-list { display: grid; gap: .45rem; padding-top: .65rem; }
+.quick-start-item {
+  min-height: 61px;
+  display: grid;
+  grid-template-columns: 35px 1fr auto;
+  align-items: center;
+  gap: .65rem;
+  padding: .55rem .65rem;
+  color: #cdd9e7;
+  text-decoration: none;
+  border: 1px solid rgba(145, 181, 222, .16);
+  border-radius: 5px;
+  background: rgba(18, 45, 72, .42);
+  transition: transform .16s ease, border-color .16s ease, background .16s ease;
+}
+.quick-start-item:hover { transform: translateX(-3px); border-color: rgba(111, 140, 255, .55); background: rgba(33, 62, 96, .56); }
+.quick-start-item:focus-visible { outline: 2px solid #6f8cff; outline-offset: 2px; }
+.quick-start-icon { width: 32px; height: 32px; display: grid; place-items: center; color: #74bfff; }
+.quick-start-icon svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.25; stroke-linecap: round; stroke-linejoin: round; }
+.quick-start-solve .quick-start-icon { color: #ff8888; }
+.quick-start-explore .quick-start-icon { color: #58d59b; }
+.quick-start-hardware .quick-start-icon { color: #f2c663; }
+.quick-start-workflows .quick-start-icon { color: #55b8ff; }
+.quick-start-tools .quick-start-icon { color: #58d59b; }
+.quick-start-item strong { display: block; color: #b9d5ff; font-size: .77rem; font-weight: 520; }
+.quick-start-item small { display: block; margin-top: .06rem; color: #94a6bc; font-size: .62rem; }
+.quick-start-arrow { color: #728aa4; font-size: 1.15rem; }
+
+.home-section { max-width: 1640px; margin: 0 auto; padding: 28px clamp(24px, 3vw, 52px) 38px; }
+.home-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(145, 181, 222, .18); }
+.home-section-heading h2, .featured-heading h2 { margin-bottom: -.62rem; padding: 0 .8rem; color: #cbd7ea; background: #071729; font-size: .88rem; font-weight: 520; letter-spacing: .1em; text-transform: uppercase; }
+.home-section-heading .home-kicker { margin-bottom: .85rem; }
+.navigation-card-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .85rem; }
+.navigation-card {
+  min-height: 252px;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  color: #dfe8f4;
+  text-decoration: none;
+  border: 1px solid rgba(145, 181, 222, .2);
+  border-radius: 5px;
+  background: linear-gradient(165deg, rgba(15, 39, 65, .82), rgba(5, 19, 34, .78));
+  overflow: hidden;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+.navigation-card:hover { transform: translateY(-4px); border-color: rgba(111, 140, 255, .55); box-shadow: 0 16px 40px rgba(0, 5, 13, .27); }
+.navigation-card:focus-visible, .featured-item:focus-visible { outline: 2px solid #6f8cff; outline-offset: 3px; }
+.navigation-card h3 { margin-bottom: .3rem; color: #94a8ff; font-size: .91rem; font-weight: 520; letter-spacing: .08em; text-transform: uppercase; }
+.navigation-solve h3 { color: #62bdff; }
+.navigation-explore h3 { color: #a58cff; }
+.navigation-hardware h3 { color: #f2c663; }
+.navigation-workflows h3 { color: #7da0ff; }
+.navigation-tools h3 { color: #58d59b; }
+.navigation-card p { min-height: 42px; margin-bottom: 0; color: #a5b4c6; font-size: .69rem; line-height: 1.5; }
+.navigation-motif { height: 126px; margin: .6rem -.45rem .3rem; }
+.navigation-motif svg { width: 100%; height: 100%; overflow: visible; }
+.motif-grid { fill: none; stroke: rgba(145, 181, 222, .1); stroke-width: 1; }
+.motif-field { opacity: .28; }
+.motif-line, .motif-surface path { fill: none; stroke: #6f8cff; stroke-width: 1.6; }
+.motif-warm { stroke: #f2c663; }
+.motif-network { fill: none; stroke: rgba(126, 187, 255, .55); stroke-width: 1; }
+.motif-network circle { fill: #58d59b; stroke: #d8eeff; }
+.motif-network circle:nth-of-type(3n) { fill: #f2c663; }
+.motif-network circle:nth-of-type(4n) { fill: #9478ff; }
+.motif-shell { fill: none; stroke: rgba(175, 209, 241, .65); stroke-width: 1; }
+.motif-flow { fill: rgba(60, 93, 153, .22); stroke: #6f8cff; stroke-width: 1; }
+.motif-surface path:nth-child(2) { stroke: #55b8ff; opacity: .8; }
+.motif-surface path:nth-child(3) { stroke: #58d59b; opacity: .7; }
+.motif-surface path:nth-child(4) { stroke: #f2c663; opacity: .62; }
+.navigation-card > span { margin-top: auto; padding: .45rem .55rem; color: #a9bfff; font-size: .63rem; font-weight: 600; letter-spacing: .06em; text-align: center; text-transform: uppercase; border: 1px solid rgba(111, 140, 255, .35); border-radius: 3px; }
+
+.featured-library { padding-top: 24px; padding-bottom: 52px; }
+.featured-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(145, 181, 222, .18); }
+.featured-heading > div { display: flex; align-items: end; gap: .8rem; }
+.featured-heading .home-kicker { margin-bottom: .85rem; }
+.featured-heading > a { margin-bottom: .75rem; color: #8ea8ff; font-size: .62rem; letter-spacing: .06em; text-decoration: none; text-transform: uppercase; }
+.featured-strip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .65rem; }
+.featured-item {
+  min-height: 137px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(80px, .75fr);
+  gap: .35rem;
+  padding: .75rem;
+  color: #dce7f3;
+  text-decoration: none;
+  border: 1px solid rgba(145, 181, 222, .18);
+  border-radius: 4px;
+  background: rgba(8, 25, 43, .72);
+  overflow: hidden;
+  transition: background .16s ease, border-color .16s ease;
+}
+.featured-item:hover { border-color: rgba(85, 184, 255, .5); background: rgba(15, 39, 65, .86); }
+.featured-item h3 { margin-bottom: .35rem; color: #91adff; font-size: .68rem; font-weight: 560; letter-spacing: .05em; line-height: 1.3; text-transform: uppercase; }
+.featured-item p { margin: 0; color: #90a2b7; font-size: .57rem; line-height: 1.45; }
+.featured-visual { align-self: end; height: 80px; margin-right: -.6rem; margin-bottom: -.45rem; }
+.featured-visual svg { width: 100%; height: 100%; }
+.featured-grid { fill: none; stroke: rgba(145, 181, 222, .1); stroke-width: 1; }
+.featured-primary, .featured-secondary, .featured-limit, .featured-spectrum { fill: none; stroke: #6f8cff; stroke-width: 1.4; }
+.featured-secondary { stroke: #55b8ff; opacity: .75; }
+.featured-limit { stroke: #f2c663; stroke-dasharray: 3 4; }
+.featured-spectrum { stroke: #58d59b; }
+.featured-wire { fill: none; stroke: #55b8ff; stroke-width: 1; opacity: .68; }
+.featured-rings { fill: none; stroke: #6f8cff; stroke-width: 1; }
+.featured-rings .featured-core { fill: #f2c663; stroke: #fff2ba; filter: drop-shadow(0 0 6px #f2c663); }
+
+@media (max-width: 1380px) {
+  .atlas-hero { grid-template-columns: minmax(250px, .62fr) minmax(560px, 1.45fr); min-height: 0; }
+  .quick-start { grid-column: 1 / -1; width: 100%; }
+  .quick-start-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .quick-start header { display: flex; align-items: end; justify-content: space-between; }
+  .navigation-card-grid, .featured-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1220px) {
+  .site-header { grid-template-columns: 1fr auto; }
+  .site-header .primary-nav { position: fixed; inset: var(--header-height) 0 auto; display: none; height: auto; padding: .8rem; background: rgba(3, 13, 25, .98); border-bottom: 1px solid rgba(145, 181, 222, .2); box-shadow: 0 18px 40px rgba(0, 5, 13, .3); }
+  .site-header .primary-nav.open { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .site-header .primary-nav a { min-height: 58px; text-align: left; }
+  .site-header .menu-button { display: grid; }
+}
+
+@media (max-width: 940px) {
+  .atlas-hero { grid-template-columns: 1fr; padding-top: 48px; }
+  .home-message { max-width: 650px; }
+  .home-message h1, .home-lede { max-width: 620px; }
+  .vehicle-atlas { min-height: 650px; }
+  .atlas-visual { height: 550px; }
+  .quick-start-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .navigation-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .featured-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .featured-item { min-height: 150px; }
+}
+
+@media (max-width: 620px) {
+  .site-header { padding-inline: 12px; }
+  .site-header .primary-nav.open { grid-template-columns: 1fr 1fr; }
+  .site-header .primary-nav a { min-width: 0; }
+  .brand-copy strong { font-size: .75rem; }
+  .brand-copy small { display: block; font-size: .59rem; }
+  .header-print, .header-search span { display: none; }
+  .header-search { width: 38px; padding-inline: 0; border-radius: 50%; }
+  .atlas-hero { padding: 38px 15px 25px; gap: 28px; }
+  .home-message h1 { font-size: 2.55rem; }
+  .home-lede { font-size: .96rem; }
+  .home-counts span + span::before { display: none; }
+  .vehicle-atlas { min-height: 620px; }
+  .atlas-heading-row { align-items: start; padding: 0; }
+  .atlas-heading-row > p { max-width: 110px; text-align: right; }
+  .atlas-visual { height: 475px; margin-inline: -15px; overflow: hidden; }
+  .launch-vehicle-svg { left: 50%; width: 740px; max-width: none; transform: translateX(-50%); }
+  .atlas-callouts { display: none; }
+  .atlas-detail-stack { right: 15px; bottom: 10px; left: 15px; width: auto; min-height: 0; }
+  .atlas-detail p { font-size: .71rem; }
+  .atlas-region-key { display: grid; grid-template-columns: repeat(3, 1fr); padding: .65rem 0 0; }
+  .atlas-region-key button { border-radius: 3px; }
+  .quick-start { padding: .8rem; }
+  .quick-start-list { grid-template-columns: 1fr; }
+  .home-section { padding-inline: 15px; }
+  .home-section-heading { display: block; }
+  .home-section-heading h2, .featured-heading h2 { display: inline-block; margin-bottom: -.62rem; margin-left: -.8rem; }
+  .navigation-card-grid, .featured-strip { grid-template-columns: 1fr; }
+  .navigation-card { min-height: 230px; }
+  .featured-heading { align-items: start; }
+  .featured-heading > div { display: block; }
+  .featured-heading .home-kicker { margin-bottom: .5rem; }
+  .featured-heading > a { max-width: 120px; text-align: right; }
+  .featured-item { grid-template-columns: minmax(0, 1fr) minmax(120px, .8fr); min-height: 128px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navigation-card, .quick-start-item, .atlas-segment-shell { transition: none; }
+  .navigation-card:hover, .quick-start-item:hover { transform: none; }
+}
+
+@media print {
+  .atlas-home { background: white; color: black; }
+  .atlas-hero { display: block; padding: 0; }
+  .home-message h1, .atlas-heading-row h2 { color: black; }
+  .home-lede, .atlas-heading-row > p { color: #333; }
+  .quick-start, .home-actions, .home-counts, .atlas-region-key { display: none; }
+  .vehicle-atlas { break-inside: avoid; }
+  .navigation-card-grid, .featured-strip { grid-template-columns: repeat(3, 1fr); }
+}
 </style>
 </head>
 <body>
@@ -14890,6 +15335,307 @@ function mountDemo(root,id){
 return {demoPreviewSvg,mountDemo,supportedDemoIds,spatialCoherence,jointAcceptance};
 })();
 
+const __homepage=(()=>{
+// Data-driven homepage and generic launch-vehicle structural atlas.
+
+const homepageNavigation = [
+  { id: 'learn', label: 'Learn', descriptor: 'Concepts & fundamentals', href: '#/cheat-sheet' },
+  { id: 'solve', label: 'Solve', descriptor: 'Start with a problem', href: '#/case-notes' },
+  { id: 'explore', label: 'Explore', descriptor: 'Interactive physics', href: '#/demos' },
+  { id: 'hardware', label: 'Hardware', descriptor: 'Structural atlas', href: '#/cheat-sheet?section=shell-acoustics-deep-dive' },
+  { id: 'workflows', label: 'Workflows', descriptor: 'Engineering paths', href: '#/cheat-sheet?section=launch-vibroacoustic-capstone' },
+  { id: 'tools', label: 'Tools', descriptor: 'Calculators & demos', href: '#/tools' }
+];
+
+const hardwareSectionIds = new Set([
+  'structures-waves',
+  'shell-acoustics-deep-dive',
+  'wet-tank-dynamics-deep-dive',
+  'payload-fairing-cavities',
+  'installed-fairing-sea-parameters'
+]);
+
+const workflowSectionIds = new Set([
+  'model-test-correlation',
+  'requirements-margin-flowdown',
+  'mitigation-trade-studies',
+  'launch-vibroacoustic-capstone',
+  'noise-control-workflow'
+]);
+
+function homepageNavKey(first = '', section = '') {
+  if (first === 'tool' || first === 'tools') return 'tools';
+  if (first === 'demo' || first === 'demos' || first === 'references') return 'explore';
+  if (first === 'case-note' || first === 'case-notes') return 'solve';
+  if (first === 'cheat-sheet') {
+    if (hardwareSectionIds.has(section)) return 'hardware';
+    if (workflowSectionIds.has(section)) return 'workflows';
+    return 'learn';
+  }
+  return '';
+}
+
+const atlasSections = [
+  {
+    id: 'engine',
+    title: 'Engine section',
+    shortTitle: 'Engine',
+    descriptor: 'Propulsion region',
+    summary: 'Broadband turbomachinery forcing, mount loads, plume acoustics, and high-frequency shock enter the vehicle here.',
+    subjects: ['Turbomachinery forcing', 'Pyroshock', 'Mount loads'],
+    href: '#/cheat-sheet?section=launch-acoustic-sources-deep-dive',
+    accent: '#ff9b7a',
+    callout: { x: 61, y: 75, align: 'right' }
+  },
+  {
+    id: 'lower-tank',
+    title: 'Lower tank barrel',
+    shortTitle: 'Lower tank',
+    descriptor: 'Wet shell structure',
+    summary: 'Shell modes, propellant added mass, slosh, axial load, and distributed pressure couple through the lower barrel.',
+    subjects: ['Wet-wall modes', 'Slosh coupling', 'Axial response'],
+    href: '#/cheat-sheet?section=wet-tank-dynamics-deep-dive',
+    accent: '#55b8ff',
+    callout: { x: 66, y: 58, align: 'right' }
+  },
+  {
+    id: 'intertank',
+    title: 'Intertank',
+    shortTitle: 'Intertank',
+    descriptor: 'Transition structure',
+    summary: 'A stiffness and impedance transition where shell waves, joints, concentrated load paths, and cavity fields exchange energy.',
+    subjects: ['Shell vibration', 'Acoustic coupling', 'Joint transmission'],
+    href: '#/cheat-sheet?section=wave-matching-deep-dive',
+    accent: '#58d59b',
+    callout: { x: 23, y: 42, align: 'left' }
+  },
+  {
+    id: 'upper-tank',
+    title: 'Upper tank barrel',
+    shortTitle: 'Upper tank',
+    descriptor: 'Cylindrical shell',
+    summary: 'Curvature creates ring and lobar modes while bending-wave speed and coincidence govern structural-acoustic transfer.',
+    subjects: ['Bending waves', 'Ring frequency', 'Acoustic radiation'],
+    href: '#/cheat-sheet?section=shell-acoustics-deep-dive',
+    accent: '#9478ff',
+    callout: { x: 18, y: 23, align: 'left' }
+  },
+  {
+    id: 'forward-skirt',
+    title: 'Forward skirt',
+    shortTitle: 'Forward skirt',
+    descriptor: 'Upper structure',
+    summary: 'Local modes, joints, avionics attachments, and shock paths bridge the tank stack to the payload region.',
+    subjects: ['Structural modes', 'Shock transmission', 'Joint behavior'],
+    href: '#/cheat-sheet?section=modal-testing-deep-dive',
+    accent: '#f2c663',
+    callout: { x: 24, y: 9, align: 'left' }
+  },
+  {
+    id: 'fairing',
+    title: 'Payload fairing',
+    shortTitle: 'Fairing',
+    descriptor: 'Payload region',
+    summary: 'The external acoustic field drives the fairing shell, cavity modes, blankets, equipment, and payload interface through parallel paths.',
+    subjects: ['Acoustic environment', 'Panel response', 'Cavity coupling'],
+    href: '#/cheat-sheet?section=payload-fairing-cavities',
+    accent: '#6f8cff',
+    callout: { x: 72, y: 13, align: 'right' }
+  }
+];
+
+const quickStartItems = [
+  { id: 'learn', title: 'I want to learn', descriptor: 'Start with the fundamentals', href: '#/cheat-sheet', icon: 'book' },
+  { id: 'solve', title: 'I have a problem', descriptor: 'Diagnose an observed issue', href: '#/case-notes', icon: 'alert' },
+  { id: 'explore', title: 'Explore the map', descriptor: 'Watch the physics connect', href: '#/demos', icon: 'network' },
+  { id: 'hardware', title: 'Browse by hardware', descriptor: 'Select a vehicle region', href: '#/cheat-sheet?section=shell-acoustics-deep-dive', icon: 'cube' },
+  { id: 'workflows', title: 'Follow a workflow', descriptor: 'Complete an engineering task', href: '#/cheat-sheet?section=launch-vibroacoustic-capstone', icon: 'workflow' },
+  { id: 'tools', title: 'Use a tool', descriptor: 'Calculate, visualize, export', href: '#/tools', icon: 'calculator' }
+];
+
+const navigationCards = [
+  { id: 'learn', title: 'Learn', descriptor: 'Build understanding step by step.', action: 'Browse topics', href: '#/cheat-sheet', motif: 'wave' },
+  { id: 'solve', title: 'Solve', descriptor: 'Begin with an observed engineering problem.', action: 'Diagnose now', href: '#/case-notes', motif: 'psd' },
+  { id: 'explore', title: 'Explore', descriptor: 'See how concepts and physical regimes connect.', action: 'Open demos', href: '#/demos', motif: 'network' },
+  { id: 'hardware', title: 'Hardware', descriptor: 'Explore vehicle components and their physics.', action: 'Browse atlas', href: '#/cheat-sheet?section=shell-acoustics-deep-dive', motif: 'shell' },
+  { id: 'workflows', title: 'Workflows', descriptor: 'Follow proven analysis and test paths.', action: 'View workflows', href: '#/cheat-sheet?section=requirements-margin-flowdown', motif: 'workflow' },
+  { id: 'tools', title: 'Tools', descriptor: 'Calculate, visualize, and experiment.', action: 'Open tools', href: '#/tools', motif: 'surface' }
+];
+
+const featuredItems = [
+  { title: 'Bending-wave dispersion', purpose: 'See why different frequencies travel at different speeds.', href: '#/demo/dispersion', motif: 'dispersion' },
+  { title: 'Critical-frequency calculator', purpose: 'Find coincidence frequency for plate and shell materials.', href: '#/tool/critical-frequency', motif: 'critical' },
+  { title: 'Ring-frequency explorer', purpose: 'Connect cylinder geometry to breathing-mode behavior.', href: '#/demo/ring', motif: 'ring' },
+  { title: 'Transmission-loss explorer', purpose: 'Track mass law and coincidence through an elastic panel.', href: '#/tool/elastic-panel-tl', motif: 'transmission' },
+  { title: 'PSD combiner', purpose: 'Combine environments with explicit correlation assumptions.', href: '#/tool/psd-combination', motif: 'spectrum' },
+  { title: 'Modal-density visualizer', purpose: 'See when modes overlap and SEA becomes credible.', href: '#/demo/modal-density-regime-map', motif: 'density' }
+];
+
+const defaultAtlasSectionId = 'fairing';
+
+const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+}[character]));
+
+function lineIcon(name) {
+  const paths = {
+    book: '<path d="M4 5.5c3-1 5-.5 8 1.5v12c-3-2-5-2.5-8-1.5zM20 5.5c-3-1-5-.5-8 1.5v12c3-2 5-2.5 8-1.5z"/>',
+    alert: '<path d="M12 3 2.8 20h18.4z"/><path d="M12 8v5m0 3.5v.2"/>',
+    network: '<circle cx="12" cy="4" r="2"/><circle cx="4" cy="17" r="2"/><circle cx="20" cy="17" r="2"/><circle cx="12" cy="20" r="2"/><path d="m10.8 5.7-5.5 9.6m7.9-9.6 5.5 9.6M6 17h4m4 0h4"/>',
+    cube: '<path d="m12 2.8 8 4.4v9.6l-8 4.4-8-4.4V7.2zM4 7.2l8 4.5 8-4.5M12 11.7v9.5"/>',
+    workflow: '<path d="M4 5h7m2 0h7M4 12h4m2 0h10M4 19h10m2 0h4"/><circle cx="12" cy="5" r="1.5"/><circle cx="8.5" cy="12" r="1.5"/><circle cx="15" cy="19" r="1.5"/>',
+    calculator: '<rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6h8v3H8zm0 7h.1m3.9 0h.1m3.9 0h.1M8 17h.1m3.9 0h.1m3.9 0h.1"/>'
+  };
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[name] || paths.network}</svg>`;
+}
+
+function motifSvg(name) {
+  const common = 'viewBox="0 0 260 130" aria-hidden="true" preserveAspectRatio="none"';
+  if (name === 'wave') return `<svg ${common}><defs><linearGradient id="learn-field" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9478ff"/><stop offset="1" stop-color="#55b8ff"/></linearGradient></defs><g class="motif-grid"><path d="M15 25h230M15 55h230M15 85h230M15 115h230M45 12v110M90 12v110M135 12v110M180 12v110M225 12v110"/></g><path class="motif-field" d="M18 100c22-4 31-28 54-24 19 3 24 29 46 24 22-4 25-68 49-66 25 2 23 62 47 60 14-1 20-18 30-27v45H18z" fill="url(#learn-field)"/><path class="motif-line" d="M18 100c22-4 31-28 54-24 19 3 24 29 46 24 22-4 25-68 49-66 25 2 23 62 47 60 14-1 20-18 30-27"/></svg>`;
+  if (name === 'psd') return `<svg ${common}><g class="motif-grid"><path d="M15 25h230M15 55h230M15 85h230M15 115h230M45 12v110M90 12v110M135 12v110M180 12v110M225 12v110"/></g><path class="motif-line" d="M15 108 29 99 40 103 51 88 62 95 75 74 87 89 98 53 106 82 116 70 124 16 132 73 142 48 151 93 165 64 175 104 190 72 202 92 215 59 226 96 245 82"/><path class="motif-line motif-warm" d="M15 112 40 108 62 110 83 101 106 106 127 92 148 100 168 78 188 95 208 65 226 88 245 81"/></svg>`;
+  if (name === 'network') return `<svg ${common}><g class="motif-network"><path d="M25 92 69 52 112 86 151 35 195 68 236 26M69 52l34-24 48 7 44 33 41 31M112 86l39-51 9 72 35-39M25 92l78-64 57 79 76-81"/><g><circle cx="25" cy="92" r="5"/><circle cx="69" cy="52" r="5"/><circle cx="103" cy="28" r="5"/><circle cx="112" cy="86" r="5"/><circle cx="151" cy="35" r="5"/><circle cx="160" cy="107" r="5"/><circle cx="195" cy="68" r="5"/><circle cx="236" cy="26" r="5"/><circle cx="236" cy="99" r="5"/></g></g></svg>`;
+  if (name === 'shell') return `<svg ${common}><defs><linearGradient id="shell-metal" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#172f4d"/><stop offset=".45" stop-color="#6f8cff"/><stop offset="1" stop-color="#142841"/></linearGradient></defs><g class="motif-shell"><ellipse cx="45" cy="70" rx="28" ry="43"/><path d="M45 27h150c18 0 30 19 30 43s-12 43-30 43H45c17-5 28-20 28-43S62 32 45 27z" fill="url(#shell-metal)"/><ellipse cx="195" cy="70" rx="30" ry="43"/><path d="M85 31v78m42-78v78m42-78v78M45 52h173M45 88h173"/></g></svg>`;
+  if (name === 'workflow') return `<svg ${common}><g class="motif-flow"><rect x="10" y="18" width="55" height="26"/><rect x="102" y="18" width="55" height="26"/><rect x="194" y="18" width="55" height="26"/><rect x="56" y="86" width="55" height="26"/><rect x="148" y="86" width="55" height="26"/><path d="M65 31h37m55 0h37M221 44v20h-45v22M129 44v42m-27 13H82"/><path d="m96 27 6 4-6 4m92-8 6 4-6 4m-63 45 4 6 4-6m37 2 6 4-6 4"/></g></svg>`;
+  return `<svg ${common}><g class="motif-grid"><path d="M15 25h230M15 55h230M15 85h230M15 115h230M45 12v110M90 12v110M135 12v110M180 12v110M225 12v110"/></g><g class="motif-surface"><path d="M18 104c30-2 40-13 63-15 29-3 35 15 62 9 31-7 37-61 66-55 17 4 21 29 34 37"/><path d="M18 93c28-1 42-15 65-13 30 2 38 25 67 13 24-10 34-52 59-44 17 5 22 24 34 29"/><path d="M18 82c25 1 39-12 63-10 28 2 43 25 70 14 26-11 33-45 58-35 16 7 21 20 34 25"/><path d="M18 71c25 3 40-9 63-7 27 3 43 23 70 15 25-7 36-37 58-26 15 7 22 17 34 21"/></g></svg>`;
+}
+
+function featuredMotif(name) {
+  const base = 'viewBox="0 0 210 92" aria-hidden="true" preserveAspectRatio="none"';
+  if (name === 'dispersion') return `<svg ${base}><g class="featured-grid"><path d="M8 20h194M8 46h194M8 72h194M45 8v76M87 8v76M129 8v76M171 8v76"/></g><path class="featured-primary" d="M8 49c12-26 24-26 36 0s24 26 36 0 24-26 36 0 24 26 36 0 24-26 36 0 12 13 18 10"/><path class="featured-secondary" d="M8 53c20-11 29-11 48 0s28 11 47 0 28-11 47 0 28 11 47 0"/></svg>`;
+  if (name === 'critical') return `<svg ${base}><g class="featured-wire"><ellipse cx="105" cy="47" rx="72" ry="31" transform="rotate(-12 105 47)"/><ellipse cx="105" cy="47" rx="53" ry="23" transform="rotate(-12 105 47)"/><ellipse cx="105" cy="47" rx="30" ry="13" transform="rotate(-12 105 47)"/><path d="M36 33 174 61M42 21l126 52M64 13l85 70M89 11l36 74"/></g></svg>`;
+  if (name === 'ring') return `<svg ${base}><g class="featured-rings" transform="translate(105 46)"><circle r="34"/><circle r="25"/><circle r="15"/><path d="M0-38V38M-38 0h76M-27-27l54 54M27-27l-54 54"/><circle r="5" class="featured-core"/></g></svg>`;
+  if (name === 'transmission') return `<svg ${base}><g class="featured-grid"><path d="M8 20h194M8 46h194M8 72h194M45 8v76M87 8v76M129 8v76M171 8v76"/></g><path class="featured-primary" d="M8 80 29 74 50 66 72 58 92 48 110 42 126 60 140 35 158 28 177 23 202 14"/><path class="featured-limit" d="M8 72 202 20"/></svg>`;
+  if (name === 'spectrum') return `<svg ${base}><g class="featured-grid"><path d="M8 20h194M8 46h194M8 72h194M45 8v76M87 8v76M129 8v76M171 8v76"/></g><path class="featured-spectrum" d="M8 78 13 68 18 73 23 54 28 69 34 30 40 64 47 42 52 72 58 60 63 78 69 39 74 66 80 51 88 76 95 26 103 70 110 58 117 75 124 48 132 68 140 34 147 73 155 57 162 78 169 45 176 61 183 39 191 70 202 55"/></svg>`;
+  return `<svg ${base}><g class="featured-grid"><path d="M8 20h194M8 46h194M8 72h194M45 8v76M87 8v76M129 8v76M171 8v76"/></g><path class="featured-primary" d="M8 81c35-1 54-6 76-15 24-10 37-15 58-30 21-14 38-22 60-25"/><path class="featured-secondary" d="M8 82c37-2 66-8 90-18 29-12 52-26 71-42 15-12 23-16 33-18"/></svg>`;
+}
+
+function segmentMarkup(section) {
+  const common = `class="atlas-region atlas-region-${section.id}" data-atlas-section="${section.id}" href="${section.href}" tabindex="0" aria-label="${esc(section.title)}. ${esc(section.summary)}" style="--region-accent:${section.accent}"`;
+  const internals = {
+    engine: '<path class="atlas-segment-shell" d="M56-54h160v108H56z"/><path class="atlas-structure" d="M74-47v94m34-94v94m36-94v94m36-94v94M56-26h160M56 0h160M56 26h160"/><path class="atlas-engine-bell" d="M58-43 4-61v42l54-11zm0 13L6-20v40l52-10zm0 13L4 19v42l54-18zm0 27L6 20v40l52-10z"/>',
+    'lower-tank': '<path class="atlas-segment-shell" d="M216-62h218v124H216z"/><ellipse class="atlas-tank" cx="325" cy="0" rx="98" ry="50"/><path class="atlas-fluid" d="M235 4c42 9 77 13 105 8 31-6 48-11 76-2v38H235z"/><path class="atlas-structure" d="M242-58v116m48-120v124m48-124v124m48-120v116M216-35h218M216 35h218"/>',
+    intertank: '<path class="atlas-segment-shell" d="M434-68h76v136h-76z"/><path class="atlas-structure atlas-truss" d="M438-62 506 62m0-124L438 62m34-126V64M438-34h68M438 0h68M438 34h68"/>',
+    'upper-tank': '<path class="atlas-segment-shell" d="M510-63h202v126H510z"/><ellipse class="atlas-tank atlas-tank-upper" cx="611" cy="0" rx="88" ry="48"/><path class="atlas-structure" d="M535-59v118m48-122v126m48-126v126m52-122v118M510-34h202M510 34h202"/>',
+    'forward-skirt': '<path class="atlas-segment-shell" d="M712-58 790-48v96l-78 10z"/><path class="atlas-structure" d="m718-52 64 96m2-89-66 96m26-106v110M714-29l72-8M712 0h76m-74 29 72 8"/>',
+    fairing: '<path class="atlas-segment-shell atlas-fairing-shell" d="M790-54c74-17 145 6 191 54-46 48-117 71-191 54z"/><path class="atlas-payload" d="M810-29h63l45 29-45 29h-63z"/><path class="atlas-structure" d="M812-48v96m31-101v106m31-99v92M790 0h188"/><path class="atlas-fairing-seam" d="M794-50c70-14 135 8 181 50M794 50c70 14 135-8 181-50"/>'
+  };
+  return `<a ${common}>${internals[section.id]}</a>`;
+}
+
+function launchVehicleSvg() {
+  return `<svg class="launch-vehicle-svg" viewBox="0 0 1040 620" role="img" aria-labelledby="atlas-svg-title atlas-svg-description">
+    <title id="atlas-svg-title">Interactive generic launch-vehicle structural atlas</title>
+    <desc id="atlas-svg-description">A sectioned launch vehicle shown diagonally with interactive engine, lower tank, intertank, upper tank, forward skirt, and payload fairing regions.</desc>
+    <defs>
+      <linearGradient id="atlas-shell" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#dbe7f5" stop-opacity=".5"/><stop offset=".35" stop-color="#294767" stop-opacity=".76"/><stop offset=".65" stop-color="#0b1d31" stop-opacity=".9"/><stop offset="1" stop-color="#9bb5d1" stop-opacity=".36"/></linearGradient>
+      <linearGradient id="atlas-tank" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#6f8cff" stop-opacity=".18"/><stop offset=".5" stop-color="#c2d1e6" stop-opacity=".3"/><stop offset="1" stop-color="#102943" stop-opacity=".5"/></linearGradient>
+      <linearGradient id="atlas-fluid" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#55b8ff" stop-opacity=".2"/><stop offset="1" stop-color="#55b8ff" stop-opacity=".55"/></linearGradient>
+      <radialGradient id="atlas-plume" cx="1" cy=".5" r="1"><stop stop-color="#fff" stop-opacity=".9"/><stop offset=".18" stop-color="#f2c663" stop-opacity=".8"/><stop offset=".52" stop-color="#9478ff" stop-opacity=".38"/><stop offset="1" stop-color="#55b8ff" stop-opacity="0"/></radialGradient>
+      <filter id="atlas-glow"><feGaussianBlur stdDeviation="7"/></filter>
+    </defs>
+    <g class="atlas-orbit-lines" aria-hidden="true"><path d="M85 501C303 356 533 186 967 95"/><path d="M62 529C348 426 560 211 996 124"/><path d="M131 548C347 460 643 255 1001 192"/></g>
+    <g class="atlas-plume" transform="translate(145 455) rotate(-29)"><ellipse cx="-70" cy="0" rx="112" ry="58" fill="url(#atlas-plume)" filter="url(#atlas-glow)"/><path d="M0-36C-48-42-97-31-153 0-97 31-48 42 0 36z" fill="url(#atlas-plume)"/></g>
+    <g class="atlas-vehicle" transform="translate(86 445) rotate(-29)">
+      ${atlasSections.map(segmentMarkup).join('')}
+      <path class="atlas-centerline" d="M-10 0h1000" aria-hidden="true"/>
+      <g class="atlas-fasteners" aria-hidden="true">${Array.from({length: 22}, (_, index) => `<circle cx="${205 + index * 31}" cy="${index % 2 ? 57 : -57}" r="2"/>`).join('')}</g>
+    </g>
+  </svg>`;
+}
+
+function renderAtlasDetails() {
+  return atlasSections.map(section => `<article class="atlas-detail" data-atlas-detail="${section.id}" ${section.id === defaultAtlasSectionId ? '' : 'hidden'}>
+    <p class="atlas-detail-kicker">${esc(section.descriptor)}</p>
+    <h3>${esc(section.title)}</h3>
+    <p>${esc(section.summary)}</p>
+    <ul>${section.subjects.map(subject => `<li>${esc(subject)}</li>`).join('')}</ul>
+    <a href="${section.href}">Open related physics <span aria-hidden="true">→</span></a>
+  </article>`).join('');
+}
+
+function renderAtlas() {
+  return `<section class="vehicle-atlas" id="vehicle-atlas" data-launch-atlas data-selected="${defaultAtlasSectionId}" aria-labelledby="atlas-heading">
+    <div class="atlas-heading-row"><div><p class="home-kicker">Interactive structural atlas</p><h2 id="atlas-heading">Follow energy through the vehicle.</h2></div><p>Hover, focus, or tap a region.</p></div>
+    <div class="atlas-visual">
+      ${launchVehicleSvg()}
+      <div class="atlas-callouts" aria-label="Launch vehicle regions">${atlasSections.map(section => `<a class="atlas-callout atlas-callout-${section.callout.align}" data-atlas-section="${section.id}" href="${section.href}" style="--callout-x:${section.callout.x}%;--callout-y:${section.callout.y}%;--region-accent:${section.accent}"><strong>${esc(section.title)}</strong><span>${esc(section.subjects.join(' · '))}</span></a>`).join('')}</div>
+      <div class="atlas-detail-stack" aria-live="polite">${renderAtlasDetails()}</div>
+    </div>
+    <div class="atlas-region-key" aria-label="Select vehicle region">${atlasSections.map(section => `<button type="button" data-atlas-section="${section.id}" class="${section.id === defaultAtlasSectionId ? 'is-active' : ''}" style="--region-accent:${section.accent}">${esc(section.shortTitle)}</button>`).join('')}</div>
+  </section>`;
+}
+
+function renderQuickStart() {
+  return `<aside class="quick-start" aria-labelledby="quick-start-title"><header><p class="home-kicker">Choose an entry point</p><h2 id="quick-start-title">Quick start</h2></header><div class="quick-start-list">${quickStartItems.map(item => `<a href="${item.href}" class="quick-start-item quick-start-${item.id}"><span class="quick-start-icon">${lineIcon(item.icon)}</span><span><strong>${esc(item.title)}</strong><small>${esc(item.descriptor)}</small></span><span class="quick-start-arrow" aria-hidden="true">›</span></a>`).join('')}</div></aside>`;
+}
+
+function renderNavigationCards() {
+  return `<section class="home-section nav-ways" aria-labelledby="navigation-ways-title"><div class="home-section-heading"><p class="home-kicker">Choose the shape of your question</p><h2 id="navigation-ways-title">Six ways to navigate</h2></div><div class="navigation-card-grid">${navigationCards.map(card => `<a class="navigation-card navigation-${card.id}" href="${card.href}"><div><h3>${esc(card.title)}</h3><p>${esc(card.descriptor)}</p></div><div class="navigation-motif">${motifSvg(card.motif)}</div><span>${esc(card.action)} <b aria-hidden="true">→</b></span></a>`).join('')}</div></section>`;
+}
+
+function renderFeaturedItems() {
+  return `<section class="home-section featured-library" aria-labelledby="featured-library-title"><div class="featured-heading"><div><p class="home-kicker">Real calculators and live models</p><h2 id="featured-library-title">Featured demos & tools</h2></div><a href="#/demos">View the full interactive library <span aria-hidden="true">→</span></a></div><div class="featured-strip">${featuredItems.map(item => `<a class="featured-item" href="${item.href}"><div><h3>${esc(item.title)}</h3><p>${esc(item.purpose)}</p></div><div class="featured-visual">${featuredMotif(item.motif)}</div></a>`).join('')}</div></section>`;
+}
+
+function renderHomepage(stats = {}) {
+  const counts = [
+    `${stats.chapters ?? '60+'} chapters`,
+    `${stats.tools ?? '100+'} tools`,
+    `${stats.demos ?? '70+'} demos`
+  ];
+  return `<div class="atlas-home">
+    <section class="atlas-hero" aria-labelledby="homepage-title">
+      <div class="home-message">
+        <p class="home-kicker">Structural acoustics · launch vibroacoustics</p>
+        <h1 id="homepage-title">Understand how vibration and sound move through structures.</h1>
+        <p class="home-lede">A visual, connected knowledge base linking acoustics fundamentals and launch-vehicle practice with engineering judgment, interactive demos, and real-world workflows.</p>
+        <div class="home-actions"><a class="home-primary-action" href="#/cheat-sheet">Start exploring <span aria-hidden="true">→</span></a><button type="button" class="home-search-action" data-action="search">Search the knowledge base</button></div>
+        <p class="home-counts">${counts.map(count => `<span>${esc(count)}</span>`).join('')}</p>
+      </div>
+      ${renderAtlas()}
+      ${renderQuickStart()}
+    </section>
+    ${renderNavigationCards()}
+    ${renderFeaturedItems()}
+  </div>`;
+}
+
+function bindHomepage(root = document) {
+  const atlas = root.querySelector('[data-launch-atlas]');
+  if (!atlas) return () => {};
+  const targets = [...atlas.querySelectorAll('[data-atlas-section]')];
+  const details = [...atlas.querySelectorAll('[data-atlas-detail]')];
+  let selected = atlas.dataset.selected || defaultAtlasSectionId;
+
+  const select = id => {
+    if (!atlasSections.some(section => section.id === id)) return;
+    selected = id;
+    atlas.dataset.selected = id;
+    targets.forEach(target => target.classList.toggle('is-active', target.dataset.atlasSection === id));
+    details.forEach(detail => { detail.hidden = detail.dataset.atlasDetail !== id; });
+  };
+
+  const controllers = [];
+  targets.forEach(target => {
+    const activate = () => select(target.dataset.atlasSection);
+    target.addEventListener('pointerenter', activate);
+    target.addEventListener('focus', activate);
+    controllers.push(() => {
+      target.removeEventListener('pointerenter', activate);
+      target.removeEventListener('focus', activate);
+    });
+    if (target.tagName === 'BUTTON') {
+      target.addEventListener('click', activate);
+      controllers.push(() => target.removeEventListener('click', activate));
+    }
+  });
+  select(selected);
+  return () => controllers.forEach(cleanup => cleanup());
+}
+
+return {homepageNavigation,homepageNavKey,atlasSections,quickStartItems,navigationCards,featuredItems,renderHomepage,bindHomepage};
+})();
+
 const __engineeringResults=(()=>{
 /**
  * @typedef {Object} ResultValue
@@ -15182,6 +15928,7 @@ const {seaParameterCalculatorRegistry}=__seaParameterCalculators;
 const {extraToolCatalog}=__extraData;
 const {lineChartSvg,heatmapSvg,downloadCsv,downloadSvg,downloadText}=__charts;
 const {demoPreviewSvg,mountDemo}=__demosModule;
+const {homepageNavigation,homepageNavKey,renderHomepage,bindHomepage}=__homepage;
 const {createEngineeringRegistry,engineeringResultToText}=__engineeringResults;
 
 const sections = [...baseSections, ...acs519Sections, ...workflowExpansionSections, ...programExpansionSections, ...seaParameterSections];
@@ -15223,25 +15970,20 @@ function icon(name) {
 }
 function brandMark(){return `<svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21"/><path d="M8 27c6-13 12-13 18 0s11 13 14 1"/><path d="M8 19c6 8 12 8 18 0s10-8 14-1"/></svg>`;}
 function routeInfo(){
-  const raw=(location.hash.slice(1)||'/cheat-sheet');
+  const raw=(location.hash.slice(1)||'/');
   const [pathPart, queryString='']=raw.split('?');
   const path=pathPart.startsWith('/')?pathPart:`/${pathPart}`;
   return { path, segments:path.split('/').filter(Boolean), params:new URLSearchParams(queryString), raw };
 }
 function navKey(route){
-  const first=route.segments[0]||'cheat-sheet';
-  if(first==='case-note')return 'case-notes';
-  if(first==='tool')return 'tools';
-  if(first==='demo')return 'demos';
-  return first;
+  return homepageNavKey(route.segments[0]||'',route.params.get('section')||'');
 }
 function shell(main, route) {
   const active=navKey(route);
-  const nav=[['cheat-sheet','Cheat Sheet'],['tools','Tools'],['demos','Demos'],['case-notes','Case Notes'],['references','References']];
   return `<header class="site-header">
-    <a class="brand" href="#/cheat-sheet">${brandMark()}<span class="brand-copy"><strong>Structural Acoustics, Understood</strong><small>Vibration · Shock · Acoustics · Coupled Response</small></span></a>
-    <nav class="primary-nav" aria-label="Primary">${nav.map(([id,label])=>`<a href="#/${id}" class="${active===id?'active':''}" ${active===id?'aria-current="page"':''}>${label}</a>`).join('')}</nav>
-    <div class="header-actions"><button class="icon-button" data-action="search" aria-label="Search">${icon('search')}</button><button class="icon-button" data-action="print" aria-label="Print current page">${icon('print')}</button><button class="menu-button" aria-label="Toggle navigation" aria-expanded="false"><span></span><span></span><span></span></button></div>
+    <a class="brand" href="#/">${brandMark()}<span class="brand-copy"><strong>Structural Acoustics</strong><small>Understood</small></span></a>
+    <nav class="primary-nav" aria-label="Primary">${homepageNavigation.map(item=>`<a href="${item.href}" class="${active===item.id?'active':''}" ${active===item.id?'aria-current="page"':''}><span>${item.label}</span><small>${item.descriptor}</small></a>`).join('')}</nav>
+    <div class="header-actions"><button class="icon-button header-search" data-action="search" aria-label="Search">${icon('search')}<span>Search</span></button><button class="icon-button header-print" data-action="print" aria-label="Print current page">${icon('print')}</button><button class="menu-button" aria-label="Toggle navigation" aria-expanded="false"><span></span><span></span><span></span></button></div>
   </header>
   <main id="main-content">${main}</main>
   <footer class="site-footer"><div><strong>Structural Acoustics, Understood</strong><p>Original engineering reference and browser-based screening tools. Verify controlled methods before design or qualification use.</p></div><div class="footer-links"><a href="#/references">Assumptions & references</a><a href="#/tools">${toolCatalog.length} tools</a><a href="#/demos">${demos.length} demos</a><button class="link-button" data-action="print">Print / PDF</button></div></footer>
@@ -15349,6 +16091,7 @@ function bindEmbeddedDemos(){
 }
 function bindGlobal(route){
   document.querySelector('.menu-button')?.addEventListener('click',e=>{const nav=document.querySelector('.primary-nav'),open=nav.classList.toggle('open');e.currentTarget.setAttribute('aria-expanded',open);});
+  document.querySelectorAll('.primary-nav a').forEach(link=>link.addEventListener('click',()=>{document.querySelector('.primary-nav')?.classList.remove('open');document.querySelector('.menu-button')?.setAttribute('aria-expanded','false');}));
   document.querySelectorAll('[data-action="search"]').forEach(b=>b.addEventListener('click',openSearch));
   document.querySelectorAll('[data-action="print"]').forEach(b=>b.addEventListener('click',()=>window.print()));
   document.querySelector('[data-action="close-search"]')?.addEventListener('click',()=>document.querySelector('.search-dialog')?.close());
@@ -15358,7 +16101,8 @@ function bindGlobal(route){
   if(route.segments[0]==='tool')bindTool(route);
   if(route.segments[0]==='demo'){const mount=document.querySelector('#demo-mount');if(mount)routeCleanup=mountDemo(mount,decodeURIComponent(route.segments[1]||''));}
   if(route.segments[0]==='case-note')bindEmbeddedDemos();
-  if(route.segments[0]==='cheat-sheet'||!route.segments.length)bindCheat(route);
+  if(route.segments[0]==='cheat-sheet')bindCheat(route);
+  if(!route.segments.length){const cleanup=bindHomepage();const old=routeCleanup;routeCleanup=()=>{old();cleanup();};}
 }
 function bindToolFilters(){const chips=[...document.querySelectorAll('.filter-chip')],cards=[...document.querySelectorAll('.tool-card')],input=document.querySelector('#tool-filter-search'),count=document.querySelector('#tool-count');let category='All';const update=()=>{const q=(input?.value||'').trim().toLowerCase();let shown=0;cards.forEach(card=>{const visible=(category==='All'||card.dataset.category===category)&&(!q||card.dataset.search.includes(q));card.hidden=!visible;if(visible)shown++;});count.textContent=`${shown} shown`;};chips.forEach(chip=>chip.addEventListener('click',()=>{category=chip.dataset.filter;chips.forEach(c=>c.classList.toggle('active',c===chip));update();}));input?.addEventListener('input',update);}
 function bindCheat(route){
@@ -15369,7 +16113,8 @@ function bindCheat(route){
 function render(){
   routeCleanup();routeCleanup=()=>{};const route=routeInfo();let main;
   const [first]=route.segments;
-  if(!first||first==='cheat-sheet')main=renderCheat(route);
+  if(!first)main=renderHomepage({chapters:sections.length,tools:toolCatalog.length,demos:demos.length});
+  else if(first==='cheat-sheet')main=renderCheat(route);
   else if(first==='tools')main=renderTools();
   else if(first==='tool')main=renderTool(route);
   else if(first==='demos')main=renderDemos();
@@ -15378,10 +16123,11 @@ function render(){
   else if(first==='case-note')main=renderCaseNote(route);
   else if(first==='references')main=renderReferences();
   else main=renderNotFound();
+  document.body.classList.toggle('home-route',!first);
   app.innerHTML=shell(main,route);bindGlobal(route);
   const retainScroll=(first==='cheat-sheet'&&route.params.has('section'));
   if(!retainScroll)window.scrollTo({top:0,behavior:'instant'});
-  document.title=`${first==='tool'&&toolById.get(route.segments[1])?`${toolById.get(route.segments[1]).title} · `:''}Structural Acoustics, Understood`;
+  document.title=`${!first?'Structural Acoustics, Understood · Interactive Launch-Vehicle Atlas':`${first==='tool'&&toolById.get(route.segments[1])?`${toolById.get(route.segments[1]).title} · `:''}Structural Acoustics, Understood`}`;
 }
 
 window.addEventListener('hashchange',render);
