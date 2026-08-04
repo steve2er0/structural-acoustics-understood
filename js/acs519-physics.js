@@ -456,7 +456,7 @@ export function seaNetworkState(input = {}) {
     { name: 'Source room', kind: 'acoustic', modalDensity: 0.08, lossFactor: 0.01, volume: 80, density: AIR_RHO, soundSpeed: AIR_C, inputPower: 1 },
     { name: 'Receiving room', kind: 'acoustic', modalDensity: 0.08, lossFactor: 0.01, volume: 80, density: AIR_RHO, soundSpeed: AIR_C, inputPower: 0 }
   ];
-  const subsystems = source.slice(0, 10).map((item, index) => {
+  const subsystems = source.slice(0, 24).map((item, index) => {
     const kind = String(item.kind ?? 'structural').toLowerCase() === 'acoustic' ? 'acoustic' : 'structural';
     return {
       name: String(item.name ?? `Subsystem ${index + 1}`),
@@ -470,7 +470,7 @@ export function seaNetworkState(input = {}) {
       soundSpeed: positive(item.soundSpeed, AIR_C)
     };
   });
-  const rawLinks = Array.isArray(input.links) && input.links.length ? input.links : subsystems.slice(1).map((_, index) => ({ i: index, j: index + 1, forward: 0.01 }));
+  const rawLinks = Array.isArray(input.links) ? input.links : subsystems.slice(1).map((_, index) => ({ i: index, j: index + 1, forward: 0.01 }));
   const links = rawLinks.map((link, index) => {
     const i = clamp(Math.round(number(link.i, index)), 0, subsystems.length - 1);
     const j = clamp(Math.round(number(link.j, index + 1)), 0, subsystems.length - 1);

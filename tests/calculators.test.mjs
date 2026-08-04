@@ -96,6 +96,29 @@ import {
   siteComponentInventory
 } from '../js/site-components.js';
 import {
+  defaultLaunchSeaProject,
+  renderLaunchSeaCapstone,
+  solveLaunchSeaProject
+} from '../js/launch-sea-capstone.js';
+import {
+  engineeringWorkbenchDefinitions,
+  engineeringWorkbenchIds,
+  engineeringWorkbenchRegistry
+} from '../js/engineering-workbenches.js';
+import {
+  classifyTool,
+  createEngineeringProject,
+  engineeringProjectReport,
+  environmentLibrary,
+  hardwareTopics,
+  learningPathways,
+  materialLibrary,
+  normalizeEngineeringProject,
+  projectTemplates,
+  runValidationBenchmarks,
+  toolHandoffs
+} from '../js/engineering-system.js';
+import {
   experimentalSeaInverse,
   honeycombCoincidenceFrequency,
   honeycombPreset,
@@ -690,12 +713,91 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   assert.match(html,/function mountFairing\(root\)/);
   assert.match(html,/const __homepage=\(\(\)=>\{/);
   assert.match(html,/const __siteComponents=\(\(\)=>\{/);
+  assert.match(html,/const __engineeringSystem=\(\(\)=>\{/);
   assert.match(html,/function renderBreadcrumbs\(items/);
   assert.match(html,/site-system-calculator/);
   assert.match(html,/site-system-chapter/);
   assert.match(html,/function renderHomepage\(stats = \{\}\)/);
   assert.match(html,/function bindHomepage\(root = document\)/);
   assert.match(html,/Interactive generic launch-vehicle structural atlas/);
+  assert.match(html,/const __launchSeaCapstone=\(\(\)=>\{/);
+  assert.match(html,/const __workbenchRuntime=\(\(\)=>\{/);
+  assert.match(html,/const __engineeringWorkbenches=\(\(\)=>\{/);
+  assert.match(html,/Double-Window SEA Designer/);
+  assert.match(html,/Wave Matching &amp; Radiation Canvas|Wave Matching & Radiation Canvas/);
+  assert.match(html,/function solveLaunchSeaProject\(projectInput = \{\}\)/);
+  assert.match(html,/function bindLaunchSeaCapstone\(root = document/);
+  assert.match(html,/Launch-Vehicle SEA Capstone/);
+});
+
+test('launch-vehicle SEA capstone solves a reciprocal, banded, auditable network',()=>{
+  const project=defaultLaunchSeaProject();
+  const solution=solveLaunchSeaProject(project);
+  assert.equal(solution.bands.length,19);
+  assert.equal(solution.project.subsystems.length,9);
+  assert.equal(solution.project.connections.length,11);
+  assert.ok(solution.maxBalanceError<1e-12);
+  solution.bands.forEach(band=>{
+    band.network.energies.forEach(energy=>assert.ok(Number.isFinite(energy)&&energy>=0));
+    assert.ok(Math.abs(band.network.balanceError)<1e-12);
+    band.network.links.forEach(link=>close(link.forward*band.network.subsystems[link.i].modalDensity,link.reverse*band.network.subsystems[link.j].modalDensity,1e-12));
+  });
+  const baseline=solution.selected.resultById['fairing-upper'].energy;
+  project.subsystems.find(item=>item.id==='fairing-upper').lossFactor=.08;
+  const damped=solveLaunchSeaProject(project).selected.resultById['fairing-upper'].energy;
+  assert.ok(damped<baseline,'raising fairing DLF should reduce its stored energy');
+  project.connections=[];
+  project.study.localEquipmentPower=0;
+  const isolated=solveLaunchSeaProject(project).selected;
+  assert.equal(isolated.powerFlows.length,0);
+  isolated.network.energies.slice(1).forEach(energy=>close(energy,0,1e-15));
+  const html=renderLaunchSeaCapstone();
+  assert.match(html,/aria-label="SEA modeling workflow"/);
+  assert.match(html,/Launch vehicle SEA subsystem atlas/);
+  assert.match(html,/SEA energy-flow network/);
+  assert.match(html,/Engineering takeaway/);
+  assert.match(html,/mode=quick/);
+  const couplingHtml=renderLaunchSeaCapstone({...defaultLaunchSeaProject(),activeStep:'coupling'});
+  assert.match(couplingHtml,/data-capstone-field="conn\.from"/);
+  assert.match(couplingHtml,/data-capstone-field="conn\.to"/);
+});
+
+test('engineering workbench registry upgrades ten real tools without replacing their quick screens',()=>{
+  const expected=[
+    'double-panel-sea',
+    'qualification-test-planner',
+    'time-psd',
+    'noise-control-path',
+    'model-test-correlation',
+    'hybrid-method-selection',
+    'launch-acoustic-source',
+    'wet-tank-dynamics',
+    'mission-environment-timeline',
+    'wave-matching-atlas'
+  ];
+  assert.deepEqual(engineeringWorkbenchIds,expected);
+  assert.equal(new Set(engineeringWorkbenchIds).size,10);
+  const toolIds=new Set(catalog.map(tool=>tool.id));
+  for(const definition of engineeringWorkbenchDefinitions){
+    assert.ok(toolIds.has(definition.id),`${definition.id} must retain an existing tool route`);
+    assert.ok(definition.steps.length>=6,`${definition.id} must be a complete guided workflow`);
+    for(const step of definition.steps)assert.ok(registry[step.toolId],`${definition.id} step ${step.id} references missing calculator ${step.toolId}`);
+    const entry=engineeringWorkbenchRegistry[definition.id];
+    assert.equal(typeof entry.render,'function');
+    assert.equal(typeof entry.bind,'function');
+    const html=entry.render();
+    assert.match(html,new RegExp(`data-workbench-id="${definition.id}"`));
+    assert.match(html,/Engineering workflow/);
+    assert.match(html,/Input inspector/);
+    assert.match(html,/Live engineering evidence/);
+    assert.match(html,/Engineering takeaway/);
+    assert.match(html,new RegExp(`\/tool\/${definition.id}\\?mode=quick`));
+    assert.doesNotMatch(html,/\bundefined\b/);
+  }
+  const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
+  assert.match(appSource,/\.\.\.engineeringWorkbenchRegistry/);
+  assert.match(appSource,/workbenchRegistry\[id\].*mode.*quick/);
+  assert.match(appSource,/site-system-workbench/);
 });
 
 test('site visual system exposes reusable components and themes every non-home route',()=>{
@@ -746,6 +848,8 @@ test('homepage atlas is data-driven, accessible, and linked to real content',()=
   atlasSections.forEach(section=>assert.equal(section.subjects.length,3,`${section.id} must expose three engineering subjects`));
   routeItems.forEach(item=>verifyRoute(item.href));
   assert.equal(homepageNavKey('tool'),'tools');
+  assert.equal(homepageNavKey('hardware'),'hardware');
+  assert.equal(homepageNavKey('pathways'),'workflows');
   assert.equal(homepageNavKey('cheat-sheet','shell-acoustics-deep-dive'),'hardware');
   assert.equal(homepageNavKey('cheat-sheet','launch-vibroacoustic-capstone'),'workflows');
   const html=renderHomepage({chapters:allSections.length,tools:allTools.length,demos:allDemos.length});
@@ -760,10 +864,12 @@ test('homepage atlas is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes the demo takeaway runtime',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v26'/);
+  assert.match(worker,/const CACHE = 'sau-v30'/);
+  assert.match(worker,/event\.request\.destination === 'document'/);
   assert.match(worker,/\.\/assets\/homepage\/launch-vehicle-cutaway\.png/);
   assert.match(worker,/\.\/js\/homepage\.js/);
   assert.match(worker,/\.\/js\/site-components\.js/);
+  assert.match(worker,/\.\/js\/engineering-system\.js/);
   assert.match(worker,/\.\/js\/demo-takeaways\.js/);
   assert.match(worker,/\.\/js\/workflow-expansion-data\.js/);
   assert.match(worker,/\.\/js\/workflow-expansion-demos\.js/);
@@ -775,6 +881,49 @@ test('offline cache includes the demo takeaway runtime',()=>{
   assert.match(worker,/\.\/js\/sea-parameters-calculators\.js/);
   assert.match(worker,/\.\/js\/sea-parameters-data\.js/);
   assert.match(worker,/\.\/js\/sea-parameters-demos\.js/);
+  assert.match(worker,/\.\/js\/launch-sea-capstone\.js/);
+  assert.match(worker,/\.\/js\/workbench-runtime\.js/);
+  assert.match(worker,/\.\/js\/engineering-workbenches\.js/);
+});
+
+test('engineering system connects hardware, pathways, tool discovery, projects, and live verification',()=>{
+  const toolIds=new Set(catalog.map(tool=>tool.id));
+  const sectionIds=new Set(sections.map(section=>section.id));
+  assert.equal(hardwareTopics.length,7);
+  assert.equal(learningPathways.length,6);
+  assert.ok(materialLibrary.length>=6);
+  assert.ok(environmentLibrary.length>=5);
+  assert.ok(projectTemplates.length>=5);
+  assert.equal(new Set(hardwareTopics.map(topic=>topic.id)).size,hardwareTopics.length);
+  assert.equal(new Set(learningPathways.map(pathway=>pathway.id)).size,learningPathways.length);
+  for(const topic of hardwareTopics){
+    assert.ok(topic.sources.length>=4&&topic.paths.length>=4&&topic.responses.length>=4,`${topic.id} needs a complete source-path-response map`);
+    for(const model of topic.models){
+      const tool=model.href.match(/^#\/tool\/([^?]+)/)?.[1];
+      assert.ok(toolIds.has(tool),`${topic.id} references missing tool ${tool}`);
+    }
+    for(const chapter of topic.chapters)assert.ok(sectionIds.has(chapter),`${topic.id} references missing chapter ${chapter}`);
+  }
+  for(const pathway of learningPathways){
+    assert.ok(pathway.steps.length>=5,`${pathway.id} needs a complete guided sequence`);
+    pathway.steps.forEach(step=>assert.match(step.href,/^#\//));
+  }
+  for(const tool of catalog){
+    const profile=classifyTool(tool,engineeringWorkbenchIds);
+    assert.ok(profile.level&&profile.task&&profile.hardware&&profile.input,`${tool.id} has an incomplete discovery profile`);
+    assert.ok(toolHandoffs(tool,catalog).length>0,`${tool.id} has no engineering handoff`);
+  }
+  const benchmarkResults=runValidationBenchmarks(registry);
+  assert.equal(benchmarkResults.length,5);
+  assert.deepEqual(benchmarkResults.filter(result=>!result.pass).map(result=>result.id),[]);
+  const project=createEngineeringProject('fairing-ascent');
+  project.artifacts.push({id:'result-1',type:'Calculator result',title:'Panel response',route:'#/tool/sdof',createdAt:new Date(0).toISOString(),takeaway:'Response is resonance controlled.',validity:'Linear SDOF screen.',assumptions:['Linear response'],warnings:[],values:[{label:'Response',value:2,unit:'g'}],notes:'',provenance:'Unit test'});
+  const normalized=normalizeEngineeringProject(project);
+  assert.equal(normalized.artifacts.length,1);
+  const report=engineeringProjectReport(normalized);
+  assert.match(report,/ENGINEERING RECORDS/);
+  assert.match(report,/Response is resonance controlled/);
+  assert.match(report,/MODEL-USE STATEMENT/);
 });
 
 test('default result payloads are finite and structurally consistent',()=>{

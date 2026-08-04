@@ -4,8 +4,8 @@ export const homepageNavigation = [
   { id: 'learn', label: 'Learn', descriptor: 'Concepts & fundamentals', href: '#/cheat-sheet' },
   { id: 'solve', label: 'Solve', descriptor: 'Start with a problem', href: '#/case-notes' },
   { id: 'explore', label: 'Explore', descriptor: 'Interactive physics', href: '#/demos' },
-  { id: 'hardware', label: 'Hardware', descriptor: 'Structural atlas', href: '#/cheat-sheet?section=shell-acoustics-deep-dive' },
-  { id: 'workflows', label: 'Workflows', descriptor: 'Engineering paths', href: '#/cheat-sheet?section=launch-vibroacoustic-capstone' },
+  { id: 'hardware', label: 'Hardware', descriptor: 'Structural atlas', href: '#/hardware' },
+  { id: 'workflows', label: 'Workflows', descriptor: 'Engineering paths', href: '#/pathways' },
   { id: 'tools', label: 'Tools', descriptor: 'Calculators & demos', href: '#/tools' }
 ];
 
@@ -27,6 +27,8 @@ const workflowSectionIds = new Set([
 
 export function homepageNavKey(first = '', section = '') {
   if (first === 'tool' || first === 'tools') return 'tools';
+  if (first === 'hardware') return 'hardware';
+  if (first === 'pathway' || first === 'pathways' || first === 'workspace' || first === 'validation') return 'workflows';
   if (first === 'demo' || first === 'demos' || first === 'references') return 'explore';
   if (first === 'case-note' || first === 'case-notes') return 'solve';
   if (first === 'cheat-sheet') {
@@ -45,7 +47,7 @@ export const atlasSections = [
     descriptor: 'Propulsion region',
     summary: 'Broadband turbomachinery forcing, mount loads, plume acoustics, and high-frequency shock enter the vehicle here.',
     subjects: ['Turbomachinery forcing', 'Pyroshock', 'Mount loads'],
-    href: '#/cheat-sheet?section=launch-acoustic-sources-deep-dive',
+    href: '#/hardware/propulsion',
     accent: '#ff9b7a',
     hotspot: 'M95 790 390 650 585 665 525 955 165 1010 95 940Z',
     callout: { x: 41, y: 80, align: 'right', line: 235 }
@@ -57,7 +59,7 @@ export const atlasSections = [
     descriptor: 'Wet shell structure',
     summary: 'Shell modes, propellant added mass, slosh, axial load, and distributed pressure couple through the lower barrel.',
     subjects: ['Wet-wall modes', 'Slosh coupling', 'Axial response'],
-    href: '#/cheat-sheet?section=wet-tank-dynamics-deep-dive',
+    href: '#/hardware/tank',
     accent: '#55b8ff',
     hotspot: 'M390 555 745 390 925 505 600 800 445 830Z',
     callout: { x: 20, y: 57, align: 'left', line: 0 }
@@ -69,7 +71,7 @@ export const atlasSections = [
     descriptor: 'Transition structure',
     summary: 'A stiffness and impedance transition where shell waves, joints, concentrated load paths, and cavity fields exchange energy.',
     subjects: ['Shell vibration', 'Acoustic coupling', 'Joint transmission'],
-    href: '#/cheat-sheet?section=wave-matching-deep-dive',
+    href: '#/hardware/interstage',
     accent: '#58d59b',
     hotspot: 'M740 390 905 315 1018 455 885 585 760 535Z',
     callout: { x: 22, y: 40, align: 'left', line: 55 }
@@ -81,7 +83,7 @@ export const atlasSections = [
     descriptor: 'Cylindrical shell',
     summary: 'Curvature creates ring and lobar modes while bending-wave speed and coincidence govern structural-acoustic transfer.',
     subjects: ['Bending waves', 'Ring frequency', 'Acoustic radiation'],
-    href: '#/cheat-sheet?section=shell-acoustics-deep-dive',
+    href: '#/hardware/tank',
     accent: '#9478ff',
     hotspot: 'M900 255 1115 165 1260 315 1030 475 930 415Z',
     callout: { x: 30, y: 25, align: 'left', line: 105 }
@@ -93,7 +95,7 @@ export const atlasSections = [
     descriptor: 'Upper structure',
     summary: 'Local modes, joints, avionics attachments, and shock paths bridge the tank stack to the payload region.',
     subjects: ['Structural modes', 'Shock transmission', 'Joint behavior'],
-    href: '#/cheat-sheet?section=modal-testing-deep-dive',
+    href: '#/hardware/avionics',
     accent: '#f2c663',
     hotspot: 'M1085 160 1265 95 1360 255 1215 355 1115 305Z',
     callout: { x: 42, y: 8, align: 'left', line: 85 }
@@ -105,7 +107,7 @@ export const atlasSections = [
     descriptor: 'Payload region',
     summary: 'The external acoustic field drives the fairing shell, cavity modes, blankets, equipment, and payload interface through parallel paths.',
     subjects: ['Acoustic environment', 'Panel response', 'Cavity coupling'],
-    href: '#/cheat-sheet?section=payload-fairing-cavities',
+    href: '#/hardware/fairing',
     accent: '#6f8cff',
     hotspot: 'M1050 170 1175 55 1450 15 1485 55 1370 205 1240 305 1110 345 1185 245Z',
     callout: { x: 83, y: 9, align: 'right', line: 108 }
@@ -116,8 +118,8 @@ export const quickStartItems = [
   { id: 'learn', title: 'I want to learn', descriptor: 'Start with the fundamentals', href: '#/cheat-sheet', icon: 'book' },
   { id: 'solve', title: 'I have a problem', descriptor: 'Diagnose an observed issue', href: '#/case-notes', icon: 'alert' },
   { id: 'explore', title: 'Explore the map', descriptor: 'Watch the physics connect', href: '#/demos', icon: 'network' },
-  { id: 'hardware', title: 'Browse by hardware', descriptor: 'Select a vehicle region', href: '#/cheat-sheet?section=shell-acoustics-deep-dive', icon: 'cube' },
-  { id: 'workflows', title: 'Follow a workflow', descriptor: 'Complete an engineering task', href: '#/cheat-sheet?section=launch-vibroacoustic-capstone', icon: 'workflow' },
+  { id: 'hardware', title: 'Browse by hardware', descriptor: 'Select a vehicle region', href: '#/hardware', icon: 'cube' },
+  { id: 'workflows', title: 'Follow a workflow', descriptor: 'Complete an engineering task', href: '#/pathways', icon: 'workflow' },
   { id: 'tools', title: 'Use a tool', descriptor: 'Calculate, visualize, export', href: '#/tools', icon: 'calculator' }
 ];
 
@@ -125,8 +127,8 @@ export const navigationCards = [
   { id: 'learn', title: 'Learn', descriptor: 'Build understanding step by step.', action: 'Browse topics', href: '#/cheat-sheet', motif: 'wave' },
   { id: 'solve', title: 'Solve', descriptor: 'Begin with an observed engineering problem.', action: 'Diagnose now', href: '#/case-notes', motif: 'psd' },
   { id: 'explore', title: 'Explore', descriptor: 'See how concepts and physical regimes connect.', action: 'Open demos', href: '#/demos', motif: 'network' },
-  { id: 'hardware', title: 'Hardware', descriptor: 'Explore vehicle components and their physics.', action: 'Browse atlas', href: '#/cheat-sheet?section=shell-acoustics-deep-dive', motif: 'shell' },
-  { id: 'workflows', title: 'Workflows', descriptor: 'Follow proven analysis and test paths.', action: 'View workflows', href: '#/cheat-sheet?section=requirements-margin-flowdown', motif: 'workflow' },
+  { id: 'hardware', title: 'Hardware', descriptor: 'Explore vehicle components and their physics.', action: 'Browse atlas', href: '#/hardware', motif: 'shell' },
+  { id: 'workflows', title: 'Workflows', descriptor: 'Follow proven analysis and test paths.', action: 'View workflows', href: '#/pathways', motif: 'workflow' },
   { id: 'tools', title: 'Tools', descriptor: 'Calculate, visualize, and experiment.', action: 'Open tools', href: '#/tools', motif: 'surface' }
 ];
 

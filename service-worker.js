@@ -1,7 +1,7 @@
-const CACHE = 'sau-v26';
+const CACHE = 'sau-v30';
 const CORE = [
   './', './index.html', './styles.css', './manifest.webmanifest', './assets/favicon.svg', './assets/homepage/launch-vehicle-cutaway.png',
-  './js/app.js', './js/homepage.js', './js/site-components.js', './js/data.js', './js/calculators.js', './js/extra-calculators.js',
+  './js/app.js', './js/homepage.js', './js/site-components.js', './js/engineering-system.js', './js/data.js', './js/calculators.js', './js/extra-calculators.js',
   './js/extra-data.js', './js/charts.js', './js/demos.js', './js/demo-takeaways.js', './js/engineering-results.js',
   './js/honeycomb-paper.js', './js/sea-coupling.js', './js/acs519-data.js',
   './js/acs519-physics.js', './js/acs519-calculators.js', './js/acs519-demos.js',
@@ -10,7 +10,8 @@ const CORE = [
   './js/program-expansion-physics.js', './js/program-expansion-calculators.js',
   './js/program-expansion-data.js', './js/program-expansion-demos.js',
   './js/sea-parameters-physics.js', './js/sea-parameters-calculators.js',
-  './js/sea-parameters-data.js', './js/sea-parameters-demos.js'
+  './js/sea-parameters-data.js', './js/sea-parameters-demos.js',
+  './js/launch-sea-capstone.js', './js/workbench-runtime.js', './js/engineering-workbenches.js'
 ];
 
 self.addEventListener('install', event => {
@@ -27,6 +28,18 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        if (response.ok && new URL(event.request.url).origin === self.location.origin) {
+          const copy = response.clone();
+          caches.open(CACHE).then(cache => cache.put(event.request, copy));
+        }
+        return response;
+      }).catch(() => caches.match(event.request).then(cached => cached || caches.match('./index.html')))
+    );
+    return;
+  }
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
