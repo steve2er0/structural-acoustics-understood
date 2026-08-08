@@ -1,4 +1,4 @@
-const CACHE = 'sau-v44';
+const CACHE = 'sau-v46';
 const CORE = [
   './', './index.html', './styles.css', './manifest.webmanifest', './assets/favicon.svg',
   './js/app.js', './js/homepage.js', './js/site-components.js', './js/engineering-system.js', './js/data.js', './js/calculators.js', './js/extra-calculators.js',

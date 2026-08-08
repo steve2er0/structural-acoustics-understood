@@ -120,7 +120,9 @@ export function lineChartSvg(plot, { width = 840, height = 390 } = {}) {
   (plot.traces ?? []).forEach((t, i) => {
     const color = t.color || palette[i % palette.length];
     const path = pathFromTrace(t, sx, sy, xLog, yLog);
-    if (path) s += `<path d="${path}" fill="none" stroke="${color}" stroke-width="${t.emphasis ? 3 : 2}" stroke-linejoin="round" stroke-linecap="round" ${t.dash ? 'stroke-dasharray="7 5"' : ''}/>`;
+    if (path) s += `<path data-chart-trace="${i}" d="${path}" fill="none" stroke="${color}" stroke-width="${t.emphasis ? 3 : 2}" stroke-linejoin="round" stroke-linecap="round" ${t.dash ? 'stroke-dasharray="7 5"' : ''}/>`;
+    const count=Math.min(t.x?.length??0,t.y?.length??0),step=Math.max(1,Math.ceil(count/80));
+    for(let point=0;point<count;point+=step){const x=Number(t.x[point]),y=Number(t.y[point]);if(!Number.isFinite(x)||!Number.isFinite(y)||(xLog&&x<=0)||(yLog&&y<=0))continue;s+=`<circle data-chart-trace="${i}" cx="${sx(x).toFixed(2)}" cy="${sy(y).toFixed(2)}" r="5" fill="transparent" stroke="transparent" pointer-events="all"><title>${escapeHtml(t.name||`Trace ${i+1}`)} · ${escapeHtml(plot.xLabel||'x')}: ${escapeHtml(formatNumber(x))} · ${escapeHtml(plot.yLabel||'y')}: ${escapeHtml(formatNumber(y))}</title></circle>`;}
   });
   s += `</g>`;
   s += `<text x="${m.left + innerW/2}" y="${height - 12}" text-anchor="middle" font-family="ui-sans-serif,system-ui" font-size="11" fill="#5f6b70">${escapeHtml(plot.xLabel || '')}</text>`;
@@ -131,7 +133,7 @@ export function lineChartSvg(plot, { width = 840, height = 390 } = {}) {
     const label = String(t.name || `Trace ${i+1}`);
     const itemW = Math.max(90, label.length * 6.3 + 36);
     if (lx + itemW > m.left + innerW) { lx = m.left + 8; ly += 19; }
-    s += `<line x1="${lx}" x2="${lx+19}" y1="${ly}" y2="${ly}" stroke="${color}" stroke-width="2.5" ${t.dash ? 'stroke-dasharray="6 4"' : ''}/><text x="${lx+25}" y="${ly+3}" font-family="ui-sans-serif,system-ui" font-size="10" fill="#344047">${escapeHtml(label)}</text>`;
+    s += `<g data-legend-trace="${i}" role="button" tabindex="0" style="cursor:pointer"><line x1="${lx}" x2="${lx+19}" y1="${ly}" y2="${ly}" stroke="${color}" stroke-width="2.5" ${t.dash ? 'stroke-dasharray="6 4"' : ''}/><text x="${lx+25}" y="${ly+3}" font-family="ui-sans-serif,system-ui" font-size="10" fill="#344047">${escapeHtml(label)}</text><title>Toggle ${escapeHtml(label)}</title></g>`;
     lx += itemW;
   });
   s += `</svg>`;

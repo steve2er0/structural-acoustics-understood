@@ -169,15 +169,19 @@ const definitions = {
     assumptions: ['Linear passive reciprocal junction.', 'Subsystems retain identifiable diffuse modal energy.', 'The selected ideal mechanism dominates the modeled connection.'],
     example: 'Compare a continuous frame joint with twelve discrete bolts, then convert a fairing mass-law transmission path into an acoustic CLF.',
     compute(values) {
-      const state = clfMechanismState({ ...materialValues(values), mechanism: values.mechanism, waveConversion: values.wave_conversion, frequency: values.frequency, modalDensity1: values.modal_density_1, modalDensity2: values.modal_density_2, internalLossFactor: values.internal_loss, transmission: values.transmission, junctionLength: values.junction_length, pointCount: values.point_count, impedance1: values.impedance_1, impedance2: values.impedance_2, radiationEfficiency: values.radiation_efficiency, transmissionLoss: values.transmission_loss, volume: values.volume, thickness2: mm(values.thickness_2) });
+      const stateInputs={ ...materialValues(values), mechanism: values.mechanism, waveConversion: values.wave_conversion, modalDensity1: values.modal_density_1, modalDensity2: values.modal_density_2, internalLossFactor: values.internal_loss, transmission: values.transmission, junctionLength: values.junction_length, pointCount: values.point_count, impedance1: values.impedance_1, impedance2: values.impedance_2, radiationEfficiency: values.radiation_efficiency, transmissionLoss: values.transmission_loss, volume: values.volume, thickness2: mm(values.thickness_2) };
+      const state = clfMechanismState({ ...stateInputs,frequency: values.frequency });
       const warnings = [];
       if (state.couplingToLossRatio > 0.5) warnings.push('The forward CLF exceeds half the internal loss factor; weak-coupling and subsystem-identity assumptions need explicit validation.');
       if (values.mechanism === 'fairing-masslaw') warnings.push('The transmission coefficient is evaluated as 10^(−TL/10); a positive exponent would violate the positive-TL convention and is a known source-transcription risk.');
+      const frequencies=Array.from({length:90},(_,index)=>Number(values.frequency)/20*(400**(index/89))),forward=[],reverse=[];
+      for(const frequency of frequencies){const point=clfMechanismState({...stateInputs,frequency});forward.push(point.forward);reverse.push(point.reverse);}
       return {
         values: [stat('Forward CLF η₁₂', state.forward), stat('Reciprocal reverse CLF η₂₁', state.reverse), stat('Transmission / efficiency factor', state.coefficient), stat('Forward CLF / internal loss', state.couplingToLossRatio), stat('Reciprocity residual', state.reciprocityResidual, '', Math.abs(state.reciprocityResidual) > 1e-10 ? 'warn' : 'good')],
         interpretation: `${state.basis} produces η₁₂=${state.forward.toExponential(3)} and reciprocal η₂₁=${state.reverse.toExponential(3)}. The modal-density ratio—not an assumption of equal directional CLFs—sets the reverse value.`,
         engineeringConsiderations: launchConsiderations('Assign separate mechanisms to fairing frames, longerons, bolted equipment interfaces, line joints, point bridges, panel-air radiation, and nonresonant transmission; parallel paths must remain explicit.'),
-        warnings
+        warnings,
+        plots:[{title:'Reciprocal coupling loss factors versus frequency',xLabel:'Frequency (Hz)',yLabel:'Coupling loss factor',xScale:'log',yScale:'log',traces:[trace('Forward η₁₂',frequencies,forward,{emphasis:true}),trace('Reverse η₂₁',frequencies,reverse)]}]
       };
     }
   },
@@ -259,11 +263,14 @@ const definitions = {
     example: 'Keep equipment mass fixed and shrink its footprint: the local-area method predicts stronger local inertial reduction while the global method is unchanged.',
     compute(values) {
       const state = equipmentLoadingState({ unloadedResponse: values.unloaded_response, bareStructureMass: values.structure_mass, equipmentMass: values.equipment_mass, structureSurfaceMass: values.surface_mass, footprintArea: values.footprint_area });
+      const maximumMass=Math.max(1,Number(values.structure_mass)*2,Number(values.equipment_mass)*2),masses=Array.from({length:81},(_,index)=>maximumMass*index/80),global=[],local=[];
+      for(const equipmentMass of masses){const point=equipmentLoadingState({unloadedResponse:values.unloaded_response,bareStructureMass:values.structure_mass,equipmentMass,structureSurfaceMass:values.surface_mass,footprintArea:values.footprint_area});global.push(point.globalResponse);local.push(point.localResponse);}
       return {
         values: [stat('Global mass-ratio response', state.globalResponse, 'g RMS'), stat('Local footprint response', state.localResponse, 'g RMS'), stat('Conservative screened response', state.conservativeResponse, 'g RMS'), stat('Global mean-square factor', state.globalMeanSquareFactor), stat('Local mean-square factor', state.localMeanSquareFactor), stat('Equipment footprint density', state.equipmentAreaDensity, 'kg/m²'), stat('Method spread', state.methodSpreadDb, 'dB')],
         interpretation: `The global and footprint methods predict ${state.globalResponse.toFixed(2)} and ${state.localResponse.toFixed(2)} g RMS. The ${state.methodSpreadDb.toFixed(1)} dB spread is a model-form decision, not random numerical scatter.`,
         engineeringConsiderations: launchConsiderations('Use the global result as the conservative smearing screen for fairing/deck averages, but resolve local equipment feet, panels, inserts, and attachment modes when footprint loading drives qualification response.'),
-        warnings: [state.localMassRatio > 5 ? 'Equipment mass per footprint area greatly exceeds the panel surface mass; attachment stiffness and local modes are likely more important than a pure inertial correction.' : 'Confirm that the equipment behaves as attached mass rather than an independently resonant subsystem.']
+        warnings: [state.localMassRatio > 5 ? 'Equipment mass per footprint area greatly exceeds the panel surface mass; attachment stiffness and local modes are likely more important than a pure inertial correction.' : 'Confirm that the equipment behaves as attached mass rather than an independently resonant subsystem.'],
+        plots:[{title:'Loaded response versus equipment mass',xLabel:'Equipment mass (kg)',yLabel:'Response (g RMS)',traces:[trace('Global mass-ratio method',masses,global,{emphasis:true}),trace('Local footprint method',masses,local)]}]
       };
     }
   },
@@ -294,11 +301,14 @@ const definitions = {
       const warnings = [];
       if (state.boundaryRegion) warnings.push('The response location is within one-quarter wavelength of a boundary; the interior spatial-average concentration relation may be biased.');
       if (state.participatingModes < 1) warnings.push('The effective participating-mode count is below one; use deterministic modal response rather than interpreting the statistical maximum literally.');
+      const energies=Array.from({length:90},(_,index)=>Number(values.energy)/100*(10000**(index/89))),average=[],local=[];
+      for(const energy of energies){const point=seaResponseRecoveryState({ ...materialValues(values), kind: values.kind, responseType: values.response_type, energy, frequency: values.frequency, mass: values.mass, volume: values.volume, modalDensity: values.modal_density, lossFactor: values.loss_factor, dimension: Number(values.dimension), wavelength: values.wavelength, boundaryDistance: values.boundary_distance });average.push(point.velocityRms);local.push(point.localVelocityEstimate);}
       return {
         values: [stat('Spatial-average velocity', state.velocityRms, 'm/s RMS'), stat('Spatial-average acceleration', state.accelerationRms, 'm/s² RMS'), stat('Acoustic pressure', state.pressureRms ?? 'Not applicable', state.pressureRms === null ? '' : 'Pa RMS'), stat('Sound pressure level', state.levelDb ?? 'Not applicable', state.levelDb === null ? '' : 'dB SPL'), stat('Bending stress screen', state.bendingStressRms ?? 'Not applicable', state.bendingStressRms === null ? '' : 'Pa RMS'), stat('Concentration amplitude factor', state.concentrationAmplitudeFactor), stat('Estimated local velocity maximum', state.localVelocityEstimate, 'm/s RMS-equivalent'), stat('Effective participating modes', state.participatingModes), stat('Boundary region', state.boundaryRegion ? 'Inside λ/4' : 'Interior screen')],
         interpretation: `The spatial-average velocity is ${state.velocityRms.toExponential(3)} m/s RMS, while the ${state.responseType} concentration model gives a ${state.concentrationAmplitudeFactor.toFixed(2)}× local-amplitude factor. ${state.boundaryRegion ? 'The selected point is also inside the boundary-bias region.' : 'The selected point passes the interior-distance screen.'}`,
         engineeringConsiderations: launchConsiderations('Translate SEA averages into payload equipment, bracket, panel, and cavity design quantities explicitly; qualification limits are often local while the analysis state variable is an ensemble/spatial average.'),
-        warnings
+        warnings,
+        plots:[{title:'Average and local velocity versus subsystem energy',xLabel:'Subsystem energy (J)',yLabel:'Velocity (m/s RMS)',xScale:'log',yScale:'log',traces:[trace('Spatial average',energies,average),trace('Estimated local maximum',energies,local,{emphasis:true})]}]
       };
     }
   },

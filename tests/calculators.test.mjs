@@ -163,15 +163,22 @@ test('every calculator returns the complete engineering response schema',()=>{
     assert.equal(typeof result.interpretation.summary,'string',`${tool.id} has no engineering interpretation`);
     assert.ok(result.interpretation.summary.length>20,`${tool.id} interpretation is too short`);
     assert.ok(result.interpretation.physicalMeaning.length>40,`${tool.id} physical meaning is too short`);
-    assert.ok(result.interpretation.engineeringConsiderations.length>=2,`${tool.id} needs engineering considerations`);
+    assert.ok(Array.isArray(result.interpretation.engineeringConsiderations),`${tool.id} considerations must be an array`);
     assert.ok(result.assumptions.satisfied.length>0,`${tool.id} needs model assumptions`);
     assert.ok(Array.isArray(result.assumptions.warnings),`${tool.id} warnings must be an array`);
+    assert.ok(Array.isArray(result.assumptions.alerts),`${tool.id} alerts must be an array`);
+    assert.ok(Array.isArray(result.assumptions.limitations),`${tool.id} limitations must be an array`);
+    assert.deepEqual(result.assumptions.warnings,result.assumptions.alerts,`${tool.id} legacy warnings must alias active alerts`);
     assert.ok(result.validity.regime.length>20,`${tool.id} needs a validity regime`);
     assert.ok(result.validity.confidence.length>20,`${tool.id} needs a confidence statement`);
     assert.ok(result.relatedConcepts.length>=2,`${tool.id} needs related concepts`);
     assert.ok(result.relatedConcepts.every(item=>item.title&&item.description&&item.href),`${tool.id} has an incomplete related concept`);
+    assert.ok(result.presentation&&Number.isInteger(result.presentation.primaryValueCount),`${tool.id} needs presentation metadata`);
+    if(result.presentation.primaryEvidence){const {type,index}=result.presentation.primaryEvidence;assert.ok(['plot','heatmap','table'].includes(type),`${tool.id} has an invalid primary evidence type`);assert.ok(result[`${type}s`]?.[index],`${tool.id} primary evidence does not exist`);}
+    assert.doesNotMatch(result.interpretation.physicalMeaning,/^The reported\b/,`${tool.id} retained generic category commentary`);
+    assert.doesNotMatch(result.validity.confidence,/No automatic warning/i,`${tool.id} retained a no-warning strip`);
     const copied=engineeringResultToText(tool.title,result);
-    for(const heading of ['NUMERICAL RESULTS','ENGINEERING INTERPRETATION','PHYSICAL MEANING','MODEL ASSUMPTIONS','VALIDITY CHECKS','ENGINEERING CONSIDERATIONS','RELATED CONCEPTS']){
+    for(const heading of ['NUMERICAL RESULTS','ENGINEERING INTERPRETATION','PHYSICAL MEANING','MODEL ASSUMPTIONS','VALIDITY RECORD','RELATED CONCEPTS']){
       assert.match(copied,new RegExp(heading),`${tool.id} copy output omits ${heading}`);
     }
   }
@@ -192,13 +199,9 @@ test('GRMS reports the integrated acceleration with PSD-specific meaning',()=>{
   const doubledMass=registry.grms.compute({...defaults('grms'),mass:20});
   close(metric(doubledMass,'RMS displacement'),metric(result,'RMS displacement'),1e-12);
   close(metric(doubledMass,'Rigid-body force estimate'),2*metric(result,'Rigid-body force estimate'),1e-12);
-  const english=registry.grms.compute({...defaults('grms'),unit_system:'English',mass:10/0.45359237});
-  close(metric(english,'RMS displacement'),metric(result,'RMS displacement')/25.4,1e-12);
-  close(metric(english,'Rigid-body force estimate'),metric(result,'Rigid-body force estimate')/4.4482216152605,1e-12);
-  assert.equal(english.values.find(value=>value.label==='RMS displacement').unit,'in RMS');
-  assert.equal(english.values.find(value=>value.label==='Rigid-body force estimate').unit,'lbf RMS');
-  assert.match(english.interpretation.summary,/lbm component/);
-  assert.match(result.interpretation.summary,/integrating the PSD.*g RMS/i);
+  assert.equal(result.values.find(value=>value.label==='RMS displacement').unit,'mm RMS');
+  assert.equal(result.values.find(value=>value.label==='Rigid-body force estimate').unit,'N RMS');
+  assert.match(result.interpretation.summary,/integrating the PSD.*acceleration/i);
   assert.match(result.interpretation.physicalMeaning,/standard deviation.*square root of the area under the acceleration PSD/i);
   assert.match(result.interpretation.physicalMeaning,/not a peak acceleration/i);
   assert.match(result.interpretation.physicalMeaning,/double-integrating.*sensitive to low-frequency content/i);
@@ -218,6 +221,19 @@ test('Miles equation matches the standard narrowband expression',()=>{
   const v=defaults('miles');v.fn=100;v.q=10;v.psd=0.01;
   const expected=Math.sqrt(Math.PI/2*10*100*0.01);
   close(metric(registry.miles.compute(v),'Acceleration response'),expected,1e-10);
+});
+
+test('priority gap-analysis tools expose behavior plots and separate alerts from limitations',()=>{
+  for(const id of ['miles','modal-density','modal-overlap','fea-mesh','integration-drift','duration-scaling','sea-validity-confidence','clf-mechanism-library','equipment-loading','sea-response-recovery']){
+    const result=registry[id].compute(defaults(id));
+    assert.ok(result.plots?.length,`${id} needs a behavior plot`);
+    assert.equal(result.presentation.primaryEvidence?.type,'plot',`${id} plot should be primary evidence`);
+  }
+  const miles=registry.miles.compute(defaults('miles'));
+  assert.equal(miles.assumptions.alerts.length,0);
+  assert.ok(miles.assumptions.limitations.length>=2);
+  const overloaded=registry.accelerometer.compute({...defaults('accelerometer'),expected_peak:490,daq_range:2});
+  assert.ok(overloaded.assumptions.alerts.length>=2);
 });
 
 test('unit conversion uses conventional standard gravity',()=>{
@@ -849,15 +865,16 @@ test('site visual system exposes reusable components and themes every non-home r
   assert.match(appSource,/classList\.toggle\('home-route',!first\)/);
   assert.match(appSource,/calculator-context-grid/);
   assert.match(appSource,/page\.replace\(context,''\).*\$\{context\}/);
-  assert.match(appSource,/const isGrms=meta\.id==='grms'/);
-  assert.match(appSource,/const commentaryCards=isGrms/);
+  assert.match(appSource,/const ENGLISH_UNIT_CONVERSIONS/);
+  assert.match(appSource,/function displayEngineeringResult/);
   assert.doesNotMatch(appSource,/const conceptCard=/);
-  assert.match(appSource,/isGrms\?' commentary-card-wide':''/);
+  assert.match(appSource,/commentary-card commentary-card-wide/);
   assert.match(appSource,/data-field-unit=/);
-  assert.match(appSource,/syncGrmsUnitSystem/);
+  assert.match(appSource,/syncUnitSystem/);
+  assert.match(appSource,/function renderInputFields/);
   assert.match(css,/\.commentary-card-wide \{ grid-column: 1 \/ -1; \}/);
-  assert.match(appSource,/const visibleValidity=isGrms\?'':validity/);
-  assert.match(appSource,/const resultBody=isGrms/);
+  assert.doesNotMatch(appSource,/No automatic warning/i);
+  assert.match(appSource,/const resultBody=evidence\?\.type/);
   assert.match(appSource,/data-result-section="plot"/);
   assert.match(appSource,/data-result-section="numerical"/);
   assert.match(appSource,/data-result-section="explanation"/);
@@ -951,7 +968,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes the demo takeaway runtime',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v44'/);
+  assert.match(worker,/const CACHE = 'sau-v46'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);

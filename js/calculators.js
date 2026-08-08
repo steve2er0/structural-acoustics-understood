@@ -428,10 +428,12 @@ const calculatorDefinitions = {
       const z = 1/(2*Q), bandwidth=fn/Q;
       const neff=Math.max(1,2*bandwidth*duration);
       const expectedPeak=armsG*Math.sqrt(2*Math.log(neff));
+      const frequencies=logspace(Math.max(0.1,fn/10),fn*10,100),responses=frequencies.map(frequency=>Math.sqrt(Math.PI/2*frequency*Q*G));
       return {
         summary:[stat('Acceleration response',armsG,'GRMS'),stat('Velocity response',vrms,'m/s RMS'),stat('Displacement response',xrms,'m RMS'),stat('Damping ratio',z),stat('Modal bandwidth',bandwidth,'Hz'),stat('Screening expected peak',expectedPeak,'g')],
         interpretation:`The response is concentrated in a modal bandwidth of roughly ${bandwidth.toFixed(2)} Hz around ${fn} Hz.`,
         warnings:['The expected-peak estimate is a bandwidth-duration screening relation, not a tolerance limit.','Use numerical VRS integration when the PSD changes appreciably across the modal bandwidth.'],
+        plots:[{title:'Miles response for locally flat input PSD',xLabel:'Natural frequency (Hz)',yLabel:'Acceleration response (g RMS)',xScale:'log',yScale:'log',traces:[trace('Miles response',frequencies,responses,{emphasis:true})]}]
       };
     },
   },
@@ -439,29 +441,25 @@ const calculatorDefinitions = {
   grms: {
     category:'Random & Shock', basis:'Analytic piecewise power-law integration', confidence:'Exact for log-log interpolation',
     inputs:[
-      {key:'unit_system',label:'Unit system',type:'select',default:'SI',options:[{value:'SI',label:'SI — kg, mm, N'},{value:'English',label:'English — lbm, in, lbf'}]},
       {key:'psd_points',label:'PSD breakpoints',unit:'Hz, g²/Hz',type:'textarea',default:'20, 0.01\n80, 0.04\n350, 0.04\n2000, 0.006',help:'One frequency and PSD level per line.'},
-      {key:'mass',label:'Driven component mass',unit:'kg',type:'number',default:10,min:0.001,help:'Automatically converted between kg and lbm when the unit system changes.'}
+      {key:'mass',label:'Driven component mass',unit:'kg',type:'number',default:10,min:0.001,help:'Used for the rigid-body inertial-force estimate.'}
     ],
     theory:'<p>Between breakpoints the PSD is modeled as G(f)=C fⁿ. Each segment is integrated analytically, including the logarithmic n=−1 case.</p>',
     assumptions:['The input is a one-sided acceleration PSD in g²/Hz.','The PSD represents a stationary random process over the analysis duration.','Breakpoints are joined by power-law segments on log-log axes.','Displacement uses ideal frequency-domain double integration; drift and energy outside the entered frequency range are excluded.','The force estimate assumes the full entered mass accelerates rigidly and in phase with the PSD input.'],
     example:'A flat 0.04 g²/Hz segment from 80 to 350 Hz contributes √(0.04×270)=3.29 GRMS.',
     compute(v){
       const points=parsePairs(v.psd_points,'PSD');
-      const isEnglish=v.unit_system==='English';
-      const massInput=positive(v.mass,'Driven component mass');
-      const massKg=isEnglish?massInput*0.45359237:massInput;
+      const massKg=positive(v.mass,'Driven component mass');
       const {total,segments}=integratePowerLaw(points);
       const grms=Math.sqrt(total);
       const displacementPoints=points.map(([f,g])=>[f,g*G0**2/(2*Math.PI*f)**4]);
       const {total:displacementMeanSquare}=integratePowerLaw(displacementPoints);
       const displacementRmsM=Math.sqrt(displacementMeanSquare);
-      const displacementValue=isEnglish?displacementRmsM/0.0254:1000*displacementRmsM;
-      const displacementUnit=isEnglish?'in RMS':'mm RMS';
+      const displacementValue=1000*displacementRmsM;
+      const displacementUnit='mm RMS';
       const forceRmsN=massKg*G0*grms;
-      const forceValue=isEnglish?forceRmsN/4.4482216152605:forceRmsN;
-      const forceUnit=isEnglish?'lbf RMS':'N RMS';
-      const massUnit=isEnglish?'lbm':'kg';
+      const forceValue=forceRmsN;
+      const forceUnit='N RMS';
       const dominantSegment=segments.reduce((largest,segment)=>segment[6]>largest[6]?segment:largest);
       const maxShare=100*dominantSegment[6]/total;
       const frequencyRange=`${points[0][0]}–${points.at(-1)[0]}`;
@@ -474,8 +472,8 @@ const calculatorDefinitions = {
       return{
         summary:[stat('Integrated acceleration',grms,'g RMS'),stat('RMS displacement',displacementValue,displacementUnit),stat('Rigid-body force estimate',forceValue,forceUnit),stat('Frequency range',frequencyRange,'Hz'),stat('Dominant PSD segment',dominantRange,'Hz'),stat('PSD area from dominant segment',maxShare,'%')],
         interpretation:{
-          summary:`Integrating the PSD from ${frequencyRange} Hz gives ${grms.toFixed(3)} g RMS and ${displacementValue.toFixed(isEnglish?5:3)} ${displacementUnit} displacement. Treating the ${massInput.toFixed(3)} ${massUnit} component as a rigid mass gives an inertial-force estimate of ${forceValue.toFixed(1)} ${forceUnit}. The ${dominantRange} Hz segment supplies ${maxShare.toFixed(1)}% of the integrated acceleration PSD area.`,
-          physicalMeaning:`${grms.toFixed(3)} g RMS is the standard deviation of the acceleration represented by this PSD over ${frequencyRange} Hz. It is the square root of the area under the acceleration PSD—not a peak acceleration or the largest value expected in a test. The ${displacementValue.toFixed(isEnglish?5:3)} ${displacementUnit} value is the motion implied by double-integrating that spectrum, so its result is especially sensitive to low-frequency content. The ${forceValue.toFixed(1)} ${forceUnit} value is only the rigid-body inertial force m·a; actual drive force depends on fixture dynamics, component flexibility, resonances, and control strategy.`
+          summary:`Integrating the PSD over ${frequencyRange} Hz produces the acceleration, displacement, and rigid-body inertial-force results shown above. The ${dominantRange} Hz segment supplies ${maxShare.toFixed(1)}% of the integrated acceleration PSD area.`,
+          physicalMeaning:`The integrated g RMS result is the standard deviation of the acceleration represented by this PSD over ${frequencyRange} Hz. It is the square root of the area under the acceleration PSD—not a peak acceleration or the largest value expected in a test. The RMS displacement is the motion implied by double-integrating that spectrum, so it is especially sensitive to low-frequency content. The force result is only the rigid-body inertial force estimate m·a for the entered mass; actual drive force depends on fixture dynamics, component flexibility, resonances, and control strategy.`
         },
         plots:[{title:'Input PSD',xLabel:'Frequency (Hz)',yLabel:'PSD (g²/Hz)',xScale:'log',yScale:'log',traces:[trace('PSD',dense.map(r=>r[0]),dense.map(r=>r[1]))]}],
         tables:[{title:'Segment integration',columns:['f1 (Hz)','f2 (Hz)','G1','G2','Exponent n','dB/oct','Area (g²)','Segment GRMS'],rows:segments}],
@@ -932,10 +930,13 @@ const calculatorDefinitions = {
         const D=plateD(E,h,nu),area=L*W;density=area/2*Math.sqrt(rho*h/D);count=density*f;spacing=1/density;description='Kirchhoff plate';
       }
       const ratio=2**(1/(2*Nband)),flo=f/ratio,fhi=f*ratio,modesBand=density*(fhi-flo);
+      const frequencies=logspace(Math.max(0.1,f/20),f*20,100),counts=[],bandModes=[];
+      for(const frequency of frequencies){let localDensity,localCount;if(v.structure==='beam'){const A=W*h,I=W*h**3/12,C=Math.PI/(2*L**2)*Math.sqrt(E*I/(rho*A));localCount=Math.sqrt(frequency/C);localDensity=1/(2*Math.sqrt(C*frequency));}else{localDensity=density;localCount=localDensity*frequency;}const localLo=frequency/ratio,localHi=frequency*ratio;counts.push(localCount);bandModes.push(localDensity*(localHi-localLo));}
       return{
         summary:[stat('Mode count below f',count,'modes'),stat('Modal density',density,'modes/Hz'),stat('Average spacing',spacing,'Hz'),stat('Modes in selected band',modesBand,'modes'),stat('Band limits',`${flo.toFixed(1)}–${fhi.toFixed(1)}`,'Hz')],
         interpretation:`The ${description} approximation predicts about ${modesBand.toFixed(1)} bending modes in the selected band around ${f} Hz.`,
-        warnings:['Boundary corrections and low-order discreteness are omitted; count exact modes when the predicted band population is small.']
+        warnings:['Boundary corrections and low-order discreteness are omitted; count exact modes when the predicted band population is small.'],
+        plots:[{title:'Modal population versus frequency',xLabel:'Frequency (Hz)',yLabel:'Mode count',xScale:'log',yScale:'log',traces:[trace('Modes below frequency',frequencies,counts),trace('Modes in selected band',frequencies,bandModes,{emphasis:true})]}]
       };
     }
   },
@@ -955,10 +956,12 @@ const calculatorDefinitions = {
       const f=positive(v.frequency,'Frequency'),md=positive(v.modal_density,'Modal density'),eta=positive(v.loss_factor,'Loss factor'),N=positive(v.band_fraction,'Band fraction');
       const M=eta*f*md,spacing=1/md,bw=eta*f,ratio=2**(1/(2*N)),modes=md*f*(ratio-1/ratio);
       const regime=M<0.3?'Isolated':M<1?'Low overlap':M<3?'Transitional':'Overlapping';
+      const frequencies=logspace(Math.max(0.1,f/20),f*20,100),overlap=frequencies.map(frequency=>eta*frequency*md);
       return{
         summary:[stat('Overlap factor M',M,'',regime==='Transitional'?'warn':''),stat('Regime',regime),stat('Modal bandwidth',bw,'Hz'),stat('Mean spacing',spacing,'Hz'),stat('Modes in band',modes,'modes')],
         interpretation:`The estimated modal bandwidth is ${bw.toFixed(2)} Hz versus ${spacing.toFixed(2)} Hz average spacing, giving ${regime.toLowerCase()} behavior.`,
-        warnings:['SEA validity also requires appropriate subsystem definition, diffuse fields, and statistically describable coupling; overlap is not a pass/fail criterion by itself.']
+        warnings:['SEA validity also requires appropriate subsystem definition, diffuse fields, and statistically describable coupling; overlap is not a pass/fail criterion by itself.'],
+        plots:[{title:'Modal overlap versus frequency',xLabel:'Frequency (Hz)',yLabel:'Overlap factor M',xScale:'log',yScale:'log',traces:[trace('Overlap factor',frequencies,overlap,{emphasis:true}),trace('M = 1 transition',frequencies,frequencies.map(()=>1),{dash:true})]}]
       };
     }
   },
@@ -1120,10 +1123,12 @@ const calculatorDefinitions = {
       else if(v.wave_type==='shear'){const G=E/(2*(1+nu));speed=Math.sqrt(G/rho);wavelength=speed/f;label='Shear';}
       else {const D=plateD(E,h,nu),w=rad(f),k=(rho*h*w*w/D)**0.25;speed=w/k;wavelength=2*Math.PI/k;label='Plate bending';}
       const le=wavelength/Ne,nodesPerMeter=1/le;
+      const frequencies=logspace(Math.max(0.1,f/100),f,100),elementLengths=frequencies.map(frequency=>{if(v.wave_type==='acoustic')return c0/frequency/Ne;if(v.wave_type==='longitudinal')return Math.sqrt(E/rho)/frequency/Ne;if(v.wave_type==='shear')return Math.sqrt(E/(2*(1+nu))/rho)/frequency/Ne;const D=plateD(E,h,nu),k=(rho*h*rad(frequency)**2/D)**0.25;return 2*Math.PI/k/Ne;});
       return{
         summary:[stat('Wave speed at f',speed,'m/s'),stat('Wavelength',wavelength,'m'),stat('Maximum element length',le,'m'),stat('Elements per meter',nodesPerMeter,'1/m'),stat('Wave model',label)],
         interpretation:`At ${f} Hz, ${Ne} elements per ${label.toLowerCase()} wavelength gives a target element length no larger than ${(le*1000).toFixed(2)} mm.`,
-        warnings:['Use solver-specific convergence studies. Quadratic elements, distorted elements, stress recovery, joints, and evanescent fields change the required mesh.']
+        warnings:['Use solver-specific convergence studies. Quadratic elements, distorted elements, stress recovery, joints, and evanescent fields change the required mesh.'],
+        plots:[{title:'Element-size requirement versus frequency',xLabel:'Frequency (Hz)',yLabel:'Maximum element length (m)',xScale:'log',yScale:'log',traces:[trace(`${label}, ${Ne} elements/λ`,frequencies,elementLengths,{emphasis:true})]}]
       };
     }
   },
@@ -1176,10 +1181,12 @@ const calculatorDefinitions = {
     compute(v){
       const bias=n(v.bias_mg)*1e-3*G0,T=positive(v.duration,'Duration'),a=Math.max(0,n(v.accel_g))*G0,f=positive(v.frequency,'Frequency'),hp=positive(v.hp_cutoff,'High-pass cutoff');
       const vdrift=bias*T,xdrift=0.5*bias*T*T,xamp=a/rad(f)**2,vamp=a/rad(f),hpPeriod=1/hp;
+      const times=Array.from({length:101},(_,index)=>T*index/100),drift=times.map(time=>0.5*Math.abs(bias)*time*time),signal=times.map(()=>xamp);
       return{
         summary:[stat('Bias velocity drift',vdrift,'m/s'),stat('Bias displacement drift',xdrift,'m'),stat('Sinusoidal displacement amplitude',xamp,'m'),stat('Sinusoidal velocity amplitude',vamp,'m/s'),stat('High-pass period',hpPeriod,'s'),stat('Drift / signal displacement',Math.abs(xdrift)/Math.max(xamp,1e-30))],
         interpretation:`The constant bias creates ${xdrift.toFixed(4)} m of apparent travel in ${T} s, compared with ${(xamp*1000).toFixed(3)} mm from the ${f} Hz sinusoidal acceleration.`,
-        warnings:['A high-pass filter can remove real low-frequency motion as well as bias. Compare integrated velocity change and an independent displacement measurement.']
+        warnings:['A high-pass filter can remove real low-frequency motion as well as bias. Compare integrated velocity change and an independent displacement measurement.'],
+        plots:[{title:'Integrated bias drift versus real sinusoidal motion',xLabel:'Integration time (s)',yLabel:'Displacement magnitude (m)',traces:[trace('Bias drift',times,drift,{emphasis:true}),trace('Sinusoidal amplitude',times,signal,{dash:true})]}]
       };
     }
   },

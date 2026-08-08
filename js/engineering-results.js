@@ -14,9 +14,10 @@
  * @typedef {Object} EngineeringResult
  * @property {ResultValue[]} values
  * @property {{summary: string, physicalMeaning: string, engineeringConsiderations: string[]}} interpretation
- * @property {{satisfied: string[], warnings: string[]}} assumptions
+ * @property {{satisfied: string[], warnings: string[], alerts: string[], limitations: string[]}} assumptions
  * @property {{regime: string, confidence: string}} validity
  * @property {RelatedConcept[]} relatedConcepts
+ * @property {{primaryEvidence: {type: string, index: number}|null, primaryValueCount: number}} presentation
  * @property {Array<Object>} [plots]
  * @property {Array<Object>} [heatmaps]
  * @property {Array<Object>} [tables]
@@ -133,6 +134,86 @@ const uniqueText = values => [...new Set(values.map(asText).map(value => value.t
 
 const resultSubject = definition => `result set from the ${definition.basis || 'stated engineering'} model`;
 
+const PRIMARY_EVIDENCE_OVERRIDES = {
+  'time-psd': { type: 'plot', index: 1 },
+  pyroshock: { type: 'plot', index: 1 },
+  'insertion-loss': { type: 'plot', index: 1 },
+  'driven-radiation': { type: 'plot', index: 1 },
+  'correlation-matrix': { type: 'heatmap', index: 0 },
+  'inhomogeneous-energy': { type: 'heatmap', index: 2 }
+};
+
+const ACTIVE_ALERT_PATTERN = /\b(exceeds?|below|above|fewer than|greater than|less than|more than|negative|non-positive|outside|violat(?:es|ed|ion)|failed?|insufficient|unstable|ill-conditioned|not guaranteed|remains smaller|differs? by|mismatch|overload|clipping|alias(?:ing|ed)|singular)\b/i;
+
+function splitLegacyWarnings(items = []) {
+  const alerts = [], limitations = [];
+  for (const item of uniqueText(items)) (ACTIVE_ALERT_PATTERN.test(item) ? alerts : limitations).push(item);
+  return { alerts, limitations };
+}
+
+function displayMetric(value) {
+  if (!value) return 'the primary result';
+  const raw = value.value;
+  const number = Number(raw);
+  const shown = typeof raw === 'string' || !Number.isFinite(number)
+    ? String(raw)
+    : Math.abs(number) >= 1000 ? number.toFixed(1) : Math.abs(number) >= 1 ? number.toFixed(3) : number.toPrecision(4);
+  return `${value.label} (${shown}${value.unit ? ` ${value.unit}` : ''})`;
+}
+
+function resultArchetype(id, definition) {
+  const text = `${id} ${definition.category} ${definition.basis || ''}`.toLowerCase();
+  if (/unit-converter|converter|level math|fractional-octave|field converter/.test(text)) return 'conversion';
+  if (/planner|planning|trade|scorecard|requirements|method selector|mesh sizing|validity & confidence|timeline/.test(text)) return 'decision';
+  if (/fatigue|damage|duration scaling|stress environment/.test(text)) return 'fatigue';
+  if (/shock|srs|pyro|pulse|extreme response/.test(text)) return 'shock';
+  if (/random|psd|spectrum|vrs|grms|welch|nonstationary/.test(text)) return 'spectrum';
+  if (definition.category === 'SEA & Energy') return 'sea';
+  if (definition.category === 'Aero / Distributed Loads') return 'distributed';
+  if (definition.category === 'Test & Signal') return 'measurement';
+  if (/radiation|transmission|insertion|noise control|duct|barrier|enclosure|liner|blanket|propagation/.test(text)) return 'transmission';
+  if (/mode|modal|wave|beam|plate|shell|ring|cavity|coincidence|critical frequency/.test(text)) return 'modal';
+  if (definition.category === 'Dynamics') return 'dynamics';
+  if (definition.category === 'Acoustics') return 'acoustics';
+  return 'engineering';
+}
+
+function archetypePhysicalMeaning(id, definition, values) {
+  const primary = displayMetric(values[0]);
+  const basis = definition.basis || 'stated engineering model';
+  const archetype = resultArchetype(id, definition);
+  const messages = {
+    conversion: `${primary} is the same underlying engineering quantity expressed through the ${basis} convention. Its usefulness depends on preserving dimension, reference value, and peak, RMS, level, or spectral-density basis.`,
+    decision: `${primary} is a screening or decision metric produced by ${basis}. It ranks adequacy, margin, or model choice for the entered scenario; it is not itself a directly measured physical response.`,
+    fatigue: `${primary} condenses repeated dynamic loading through ${basis}. It expresses relative damage, stress demand, or life consumption for the stated spectral and material model, so duration, cycle statistics, transfer stress, and S–N assumptions control its meaning.`,
+    shock: `${primary} describes an oscillator envelope or transient measure from ${basis}. It identifies the severity seen by the defined response model, but it does not reconstruct the original time history or establish a statistical tolerance limit.`,
+    spectrum: `${primary} is an integrated or frequency-resolved statistical measure from ${basis}. It represents energy or response distributed over the analyzed bandwidth; frequency range, resolution, normalization, damping, and duration determine the physical conclusion.`,
+    sea: `${primary} is a band-averaged energy, power-flow, coupling, or modal-population result from ${basis}. It describes the statistical subsystem response, not a deterministic local peak, and is meaningful only when modal population and subsystem assumptions are credible.`,
+    distributed: `${primary} describes the generalized effect of a spatially distributed load represented by ${basis}. Magnitude alone is insufficient: coherence, phase, convection, surface weighting, and pattern truncation determine the force accepted by the structure.`,
+    measurement: `${primary} is the measurable or processed quantity produced by ${basis}. It combines hardware behavior with the acquisition chain, so calibration, sampling, filtering, estimator settings, dynamic range, and sensor placement are part of the result.`,
+    transmission: `${primary} quantifies propagation, radiation, transmission, or attenuation through ${basis}. It applies to the modeled path and reference locations; modes, leakage, flanking, directivity, terminations, and installation details determine realized performance.`,
+    modal: `${primary} is a frequency, wavelength, mode, or structural-response scale set by ${basis}. Geometry, mass, stiffness, boundary conditions, curvature, and attachments determine how closely this idealized scale represents the installed structure.`,
+    dynamics: `${primary} is the response of the ${basis} idealization. Inertia, stiffness, damping, excitation type, and frequency ratio control the value, while nearby modes and attachment flexibility determine whether the reduced-order result represents the hardware.`,
+    acoustics: `${primary} describes an acoustic source, field, room, or frequency-band quantity calculated with ${basis}. Reference convention, bandwidth, field condition, geometry, directivity, and reflections determine how it relates to a measurement.`,
+    engineering: `${primary} is the principal quantity produced by ${basis}. It represents the entered idealization and should be interpreted with its dimensions, assumptions, and sensitivity to the controlling inputs.`
+  };
+  return messages[archetype];
+}
+
+function buildPresentation(id, result, values) {
+  const requested = result.presentation || {};
+  let primaryEvidence = requested.primaryEvidence || PRIMARY_EVIDENCE_OVERRIDES[id] || null;
+  if (!primaryEvidence) {
+    if (result.plots?.length) primaryEvidence = { type: 'plot', index: 0 };
+    else if (result.heatmaps?.length) primaryEvidence = { type: 'heatmap', index: 0 };
+    else if (result.tables?.length) primaryEvidence = { type: 'table', index: 0 };
+  }
+  return {
+    primaryEvidence,
+    primaryValueCount: Math.max(1, Math.min(values.length, Number(requested.primaryValueCount) || 6))
+  };
+}
+
 function confidenceClass(confidence = '') {
   const value = confidence.toLowerCase();
   if (value.includes('exact')) return 'Exact within the stated mathematical model';
@@ -176,30 +257,43 @@ export function buildEngineeringResult({ id, definition, inputs, result }) {
   const summary = summaryBase.trim().length >= 20
     ? summaryBase
     : `${summaryBase.trim()} This conclusion applies within the ${definition.basis || 'stated engineering'} model.`;
-  const warnings = uniqueText([
+  const legacyWarnings = uniqueText([
     ...(result.assumptions?.warnings || []),
     ...(result.warnings || [])
   ]);
+  const splitWarnings = splitLegacyWarnings(legacyWarnings);
+  const alerts = uniqueText([
+    ...(result.assumptions?.alerts || []),
+    ...(result.alerts || []),
+    ...splitWarnings.alerts
+  ]);
+  const limitations = uniqueText([
+    ...(result.assumptions?.limitations || []),
+    ...(result.limitations || []),
+    ...splitWarnings.limitations
+  ]);
   const satisfied = uniqueText(result.assumptions?.satisfied || definition.assumptions || [DEFAULT_ASSUMPTION]);
   const considerations = uniqueText([
-    ...(priorInterpretation.engineeringConsiderations || result.engineeringConsiderations || []),
-    ...profile.considerations
+    ...(priorInterpretation.engineeringConsiderations || result.engineeringConsiderations || [])
   ]);
   const confidence = result.validity?.confidence || definition.confidence || 'Engineering calculation';
-  const checkStatement = warnings.length
-    ? `${warnings.length} result-specific ${warnings.length === 1 ? 'warning is' : 'warnings are'} active; resolve or bound ${warnings.length === 1 ? 'it' : 'them'} before relying on the result.`
-    : 'No automatic result-specific warnings were triggered. The model assumptions still require confirmation against the real system.';
+  const checkStatement = alerts.length
+    ? `${alerts.length} result-specific ${alerts.length === 1 ? 'alert is' : 'alerts are'} active; resolve or bound ${alerts.length === 1 ? 'it' : 'them'} before relying on the result.`
+    : 'Interpret the result with the documented assumptions and limitations.';
   const {
     summary: _summary,
     metrics: _metrics,
     values: _values,
     interpretation: _interpretation,
     warnings: _warnings,
+    alerts: _alerts,
+    limitations: _limitations,
     assumptions: _assumptions,
     validity: _validity,
     relatedConcepts: _relatedConcepts,
     engineeringConsiderations: _engineeringConsiderations,
     physicalMeaning: _physicalMeaning,
+    presentation: _presentation,
     ...supportingOutputs
   } = result;
 
@@ -207,16 +301,17 @@ export function buildEngineeringResult({ id, definition, inputs, result }) {
     values,
     interpretation: {
       summary,
-      physicalMeaning: priorInterpretation.physicalMeaning || result.physicalMeaning || profile.physicalMeaning(resultSubject(definition), values, inputs),
+      physicalMeaning: priorInterpretation.physicalMeaning || result.physicalMeaning || archetypePhysicalMeaning(id, definition, values),
       engineeringConsiderations: considerations
     },
-    assumptions: { satisfied, warnings },
+    assumptions: { satisfied, warnings: alerts, alerts, limitations },
     validity: {
       regime: result.validity?.regime || `${confidenceClass(confidence)} — ${definition.basis || 'documented engineering relation'}.`,
       confidence: `${confidence}. ${checkStatement}`
     },
     relatedConcepts: result.relatedConcepts || relatedConcepts(profile, definition),
-    ...supportingOutputs
+    ...supportingOutputs,
+    presentation: buildPresentation(id, result, values)
   };
 
   assertEngineeringResult(engineeringResult, id);
@@ -230,10 +325,11 @@ export function assertEngineeringResult(result, id = 'Calculator') {
   if (!Array.isArray(result.values) || result.values.length === 0) fail('values must be a non-empty array.');
   if (!result.values.every(value => value && typeof value.label === 'string' && 'value' in value)) fail('each result value needs a label and value.');
   if (!result.interpretation || typeof result.interpretation.summary !== 'string' || typeof result.interpretation.physicalMeaning !== 'string') fail('interpretation is incomplete.');
-  if (!Array.isArray(result.interpretation.engineeringConsiderations) || result.interpretation.engineeringConsiderations.length === 0) fail('engineering considerations are required.');
-  if (!result.assumptions || !Array.isArray(result.assumptions.satisfied) || !Array.isArray(result.assumptions.warnings) || result.assumptions.satisfied.length === 0) fail('assumptions are incomplete.');
+  if (!Array.isArray(result.interpretation.engineeringConsiderations)) fail('engineering considerations must be an array.');
+  if (!result.assumptions || !Array.isArray(result.assumptions.satisfied) || !Array.isArray(result.assumptions.warnings) || !Array.isArray(result.assumptions.alerts) || !Array.isArray(result.assumptions.limitations) || result.assumptions.satisfied.length === 0) fail('assumptions are incomplete.');
   if (!result.validity || typeof result.validity.regime !== 'string' || typeof result.validity.confidence !== 'string') fail('validity is incomplete.');
   if (!Array.isArray(result.relatedConcepts) || result.relatedConcepts.length === 0) fail('related concepts are required.');
+  if (!result.presentation || !Number.isInteger(result.presentation.primaryValueCount)) fail('presentation metadata is incomplete.');
 }
 
 /** Wrap a calculator definition so every compute call returns an EngineeringResult. */
@@ -263,11 +359,12 @@ export function engineeringResultToText(title, result, formatValue = String) {
   lines.push(
     '', 'ENGINEERING INTERPRETATION', result.interpretation.summary,
     '', 'PHYSICAL MEANING', result.interpretation.physicalMeaning,
-    '', 'MODEL ASSUMPTIONS', ...result.assumptions.satisfied.map(item => `- ${item}`),
-    '', 'VALIDITY CHECKS', `Regime: ${result.validity.regime}`, `Confidence: ${result.validity.confidence}`,
-    '', 'ENGINEERING CONSIDERATIONS', ...result.interpretation.engineeringConsiderations.map(item => `- ${item}`)
+    '', 'MODEL ASSUMPTIONS', ...result.assumptions.satisfied.map(item => `- ${item}`)
   );
-  if (result.assumptions.warnings.length) lines.push('', 'WARNINGS', ...result.assumptions.warnings.map(item => `- ${item}`));
+  if (result.assumptions.limitations.length) lines.push('', 'MODEL LIMITATIONS', ...result.assumptions.limitations.map(item => `- ${item}`));
+  if (result.assumptions.alerts.length) lines.push('', 'ACTIVE ALERTS', ...result.assumptions.alerts.map(item => `- ${item}`));
+  lines.push('', 'VALIDITY RECORD', `Regime: ${result.validity.regime}`, `Confidence: ${result.validity.confidence}`);
+  if (result.interpretation.engineeringConsiderations.length) lines.push('', 'ENGINEERING CONSIDERATIONS', ...result.interpretation.engineeringConsiderations.map(item => `- ${item}`));
   lines.push('', 'RELATED CONCEPTS', ...result.relatedConcepts.map(item => `- ${item.title}: ${item.description}`));
   return lines.join('\n');
 }

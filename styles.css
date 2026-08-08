@@ -285,6 +285,14 @@ h3 { font-size: 1.07rem; line-height: 1.2; letter-spacing: -.018em; }
 .calc-panel-header { display: flex; align-items: center; justify-content: space-between; gap: .8rem; padding: .95rem 1.1rem; border-bottom: 1px solid var(--line); }
 .calc-panel-header h2 { margin: 0; font-size: .88rem; font-family: var(--mono); letter-spacing: .07em; text-transform: uppercase; }
 .calc-form { display: grid; gap: .9rem; padding: 1.1rem; }
+.unit-system-control { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: .35rem .75rem; padding: .75rem; border: 1px solid var(--line); background: var(--paper-soft); }
+.unit-system-control > span { color: var(--ink); font-size: .77rem; font-weight: 750; }
+.unit-system-control select { min-width: 116px; min-height: 38px; padding: .45rem .65rem; border: 1px solid var(--line-strong); background: var(--paper); color: var(--ink); }
+.unit-system-control small { grid-column: 1 / -1; color: var(--quiet); font-size: .66rem; line-height: 1.4; }
+.calc-input-group { border: 1px solid var(--line); background: color-mix(in srgb, var(--paper-soft) 72%, transparent); }
+.calc-input-group > summary { display: flex; justify-content: space-between; gap: .75rem; padding: .72rem .8rem; cursor: pointer; color: var(--ink); font-family: var(--mono); font-size: .68rem; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
+.calc-input-group > summary span { color: var(--quiet); }
+.calc-input-group > div { display: grid; gap: .85rem; padding: .8rem; border-top: 1px solid var(--line); }
 .field-group { display: grid; gap: .35rem; }
 .field-group label { display: flex; justify-content: space-between; gap: .5rem; color: var(--ink); font-size: .77rem; font-weight: 700; }
 .field-group label span { color: var(--quiet); font-family: var(--mono); font-size: .64rem; font-weight: 500; }
@@ -303,6 +311,7 @@ h3 { font-size: 1.07rem; line-height: 1.2; letter-spacing: -.018em; }
 .calc-form-actions { display: flex; gap: .5rem; flex-wrap: wrap; padding-top: .2rem; }
 .calc-results { min-height: 440px; padding: 1.1rem; }
 .result-summary { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); border-top: 1px solid var(--line); border-left: 1px solid var(--line); margin-bottom: 1rem; }
+.result-summary-supporting { margin: .7rem 0 0; }
 .result-stat { padding: .85rem; background: rgba(255,255,255,.42); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .result-stat small { display: block; color: var(--quiet); font-family: var(--mono); font-size: .59rem; text-transform: uppercase; letter-spacing: .05em; }
 .result-stat strong { display: inline-block; margin-top: .25rem; font-size: 1.28rem; line-height: 1.1; word-break: break-word; }
@@ -329,6 +338,10 @@ h3 { font-size: 1.07rem; line-height: 1.2; letter-spacing: -.018em; }
 .validity-card dt { color: var(--quiet); font-family: var(--mono); font-size: .58rem; letter-spacing: .05em; text-transform: uppercase; }
 .validity-card dd { margin: 0; color: var(--muted); font-size: .74rem; }
 .commentary-card .warning-list { margin-top: 0; }
+.limitation-list li::marker { color: var(--warn); }
+.result-alerts { margin-top: 1px; padding: .85rem 1rem; border-left: 3px solid var(--danger); background: rgba(184, 79, 69, .1); }
+.result-alerts h3 { margin: 0 0 .5rem; color: var(--danger); font-family: var(--mono); font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; }
+.result-alerts ul { display: grid; gap: .4rem; margin: 0; padding-left: 1rem; color: var(--muted); font-size: .74rem; }
 .related-concepts { display: grid; gap: .45rem; }
 .related-concept { display: grid; gap: .08rem; padding: .5rem .55rem; border: 1px solid var(--line); background: rgba(255,255,255,.5); text-decoration: none; }
 .related-concept:hover { border-color: var(--accent); background: white; }
@@ -349,6 +362,13 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
 .chart-shell svg { width: 100%; height: auto; min-height: 300px; }
 .chart-toolbar { display: flex; justify-content: flex-end; gap: .4rem; margin-bottom: .45rem; }
 .chart-toolbar button { border: 0; background: transparent; color: var(--muted); font-size: .67rem; text-decoration: underline; cursor: pointer; }
+.chart-data-panel { max-height: 360px; margin-top: .5rem; overflow: auto; }
+.supporting-values, .supporting-evidence { margin: .75rem 0 1rem; border: 1px solid var(--line); background: rgba(255,255,255,.22); }
+.supporting-values > summary, .supporting-evidence > summary { display: flex; align-items: center; justify-content: space-between; gap: .7rem; padding: .7rem .8rem; color: var(--muted); font-family: var(--mono); font-size: .66rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; cursor: pointer; }
+.supporting-values > summary span { display: grid; min-width: 1.45rem; min-height: 1.45rem; place-items: center; border: 1px solid var(--line); border-radius: 50%; }
+.supporting-values[open] > summary, .supporting-evidence[open] > summary { border-bottom: 1px solid var(--line); }
+.supporting-values .result-summary { margin: .75rem; }
+.supporting-evidence-body { padding: 0 .85rem .85rem; }
 .calc-empty { display: grid; place-items: center; min-height: 350px; color: var(--quiet); text-align: center; }
 .calc-error { padding: 1rem; color: var(--danger); background: #f4dfdc; border-left: 3px solid var(--danger); }
 
@@ -1319,6 +1339,14 @@ body.site-system-route .site-panel-header h2 { color: #dce8f7; }
 body.site-system-route .field-group label { color: #dce8f7; }
 body.site-system-route .field-group label span,
 body.site-system-route .field-help { color: #7f96b0; }
+body.site-system-route .unit-system-control,
+body.site-system-route .calc-input-group { border-color: var(--site-color-border); background: rgba(5, 20, 36, .72); }
+body.site-system-route .unit-system-control > span,
+body.site-system-route .calc-input-group > summary { color: #dce8f7; }
+body.site-system-route .unit-system-control small,
+body.site-system-route .calc-input-group > summary span { color: #7f96b0; }
+body.site-system-route .unit-system-control select { color: #dce8f7; border-color: var(--site-color-border-strong); background: #071a2c; }
+body.site-system-route .calc-input-group > div { border-top-color: var(--site-color-border); }
 body.site-system-route .field-group input,
 body.site-system-route .field-group select,
 body.site-system-route .field-group textarea {

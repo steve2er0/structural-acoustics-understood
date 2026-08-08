@@ -339,11 +339,14 @@ const acs519CalculatorDefinitions = {
       if (state.modesPerBand < 5) warnings.push('Fewer than five modes occupy the band; ensemble averages may depend strongly on individual resonances.');
       if (state.modalOverlap < 1) warnings.push('Modal overlap is below one; isolated or transitional resonances remain important.');
       if (state.weakCouplingRatio > 0.5) warnings.push('Coupling is large relative to internal loss; verify that the chosen subsystems retain distinct modal populations.');
+      const frequencies=Array.from({length:90},(_,index)=>Number(values.frequency)/20*(400**(index/89))),modes=[],overlap=[];
+      for(const frequency of frequencies){const point=seaValidityState({frequency,modalDensity:values.modal_density,lossFactor:values.loss_factor,bandFraction:values.band_fraction,couplingLossFactor:values.coupling_loss,responsePoints:values.response_points});modes.push(point.modesPerBand);overlap.push(point.modalOverlap);}
       return {
         values: [stat('Modes per band', state.modesPerBand, '', state.modesPerBand < 5 ? 'warn' : 'good'), stat('Modal overlap', state.modalOverlap, '', state.modalOverlap < 1 ? 'warn' : 'good'), stat('CLF / internal loss', state.weakCouplingRatio, '', state.weakCouplingRatio > 0.5 ? 'warn' : 'good'), stat('Approximate response COV', state.coefficientOfVariation), stat('Approximate ±95% spread', state.approximate95PercentDb, 'dB'), stat('Readiness', state.readiness)],
         interpretation: `This band is classified as “${state.readiness}.” It contains ${state.modesPerBand.toFixed(2)} modes with overlap ${state.modalOverlap.toFixed(2)}; the mean response should be reported with variability rather than as a deterministic local level.`,
         engineeringConsiderations: launchConsideration('High-frequency launch-vehicle response often justifies SEA only in selected bands and subsystems; use hybrid FE–SEA through transition regions and report confidence/variability with the band mean.'),
-        warnings
+        warnings,
+        plots:[{title:'SEA readiness indicators versus frequency',xLabel:'Frequency (Hz)',yLabel:'Indicator value',xScale:'log',yScale:'log',traces:[trace('Modes per band',frequencies,modes,{emphasis:true}),trace('Modal overlap',frequencies,overlap),trace('Readiness threshold',frequencies,frequencies.map(()=>1),{dash:true})]}]
       };
     }
   },
