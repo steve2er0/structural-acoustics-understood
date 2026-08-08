@@ -221,7 +221,7 @@ function renderTools(route){
   return renderPageShell(page,{variant:'tool-library'});
 }
 function fieldHtml(field,value){
-  const key=esc(field.key),label=`<label for="field-${key}">${esc(field.label)}${field.unit?`<span>${esc(field.unit)}</span>`:''}</label>`;
+  const key=esc(field.key),label=`<label for="field-${key}">${esc(field.label)}${field.unit?`<span data-field-unit="${key}">${esc(field.unit)}</span>`:''}</label>`;
   let control='';
   if(field.type==='select')control=`<select id="field-${key}" data-key="${key}">${(field.options||[]).map(o=>{const opt=Array.isArray(o)?{value:o[0],label:o[1]}:o;return `<option value="${esc(opt.value)}" ${String(opt.value)===String(value)?'selected':''}>${esc(opt.label)}</option>`;}).join('')}</select>`;
   else if(field.type==='textarea')control=`<textarea id="field-${key}" data-key="${key}" spellcheck="false">${esc(value)}</textarea><div class="field-file-row"><button type="button" class="button-quiet file-load" data-target="field-${key}">Load CSV / text</button><input class="file-input" type="file" accept=".csv,.txt,text/csv,text/plain" data-target="field-${key}" hidden/></div>`;
@@ -302,19 +302,27 @@ function renderNotFound(title='Page not found',text='That route does not exist.'
 function collectForm(form){const values={};form.querySelectorAll('[data-key]').forEach(el=>values[el.dataset.key]=el.value);return values;}
 function renderTable(table){return `<div class="result-block"><h3>${esc(table.title||'Results table')}</h3><div class="table-wrap"><table><thead><tr>${(table.columns||[]).map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${(table.rows||[]).map(row=>`<tr>${row.map((v,i)=>`<td>${i===0&&typeof v==='string'?esc(v):esc(formatNumber(v))}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;}
 function renderResult(result,meta){
+  const isGrms=meta.id==='grms';
   const values=result.values.map(s=>`<div class="result-stat ${esc(s.tone||s.status||'')}"><small>${esc(s.label)}</small><strong>${esc(formatNumber(s.value))}</strong>${s.unit?`<span class="unit">${esc(s.unit)}</span>`:''}${s.note?`<div class="field-help">${esc(s.note)}</div>`:''}</div>`).join('');
   const assumptions=result.assumptions.satisfied.map(item=>`<li>${esc(item)}</li>`).join('');
   const warnings=result.assumptions.warnings.map(item=>`<li>${esc(item)}</li>`).join('');
   const considerations=result.interpretation.engineeringConsiderations.map(item=>`<li>${esc(item)}</li>`).join('');
-  const concepts=result.relatedConcepts.map(item=>`<a class="related-concept site-related-link" href="${esc(item.href)}"><strong>${esc(item.title)}</strong><span>${esc(item.description)}</span></a>`).join('');
-  const commentary=`<section class="engineering-commentary" aria-label="Engineering commentary"><article class="commentary-lead"><p class="commentary-label">Engineering interpretation</p><p>${esc(result.interpretation.summary)}</p><h3>Physical meaning</h3><p>${esc(result.interpretation.physicalMeaning)}</p></article><div class="commentary-grid"><article class="commentary-card validity-card"><h3>Validity checks</h3><dl><div><dt>Regime</dt><dd>${esc(result.validity.regime)}</dd></div><div><dt>Confidence</dt><dd>${esc(result.validity.confidence)}</dd></div></dl></article><article class="commentary-card"><h3>Model assumptions</h3><p class="commentary-note">The calculation treats these conditions as satisfied. Confirm them against the real system.</p><ul class="commentary-list assumption-list">${assumptions}</ul>${warnings?`<h4>Active warnings</h4><ul class="warning-list">${warnings}</ul>`:''}</article><article class="commentary-card"><h3>Engineering considerations</h3><ul class="commentary-list">${considerations}</ul></article><article class="commentary-card"><h3>Related concepts</h3><div class="related-concepts">${concepts}</div></article></div></section>`;
-  const plots=(result.plots||[]).map((p,i)=>{const svg=lineChartSvg(p);return `<div class="result-block"><div class="chart-toolbar"><button data-chart-svg="${i}">Download SVG</button><button data-chart-png="${i}">Download PNG</button></div><div class="chart-shell site-chart-container" data-chart="${i}">${svg}</div></div>`;}).join('');
+  const validityCard=`<article class="commentary-card validity-card"><h3>Validity checks</h3><dl><div><dt>Regime</dt><dd>${esc(result.validity.regime)}</dd></div><div><dt>Confidence</dt><dd>${esc(result.validity.confidence)}</dd></div></dl></article>`;
+  const assumptionNote=isGrms?'':'<p class="commentary-note">The calculation treats these conditions as satisfied. Confirm them against the real system.</p>';
+  const assumptionCard=`<article class="commentary-card${isGrms?' commentary-card-wide':''}"><h3>Model assumptions</h3>${assumptionNote}<ul class="commentary-list assumption-list">${assumptions}</ul>${warnings?`<h4>Active warnings</h4><ul class="warning-list">${warnings}</ul>`:''}</article>`;
+  const considerationCard=`<article class="commentary-card"><h3>Engineering considerations</h3><ul class="commentary-list">${considerations}</ul></article>`;
+  const commentaryCards=isGrms?assumptionCard:`${validityCard}${assumptionCard}${considerationCard}`;
+  const commentary=`<section class="engineering-commentary" data-result-section="explanation" aria-label="Engineering commentary"><article class="commentary-lead"><p class="commentary-label">Engineering interpretation</p><p>${esc(result.interpretation.summary)}</p><h3>Physical meaning</h3><p>${esc(result.interpretation.physicalMeaning)}</p></article><div class="commentary-grid">${commentaryCards}</div></section>`;
+  const plots=(result.plots||[]).map((p,i)=>{const svg=lineChartSvg(p),primary=isGrms&&i===0?' result-block-primary':'';return `<div class="result-block${primary}" data-result-section="plot"><div class="chart-toolbar"><button data-chart-svg="${i}">Download SVG</button><button data-chart-png="${i}">Download PNG</button></div><div class="chart-shell site-chart-container" data-chart="${i}">${svg}</div></div>`;}).join('');
   const heatmaps=(result.heatmaps||[]).map((h,i)=>`<div class="result-block"><div class="chart-toolbar"><button data-heatmap-svg="${i}">Download SVG</button><button data-heatmap-png="${i}">Download PNG</button></div><div class="chart-shell site-chart-container" data-heatmap="${i}">${heatmapSvg(h)}</div></div>`).join('');
   const csv=result.csv?`<div class="result-block"><button class="button-secondary" data-action="download-csv">Download result CSV</button></div>`:'';
   const severity=result.assumptions.warnings.length?'warning':/screen|empirical|preliminary/i.test(result.validity.confidence)?'caution':'nominal';
   const validity=`<section class="result-validity-strip result-validity-${severity}" aria-label="Model validity status"><span>${severity==='warning'?'Active warning':severity==='caution'?'Screening regime':'No automatic warning'}</span><p><strong>${esc(result.validity.regime)}</strong>${esc(result.validity.confidence)}</p></section>`;
   const actions=`<section class="result-project-actions"><div><p class="eyebrow">Traceable next step</p><h3>Add this result to the engineering project</h3><p>Preserve inputs, values, interpretation, assumptions, warnings, validity, and source route with the shared project record.</p></div><button type="button" class="button" data-action="add-result-to-project">Add result</button></section>`;
-  return `<h3 class="result-section-title">Numerical results</h3>${validity}<div class="result-summary">${values}</div>${commentary}${plots}${heatmaps}${(result.tables||[]).map(renderTable).join('')}${csv}${actions}`;
+  const visibleValidity=isGrms?'':validity;
+  const numericalResults=`<section class="numerical-results-section" data-result-section="numerical"><h3 class="result-section-title">Numerical results</h3>${visibleValidity}<div class="result-summary">${values}</div></section>`;
+  const resultBody=isGrms?`${plots}${numericalResults}${commentary}`:`${numericalResults}${commentary}${plots}`;
+  return `${resultBody}${heatmaps}${(result.tables||[]).map(renderTable).join('')}${csv}${actions}`;
 }
 function svgToPng(svgText,filename){
   const blob=new Blob([svgText],{type:'image/svg+xml'}),url=URL.createObjectURL(blob),img=new Image();
@@ -322,11 +330,26 @@ function svgToPng(svgText,filename){
 }
 function bindTool(route){
   const id=decodeURIComponent(route.segments[1]||''),meta=toolById.get(id),calc=calculatorRegistry[id],form=document.querySelector('#calculator-form'),resultsEl=document.querySelector('#calculator-results');if(!form||!calc)return;
+  const grmsUnitSystem=id==='grms'?form.querySelector('[data-key="unit_system"]'):null;
+  const grmsMassInput=id==='grms'?form.querySelector('[data-key="mass"]'):null;
+  const grmsMassUnit=id==='grms'?form.querySelector('[data-field-unit="mass"]'):null;
+  let lastGrmsUnitSystem=grmsUnitSystem?.value;
+  const syncGrmsUnitSystem=(convertMass=false)=>{
+    if(!grmsUnitSystem)return;
+    const next=grmsUnitSystem.value==='English'?'English':'SI';
+    if(convertMass&&grmsMassInput&&lastGrmsUnitSystem&&next!==lastGrmsUnitSystem){
+      const mass=Number(grmsMassInput.value);
+      if(Number.isFinite(mass)){const converted=next==='English'?mass/0.45359237:mass*0.45359237;grmsMassInput.value=String(Number(converted.toPrecision(10)));}
+    }
+    if(grmsMassUnit)grmsMassUnit.textContent=next==='English'?'lbm':'kg';
+    lastGrmsUnitSystem=next;
+  };
+  syncGrmsUnitSystem();
   let latest=null;
   const run=()=>{try{latest=calc.compute(collectForm(form));resultsEl.innerHTML=renderResult(latest,meta);bindResultActions(latest,meta);}catch(err){latest=null;resultsEl.innerHTML=`<div class="calc-error"><strong>Calculation could not be completed.</strong><br>${esc(err.message||String(err))}</div>`;}};
   form.addEventListener('submit',e=>{e.preventDefault();run();});
-  let timer;form.addEventListener('input',e=>{if(e.target.matches('textarea'))return;clearTimeout(timer);timer=setTimeout(run,120);});
-  document.querySelector('[data-action="reset-calculator"]')?.addEventListener('click',()=>{for(const f of calc.inputs||[]){const el=form.querySelector(`[data-key="${CSS.escape(f.key)}"]`);if(el)el.value=f.default??'';}run();});
+  let timer;form.addEventListener('input',e=>{if(e.target===grmsUnitSystem)syncGrmsUnitSystem(true);if(e.target.matches('textarea'))return;clearTimeout(timer);timer=setTimeout(run,120);});
+  document.querySelector('[data-action="reset-calculator"]')?.addEventListener('click',()=>{for(const f of calc.inputs||[]){const el=form.querySelector(`[data-key="${CSS.escape(f.key)}"]`);if(el)el.value=f.default??'';}syncGrmsUnitSystem();run();});
   document.querySelector('[data-action="share-calculation"]')?.addEventListener('click',async()=>{const values=collectForm(form),params=new URLSearchParams();for(const f of calc.inputs||[]){const value=String(values[f.key]??'');if(value===String(f.default??''))continue;if(f.type==='textarea'&&value.length>800)continue;params.set(f.key,value);}const url=`${location.origin}${location.pathname}#/tool/${encodeURIComponent(id)}${params.size?`?${params}`:''}`;try{await navigator.clipboard.writeText(url);showToast(params.size?'Share link copied':'Link copied; large pasted data remains local');}catch{prompt('Copy this link',url);}});
   document.querySelector('[data-action="copy-results"]')?.addEventListener('click',async()=>{if(!latest){showToast('Calculate first');return;}const text=engineeringResultToText(meta.title,latest,formatNumber);try{await navigator.clipboard.writeText(text);showToast('Engineering result copied');}catch{prompt('Copy engineering result',text);}});
   document.querySelectorAll('.file-load').forEach(btn=>btn.addEventListener('click',()=>document.querySelector(`.file-input[data-target="${CSS.escape(btn.dataset.target)}"]`)?.click()));

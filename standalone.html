@@ -329,6 +329,7 @@ h3 { font-size: 1.07rem; line-height: 1.2; letter-spacing: -.018em; }
 .commentary-lead h3 { margin: .9rem 0 .3rem; color: var(--ink); font-family: var(--mono); font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; }
 .commentary-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1px; margin-top: 1px; border: 1px solid var(--line); background: var(--line); }
 .commentary-card { min-width: 0; padding: .9rem; background: rgba(255,255,255,.46); }
+.commentary-card-wide { grid-column: 1 / -1; }
 .commentary-card h3 { margin: 0 0 .6rem; font-size: .78rem; }
 .commentary-card h4 { margin: .9rem 0 .4rem; color: var(--warn); font-family: var(--mono); font-size: .61rem; letter-spacing: .05em; text-transform: uppercase; }
 .commentary-note { margin: -.25rem 0 .55rem; color: var(--quiet); font-size: .68rem; }
@@ -345,6 +346,7 @@ h3 { font-size: 1.07rem; line-height: 1.2; letter-spacing: -.018em; }
 .related-concept strong { color: var(--accent-2); font-size: .72rem; }
 .related-concept span { color: var(--quiet); font-size: .65rem; }
 .result-block { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.result-block-primary { margin-top: 0; padding-top: 0; border-top: 0; }
 .result-block h3 { margin-bottom: .7rem; font-size: .82rem; font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em; }
 .interpretation { padding: .85rem; border-left: 3px solid var(--accent); background: var(--accent-soft); color: #24454f; font-size: .82rem; }
 .warning-list { display: grid; gap: .45rem; margin: .8rem 0 0; padding: 0; list-style: none; }
@@ -7320,33 +7322,48 @@ function jacobiEigenvalues(input, maxIter = 100) {
   return a.map((row, i) => row[i]).sort((x, y) => x - y);
 }
 
-const calculatorRegistry = {
+const calculatorDefinitions = {
   db: {
     category: 'Acoustics', basis: 'Exact level arithmetic', confidence: 'Exact within inputs',
     inputs: [
       { key: 'levels', label: 'Independent levels', unit: 'dB', type: 'text', default: '92, 88, 84', help: 'Comma- or space-separated power-like levels.' },
+      { key: 'coherent_sources', label: 'Coherent tones', unit: 'level dB, phase deg', type: 'textarea', default: '86, 0\n86, 90', help: 'One pressure level and relative phase per line.' },
       { key: 'amplitude_ratio', label: 'Amplitude ratio', type: 'number', default: 2, step: 0.1 },
       { key: 'power_ratio', label: 'Power ratio', type: 'number', default: 2, step: 0.1 },
       { key: 'total_level', label: 'Measured total', unit: 'dB', type: 'number', default: 95, step: 0.1 },
       { key: 'known_level', label: 'Known contribution', unit: 'dB', type: 'number', default: 90, step: 0.1 },
     ],
-    theory: '<p>Use 20 log for amplitude ratios and 10 log for power-like ratios. Independent levels are summed in linear mean-square space.</p>',
-    assumptions: ['The listed levels represent mutually independent contributions.', 'Subtraction is meaningful only when the known contribution is part of the measured total.'],
+    theory: '<p>Use 20 log for amplitude ratios and 10 log for power-like ratios. Independent levels sum in mean-square space; phase-locked tones sum as complex pressure amplitudes.</p>',
+    assumptions: ['The independent list contains mutually incoherent contributions.', 'The coherent-tone phases refer to the same frequency, position, and time reference.', 'Subtraction is meaningful only when the known contribution is an independent part of the measured total.'],
     example: 'Three independent levels of 92, 88, and 84 dB sum to slightly more than 94 dB—not 264 dB.',
     compute(v) {
       const levels = parseNumbers(v.levels);
       if (!levels.length) throw new Error('Enter at least one level.');
       const total = db10(levels.reduce((s, L) => s + fromDb10(L), 0));
+      const coherent = parsePairs(v.coherent_sources, 'coherent tone');
+      const coherentPressure = coherent.reduce((sum, [level, phase]) => {
+        const component = complexPolar(10 ** (level / 20), phase);
+        return { re: sum.re + component.re, im: sum.im + component.im };
+      }, { re: 0, im: 0 });
+      const coherentTotal = db20(cMag(coherentPressure));
       const ar = positive(v.amplitude_ratio, 'Amplitude ratio');
       const pr = positive(v.power_ratio, 'Power ratio');
       const Lt = n(v.total_level), Lk = n(v.known_level);
       const residualPower = fromDb10(Lt) - fromDb10(Lk);
       const residual = residualPower > 0 ? db10(residualPower) : NaN;
+      const backgroundGap = Lt - Lk;
+      const backgroundWarning = residualPower <= 0
+        ? 'The known contribution is equal to or greater than the measured total, so a physical residual cannot be computed.'
+        : backgroundGap < 3
+          ? 'Total and background differ by less than 3 dB; the corrected residual is highly uncertainty-sensitive and normally should not be reported as a reliable source level.'
+          : backgroundGap < 10
+            ? 'The background correction is material; carry measurement uncertainty and state the correction explicitly.'
+            : '';
       return {
-        summary: [stat('Combined level', total, 'dB'), stat('Amplitude-ratio change', db20(ar), 'dB'), stat('Power-ratio change', db10(pr), 'dB'), stat('Residual level', residual, 'dB', Number.isFinite(residual) ? '' : 'danger')],
-        interpretation: `The strongest listed contribution is ${Math.max(...levels).toFixed(1)} dB; the total is ${(total - Math.max(...levels)).toFixed(2)} dB above it.`,
-        warnings: residualPower <= 0 ? ['The known contribution is equal to or greater than the measured total, so a physical residual cannot be computed.'] : [],
-        tables: [{ title: 'Level contributions', columns: ['Item', 'Level (dB)', 'Linear fraction of total'], rows: levels.map((L, i) => [`L${i + 1}`, L, fromDb10(L) / fromDb10(total)]) }],
+        summary: [stat('Combined level', total, 'dB'), stat('Coherent-tone combined level', coherentTotal, 'dB'), stat('Amplitude-ratio change', db20(ar), 'dB'), stat('Power-ratio change', db10(pr), 'dB'), stat('Residual level', residual, 'dB', Number.isFinite(residual) ? '' : 'danger'), stat('Total–background separation', backgroundGap, 'dB', backgroundGap < 3 ? 'danger' : backgroundGap < 10 ? 'warn' : 'good')],
+        interpretation: `The independent set is ${(total - Math.max(...levels)).toFixed(2)} dB above its strongest contribution. The coherent tones combine to ${coherentTotal.toFixed(2)} dB because their pressure phase is retained; changing geometry or phase can reverse reinforcement into cancellation.`,
+        warnings: backgroundWarning ? [backgroundWarning] : [],
+        tables: [{ title: 'Independent level contributions', columns: ['Item', 'Level (dB)', 'Linear fraction of total'], rows: levels.map((L, i) => [`L${i + 1}`, L, fromDb10(L) / fromDb10(total)]) }, { title: 'Coherent tonal pressures', columns: ['Tone', 'Level (dB)', 'Relative phase (deg)'], rows: coherent.map(([level, phase], index) => [`Tone ${index + 1}`, level, phase]) }],
       };
     },
   },
@@ -7543,24 +7560,44 @@ const calculatorRegistry = {
   grms: {
     category:'Random & Shock', basis:'Analytic piecewise power-law integration', confidence:'Exact for log-log interpolation',
     inputs:[
-      {key:'psd_points',label:'PSD breakpoints',unit:'Hz, g²/Hz',type:'textarea',default:'20, 0.01\n80, 0.04\n350, 0.04\n2000, 0.006',help:'One frequency and PSD level per line.'}
+      {key:'unit_system',label:'Unit system',type:'select',default:'SI',options:[{value:'SI',label:'SI — kg, mm, N'},{value:'English',label:'English — lbm, in, lbf'}]},
+      {key:'psd_points',label:'PSD breakpoints',unit:'Hz, g²/Hz',type:'textarea',default:'20, 0.01\n80, 0.04\n350, 0.04\n2000, 0.006',help:'One frequency and PSD level per line.'},
+      {key:'mass',label:'Driven component mass',unit:'kg',type:'number',default:10,min:0.001,help:'Automatically converted between kg and lbm when the unit system changes.'}
     ],
     theory:'<p>Between breakpoints the PSD is modeled as G(f)=C fⁿ. Each segment is integrated analytically, including the logarithmic n=−1 case.</p>',
-    assumptions:['Positive frequencies and PSD values.','Log-log interpolation between listed breakpoints.'],
+    assumptions:['The input is a one-sided acceleration PSD in g²/Hz.','The PSD represents a stationary random process over the analysis duration.','Breakpoints are joined by power-law segments on log-log axes.','Displacement uses ideal frequency-domain double integration; drift and energy outside the entered frequency range are excluded.','The force estimate assumes the full entered mass accelerates rigidly and in phase with the PSD input.'],
     example:'A flat 0.04 g²/Hz segment from 80 to 350 Hz contributes √(0.04×270)=3.29 GRMS.',
     compute(v){
       const points=parsePairs(v.psd_points,'PSD');
+      const isEnglish=v.unit_system==='English';
+      const massInput=positive(v.mass,'Driven component mass');
+      const massKg=isEnglish?massInput*0.45359237:massInput;
       const {total,segments}=integratePowerLaw(points);
       const grms=Math.sqrt(total);
-      const maxShare = 100 * Math.max(...segments.map(s=>s[6])) / total;
+      const displacementPoints=points.map(([f,g])=>[f,g*G0**2/(2*Math.PI*f)**4]);
+      const {total:displacementMeanSquare}=integratePowerLaw(displacementPoints);
+      const displacementRmsM=Math.sqrt(displacementMeanSquare);
+      const displacementValue=isEnglish?displacementRmsM/0.0254:1000*displacementRmsM;
+      const displacementUnit=isEnglish?'in RMS':'mm RMS';
+      const forceRmsN=massKg*G0*grms;
+      const forceValue=isEnglish?forceRmsN/4.4482216152605:forceRmsN;
+      const forceUnit=isEnglish?'lbf RMS':'N RMS';
+      const massUnit=isEnglish?'lbm':'kg';
+      const dominantSegment=segments.reduce((largest,segment)=>segment[6]>largest[6]?segment:largest);
+      const maxShare=100*dominantSegment[6]/total;
+      const frequencyRange=`${points[0][0]}–${points.at(-1)[0]}`;
+      const dominantRange=`${dominantSegment[0]}–${dominantSegment[1]}`;
       const dense=[];
       for(let i=0;i<points.length-1;i++){
         const fs=logspace(points[i][0],points[i+1][0],40);
         for(const f of fs) dense.push([f,interpLogLog(points,f)]);
       }
       return{
-        summary:[stat('Total mean square',total,'g²'),stat('Total response',grms,'GRMS'),stat('Frequency range',`${points[0][0]}–${points.at(-1)[0]}`,'Hz'),stat('Segments',segments.length)],
-        interpretation:`The segment with the largest area contributes ${maxShare.toFixed(1)}% of the total mean square.`,
+        summary:[stat('Integrated acceleration',grms,'g RMS'),stat('RMS displacement',displacementValue,displacementUnit),stat('Rigid-body force estimate',forceValue,forceUnit),stat('Frequency range',frequencyRange,'Hz'),stat('Dominant PSD segment',dominantRange,'Hz'),stat('PSD area from dominant segment',maxShare,'%')],
+        interpretation:{
+          summary:`Integrating the PSD from ${frequencyRange} Hz gives ${grms.toFixed(3)} g RMS and ${displacementValue.toFixed(isEnglish?5:3)} ${displacementUnit} displacement. Treating the ${massInput.toFixed(3)} ${massUnit} component as a rigid mass gives an inertial-force estimate of ${forceValue.toFixed(1)} ${forceUnit}. The ${dominantRange} Hz segment supplies ${maxShare.toFixed(1)}% of the integrated acceleration PSD area.`,
+          physicalMeaning:`${grms.toFixed(3)} g RMS is the standard deviation of the acceleration represented by this PSD over ${frequencyRange} Hz. It is the square root of the area under the acceleration PSD—not a peak acceleration or the largest value expected in a test. The ${displacementValue.toFixed(isEnglish?5:3)} ${displacementUnit} value is the motion implied by double-integrating that spectrum, so its result is especially sensitive to low-frequency content. The ${forceValue.toFixed(1)} ${forceUnit} value is only the rigid-body inertial force m·a; actual drive force depends on fixture dynamics, component flexibility, resonances, and control strategy.`
+        },
         plots:[{title:'Input PSD',xLabel:'Frequency (Hz)',yLabel:'PSD (g²/Hz)',xScale:'log',yScale:'log',traces:[trace('PSD',dense.map(r=>r[0]),dense.map(r=>r[1]))]}],
         tables:[{title:'Segment integration',columns:['f1 (Hz)','f2 (Hz)','G1','G2','Exponent n','dB/oct','Area (g²)','Segment GRMS'],rows:segments}],
         csv:{filename:'integrated-psd.csv',columns:['frequency_hz','psd_g2_per_hz'],rows:dense}
@@ -8432,6 +8469,7 @@ const unitDefinitions = {
 };
 const allUnitOptions = Object.keys(unitDefinitions).map(value => ({ value, label: `${value} — ${unitDefinitions[value].dimension}` }));
 
+const calculatorRegistry = calculatorDefinitions;
 
 function getCalculator(id){ return calculatorRegistry[id]; }
 
@@ -20015,7 +20053,7 @@ function renderTools(route){
   return renderPageShell(page,{variant:'tool-library'});
 }
 function fieldHtml(field,value){
-  const key=esc(field.key),label=`<label for="field-${key}">${esc(field.label)}${field.unit?`<span>${esc(field.unit)}</span>`:''}</label>`;
+  const key=esc(field.key),label=`<label for="field-${key}">${esc(field.label)}${field.unit?`<span data-field-unit="${key}">${esc(field.unit)}</span>`:''}</label>`;
   let control='';
   if(field.type==='select')control=`<select id="field-${key}" data-key="${key}">${(field.options||[]).map(o=>{const opt=Array.isArray(o)?{value:o[0],label:o[1]}:o;return `<option value="${esc(opt.value)}" ${String(opt.value)===String(value)?'selected':''}>${esc(opt.label)}</option>`;}).join('')}</select>`;
   else if(field.type==='textarea')control=`<textarea id="field-${key}" data-key="${key}" spellcheck="false">${esc(value)}</textarea><div class="field-file-row"><button type="button" class="button-quiet file-load" data-target="field-${key}">Load CSV / text</button><input class="file-input" type="file" accept=".csv,.txt,text/csv,text/plain" data-target="field-${key}" hidden/></div>`;
@@ -20096,19 +20134,27 @@ function renderNotFound(title='Page not found',text='That route does not exist.'
 function collectForm(form){const values={};form.querySelectorAll('[data-key]').forEach(el=>values[el.dataset.key]=el.value);return values;}
 function renderTable(table){return `<div class="result-block"><h3>${esc(table.title||'Results table')}</h3><div class="table-wrap"><table><thead><tr>${(table.columns||[]).map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${(table.rows||[]).map(row=>`<tr>${row.map((v,i)=>`<td>${i===0&&typeof v==='string'?esc(v):esc(formatNumber(v))}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;}
 function renderResult(result,meta){
+  const isGrms=meta.id==='grms';
   const values=result.values.map(s=>`<div class="result-stat ${esc(s.tone||s.status||'')}"><small>${esc(s.label)}</small><strong>${esc(formatNumber(s.value))}</strong>${s.unit?`<span class="unit">${esc(s.unit)}</span>`:''}${s.note?`<div class="field-help">${esc(s.note)}</div>`:''}</div>`).join('');
   const assumptions=result.assumptions.satisfied.map(item=>`<li>${esc(item)}</li>`).join('');
   const warnings=result.assumptions.warnings.map(item=>`<li>${esc(item)}</li>`).join('');
   const considerations=result.interpretation.engineeringConsiderations.map(item=>`<li>${esc(item)}</li>`).join('');
-  const concepts=result.relatedConcepts.map(item=>`<a class="related-concept site-related-link" href="${esc(item.href)}"><strong>${esc(item.title)}</strong><span>${esc(item.description)}</span></a>`).join('');
-  const commentary=`<section class="engineering-commentary" aria-label="Engineering commentary"><article class="commentary-lead"><p class="commentary-label">Engineering interpretation</p><p>${esc(result.interpretation.summary)}</p><h3>Physical meaning</h3><p>${esc(result.interpretation.physicalMeaning)}</p></article><div class="commentary-grid"><article class="commentary-card validity-card"><h3>Validity checks</h3><dl><div><dt>Regime</dt><dd>${esc(result.validity.regime)}</dd></div><div><dt>Confidence</dt><dd>${esc(result.validity.confidence)}</dd></div></dl></article><article class="commentary-card"><h3>Model assumptions</h3><p class="commentary-note">The calculation treats these conditions as satisfied. Confirm them against the real system.</p><ul class="commentary-list assumption-list">${assumptions}</ul>${warnings?`<h4>Active warnings</h4><ul class="warning-list">${warnings}</ul>`:''}</article><article class="commentary-card"><h3>Engineering considerations</h3><ul class="commentary-list">${considerations}</ul></article><article class="commentary-card"><h3>Related concepts</h3><div class="related-concepts">${concepts}</div></article></div></section>`;
-  const plots=(result.plots||[]).map((p,i)=>{const svg=lineChartSvg(p);return `<div class="result-block"><div class="chart-toolbar"><button data-chart-svg="${i}">Download SVG</button><button data-chart-png="${i}">Download PNG</button></div><div class="chart-shell site-chart-container" data-chart="${i}">${svg}</div></div>`;}).join('');
+  const validityCard=`<article class="commentary-card validity-card"><h3>Validity checks</h3><dl><div><dt>Regime</dt><dd>${esc(result.validity.regime)}</dd></div><div><dt>Confidence</dt><dd>${esc(result.validity.confidence)}</dd></div></dl></article>`;
+  const assumptionNote=isGrms?'':'<p class="commentary-note">The calculation treats these conditions as satisfied. Confirm them against the real system.</p>';
+  const assumptionCard=`<article class="commentary-card${isGrms?' commentary-card-wide':''}"><h3>Model assumptions</h3>${assumptionNote}<ul class="commentary-list assumption-list">${assumptions}</ul>${warnings?`<h4>Active warnings</h4><ul class="warning-list">${warnings}</ul>`:''}</article>`;
+  const considerationCard=`<article class="commentary-card"><h3>Engineering considerations</h3><ul class="commentary-list">${considerations}</ul></article>`;
+  const commentaryCards=isGrms?assumptionCard:`${validityCard}${assumptionCard}${considerationCard}`;
+  const commentary=`<section class="engineering-commentary" data-result-section="explanation" aria-label="Engineering commentary"><article class="commentary-lead"><p class="commentary-label">Engineering interpretation</p><p>${esc(result.interpretation.summary)}</p><h3>Physical meaning</h3><p>${esc(result.interpretation.physicalMeaning)}</p></article><div class="commentary-grid">${commentaryCards}</div></section>`;
+  const plots=(result.plots||[]).map((p,i)=>{const svg=lineChartSvg(p),primary=isGrms&&i===0?' result-block-primary':'';return `<div class="result-block${primary}" data-result-section="plot"><div class="chart-toolbar"><button data-chart-svg="${i}">Download SVG</button><button data-chart-png="${i}">Download PNG</button></div><div class="chart-shell site-chart-container" data-chart="${i}">${svg}</div></div>`;}).join('');
   const heatmaps=(result.heatmaps||[]).map((h,i)=>`<div class="result-block"><div class="chart-toolbar"><button data-heatmap-svg="${i}">Download SVG</button><button data-heatmap-png="${i}">Download PNG</button></div><div class="chart-shell site-chart-container" data-heatmap="${i}">${heatmapSvg(h)}</div></div>`).join('');
   const csv=result.csv?`<div class="result-block"><button class="button-secondary" data-action="download-csv">Download result CSV</button></div>`:'';
   const severity=result.assumptions.warnings.length?'warning':/screen|empirical|preliminary/i.test(result.validity.confidence)?'caution':'nominal';
   const validity=`<section class="result-validity-strip result-validity-${severity}" aria-label="Model validity status"><span>${severity==='warning'?'Active warning':severity==='caution'?'Screening regime':'No automatic warning'}</span><p><strong>${esc(result.validity.regime)}</strong>${esc(result.validity.confidence)}</p></section>`;
   const actions=`<section class="result-project-actions"><div><p class="eyebrow">Traceable next step</p><h3>Add this result to the engineering project</h3><p>Preserve inputs, values, interpretation, assumptions, warnings, validity, and source route with the shared project record.</p></div><button type="button" class="button" data-action="add-result-to-project">Add result</button></section>`;
-  return `<h3 class="result-section-title">Numerical results</h3>${validity}<div class="result-summary">${values}</div>${commentary}${plots}${heatmaps}${(result.tables||[]).map(renderTable).join('')}${csv}${actions}`;
+  const visibleValidity=isGrms?'':validity;
+  const numericalResults=`<section class="numerical-results-section" data-result-section="numerical"><h3 class="result-section-title">Numerical results</h3>${visibleValidity}<div class="result-summary">${values}</div></section>`;
+  const resultBody=isGrms?`${plots}${numericalResults}${commentary}`:`${numericalResults}${commentary}${plots}`;
+  return `${resultBody}${heatmaps}${(result.tables||[]).map(renderTable).join('')}${csv}${actions}`;
 }
 function svgToPng(svgText,filename){
   const blob=new Blob([svgText],{type:'image/svg+xml'}),url=URL.createObjectURL(blob),img=new Image();
@@ -20116,11 +20162,26 @@ function svgToPng(svgText,filename){
 }
 function bindTool(route){
   const id=decodeURIComponent(route.segments[1]||''),meta=toolById.get(id),calc=calculatorRegistry[id],form=document.querySelector('#calculator-form'),resultsEl=document.querySelector('#calculator-results');if(!form||!calc)return;
+  const grmsUnitSystem=id==='grms'?form.querySelector('[data-key="unit_system"]'):null;
+  const grmsMassInput=id==='grms'?form.querySelector('[data-key="mass"]'):null;
+  const grmsMassUnit=id==='grms'?form.querySelector('[data-field-unit="mass"]'):null;
+  let lastGrmsUnitSystem=grmsUnitSystem?.value;
+  const syncGrmsUnitSystem=(convertMass=false)=>{
+    if(!grmsUnitSystem)return;
+    const next=grmsUnitSystem.value==='English'?'English':'SI';
+    if(convertMass&&grmsMassInput&&lastGrmsUnitSystem&&next!==lastGrmsUnitSystem){
+      const mass=Number(grmsMassInput.value);
+      if(Number.isFinite(mass)){const converted=next==='English'?mass/0.45359237:mass*0.45359237;grmsMassInput.value=String(Number(converted.toPrecision(10)));}
+    }
+    if(grmsMassUnit)grmsMassUnit.textContent=next==='English'?'lbm':'kg';
+    lastGrmsUnitSystem=next;
+  };
+  syncGrmsUnitSystem();
   let latest=null;
   const run=()=>{try{latest=calc.compute(collectForm(form));resultsEl.innerHTML=renderResult(latest,meta);bindResultActions(latest,meta);}catch(err){latest=null;resultsEl.innerHTML=`<div class="calc-error"><strong>Calculation could not be completed.</strong><br>${esc(err.message||String(err))}</div>`;}};
   form.addEventListener('submit',e=>{e.preventDefault();run();});
-  let timer;form.addEventListener('input',e=>{if(e.target.matches('textarea'))return;clearTimeout(timer);timer=setTimeout(run,120);});
-  document.querySelector('[data-action="reset-calculator"]')?.addEventListener('click',()=>{for(const f of calc.inputs||[]){const el=form.querySelector(`[data-key="${CSS.escape(f.key)}"]`);if(el)el.value=f.default??'';}run();});
+  let timer;form.addEventListener('input',e=>{if(e.target===grmsUnitSystem)syncGrmsUnitSystem(true);if(e.target.matches('textarea'))return;clearTimeout(timer);timer=setTimeout(run,120);});
+  document.querySelector('[data-action="reset-calculator"]')?.addEventListener('click',()=>{for(const f of calc.inputs||[]){const el=form.querySelector(`[data-key="${CSS.escape(f.key)}"]`);if(el)el.value=f.default??'';}syncGrmsUnitSystem();run();});
   document.querySelector('[data-action="share-calculation"]')?.addEventListener('click',async()=>{const values=collectForm(form),params=new URLSearchParams();for(const f of calc.inputs||[]){const value=String(values[f.key]??'');if(value===String(f.default??''))continue;if(f.type==='textarea'&&value.length>800)continue;params.set(f.key,value);}const url=`${location.origin}${location.pathname}#/tool/${encodeURIComponent(id)}${params.size?`?${params}`:''}`;try{await navigator.clipboard.writeText(url);showToast(params.size?'Share link copied':'Link copied; large pasted data remains local');}catch{prompt('Copy this link',url);}});
   document.querySelector('[data-action="copy-results"]')?.addEventListener('click',async()=>{if(!latest){showToast('Calculate first');return;}const text=engineeringResultToText(meta.title,latest,formatNumber);try{await navigator.clipboard.writeText(text);showToast('Engineering result copied');}catch{prompt('Copy engineering result',text);}});
   document.querySelectorAll('.file-load').forEach(btn=>btn.addEventListener('click',()=>document.querySelector(`.file-input[data-target="${CSS.escape(btn.dataset.target)}"]`)?.click()));

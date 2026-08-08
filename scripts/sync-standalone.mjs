@@ -17,6 +17,7 @@ const styles = await read('styles.css');
 const app = await read('js/app.js');
 const frameworkModule = await read('js/engineering-results.js');
 const dataModule = await read('js/data.js');
+const calculatorsModule = await read('js/calculators.js');
 const seaCouplingModule = await read('js/sea-coupling.js');
 const honeycombModule = await read('js/honeycomb-paper.js');
 const extraCalculatorsModule = await read('js/extra-calculators.js');
@@ -69,6 +70,14 @@ const workflowExpansionDataBlock = 'const __workflowExpansionData=(()=>{\n'+modu
 const programExpansionDataBlock = 'const __programExpansionData=(()=>{\n'+moduleSource(programExpansionDataModule)+'\nreturn {programExpansionSections,programExpansionToolCatalog,programExpansionDemos,programExpansionCaseNotes,programExpansionReferenceGroups};\n})();\n\n';
 const seaParameterDataBlock = 'const __seaParameterData=(()=>{\n'+moduleSource(seaParameterDataModule)+'\nreturn {seaParameterSections,seaParameterToolCatalog,seaParameterDemos,seaParameterCaseNotes,seaParameterReferenceGroups};\n})();\n\n';
 standalone = replaceRange(standalone, 'const __data=(()=>{', 'const __calculators=(()=>{', dataBlock + workflowExpansionDataBlock + programExpansionDataBlock + seaParameterDataBlock);
+
+const calculatorsSource = moduleSource(calculatorsModule).replace(
+  'const calculatorRegistry = createEngineeringRegistry(calculatorDefinitions);',
+  'const calculatorRegistry = calculatorDefinitions;'
+);
+const calculatorsBlock = `const __calculators=(()=>{\n${calculatorsSource}\nreturn {materials,calculatorRegistry,getCalculator};\n})();\n\n`;
+const calculatorsEnd = standalone.includes('const __seaCoupling=(()=>{') ? 'const __seaCoupling=(()=>{' : 'const __honeycomb=(()=>{';
+standalone = replaceRange(standalone, 'const __calculators=(()=>{', calculatorsEnd, calculatorsBlock);
 
 const seaCouplingExports = [
   'reciprocalCoupling',

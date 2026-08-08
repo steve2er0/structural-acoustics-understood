@@ -439,24 +439,44 @@ const calculatorDefinitions = {
   grms: {
     category:'Random & Shock', basis:'Analytic piecewise power-law integration', confidence:'Exact for log-log interpolation',
     inputs:[
-      {key:'psd_points',label:'PSD breakpoints',unit:'Hz, g²/Hz',type:'textarea',default:'20, 0.01\n80, 0.04\n350, 0.04\n2000, 0.006',help:'One frequency and PSD level per line.'}
+      {key:'unit_system',label:'Unit system',type:'select',default:'SI',options:[{value:'SI',label:'SI — kg, mm, N'},{value:'English',label:'English — lbm, in, lbf'}]},
+      {key:'psd_points',label:'PSD breakpoints',unit:'Hz, g²/Hz',type:'textarea',default:'20, 0.01\n80, 0.04\n350, 0.04\n2000, 0.006',help:'One frequency and PSD level per line.'},
+      {key:'mass',label:'Driven component mass',unit:'kg',type:'number',default:10,min:0.001,help:'Automatically converted between kg and lbm when the unit system changes.'}
     ],
     theory:'<p>Between breakpoints the PSD is modeled as G(f)=C fⁿ. Each segment is integrated analytically, including the logarithmic n=−1 case.</p>',
-    assumptions:['Positive frequencies and PSD values.','Log-log interpolation between listed breakpoints.'],
+    assumptions:['The input is a one-sided acceleration PSD in g²/Hz.','The PSD represents a stationary random process over the analysis duration.','Breakpoints are joined by power-law segments on log-log axes.','Displacement uses ideal frequency-domain double integration; drift and energy outside the entered frequency range are excluded.','The force estimate assumes the full entered mass accelerates rigidly and in phase with the PSD input.'],
     example:'A flat 0.04 g²/Hz segment from 80 to 350 Hz contributes √(0.04×270)=3.29 GRMS.',
     compute(v){
       const points=parsePairs(v.psd_points,'PSD');
+      const isEnglish=v.unit_system==='English';
+      const massInput=positive(v.mass,'Driven component mass');
+      const massKg=isEnglish?massInput*0.45359237:massInput;
       const {total,segments}=integratePowerLaw(points);
       const grms=Math.sqrt(total);
-      const maxShare = 100 * Math.max(...segments.map(s=>s[6])) / total;
+      const displacementPoints=points.map(([f,g])=>[f,g*G0**2/(2*Math.PI*f)**4]);
+      const {total:displacementMeanSquare}=integratePowerLaw(displacementPoints);
+      const displacementRmsM=Math.sqrt(displacementMeanSquare);
+      const displacementValue=isEnglish?displacementRmsM/0.0254:1000*displacementRmsM;
+      const displacementUnit=isEnglish?'in RMS':'mm RMS';
+      const forceRmsN=massKg*G0*grms;
+      const forceValue=isEnglish?forceRmsN/4.4482216152605:forceRmsN;
+      const forceUnit=isEnglish?'lbf RMS':'N RMS';
+      const massUnit=isEnglish?'lbm':'kg';
+      const dominantSegment=segments.reduce((largest,segment)=>segment[6]>largest[6]?segment:largest);
+      const maxShare=100*dominantSegment[6]/total;
+      const frequencyRange=`${points[0][0]}–${points.at(-1)[0]}`;
+      const dominantRange=`${dominantSegment[0]}–${dominantSegment[1]}`;
       const dense=[];
       for(let i=0;i<points.length-1;i++){
         const fs=logspace(points[i][0],points[i+1][0],40);
         for(const f of fs) dense.push([f,interpLogLog(points,f)]);
       }
       return{
-        summary:[stat('Total mean square',total,'g²'),stat('Total response',grms,'GRMS'),stat('Frequency range',`${points[0][0]}–${points.at(-1)[0]}`,'Hz'),stat('Segments',segments.length)],
-        interpretation:`The segment with the largest area contributes ${maxShare.toFixed(1)}% of the total mean square.`,
+        summary:[stat('Integrated acceleration',grms,'g RMS'),stat('RMS displacement',displacementValue,displacementUnit),stat('Rigid-body force estimate',forceValue,forceUnit),stat('Frequency range',frequencyRange,'Hz'),stat('Dominant PSD segment',dominantRange,'Hz'),stat('PSD area from dominant segment',maxShare,'%')],
+        interpretation:{
+          summary:`Integrating the PSD from ${frequencyRange} Hz gives ${grms.toFixed(3)} g RMS and ${displacementValue.toFixed(isEnglish?5:3)} ${displacementUnit} displacement. Treating the ${massInput.toFixed(3)} ${massUnit} component as a rigid mass gives an inertial-force estimate of ${forceValue.toFixed(1)} ${forceUnit}. The ${dominantRange} Hz segment supplies ${maxShare.toFixed(1)}% of the integrated acceleration PSD area.`,
+          physicalMeaning:`${grms.toFixed(3)} g RMS is the standard deviation of the acceleration represented by this PSD over ${frequencyRange} Hz. It is the square root of the area under the acceleration PSD—not a peak acceleration or the largest value expected in a test. The ${displacementValue.toFixed(isEnglish?5:3)} ${displacementUnit} value is the motion implied by double-integrating that spectrum, so its result is especially sensitive to low-frequency content. The ${forceValue.toFixed(1)} ${forceUnit} value is only the rigid-body inertial force m·a; actual drive force depends on fixture dynamics, component flexibility, resonances, and control strategy.`
+        },
         plots:[{title:'Input PSD',xLabel:'Frequency (Hz)',yLabel:'PSD (g²/Hz)',xScale:'log',yScale:'log',traces:[trace('PSD',dense.map(r=>r[0]),dense.map(r=>r[1]))]}],
         tables:[{title:'Segment integration',columns:['f1 (Hz)','f2 (Hz)','G1','G2','Exponent n','dB/oct','Area (g²)','Segment GRMS'],rows:segments}],
         csv:{filename:'integrated-psd.csv',columns:['frequency_hz','psd_g2_per_hz'],rows:dense}

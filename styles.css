@@ -318,6 +318,7 @@ h3 { font-size: 1.07rem; line-height: 1.2; letter-spacing: -.018em; }
 .commentary-lead h3 { margin: .9rem 0 .3rem; color: var(--ink); font-family: var(--mono); font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; }
 .commentary-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1px; margin-top: 1px; border: 1px solid var(--line); background: var(--line); }
 .commentary-card { min-width: 0; padding: .9rem; background: rgba(255,255,255,.46); }
+.commentary-card-wide { grid-column: 1 / -1; }
 .commentary-card h3 { margin: 0 0 .6rem; font-size: .78rem; }
 .commentary-card h4 { margin: .9rem 0 .4rem; color: var(--warn); font-family: var(--mono); font-size: .61rem; letter-spacing: .05em; text-transform: uppercase; }
 .commentary-note { margin: -.25rem 0 .55rem; color: var(--quiet); font-size: .68rem; }
@@ -334,6 +335,7 @@ h3 { font-size: 1.07rem; line-height: 1.2; letter-spacing: -.018em; }
 .related-concept strong { color: var(--accent-2); font-size: .72rem; }
 .related-concept span { color: var(--quiet); font-size: .65rem; }
 .result-block { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.result-block-primary { margin-top: 0; padding-top: 0; border-top: 0; }
 .result-block h3 { margin-bottom: .7rem; font-size: .82rem; font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em; }
 .interpretation { padding: .85rem; border-left: 3px solid var(--accent); background: var(--accent-soft); color: #24454f; font-size: .82rem; }
 .warning-list { display: grid; gap: .45rem; margin: .8rem 0 0; padding: 0; list-style: none; }
