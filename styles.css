@@ -1294,6 +1294,9 @@ body.site-system-route .site-inline-link:hover { color: #fff; }
 .site-context-grid .site-link-collection { margin-top: 0; }
 .site-context-grid .site-link-collection > div { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .site-context-grid .site-link-collection a { min-height: 76px; }
+.calculator-context-grid { grid-template-columns: minmax(0, 1fr); margin-top: var(--site-space-3); }
+.calculator-context-grid .site-link-collection > div { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.calculator-context-grid .site-link-collection a { min-height: 68px; }
 
 body.site-system-route .site-calculator-container {
   grid-template-columns: minmax(360px, .62fr) minmax(0, 1.38fr);
@@ -1634,6 +1637,7 @@ body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [stroke
   body.site-system-route .site-calculator-container { grid-template-columns: 1fr; }
   body.site-system-route .site-concept-grid { grid-template-columns: minmax(0, 1fr); }
   .site-context-grid { grid-template-columns: 1fr; }
+  .calculator-context-grid .site-link-collection > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .site-hardware-links > div,
   .site-link-collection > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   body.site-system-route .section-rail { padding: .5rem; }
@@ -2621,9 +2625,6 @@ body.site-system-workbench .site-page-shell-workbench::before {
 .result-project-actions { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 1rem; margin-top: 1rem; padding: 1rem; border: 1px solid rgba(85,184,255,.34); background: rgba(85,184,255,.055); }
 .result-project-actions h3 { margin: .2rem 0 .3rem; color: #dfeefd; font-size: .9rem; }
 .result-project-actions p:not(.eyebrow) { margin: 0; color: #7f98b1; font-size: .68rem; }
-.result-handoffs { display: flex; align-items: center; flex-wrap: wrap; gap: .55rem; margin-top: .8rem; padding: .7rem; border: 1px solid var(--site-color-border); }
-.result-handoffs span { color: #6f879f; font-family: var(--mono); font-size: .55rem; text-transform: uppercase; }
-.result-handoffs a { min-height: 36px; display: inline-flex; align-items: center; padding: .35rem .6rem; color: #a9d8f6; border: 1px solid var(--site-color-border); font-size: .62rem; text-decoration: none; }
 
 .demo-discovery,
 .case-study-discovery { justify-content: flex-start; }

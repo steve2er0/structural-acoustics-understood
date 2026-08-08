@@ -821,6 +821,10 @@ test('site visual system exposes reusable components and themes every non-home r
   assert.match(css,/body\.site-system-route \.reference-nav/);
   assert.match(appSource,/classList\.toggle\('site-system-route',Boolean\(first\)\)/);
   assert.match(appSource,/classList\.toggle\('home-route',!first\)/);
+  assert.match(appSource,/calculator-context-grid/);
+  assert.match(appSource,/page\.replace\(context,''\).*\$\{context\}/);
+  assert.doesNotMatch(appSource,/Recommended handoffs/);
+  assert.doesNotMatch(css,/\.result-handoffs/);
 });
 
 test('wheel homepage is data-driven, accessible, and linked to real content',()=>{
@@ -909,7 +913,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes the demo takeaway runtime',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v35'/);
+  assert.match(worker,/const CACHE = 'sau-v37'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);
