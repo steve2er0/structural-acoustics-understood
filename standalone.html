@@ -2539,6 +2539,7 @@ body.site-system-workbench .site-page-shell-workbench::before {
 .chapter-directory-toolbar,
 .reference-filterbar,
 .demo-discovery,
+.case-study-discovery,
 .tool-discovery {
   position: relative;
   z-index: 2;
@@ -2554,16 +2555,20 @@ body.site-system-workbench .site-page-shell-workbench::before {
 .chapter-directory-toolbar label,
 .reference-filterbar label,
 .demo-discovery label,
+.case-study-discovery label,
 .tool-discovery label { display: grid; gap: .35rem; color: #8198b1; font-family: var(--mono); font-size: .58rem; letter-spacing: .04em; }
 .chapter-directory-toolbar label,
 .reference-filterbar label:first-child,
 .demo-discovery label:first-child,
+.case-study-discovery label:first-child,
 .tool-discovery .tool-filter-search { flex: 1 1 280px; }
 .chapter-directory-toolbar input,
 .reference-filterbar input,
 .reference-filterbar select,
 .demo-discovery input,
 .demo-discovery select,
+.case-study-discovery input,
+.case-study-discovery select,
 .tool-discovery input,
 .tool-discovery select {
   min-height: 44px;
@@ -2608,7 +2613,7 @@ body.site-system-workbench .site-page-shell-workbench::before {
 .tool-intents strong { color: #deebf8; font-size: .8rem; font-weight: 560; }
 .tool-intents span { grid-column: 1; color: #7f97af; font-size: .68rem; }
 .tool-intents b { grid-column: 2; grid-row: 1 / 3; color: var(--site-color-cyan); font-weight: 400; }
-.tool-discovery { display: grid; grid-template-columns: 1.4fr repeat(5,minmax(125px,.75fr)) auto auto; align-items: end; position: sticky; top: calc(var(--header-height) + 6px); z-index: 20; }
+.tool-discovery { display: grid; grid-template-columns: 1.4fr repeat(4,minmax(125px,.75fr)) auto auto; align-items: end; position: sticky; top: calc(var(--header-height) + 6px); z-index: 20; }
 .tool-discovery .filter-count { white-space: nowrap; }
 .tool-type-row { display: flex; justify-content: space-between; gap: .5rem; margin-bottom: .65rem; color: #6d879f; font-family: var(--mono); font-size: .54rem; text-transform: uppercase; }
 .tool-type-row b { padding: .1rem .3rem; color: var(--site-color-gold); border: 1px solid rgba(242,198,99,.35); font-size: .5rem; font-weight: 560; }
@@ -2631,9 +2636,12 @@ body.site-system-workbench .site-page-shell-workbench::before {
 .result-handoffs span { color: #6f879f; font-family: var(--mono); font-size: .55rem; text-transform: uppercase; }
 .result-handoffs a { min-height: 36px; display: inline-flex; align-items: center; padding: .35rem .6rem; color: #a9d8f6; border: 1px solid var(--site-color-border); font-size: .62rem; text-decoration: none; }
 
-.demo-discovery { justify-content: flex-start; }
-.demo-discovery label:first-child { max-width: 640px; }
-.demo-discovery > span { margin-left: auto; color: #7d94ac; font-family: var(--mono); font-size: .6rem; }
+.demo-discovery,
+.case-study-discovery { justify-content: flex-start; }
+.demo-discovery label:first-child,
+.case-study-discovery label:first-child { max-width: 640px; }
+.demo-discovery > span,
+.case-study-discovery > span { margin-left: auto; color: #7d94ac; font-family: var(--mono); font-size: .6rem; }
 .lab-guide { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.1fr); gap: 1px; margin: var(--site-space-5) 0; border: 1px solid var(--site-color-border); background: var(--site-color-border); }
 .lab-guide > div { padding: 1.25rem; background: rgba(5,23,41,.94); }
 .lab-guide h2 { margin: .3rem 0 .65rem; color: #e7f0fa; font-size: 1.35rem; font-weight: 480; }
@@ -2801,7 +2809,7 @@ body.site-system-workbench .site-page-shell-workbench::before {
   .project-pill span { display: none; }
   .project-pill { min-width: 44px; min-height: 44px; justify-content: center; padding: .3rem; border: 0; }
   .project-pill b { width: 28px; height: 28px; }
-  .chapter-directory-toolbar,.reference-filterbar,.demo-discovery { display: grid; grid-template-columns: 1fr; position: relative; top: auto; }
+  .chapter-directory-toolbar,.reference-filterbar,.demo-discovery,.case-study-discovery { display: grid; grid-template-columns: 1fr; position: relative; top: auto; }
   .chapter-directory-toolbar .button-secondary { width: 100%; text-align: center; }
   .chapter-directory-card { min-height: 0; grid-template-columns: 32px minmax(0,1fr) 16px; padding: 1rem; }
   .chapter-sequence { grid-template-columns: repeat(2,minmax(0,1fr)); }
@@ -2985,16 +2993,10 @@ body.site-system-workbench .site-page-shell-workbench::before {
 .home-entry-strip span { color: #6f8cff; font-family: var(--mono); font-size: .54rem; letter-spacing: .1em; text-transform: uppercase; }
 .home-entry-strip strong { color: #e4eef9; font-size: 1rem; font-weight: 520; }
 .home-entry-strip p { max-width: 390px; margin: 0; color: #869bb2; font-size: .68rem; line-height: 1.5; }
-.home-hardware-section { max-width: 1500px; margin-bottom: 52px; padding-top: 0; }
 .home-content-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; padding-bottom: .85rem; border-bottom: 1px solid rgba(145, 181, 222, .18); }
 .home-content-heading .home-kicker { margin-bottom: .25rem; }
 .home-content-heading h2 { margin: 0; color: #edf4fc; font-size: clamp(1.55rem, 2.4vw, 2.45rem); font-weight: 410; letter-spacing: -.03em; }
 .home-content-heading > a { min-height: 44px; display: inline-flex; align-items: center; color: #8ea8ff; font-size: .61rem; letter-spacing: .06em; text-align: right; text-decoration: none; text-transform: uppercase; }
-.home-hardware-section .vehicle-atlas { display: block; padding: .75rem; border: 1px solid rgba(145, 181, 222, .17); border-radius: 7px; background: rgba(4, 18, 33, .62); }
-.home-hardware-section .atlas-heading-row { display: none; }
-.home-hardware-section .atlas-visual { height: 610px; }
-.home-hardware-section .launch-vehicle-svg { top: 0; right: 13%; width: 86%; height: 600px; }
-.home-hardware-section .atlas-detail-stack { right: 1rem; bottom: 1rem; width: 300px; }
 .wheel-home .featured-library { max-width: 1500px; padding-bottom: 42px; }
 
 @media (max-width: 1180px) {
@@ -3022,11 +3024,6 @@ body.site-system-workbench .site-page-shell-workbench::before {
   .subject-detail-groups { grid-template-columns: minmax(0, 1.25fr) minmax(230px, .75fr); }
   .home-entry-strip { grid-template-columns: 1fr; }
   .home-entry-strip > a { min-height: 112px; }
-  .home-hardware-section .atlas-visual { height: auto; grid-template-rows: 470px auto; }
-  .home-hardware-section .launch-vehicle-svg { position: relative; top: auto; right: auto; width: 100%; height: 470px; }
-  .home-hardware-section .atlas-detail-stack { position: relative; right: auto; bottom: auto; width: 100%; min-height: 0; }
-  .home-hardware-section .atlas-region-key { display: flex; padding-top: .8rem; }
-  .home-hardware-section .atlas-callouts { display: none; }
 }
 
 @media (max-width: 720px) {
@@ -3049,12 +3046,8 @@ body.site-system-workbench .site-page-shell-workbench::before {
   .subject-demo-list { grid-template-columns: 1fr; }
   .subject-detail > footer { display: grid; }
   .home-entry-strip { margin-bottom: 40px; padding-inline: 15px; }
-  .home-hardware-section { padding-inline: 15px; }
   .home-content-heading { align-items: start; }
   .home-content-heading > a { max-width: 135px; }
-  .home-hardware-section .atlas-visual { grid-template-rows: 340px auto; }
-  .home-hardware-section .launch-vehicle-svg { position: absolute; left: 50%; width: 430px; height: 340px; transform: translateX(-50%); }
-  .home-hardware-section .atlas-detail-stack { margin-top: 340px; }
 }
 
 @media (max-width: 520px) {
@@ -3209,26 +3202,14 @@ body.site-system-subject #main-content {
 .subject-resource-list h3 { margin: 0 0 .32rem; color: #dfebf6; font-size: .78rem; font-weight: 540; line-height: 1.3; }
 .subject-resource-list p { margin: 0; color: #7f96ac; font-size: .59rem; line-height: 1.48; }
 .subject-resource-list > a > b { color: var(--subject-color); font-size: .8rem; }
-.subject-hardware-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
-.subject-hardware-grid > a { min-height: 330px; display: flex; flex-direction: column; padding: 1.25rem; color: #bfcedd; text-decoration: none; border: 1px solid rgba(145, 181, 222, .15); border-top: 3px solid var(--hardware-color); border-radius: 5px; background: linear-gradient(150deg, color-mix(in srgb, var(--hardware-color) 7%, rgba(10, 31, 52, .9)), rgba(6, 22, 39, .95)); }
-.subject-hardware-grid > a:hover { border-color: color-mix(in srgb, var(--hardware-color) 55%, rgba(145, 181, 222, .2)); transform: translateY(-2px); }
-.subject-hardware-grid > a > span { color: var(--hardware-color); font: 590 .52rem var(--mono); letter-spacing: .08em; text-transform: uppercase; }
-.subject-hardware-grid h3 { margin: 1.15rem 0 .55rem; color: #e4eef8; font-size: 1rem; font-weight: 510; }
-.subject-hardware-grid p { margin: 0 0 1rem; color: #8299af; font-size: .64rem; line-height: 1.56; }
-.subject-hardware-grid dl { display: grid; gap: .55rem; margin: 0; }
-.subject-hardware-grid dl div { padding-top: .5rem; border-top: 1px solid rgba(145, 181, 222, .12); }
-.subject-hardware-grid dt { color: #617a94; font-size: .48rem; letter-spacing: .07em; text-transform: uppercase; }
-.subject-hardware-grid dd { margin: .18rem 0 0; color: #b5c5d5; font-size: .58rem; line-height: 1.4; }
-.subject-hardware-grid > a > b { margin-top: auto; padding-top: 1rem; color: #9bb0c5; font-size: .56rem; font-weight: 590; letter-spacing: .05em; text-transform: uppercase; }
-.subject-hardware-grid > a > b i { color: var(--hardware-color); font-style: normal; }
-.subject-pathway-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
-.subject-pathway-grid > a { min-height: 190px; display: flex; flex-direction: column; padding: 1.1rem; color: #bdccda; text-decoration: none; border: 1px solid rgba(145, 181, 222, .15); background: rgba(9, 29, 49, .76); }
-.subject-pathway-grid > a:hover { border-color: var(--subject-page-line); background: color-mix(in srgb, var(--subject-color) 7%, rgba(9, 29, 49, .9)); }
-.subject-pathway-grid > a > span { color: var(--subject-color); font: 590 .51rem var(--mono); letter-spacing: .08em; text-transform: uppercase; }
-.subject-pathway-grid h3 { margin: .9rem 0 .45rem; color: #e0ebf6; font-size: .9rem; font-weight: 520; }
-.subject-pathway-grid p { margin: 0; color: #7d94aa; font-size: .62rem; line-height: 1.52; }
-.subject-pathway-grid small { margin-top: auto; padding-top: .8rem; color: #8098b0; font-size: .53rem; letter-spacing: .04em; text-transform: uppercase; }
-.subject-pathway-grid small b { color: var(--subject-color); }
+.subject-case-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
+.subject-case-grid > a { min-height: 270px; display: flex; flex-direction: column; padding: 1.2rem; color: #bdccdb; text-decoration: none; border: 1px solid rgba(145, 181, 222, .15); border-top: 2px solid var(--subject-color); border-radius: 5px; background: linear-gradient(150deg, color-mix(in srgb, var(--subject-color) 7%, rgba(10, 31, 52, .9)), rgba(6, 22, 39, .95)); }
+.subject-case-grid > a:hover { border-color: var(--subject-page-line); background: color-mix(in srgb, var(--subject-color) 10%, rgba(6, 22, 39, .96)); transform: translateY(-2px); }
+.subject-case-grid > a > span { color: var(--subject-color); font: 590 .51rem var(--mono); letter-spacing: .07em; text-transform: uppercase; }
+.subject-case-grid h3 { margin: 1.1rem 0 .55rem; color: #e3eef8; font-size: .95rem; font-weight: 520; line-height: 1.35; }
+.subject-case-grid p { margin: 0; color: #8198ae; font-size: .63rem; line-height: 1.55; }
+.subject-case-grid > a > b { margin-top: auto; padding-top: 1rem; color: #9cb1c5; font-size: .54rem; font-weight: 590; letter-spacing: .05em; text-transform: uppercase; }
+.subject-case-grid > a > b i { color: var(--subject-color); font-style: normal; }
 .subject-page-pagination { display: grid; grid-template-columns: 1fr auto 1fr; align-items: stretch; gap: 1px; margin-top: 64px; background: rgba(145, 181, 222, .18); }
 .subject-page-pagination > a { min-height: 100px; display: grid; align-content: center; gap: .25rem; padding: 1rem 1.2rem; color: #bdccdb; text-decoration: none; background: rgba(6, 22, 39, .98); }
 .subject-page-pagination > a:last-child { text-align: right; }
@@ -3267,15 +3248,14 @@ body.site-system-subject #main-content {
   .subject-page-content { gap: 48px; }
   .subject-intuition-grid,
   .subject-learning-grid,
-  .subject-hardware-grid,
-  .subject-pathway-grid { grid-template-columns: 1fr; }
+  .subject-case-grid { grid-template-columns: 1fr; }
   .subject-intuition-grid article { min-height: 0; }
   .subject-learning-card { min-height: 210px; }
   .subject-page-section > header { align-items: start; }
   .subject-page-section > header > p { text-align: left; }
   .subject-resource-list > a { grid-template-columns: 1fr 18px; }
   .subject-resource-list > a > span { grid-column: 1 / -1; }
-  .subject-hardware-grid > a { min-height: 300px; }
+  .subject-case-grid > a { min-height: 240px; }
   .subject-page-pagination { grid-template-columns: 1fr 1fr; }
   .subject-page-pagination .subject-page-wheel-link { grid-column: 1 / -1; grid-row: 1; min-height: 58px; }
 }
@@ -18139,18 +18119,20 @@ return {demoPreviewSvg,mountDemo,supportedDemoIds,spatialCoherence,jointAcceptan
 })();
 
 const __homepage=(()=>{
-// Data-driven subject navigation and generic launch-vehicle structural atlas.
+// Data-driven subject navigation for the Wheel of Acoustics.
 
 const homepageNavigation = [
   { id: 'subjects', label: 'Subjects', descriptor: 'Wheel of acoustics', href: '#/' },
-  { id: 'hardware', label: 'Hardware', descriptor: 'Structural atlas', href: '#/hardware' },
-  { id: 'workflows', label: 'Workflows', descriptor: 'Engineering paths', href: '#/pathways' }
+  { id: 'demos', label: 'Demos', descriptor: 'Interactive physics', href: '#/demos' },
+  { id: 'tools', label: 'Tools', descriptor: 'Models & workbenches', href: '#/tools' },
+  { id: 'cases', label: 'Case Studies', descriptor: 'Applied engineering', href: '#/case-studies' }
 ];
 
 function homepageNavKey(first = '') {
   if (first === 'tool' || first === 'tools') return 'tools';
-  if (first === 'hardware') return 'hardware';
-  if (first === 'pathway' || first === 'pathways' || first === 'workspace' || first === 'validation') return 'workflows';
+  if (first === 'demo' || first === 'demos') return 'demos';
+  if (first === 'case-study' || first === 'case-studies' || first === 'case-note' || first === 'case-notes') return 'cases';
+  if (first === 'hardware' || first === 'pathway' || first === 'pathways' || first === 'workspace' || first === 'validation' || first === 'references') return 'utilities';
   return 'subjects';
 }
 
@@ -18170,8 +18152,15 @@ const subjectWheel = [
     ],
     demoIds: ['multipole-source-lab', 'noise-control-path-lab', 'acoustic-treatment-lab', 'outdoor-propagation-lab'],
     toolIds: ['db', 'sound-power', 'acoustic-field', 'noise-control-path', 'acoustic-treatment', 'acoustic-measurement-planner'],
-    hardwareIds: ['fairing', 'feed-system', 'propulsion'],
-    pathwayIds: ['noise-control', 'new-analyst']
+    caseStudyIds: [
+      'acs519-khie-deep-dive', 'program-acoustic-treatments', 'program-noise-control-workflow',
+      'program-psychoacoustics-binaural-hearing', 'program-noise-metrics-receiver-criteria',
+      'program-acoustic-measurement-practice', 'program-canonical-acoustic-sources',
+      'program-fans-duct-flow-noise', 'program-outdoor-propagation-ground-barriers',
+      'program-room-fields-installed-enclosures', 'indoor-barrier-direct-reverberant',
+      'purge-fan-duct-network', 'compressor-enclosure-weakest-link', 'microphone-placement-trap',
+      'pad-weather-ground-propagation'
+    ]
   },
   {
     id: 'dynamics',
@@ -18184,8 +18173,7 @@ const subjectWheel = [
     chapterIds: ['sdof', 'damping-isolation', 'modal-dynamics', 'loss-factors-deep-dive', 'nonlinear-dynamics-joints'],
     demoIds: ['sdof-motion', 'damping-transmissibility', 'two-mode', 'nonlinear-joint-behavior'],
     toolIds: ['sdof', 'damping', 'isolation', 'two-dof', 'modal-density', 'nonlinear-joint'],
-    hardwareIds: ['avionics', 'payload-deck', 'interstage'],
-    pathwayIds: ['new-analyst', 'structural-dynamicist']
+    caseStudyIds: ['accel-displacement', 'acs519-loss-factors-deep-dive', 'workflow-nonlinear-dynamics-joints', 'pump-line-tuned-absorber']
   },
   {
     id: 'structures-waves',
@@ -18202,8 +18190,12 @@ const subjectWheel = [
     ],
     demoIds: ['beam-wave', 'dispersion', 'ring', 'orthotropic-coincidence'],
     toolIds: ['beam', 'bending-wave', 'plate-modes', 'shell-acoustics', 'wave-matching-atlas', 'wet-tank-dynamics'],
-    hardwareIds: ['tank', 'interstage', 'fairing'],
-    pathwayIds: ['structural-dynamicist', 'new-analyst']
+    caseStudyIds: [
+      'bending-delay', 'ring-vs-critical', 'honeycomb-junctions-exp-sea',
+      'acs519-shell-acoustics-deep-dive', 'acs519-orthotropic-panels-deep-dive',
+      'acs519-pipe-flow-noise-deep-dive', 'acs519-wave-matching-deep-dive',
+      'acs519-wet-tank-dynamics-deep-dive', 'program-hybrid-method-handoffs'
+    ]
   },
   {
     id: 'random-vibration',
@@ -18216,8 +18208,7 @@ const subjectWheel = [
     chapterIds: ['random-psd', 'statistics-extremes', 'miles-equation', 'extreme-response-spectrum', 'nonstationary-nongaussian-environments'],
     demoIds: ['psd-response', 'miles-validity', 'extreme-response-spectrum', 'nonstationary-environment-lab'],
     toolIds: ['time-psd', 'psd-combination', 'grms', 'miles', 'vrs', 'extreme-response', 'nonstationary-environment'],
-    hardwareIds: ['avionics', 'payload-deck'],
-    pathwayIds: ['structural-dynamicist', 'test-engineer']
+    caseStudyIds: ['combine-psds', 'workflow-miles-equation', 'workflow-extreme-response-spectrum', 'program-nonstationary-nongaussian-environments', 'program-combined-environment-timeline']
   },
   {
     id: 'shock',
@@ -18230,8 +18221,7 @@ const subjectWheel = [
     chapterIds: ['shock-fatigue'],
     demoIds: ['srs-bank', 'stress-environment-map', 'qualification-notching'],
     toolIds: ['shock-pulse', 'srs', 'pyroshock', 'dynamic-stress-environment', 'qualification-test-planner'],
-    hardwareIds: ['avionics', 'payload-deck', 'propulsion'],
-    pathwayIds: ['structural-dynamicist', 'test-engineer']
+    caseStudyIds: ['acs519-qualification-testing-deep-dive', 'program-multiaxis-mimo-testing', 'program-combined-environment-timeline']
   },
   {
     id: 'fatigue',
@@ -18244,8 +18234,7 @@ const subjectWheel = [
     chapterIds: ['vibroacoustic-fatigue'],
     demoIds: ['vibroacoustic-fatigue-lab', 'stress-environment-map', 'mission-environment-timeline'],
     toolIds: ['vibroacoustic-fatigue', 'fds', 'duration-scaling', 'dynamic-stress-environment', 'mission-environment-timeline'],
-    hardwareIds: ['avionics', 'payload-deck', 'fairing'],
-    pathwayIds: ['structural-dynamicist', 'test-engineer']
+    caseStudyIds: ['program-vibroacoustic-fatigue', 'workflow-mitigation-trade-studies', 'program-nonstationary-nongaussian-environments', 'workflow-extreme-response-spectrum']
   },
   {
     id: 'structural-acoustics',
@@ -18262,8 +18251,12 @@ const subjectWheel = [
     ],
     demoIds: ['coincidence', 'radiation-efficiency', 'modal-radiation-patterns', 'force-to-sound-power'],
     toolIds: ['critical-frequency', 'radiation-efficiency', 'modal-radiation', 'elastic-panel-tl', 'driven-radiation', 'panel-cavity'],
-    hardwareIds: ['fairing', 'tank', 'feed-system'],
-    pathwayIds: ['new-analyst', 'launch-integrator']
+    caseStudyIds: [
+      'acs519-modal-radiation-deep-dive', 'acs519-piston-fluid-loading-deep-dive',
+      'acs519-computational-vibroacoustics-deep-dive', 'acs519-elastic-panel-tl-deep-dive',
+      'acs519-driven-radiation-deep-dive', 'workflow-transfer-path-analysis',
+      'workflow-payload-fairing-cavities', 'program-launch-vibroacoustic-capstone'
+    ]
   },
   {
     id: 'distributed-loads',
@@ -18276,8 +18269,7 @@ const subjectWheel = [
     chapterIds: ['distributed-loads', 'launch-acoustic-sources-deep-dive', 'combined-environment-timeline'],
     demoIds: ['spatial-field', 'joint-acceptance', 'launch-source-map', 'tbl-convection-velocity-map'],
     toolIds: ['spatial-correlation', 'tbl-convection-model', 'fsp-generator', 'launch-acoustic-source', 'equivalent-power-injection', 'vibroacoustic-scaling'],
-    hardwareIds: ['propulsion', 'fairing', 'tank'],
-    pathwayIds: ['launch-integrator', 'structural-dynamicist']
+    caseStudyIds: ['spatial-correlation-loads', 'liftoff-ascent-forcing', 'acs519-launch-acoustic-sources-deep-dive', 'program-source-identification-arrays', 'sea-parameters-equivalent-sea-source-power']
   },
   {
     id: 'sea',
@@ -18294,8 +18286,14 @@ const subjectWheel = [
     ],
     demoIds: ['sea-flow', 'sea-validity-map', 'branching-sea-network', 'sea-parameter-chain'],
     toolIds: ['two-subsystem-sea', 'multi-subsystem-sea', 'modal-density-atlas', 'sea-validity-confidence', 'sea-parameter-workbench', 'launch-vibroacoustic-capstone'],
-    hardwareIds: ['fairing', 'tank', 'interstage'],
-    pathwayIds: ['sea-analyst', 'launch-integrator']
+    caseStudyIds: [
+      'sea-readiness', 'honeycomb-junctions-exp-sea', 'clf-not-a-percentage',
+      'acs519-sea-validity-deep-dive', 'acs519-double-panel-sea-deep-dive',
+      'workflow-general-sea-networks', 'sea-parameters-sea-parameter-provenance',
+      'sea-parameters-modal-density-wave-regime-atlas', 'sea-parameters-sea-mobility-radiation-coupling',
+      'sea-parameters-equivalent-sea-source-power', 'sea-parameters-sea-response-recovery-concentration',
+      'sea-parameters-installed-fairing-sea-parameters'
+    ]
   },
   {
     id: 'measurement-test',
@@ -18312,47 +18310,14 @@ const subjectWheel = [
     ],
     demoIds: ['modal-test-grid', 'intensity-probe-lab', 'model-test-correlation-lab', 'credibility-scorecard-lab'],
     toolIds: ['time-psd', 'accelerometer', 'modal-test-planner', 'sound-intensity-probe', 'model-test-correlation', 'qualification-test-planner', 'credibility-scorecard'],
-    hardwareIds: ['payload-deck', 'avionics', 'fairing'],
-    pathwayIds: ['test-engineer', 'launch-integrator']
-  }
-];
-
-const atlasSections = [
-  {
-    id: 'engine', title: 'Engine section', shortTitle: 'Engine', descriptor: 'Propulsion region',
-    summary: 'Broadband turbomachinery forcing, mount loads, plume acoustics, and high-frequency shock enter the vehicle here.',
-    subjects: ['Turbomachinery forcing', 'Pyroshock', 'Mount loads'], href: '#/hardware/propulsion', accent: '#ff9b7a',
-    hotspot: 'M95 790 390 650 585 665 525 955 165 1010 95 940Z', callout: { x: 41, y: 80, align: 'right', line: 235 }
-  },
-  {
-    id: 'lower-tank', title: 'Lower tank barrel', shortTitle: 'Lower tank', descriptor: 'Wet shell structure',
-    summary: 'Shell modes, propellant added mass, slosh, axial load, and distributed pressure couple through the lower barrel.',
-    subjects: ['Wet-wall modes', 'Slosh coupling', 'Axial response'], href: '#/hardware/tank', accent: '#55b8ff',
-    hotspot: 'M390 555 745 390 925 505 600 800 445 830Z', callout: { x: 20, y: 57, align: 'left', line: 0 }
-  },
-  {
-    id: 'intertank', title: 'Intertank', shortTitle: 'Intertank', descriptor: 'Transition structure',
-    summary: 'A stiffness and impedance transition where shell waves, joints, concentrated load paths, and cavity fields exchange energy.',
-    subjects: ['Shell vibration', 'Acoustic coupling', 'Joint transmission'], href: '#/hardware/interstage', accent: '#58d59b',
-    hotspot: 'M740 390 905 315 1018 455 885 585 760 535Z', callout: { x: 22, y: 40, align: 'left', line: 55 }
-  },
-  {
-    id: 'upper-tank', title: 'Upper tank barrel', shortTitle: 'Upper tank', descriptor: 'Cylindrical shell',
-    summary: 'Curvature creates ring and lobar modes while bending-wave speed and coincidence govern structural-acoustic transfer.',
-    subjects: ['Bending waves', 'Ring frequency', 'Acoustic radiation'], href: '#/hardware/tank', accent: '#9478ff',
-    hotspot: 'M900 255 1115 165 1260 315 1030 475 930 415Z', callout: { x: 30, y: 25, align: 'left', line: 105 }
-  },
-  {
-    id: 'forward-skirt', title: 'Forward skirt', shortTitle: 'Forward skirt', descriptor: 'Upper structure',
-    summary: 'Local modes, joints, avionics attachments, and shock paths bridge the tank stack to the payload region.',
-    subjects: ['Structural modes', 'Shock transmission', 'Joint behavior'], href: '#/hardware/avionics', accent: '#f2c663',
-    hotspot: 'M1085 160 1265 95 1360 255 1215 355 1115 305Z', callout: { x: 42, y: 8, align: 'left', line: 85 }
-  },
-  {
-    id: 'fairing', title: 'Payload fairing', shortTitle: 'Fairing', descriptor: 'Payload region',
-    summary: 'The external acoustic field drives the fairing shell, cavity modes, blankets, equipment, and payload interface through parallel paths.',
-    subjects: ['Acoustic environment', 'Panel response', 'Cavity coupling'], href: '#/hardware/fairing', accent: '#6f8cff',
-    hotspot: 'M1050 170 1175 55 1450 15 1485 55 1370 205 1240 305 1110 345 1185 245Z', callout: { x: 83, y: 9, align: 'right', line: 108 }
+    caseStudyIds: [
+      'acs519-modal-testing-deep-dive', 'acs519-intensity-testing-deep-dive',
+      'acs519-qualification-testing-deep-dive', 'workflow-model-test-correlation',
+      'workflow-requirements-margin-flowdown', 'workflow-uncertainty-sensitivity',
+      'program-multiaxis-mimo-testing', 'program-source-identification-arrays',
+      'program-verification-validation-evidence', 'program-acoustic-measurement-practice',
+      'microphone-placement-trap'
+    ]
   }
 ];
 
@@ -18366,8 +18331,6 @@ const featuredItems = [
 ];
 
 const defaultSubjectId = 'structural-acoustics';
-const defaultAtlasSectionId = 'fairing';
-const launchVehicleAsset = './assets/homepage/launch-vehicle-cutaway.png';
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -18439,35 +18402,6 @@ function renderSubjectWheel(sectionMap, demoMap) {
   </div>`;
 }
 
-function segmentMarkup(section) {
-  const common = `class="atlas-region atlas-region-${section.id}" data-atlas-section="${section.id}" href="${section.href}" tabindex="0" aria-label="${esc(section.title)}. ${esc(section.summary)}" style="--region-accent:${section.accent}"`;
-  return `<a ${common}><path class="atlas-hit-region" d="${section.hotspot}" vector-effect="non-scaling-stroke"/></a>`;
-}
-
-function launchVehicleSvg() {
-  return `<svg class="launch-vehicle-svg" viewBox="0 0 1536 1024" preserveAspectRatio="none" role="img" aria-labelledby="atlas-svg-title atlas-svg-description">
-    <title id="atlas-svg-title">Interactive generic launch-vehicle structural atlas</title>
-    <desc id="atlas-svg-description">A sectioned launch vehicle shown diagonally with interactive engine, lower tank, intertank, upper tank, forward skirt, and payload fairing regions.</desc>
-    <defs><radialGradient id="atlas-plume" cx="1" cy=".5" r="1"><stop stop-color="#fff" stop-opacity=".82"/><stop offset=".16" stop-color="#f2c663" stop-opacity=".72"/><stop offset=".48" stop-color="#9478ff" stop-opacity=".32"/><stop offset="1" stop-color="#55b8ff" stop-opacity="0"/></radialGradient><radialGradient id="atlas-plume-core" cx="1" cy=".5" r="1"><stop stop-color="#fff"/><stop offset=".24" stop-color="#fff0c7" stop-opacity=".92"/><stop offset=".55" stop-color="#f2c663" stop-opacity=".48"/><stop offset="1" stop-color="#9478ff" stop-opacity="0"/></radialGradient><filter id="atlas-glow"><feGaussianBlur stdDeviation="8"/></filter></defs>
-    <g class="atlas-orbit-lines" aria-hidden="true"><path d="M90 935C420 670 860 300 1450 65"/><path d="M35 980C470 790 880 330 1510 115"/><path d="M170 1010C530 845 980 425 1500 225"/></g>
-    <g class="atlas-plume" aria-hidden="true"><ellipse cx="42" cy="930" rx="185" ry="82" fill="url(#atlas-plume)" filter="url(#atlas-glow)"/><path d="M155 860C95 872 22 899-85 952 34 974 102 967 180 930Z" fill="url(#atlas-plume)"/><ellipse class="atlas-plume-core" cx="86" cy="922" rx="118" ry="38" fill="url(#atlas-plume-core)"/><path class="atlas-plume-core" d="M180 878C118 886 52 907-24 946c83 7 145-2 216-32Z" fill="url(#atlas-plume-core)"/></g>
-    <image class="atlas-generated-vehicle" href="${launchVehicleAsset}" x="0" y="0" width="1536" height="1024" preserveAspectRatio="none"/>
-    <g class="atlas-hotspots">${atlasSections.map(segmentMarkup).join('')}</g>
-  </svg>`;
-}
-
-function renderAtlasDetails() {
-  return atlasSections.map(section => `<article class="atlas-detail" data-atlas-detail="${section.id}" ${section.id === defaultAtlasSectionId ? '' : 'hidden'}><p class="atlas-detail-kicker">Structural atlas · ${esc(section.descriptor)}</p><h3>${esc(section.title)}</h3><p>${esc(section.summary)}</p><ul>${section.subjects.map(subject => `<li>${esc(subject)}</li>`).join('')}</ul><a href="${section.href}">Open related physics <span aria-hidden="true">→</span></a></article>`).join('');
-}
-
-function renderAtlasMiniature() {
-  return `<svg class="atlas-detail-silhouette" viewBox="0 0 52 184" aria-hidden="true"><path d="M26 4c-8 12-12 29-12 48v36l-5 14v54h34v-54l-5-14V52C38 33 34 16 26 4Z"/><path d="M14 52h24M14 72h24M14 88h24M9 112h34M9 132h34M9 150h34M16 102v54m10-68v68m10-54v54M14 52l24 20M38 52 14 72M14 72l24 16M38 72 14 88"/><path d="m14 156-7 20h12l7-20 7 20h12l-7-20"/></svg>`;
-}
-
-function renderAtlas() {
-  return `<section class="vehicle-atlas" id="vehicle-atlas" data-launch-atlas data-selected="${defaultAtlasSectionId}" aria-labelledby="atlas-heading"><div class="atlas-heading-row"><div><p class="home-kicker">Interactive structural atlas</p><h2 id="atlas-heading">Follow energy through the vehicle.</h2></div><p>Hover, focus, or tap a region.</p></div><div class="atlas-visual">${launchVehicleSvg()}<div class="atlas-callouts" aria-label="Launch vehicle regions">${atlasSections.map(section => `<a class="atlas-callout atlas-callout-${section.id} atlas-callout-${section.callout.align}" data-atlas-section="${section.id}" href="${section.href}" style="--callout-x:${section.callout.x}%;--callout-y:${section.callout.y}%;--line-width:${section.callout.line}px;--region-accent:${section.accent}"><strong>${esc(section.title)}</strong><span>${esc(section.subjects.join(' · '))}</span></a>`).join('')}</div><div class="atlas-detail-stack" aria-live="polite">${renderAtlasDetails()}${renderAtlasMiniature()}</div></div><div class="atlas-region-key" aria-label="Select vehicle region">${atlasSections.map(section => `<button type="button" data-atlas-section="${section.id}" class="${section.id === defaultAtlasSectionId ? 'is-active' : ''}" style="--region-accent:${section.accent}">${esc(section.shortTitle)}</button>`).join('')}</div></section>`;
-}
-
 function renderFeaturedItems() {
   return `<section class="home-section featured-library" aria-labelledby="featured-library-title"><div class="featured-heading"><h2 id="featured-library-title">Featured demos & tools</h2><a href="#/demos">View the full interactive library <span aria-hidden="true">→</span></a></div><div class="featured-strip">${featuredItems.map(item => `<a class="featured-item" href="${item.href}"><div><h3>${esc(item.title)}</h3><p>${esc(item.purpose)}</p></div><div class="featured-visual">${featuredMotif(item.motif)}</div></a>`).join('')}</div></section>`;
 }
@@ -18500,18 +18434,15 @@ function renderSubjectPage(subjectId, stats = {}) {
   const sections = Array.isArray(stats.sections) ? stats.sections : [];
   const demos = Array.isArray(stats.demos) ? stats.demos : [];
   const tools = Array.isArray(stats.tools) ? stats.tools : [];
-  const hardware = Array.isArray(stats.hardware) ? stats.hardware : [];
-  const pathways = Array.isArray(stats.pathways) ? stats.pathways : [];
+  const caseStudies = Array.isArray(stats.caseStudies) ? stats.caseStudies : [];
   const sectionMap = new Map(sections.map(section => [section.id, section]));
   const demoMap = new Map(demos.map(demo => [demo.id, demo]));
   const toolMap = new Map(tools.map(tool => [tool.id, tool]));
-  const hardwareMap = new Map(hardware.map(topic => [topic.id, topic]));
-  const pathwayMap = new Map(pathways.map(pathway => [pathway.id, pathway]));
+  const caseStudyMap = new Map(caseStudies.map(study => [study.id, study]));
   const chapters = resolveMappedItems(subject.chapterIds, sectionMap);
   const subjectDemos = resolveMappedItems(subject.demoIds, demoMap);
   const subjectToolset = subjectTools(subject, chapters, subjectDemos, toolMap);
-  const subjectHardware = resolveMappedItems(subject.hardwareIds, hardwareMap);
-  const subjectPathways = resolveMappedItems(subject.pathwayIds, pathwayMap);
+  const subjectCaseStudies = resolveMappedItems(subject.caseStudyIds, caseStudyMap);
   const subjectIndex = subjectWheel.indexOf(subject);
   const previous = subjectWheel[(subjectIndex - 1 + subjectWheel.length) % subjectWheel.length];
   const next = subjectWheel[(subjectIndex + 1) % subjectWheel.length];
@@ -18523,16 +18454,15 @@ function renderSubjectPage(subjectId, stats = {}) {
       <div class="subject-page-hero-copy"><p class="home-kicker">Subject ${String(subjectIndex + 1).padStart(2, '0')} · Wheel of Acoustics</p><h1>${esc(subject.label)}</h1><p class="subject-page-question">${esc(subject.question)}</p><p class="subject-page-summary">${esc(subject.summary)}</p><div class="subject-page-actions">${firstChapter ? `<a class="home-primary-action" href="#/cheat-sheet?section=${encodeURIComponent(firstChapter.id)}">Start learning <span aria-hidden="true">→</span></a>` : ''}${firstDemo ? `<a class="home-search-action" href="#/demo/${encodeURIComponent(firstDemo.id)}">Open the first lab</a>` : ''}</div></div>
       <aside class="subject-page-signal" aria-label="Subject contents"><span class="subject-page-symbol">${esc(subject.symbol)}</span><div><strong>${chapters.length}</strong><span>chapters</span></div><div><strong>${subjectDemos.length}</strong><span>interactive labs</span></div><div><strong>${subjectToolset.length}</strong><span>selected tools</span></div></aside>
     </header>
-    <nav class="subject-page-local" aria-label="On this subject page"><a href="#subject-learning">Learning route</a><a href="#subject-labs">Interactive labs</a><a href="#subject-tools">Engineering tools</a><a href="#subject-hardware">Hardware context</a></nav>
+    <nav class="subject-page-local" aria-label="On this subject page"><a href="#subject-learning">Learning route</a><a href="#subject-labs">Interactive demos</a><a href="#subject-tools">Engineering tools</a><a href="#subject-cases">Case studies</a></nav>
     <div class="subject-page-content">
-      <section class="subject-page-intuition" aria-labelledby="subject-intuition-title"><div><p class="subject-section-index">01 · Physical intuition</p><h2 id="subject-intuition-title">Begin with the engineering question.</h2></div><div class="subject-intuition-grid"><article><span>Observe</span><h3>${esc(subject.question)}</h3><p>Identify the physical quantities, frequency range, boundary conditions, and energy paths before choosing a model.</p></article><article><span>Model</span><h3>Move from mechanism to response.</h3><p>Use the ordered chapters to connect governing behavior, assumptions, screening equations, and higher-fidelity methods.</p></article><article><span>Verify</span><h3>Challenge the result with evidence.</h3><p>Use the labs, tools, hardware applications, and test context to expose limits before making a design decision.</p></article></div></section>
+      <section class="subject-page-intuition" aria-labelledby="subject-intuition-title"><div><p class="subject-section-index">01 · Physical intuition</p><h2 id="subject-intuition-title">Begin with the engineering question.</h2></div><div class="subject-intuition-grid"><article><span>Observe</span><h3>${esc(subject.question)}</h3><p>Identify the physical quantities, frequency range, boundary conditions, and energy paths before choosing a model.</p></article><article><span>Model</span><h3>Move from mechanism to response.</h3><p>Use the ordered chapters to connect governing behavior, assumptions, screening equations, and higher-fidelity methods.</p></article><article><span>Verify</span><h3>Challenge the result with evidence.</h3><p>Use the demos, tools, and applied case studies to expose model limits before making a design decision.</p></article></div></section>
       <section class="subject-page-section" id="subject-learning" aria-labelledby="subject-learning-title"><header><div><p class="subject-section-index">02 · Learning route</p><h2 id="subject-learning-title">Follow the subject from foundation to application.</h2></div><p>${chapters.length} curated chapters, ordered to preserve the physical story.</p></header><div class="subject-learning-grid">${chapters.map((chapter, index) => `<a href="#/cheat-sheet?section=${encodeURIComponent(chapter.id)}" class="subject-learning-card"><span class="subject-card-step">${String(index + 1).padStart(2, '0')} · ${subjectLearningStage(index, chapters.length)}</span><p>${esc(chapter.eyebrow)}</p><h3>${esc(chapter.title)}</h3><small>${esc(chapter.summary)}</small><footer><span>${chapter.concepts?.length || 0} concepts</span><b aria-hidden="true">→</b></footer></a>`).join('')}</div></section>
       <section class="subject-page-pair">
         <section class="subject-page-section" id="subject-labs" aria-labelledby="subject-labs-title"><header><div><p class="subject-section-index">03 · Interactive behavior</p><h2 id="subject-labs-title">See the physics move.</h2></div><a href="#/demos">All labs →</a></header><div class="subject-resource-list">${subjectDemos.map(demo => `<a href="#/demo/${encodeURIComponent(demo.id)}"><span>Interactive lab</span><div><h3>${esc(demo.title)}</h3><p>${esc(demo.description)}</p></div><b aria-hidden="true">↗</b></a>`).join('')}</div></section>
         <section class="subject-page-section" id="subject-tools" aria-labelledby="subject-tools-title"><header><div><p class="subject-section-index">04 · Engineering models</p><h2 id="subject-tools-title">Calculate and interpret.</h2></div><a href="#/tools">All tools →</a></header><div class="subject-resource-list subject-tool-list">${subjectToolset.map(tool => `<a href="#/tool/${encodeURIComponent(tool.id)}"><span>${esc(tool.complexity || 'Engineering tool')} · ${esc(tool.category)}</span><div><h3>${esc(tool.title)}</h3><p>${esc(tool.description)}</p></div><b aria-hidden="true">↗</b></a>`).join('')}</div></section>
       </section>
-      <section class="subject-page-section subject-hardware-section" id="subject-hardware" aria-labelledby="subject-hardware-title"><header><div><p class="subject-section-index">05 · Hardware application</p><h2 id="subject-hardware-title">Put the subject on real structure.</h2></div><a href="#/hardware">Complete hardware atlas →</a></header><div class="subject-hardware-grid">${subjectHardware.map(topic => `<a href="#/hardware/${encodeURIComponent(topic.id)}" style="--hardware-color:${topic.accent || subject.accent}"><span>${esc(topic.eyebrow)}</span><h3>${esc(topic.title)}</h3><p>${esc(topic.summary)}</p><dl><div><dt>Typical source</dt><dd>${esc(topic.sources?.[0] || 'Configuration dependent')}</dd></div><div><dt>Response evidence</dt><dd>${esc(topic.responses?.[0] || 'Model and test dependent')}</dd></div></dl><b>Open hardware guide <i aria-hidden="true">→</i></b></a>`).join('')}</div></section>
-      ${subjectPathways.length ? `<section class="subject-page-section subject-pathways-section" aria-labelledby="subject-pathways-title"><header><div><p class="subject-section-index">06 · Guided workflows</p><h2 id="subject-pathways-title">Continue through an analyst pathway.</h2></div><a href="#/pathways">All workflows →</a></header><div class="subject-pathway-grid">${subjectPathways.map(pathway => `<a href="#/pathway/${encodeURIComponent(pathway.id)}"><span>${esc(pathway.role)}</span><h3>${esc(pathway.title)}</h3><p>${esc(pathway.summary)}</p><small>${pathway.steps?.length || 0} guided steps <b aria-hidden="true">→</b></small></a>`).join('')}</div></section>` : ''}
+      <section class="subject-page-section subject-cases-section" id="subject-cases" aria-labelledby="subject-cases-title"><header><div><p class="subject-section-index">05 · Applied engineering</p><h2 id="subject-cases-title">See where judgment changes the answer.</h2></div><a href="#/case-studies?subject=${encodeURIComponent(subject.id)}">All ${esc(subject.shortLabel)} cases →</a></header><div class="subject-case-grid">${subjectCaseStudies.slice(0, 6).map(study => `<a href="#/case-study/${encodeURIComponent(study.id)}"><span>Case ${esc(study.number)} · ${esc(study.readTime)} read</span><h3>${esc(study.title)}</h3><p>${esc(study.summary)}</p><b>Read case study <i aria-hidden="true">→</i></b></a>`).join('')}</div></section>
     </div>
     <nav class="subject-page-pagination" aria-label="Adjacent subjects"><a href="#/subject/${encodeURIComponent(previous.id)}"><small>Previous subject</small><strong>${esc(previous.label)}</strong></a><a class="subject-page-wheel-link" href="#/">Back to wheel</a><a href="#/subject/${encodeURIComponent(next.id)}"><small>Next subject</small><strong>${esc(next.label)}</strong></a></nav>
   </div>`;
@@ -18542,20 +18472,21 @@ function renderHomepage(stats = {}) {
   const sections = Array.isArray(stats.sections) ? stats.sections : [];
   const tools = Array.isArray(stats.tools) ? stats.tools : [];
   const demos = Array.isArray(stats.demos) ? stats.demos : [];
+  const caseStudies = Array.isArray(stats.caseStudies) ? stats.caseStudies : [];
   const sectionMap = new Map(sections.map(section => [section.id, section]));
   const demoMap = new Map(demos.map(demo => [demo.id, demo]));
   const counts = [
     `${stats.chapters ?? (sections.length || '60+')} chapters`,
     `${Array.isArray(stats.tools) ? tools.length : stats.tools ?? '100+'} tools`,
-    `${Array.isArray(stats.demos) ? demos.length : stats.demos ?? '70+'} demos`
+    `${Array.isArray(stats.demos) ? demos.length : stats.demos ?? '70+'} demos`,
+    `${Array.isArray(stats.caseStudies) ? caseStudies.length : stats.caseStudies ?? '60+'} case studies`
   ];
   return `<div class="atlas-home wheel-home">
     <section class="subject-home-hero" id="subjects" aria-labelledby="homepage-title">
-      <header class="subject-home-copy"><p class="home-kicker">Structural acoustics · subject-first navigation</p><h1 id="homepage-title">Navigate the wheel of acoustics.</h1><p class="home-lede">Choose the physical subject first. Then move directly into its chapters, interactive behavior, hardware applications, or engineering tools.</p><div class="home-actions"><button type="button" class="home-primary-action" data-action="search">Search the knowledge base <span aria-hidden="true">⌘K</span></button><a class="home-search-action" href="#/cheat-sheet">Browse every chapter</a></div><p class="home-counts">${counts.map(count => `<span>${esc(count)}</span>`).join('')}</p></header>
+      <header class="subject-home-copy"><p class="home-kicker">Structural acoustics · subject-first navigation</p><h1 id="homepage-title">Navigate the wheel of acoustics.</h1><p class="home-lede">Choose the physical subject first. Then learn the concepts, explore interactive demos, use engineering tools, and read applied case studies.</p><div class="home-actions"><button type="button" class="home-primary-action" data-action="search">Search the knowledge base <span aria-hidden="true">⌘K</span></button><a class="home-search-action" href="#/cheat-sheet">Browse every chapter</a></div><p class="home-counts">${counts.map(count => `<span>${esc(count)}</span>`).join('')}</p></header>
       ${renderSubjectWheel(sectionMap, demoMap)}
     </section>
-    <section class="home-entry-strip" aria-label="Other ways to navigate"><a href="#/hardware"><span>Apply it</span><strong>Browse by hardware</strong><p>Trace sources, paths, responses, measurements, and models through the launch vehicle.</p></a><a href="#/pathways"><span>Do the work</span><strong>Follow a workflow</strong><p>Move through analysis, test, verification, and handoff decisions in sequence.</p></a><a href="#/case-notes"><span>Use judgment</span><strong>Read applied case notes</strong><p>See where assumptions, shortcuts, and model boundaries change the conclusion.</p></a></section>
-    <section class="home-section home-hardware-section" aria-labelledby="home-hardware-title"><div class="home-content-heading"><div><p class="home-kicker">Hardware application</p><h2 id="home-hardware-title">Then follow the energy through the vehicle.</h2></div><a href="#/hardware">Open the complete hardware atlas <span aria-hidden="true">→</span></a></div>${renderAtlas()}</section>
+    <section class="home-entry-strip" aria-label="Explore the library"><a href="#/demos"><span>Explore</span><strong>Interactive demos</strong><p>Form a hypothesis, move the variables, and see the controlling physics respond.</p></a><a href="#/tools"><span>Calculate</span><strong>Engineering tools</strong><p>Use quick screens and guided workbenches organized by the same subject taxonomy.</p></a><a href="#/case-studies"><span>Apply judgment</span><strong>Case studies & articles</strong><p>See where assumptions, shortcuts, measurements, and model boundaries change the conclusion.</p></a></section>
     ${renderFeaturedItems()}
   </div>`;
 }
@@ -18598,29 +18529,10 @@ function bindHomepage(root = document) {
     selectSubject(explorer.dataset.selected || defaultSubjectId);
   }
 
-  const atlas = root.querySelector('[data-launch-atlas]');
-  if (atlas) {
-    const targets = [...atlas.querySelectorAll('[data-atlas-section]')];
-    const details = [...atlas.querySelectorAll('[data-atlas-detail]')];
-    const selectAtlas = id => {
-      if (!atlasSections.some(section => section.id === id)) return;
-      atlas.dataset.selected = id;
-      targets.forEach(target => target.classList.toggle('is-active', target.dataset.atlasSection === id));
-      details.forEach(detail => { detail.hidden = detail.dataset.atlasDetail !== id; });
-    };
-    targets.forEach(target => {
-      const activate = () => selectAtlas(target.dataset.atlasSection);
-      target.addEventListener('pointerenter', activate);
-      target.addEventListener('focus', activate);
-      controllers.push(() => { target.removeEventListener('pointerenter', activate); target.removeEventListener('focus', activate); });
-      if (target.tagName === 'BUTTON') { target.addEventListener('click', activate); controllers.push(() => target.removeEventListener('click', activate)); }
-    });
-    selectAtlas(atlas.dataset.selected || defaultAtlasSectionId);
-  }
   return () => controllers.forEach(cleanup => cleanup());
 }
 
-return {homepageNavigation,homepageNavKey,subjectWheel,atlasSections,featuredItems,renderHomepage,renderSubjectPage,bindHomepage};
+return {homepageNavigation,homepageNavKey,subjectWheel,featuredItems,renderHomepage,renderSubjectPage,bindHomepage};
 })();
 
 const __siteComponents=(()=>{
@@ -18860,7 +18772,7 @@ const learningPathways = Object.freeze([
     pathStep('Model–test validation lab', 'Workbench', '#/tool/model-test-correlation', 'Document correlation and residual evidence.')
   ] },
   { id: 'launch-integrator', title: 'Launch-vehicle integrator', role: 'Program-level vibroacoustics', summary: 'Follow mission events from propulsion and aerodynamics to vehicle, payload, test, and credibility decisions.', steps: [
-    pathStep('Launch hardware atlas', 'Atlas', '#/hardware', 'Identify physical sources, paths, and receivers by region.'),
+    pathStep('Launch-vehicle subjects', 'Subject hub', '#/subject/distributed-loads', 'Connect physical sources, paths, and receivers through the subject-first curriculum.'),
     pathStep('Launch excitation workbench', 'Workbench', '#/tool/launch-acoustic-source', 'Define distributed forcing and accepted power.'),
     pathStep('Launch SEA capstone', 'Capstone', '#/tool/launch-vibroacoustic-capstone', 'Solve subsystem energy, coupling, and response.'),
     pathStep('Mission environment center', 'Workbench', '#/tool/mission-environment-timeline', 'Map event controllers and evidence maturity.'),
@@ -19920,6 +19832,15 @@ const demos = [...baseDemos, ...acs519Demos, ...workflowExpansionDemos, ...progr
 const caseNotes = [...baseCaseNotes, ...acs519CaseNotes, ...workflowExpansionCaseNotes, ...programExpansionCaseNotes, ...seaParameterCaseNotes];
 const referenceGroups = [...baseReferenceGroups, ...acs519ReferenceGroups, ...workflowExpansionReferenceGroups, ...programExpansionReferenceGroups, ...seaParameterReferenceGroups];
 const toolById = new Map(toolCatalog.map(t => [t.id, t]));
+const sectionById = new Map(sections.map(section => [section.id, section]));
+const demoById = new Map(demos.map(demo => [demo.id, demo]));
+const generalToolSubject = { id: 'general', label: 'General Utilities', shortLabel: 'Utilities', accent: '#8fa8c2' };
+const toolSubjects = [...subjectWheel, generalToolSubject];
+const subjectToolSets = new Map(subjectWheel.map(subject => [subject.id, new Set([
+  ...(subject.toolIds || []),
+  ...subject.chapterIds.flatMap(id => (sectionById.get(id)?.concepts || []).map(concept => concept.toolId).filter(Boolean)),
+  ...subject.demoIds.map(id => demoById.get(id)?.toolId).filter(Boolean)
+])]));
 const DESIGN_PROOF_CHAPTER_ID = 'shell-acoustics-deep-dive';
 const DESIGN_PROOF_TOOL_ID = 'critical-frequency';
 const LAUNCH_SEA_CAPSTONE_ID = 'launch-vibroacoustic-capstone';
@@ -19927,12 +19848,6 @@ const workbenchRegistry = {
   [LAUNCH_SEA_CAPSTONE_ID]: { render: () => renderLaunchSeaCapstone(), bind: root => bindLaunchSeaCapstone(root) },
   ...engineeringWorkbenchRegistry
 };
-const chapterHardwareLinks = [
-  { title: 'Payload fairing', description: 'Cavity and panel coupling', href: '#/hardware/fairing' },
-  { title: 'Wet tank barrels', description: 'Fluid-loaded shell dynamics', href: '#/hardware/tank' },
-  { title: 'Interstage transitions', description: 'Impedance and wave matching', href: '#/hardware/interstage' },
-  { title: 'Launch source region', description: 'Forcing entering the stack', href: '#/hardware/propulsion' }
-];
 const chapterRelatedLinks = [
   { title: 'Shell mode families', description: 'Interactive circumferential-order map', href: '#/demo/shell-wave-map' },
   { title: 'Cylindrical shell acoustics', description: 'Paired engineering calculator', href: '#/tool/shell-acoustics' },
@@ -19951,6 +19866,29 @@ let activeSearchType = 'All';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const stripHtml = html => { const d=document.createElement('div'); d.innerHTML=html ?? ''; return d.textContent ?? ''; };
 const slug = value => String(value).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+function fallbackToolSubjectId(tool){
+  const text=`${tool.id} ${tool.title} ${tool.description} ${tool.category} ${(tool.keywords||[]).join(' ')}`.toLowerCase();
+  if(tool.category==='Random & Shock'){
+    if(/fatigue|damage|fds|duration/.test(text))return 'fatigue';
+    if(/shock|srs|pyro|pulse/.test(text))return 'shock';
+    return 'random-vibration';
+  }
+  return ({
+    Acoustics:'acoustics','Noise Control':'acoustics',Dynamics:'dynamics',Structures:'structures-waves','Waves & Structures':'structures-waves',
+    'Structural Acoustics':'structural-acoustics','Aero / Distributed Loads':'distributed-loads','SEA & Energy':'sea','Test & Signal':'measurement-test'
+  })[tool.category]||'general';
+}
+function toolSubjectIds(tool){
+  const direct=subjectWheel.filter(subject=>subjectToolSets.get(subject.id)?.has(tool.id)).map(subject=>subject.id);
+  return direct.length?direct:[fallbackToolSubjectId(tool)];
+}
+function primaryToolSubject(tool){return toolSubjects.find(subject=>subject.id===toolSubjectIds(tool)[0])||generalToolSubject;}
+function caseStudySubjects(study){return subjectWheel.filter(subject=>(subject.caseStudyIds||[]).includes(study.id));}
+function caseStudyLinksForSection(section){
+  const subject=subjectWheel.find(item=>item.chapterIds.includes(section.id));
+  if(!subject)return [];
+  return caseNotes.filter(study=>subject.caseStudyIds.includes(study.id)).slice(0,3).map(study=>({title:study.title,description:`Case ${study.number} · ${study.readTime} read`,href:`#/case-study/${encodeURIComponent(study.id)}`}));
+}
 function formatNumber(value, digits = 4) {
   if (typeof value === 'string') return value;
   const x = Number(value);
@@ -19986,26 +19924,22 @@ function navKey(route){
   return homepageNavKey(route.segments[0]||'',route.params.get('section')||'');
 }
 function renderToolsMenu(active=false){
-  const preferred=['Utilities','Dynamics','Structures','Acoustics','Noise Control','Random & Shock','Structural Acoustics','Aero / Distributed Loads','SEA & Energy','Test & Signal'];
-  const categories=[...new Set(toolCatalog.map(tool=>tool.category))].sort((a,b)=>{
-    const ai=preferred.indexOf(a),bi=preferred.indexOf(b);
-    return (ai<0?preferred.length:ai)-(bi<0?preferred.length:bi)||a.localeCompare(b);
-  });
-  return `<div class="tools-menu" data-tools-menu><button type="button" class="tools-menu-trigger ${active?'active':''}" data-tools-toggle aria-expanded="false" aria-controls="tools-menu-panel">${icon('tools')}<span>Tools<small>Calculators & workbenches</small></span><b aria-hidden="true">⌄</b></button><div class="tools-menu-panel" id="tools-menu-panel" hidden><header><div><p class="eyebrow">Engineering tools</p><h2>Choose the model by discipline.</h2></div><a class="tools-menu-all" href="#/tools">Browse all ${toolCatalog.length} tools <span aria-hidden="true">→</span></a></header><div class="tools-menu-grid">${categories.map(category=>{const tools=toolCatalog.filter(tool=>tool.category===category);return `<section><a class="tools-menu-category" href="#/tools?category=${encodeURIComponent(category)}"><strong>${esc(category)}</strong><span>${tools.length} tools</span></a><div>${tools.slice(0,3).map(tool=>`<a href="#/tool/${encodeURIComponent(tool.id)}">${esc(tool.title)}</a>`).join('')}</div>${tools.length>3?`<a class="tools-menu-more" href="#/tools?category=${encodeURIComponent(category)}">View all ${tools.length} →</a>`:''}</section>`;}).join('')}</div></div></div>`;
+  const groups=toolSubjects.map(subject=>({subject,tools:toolCatalog.filter(tool=>primaryToolSubject(tool).id===subject.id)})).filter(group=>group.tools.length);
+  return `<div class="tools-menu" data-tools-menu><button type="button" class="tools-menu-trigger ${active?'active':''}" data-tools-toggle aria-expanded="false" aria-controls="tools-menu-panel">${icon('tools')}<span>Tools<small>Calculators & workbenches</small></span><b aria-hidden="true">⌄</b></button><div class="tools-menu-panel" id="tools-menu-panel" hidden><header><div><p class="eyebrow">Engineering tools</p><h2>Choose a model by subject.</h2></div><a class="tools-menu-all" href="#/tools">Browse all ${toolCatalog.length} tools <span aria-hidden="true">→</span></a></header><div class="tools-menu-grid">${groups.map(({subject,tools})=>`<section style="--menu-subject-color:${subject.accent}"><a class="tools-menu-category" href="#/tools?subject=${encodeURIComponent(subject.id)}"><strong>${esc(subject.label)}</strong><span>${tools.length} tools</span></a><div>${tools.slice(0,3).map(tool=>`<a href="#/tool/${encodeURIComponent(tool.id)}">${esc(tool.title)}</a>`).join('')}</div>${tools.length>3?`<a class="tools-menu-more" href="#/tools?subject=${encodeURIComponent(subject.id)}">View all ${tools.length} →</a>`:''}</section>`).join('')}</div></div></div>`;
 }
 function shell(main, route) {
   const active=navKey(route);
   const project=loadEngineeringProject();
   return `<header class="site-header">
     <a class="brand" href="#/">${brandMark()}<span class="brand-copy"><strong>Structural Acoustics</strong><small>Understood</small></span></a>
-    <nav class="primary-nav" aria-label="Primary">${homepageNavigation.map(item=>`<a href="${item.href}" class="${active===item.id?'active':''}" ${active===item.id?'aria-current="page"':''}><span>${item.label}</span><small>${item.descriptor}</small></a>`).join('')}${renderToolsMenu(active==='tools')}</nav>
+    <nav class="primary-nav" aria-label="Primary">${homepageNavigation.map(item=>item.id==='tools'?renderToolsMenu(active==='tools'):`<a href="${item.href}" class="${active===item.id?'active':''}" ${active===item.id?'aria-current="page"':''}><span>${item.label}</span><small>${item.descriptor}</small></a>`).join('')}</nav>
     <div class="header-actions"><a class="project-pill" href="#/workspace" aria-label="Open engineering project"><span>Project</span><b>${project.artifacts.length}</b></a><button class="icon-button header-search" data-action="search" aria-label="Search">${icon('search')}<span>Search</span></button><button class="icon-button header-print" data-action="print" aria-label="Print current page">${icon('print')}</button><button class="menu-button" aria-label="Toggle navigation" aria-expanded="false"><span></span><span></span><span></span></button></div>
   </header>
   <main id="main-content">${main}</main>
-  <footer class="site-footer"><div><strong>Structural Acoustics, Understood</strong><p>Original engineering reference and browser-based screening tools. Verify controlled methods before design or qualification use.</p></div><div class="footer-links"><a href="#/validation">Verification center</a><a href="#/references">Assumptions & references</a><a href="#/workspace">Engineering project</a><a href="#/tools">${toolCatalog.length} tools</a><a href="#/demos">${demos.length} demos</a><button class="link-button" data-action="print">Print / PDF</button></div></footer>
+  <footer class="site-footer"><div><strong>Structural Acoustics, Understood</strong><p>Original engineering reference and browser-based screening tools. Verify controlled methods before design or qualification use.</p></div><div class="footer-links"><a href="#/">Subjects</a><a href="#/demos">${demos.length} demos</a><a href="#/tools">${toolCatalog.length} tools</a><a href="#/case-studies">${caseNotes.length} case studies</a><a href="#/references">References</a><a href="#/workspace">Project</a><a href="#/validation">Validation</a><button class="link-button" data-action="print">Print / PDF</button></div></footer>
   ${searchDialog()}<div class="toast" role="status" aria-live="polite"></div>`;
 }
-function searchDialog(){return `<dialog class="search-dialog"><div class="search-shell"><div class="search-input-wrap">${icon('search')}<input id="global-search" type="search" placeholder="Search equation, hardware, method, output…" autocomplete="off" aria-label="Search engineering reference"/><button class="kbd-button" data-action="close-search">Esc</button></div><div class="search-facets" aria-label="Search result types"><button class="active" data-search-type="All">All</button>${['Subject','Tool','Chapter','Demo','Case note','Hardware','Pathway','Glossary'].map(type=>`<button data-search-type="${type}">${type}</button>`).join('')}</div><div class="search-results" id="search-results"></div></div></dialog>`;}
+function searchDialog(){return `<dialog class="search-dialog"><div class="search-shell"><div class="search-input-wrap">${icon('search')}<input id="global-search" type="search" placeholder="Search subjects, demos, tools, or case studies…" autocomplete="off" aria-label="Search engineering reference"/><button class="kbd-button" data-action="close-search">Esc</button></div><div class="search-facets" aria-label="Search result types"><button class="active" data-search-type="All">All</button>${['Subject','Demo','Tool','Case study','Chapter','Glossary'].map(type=>`<button data-search-type="${type}">${type}</button>`).join('')}</div><div class="search-results" id="search-results"></div></div></dialog>`;}
 function intro({eyebrow,title,lede,aside='',metrics=[],buttons=[]}){
   return `<section class="page-intro"><div><p class="eyebrow">${esc(eyebrow)}</p><h1>${title}</h1><p class="lede">${lede}</p>${buttons.length?`<div class="button-row">${buttons.map(b=>`<${b.href?'a':'button'} class="${b.secondary?'button-secondary':'button'}" ${b.href?`href="${b.href}"`:`data-action="${b.action}"`}>${b.label}</${b.href?'a':'button'}>`).join('')}</div>`:''}</div><aside class="intro-aside">${aside}${metrics.length?`<div class="intro-metrics">${metrics.map(m=>`<div class="metric"><strong>${esc(m.value)}</strong><span>${esc(m.label)}</span></div>`).join('')}</div>`:''}</aside></section>`;
 }
@@ -20034,14 +19968,8 @@ function chapterTools(section) {
   }));
 }
 
-function chapterHardware(section) {
-  const text = `${section.id} ${section.title} ${section.summary} ${(section.concepts || []).flatMap(concept => concept.tags || []).join(' ')}`.toLowerCase();
-  const scored = hardwareTopics.map(topic => ({ topic, score: topic.chapters.includes(section.id) ? 20 : topic.sources.concat(topic.paths, topic.responses).filter(term => text.includes(term.toLowerCase().split(' ')[0])).length }));
-  return scored.sort((a,b)=>b.score-a.score).filter(item=>item.score>0).slice(0,3).map(({topic})=>({ title:topic.title, description:topic.eyebrow, href:`#/hardware/${topic.id}` }));
-}
-
 function renderChapterDirectory() {
-  return `<div class="chapter-directory-toolbar"><label><span>Find a chapter</span><input id="chapter-filter" type="search" placeholder="Filter by concept, method, or hardware…"/></label><a class="button-secondary" href="#/pathways">Use a guided pathway</a></div><div class="chapter-directory" id="chapter-directory">${sections.map(section=>`<a class="chapter-directory-card" href="#/cheat-sheet?section=${encodeURIComponent(section.id)}" data-chapter-search="${esc(`${section.title} ${section.summary} ${section.eyebrow} ${(section.concepts||[]).map(c=>`${c.title} ${(c.tags||[]).join(' ')}`).join(' ')}`.toLowerCase())}"><span>${esc(section.number)}</span><div><p class="eyebrow">${esc(section.eyebrow)}</p><h2>${esc(section.title)}</h2><p>${esc(section.summary)}</p><small>${section.concepts.length} concepts · ${chapterTools(section).length} linked tools</small></div><b aria-hidden="true">→</b></a>`).join('')}</div>`;
+  return `<div class="chapter-directory-toolbar"><label><span>Find a chapter</span><input id="chapter-filter" type="search" placeholder="Filter by concept, method, or physical behavior…"/></label><a class="button-secondary" href="#/case-studies">Browse applied case studies</a></div><div class="chapter-directory" id="chapter-directory">${sections.map(section=>`<a class="chapter-directory-card" href="#/cheat-sheet?section=${encodeURIComponent(section.id)}" data-chapter-search="${esc(`${section.title} ${section.summary} ${section.eyebrow} ${(section.concepts||[]).map(c=>`${c.title} ${(c.tags||[]).join(' ')}`).join(' ')}`.toLowerCase())}"><span>${esc(section.number)}</span><div><p class="eyebrow">${esc(section.eyebrow)}</p><h2>${esc(section.title)}</h2><p>${esc(section.summary)}</p><small>${section.concepts.length} concepts · ${chapterTools(section).length} linked tools</small></div><b aria-hidden="true">→</b></a>`).join('')}</div>`;
 }
 
 function renderCheat(route){
@@ -20049,38 +19977,40 @@ function renderCheat(route){
   const selectedSection=sections.find(section=>section.id===selectedId);
   const breadcrumbs=renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Working reference',href:'#/cheat-sheet'},...(selectedSection?[{label:selectedSection.title}]:[])]);
   if(!selectedSection){
-    const page=`${breadcrumbs}${intro({eyebrow:'The working reference',title:'Choose a chapter.<br>Follow the physics.',lede:'A focused library for structural dynamics, random vibration, shock, acoustics, shells, distributed loads, SEA, measurement, and launch-vehicle applications.',aside:'<p>Each chapter now opens as a deliberate learning sequence instead of loading the entire reference into one page.</p>',metrics:[{value:sections.length,label:'chapters'},{value:sections.reduce((count,section)=>count+section.concepts.length,0),label:'engineering concepts'},{value:toolCatalog.length,label:'linked tools'}],buttons:[{label:'Start a learning pathway',href:'#/pathways'},{label:'Browse all tools',href:'#/tools',secondary:true}]})}${renderChapterDirectory()}`;
+    const page=`${breadcrumbs}${intro({eyebrow:'The working reference',title:'Choose a chapter.<br>Follow the physics.',lede:'A focused library for structural dynamics, random vibration, shock, acoustics, shells, distributed loads, SEA, measurement, and launch-vehicle applications.',aside:'<p>Each chapter now opens as a deliberate learning sequence instead of loading the entire reference into one page.</p>',metrics:[{value:sections.length,label:'chapters'},{value:sections.reduce((count,section)=>count+section.concepts.length,0),label:'engineering concepts'},{value:toolCatalog.length,label:'linked tools'}],buttons:[{label:'Return to subjects',href:'#/'},{label:'Browse all tools',href:'#/tools',secondary:true}]})}${renderChapterDirectory()}`;
     return renderPageShell(page,{variant:'chapter-library'});
   }
   const proof=selectedSection.id===DESIGN_PROOF_CHAPTER_ID;
   const index=sections.indexOf(selectedSection);
   const tools=chapterTools(selectedSection);
-  const hardware=chapterHardware(selectedSection);
-  const deepDive=selectedSection.deepDiveId?{label:'Read the complete launch-vehicle deep dive',href:`#/case-note/${encodeURIComponent(selectedSection.deepDiveId)}`}:null;
+  const studies=caseStudyLinksForSection(selectedSection);
+  const deepDive=selectedSection.deepDiveId?{label:'Read the complete applied case study',href:`#/case-study/${encodeURIComponent(selectedSection.deepDiveId)}`}:null;
   const sequence=`<nav class="chapter-sequence" aria-label="Chapter learning sequence"><span><b>01</b>Build intuition</span><span><b>02</b>Read the equations</span><span><b>03</b>Use the models</span><span><b>04</b>Verify the limits</span></nav>`;
   const header=`<header class="section-heading site-section-header focused-chapter-header"><span class="section-number">${esc(selectedSection.number)}</span><div><p class="eyebrow">${esc(selectedSection.eyebrow)}</p><h1>${esc(selectedSection.title)}</h1><p>${esc(selectedSection.summary)}</p>${deepDive?`<a class="concept-tool-link site-inline-link" href="${esc(deepDive.href)}">${esc(deepDive.label)} <span aria-hidden="true">→</span></a>`:''}</div></header>`;
   const rail=`<aside class="section-rail chapter-local-rail" aria-label="Chapter navigation"><p class="rail-title">Chapter concepts</p>${selectedSection.concepts.map(concept=>`<a href="#concept-${slug(concept.title)}"><span>${String(selectedSection.concepts.indexOf(concept)+1).padStart(2,'0')}</span>${esc(concept.title)}</a>`).join('')}<a class="chapter-all-link" href="#/cheat-sheet">All ${sections.length} chapters</a></aside>`;
-  const context=`<section class="site-context-grid chapter-context" aria-label="Chapter application context">${hardware.length?renderLinkCollection({label:'Applied hardware',items:hardware,variant:'hardware'}):''}${tools.length?renderLinkCollection({label:'Continue with a model',items:tools.slice(0,4),variant:'related'}):''}</section>`;
+  const context=`<section class="site-context-grid chapter-context" aria-label="Chapter application context">${studies.length?renderLinkCollection({label:'Applied case studies',items:studies,variant:'related'}):''}${tools.length?renderLinkCollection({label:'Continue with a model',items:tools.slice(0,4),variant:'related'}):''}</section>`;
   const next=sections[index+1]??sections[0],previous=sections[index-1]??sections.at(-1);
   const footer=`<nav class="chapter-pagination" aria-label="Adjacent chapters"><a href="#/cheat-sheet?section=${encodeURIComponent(previous.id)}"><small>Previous chapter</small><strong>${esc(previous.title)}</strong></a><button type="button" data-action="chapter-reviewed" data-chapter-id="${esc(selectedSection.id)}">Mark chapter reviewed</button><a href="#/cheat-sheet?section=${encodeURIComponent(next.id)}"><small>Next chapter</small><strong>${esc(next.title)}</strong></a></nav>`;
   const content=`<section class="cheat-section site-chapter-section site-focused-chapter${proof?' site-design-proof-section':''}" id="section-${esc(selectedSection.id)}" data-section="${esc(selectedSection.id)}">${header}${sequence}${context}<div class="concept-grid site-concept-grid">${selectedSection.concepts.map(concept=>renderConceptCard(concept,proof)).join('')}</div>${footer}</section>`;
   const page=`${breadcrumbs}<div class="focused-chapter-layout">${rail}<div class="cheat-content">${content}</div></div>`;
   return renderPageShell(page,{variant:'focused-chapter'});
 }
-function toolCard(t,index){const profile=classifyTool(t,Object.keys(workbenchRegistry));return `<a class="tool-card site-tool-card" href="#/tool/${encodeURIComponent(t.id)}" data-category="${esc(t.category)}" data-task="${esc(profile.task)}" data-hardware="${esc(profile.hardware)}" data-input="${esc(profile.input)}" data-level="${esc(profile.level)}" data-search="${esc(`${t.title} ${t.description} ${(t.keywords||[]).join(' ')} ${profile.task} ${profile.hardware} ${profile.input}`.toLowerCase())}"><span class="tool-index">${String(index+1).padStart(2,'0')}</span><div class="tool-type-row"><span>${esc(profile.level)}</span>${profile.workbench?'<b>GUIDED</b>':''}</div><h3>${esc(t.title)}</h3><p>${esc(t.description)}</p><footer><span>${esc(t.category)} · ${esc(profile.hardware)}</span><span class="arrow">→</span></footer></a>`;}
+function toolCard(t,index){const profile=classifyTool(t,Object.keys(workbenchRegistry)),subject=primaryToolSubject(t);return `<a class="tool-card site-tool-card" href="#/tool/${encodeURIComponent(t.id)}" data-subject="${esc(subject.id)}" data-task="${esc(profile.task)}" data-input="${esc(profile.input)}" data-level="${esc(profile.level)}" data-search="${esc(`${t.title} ${t.description} ${(t.keywords||[]).join(' ')} ${subject.label} ${profile.task} ${profile.input}`.toLowerCase())}"><span class="tool-index">${String(index+1).padStart(2,'0')}</span><div class="tool-type-row"><span>${esc(profile.level)}</span>${profile.workbench?'<b>GUIDED</b>':''}</div><h3>${esc(t.title)}</h3><p>${esc(t.description)}</p><footer><span>${esc(subject.label)} · ${esc(t.category)}</span><span class="arrow">→</span></footer></a>`;}
 function renderTools(route){
-  const categories=['All',...new Set(toolCatalog.map(t=>t.category))];
   const profiles=toolCatalog.map(tool=>classifyTool(tool,Object.keys(workbenchRegistry)));
-  const requestedCategory=route?.params?.get('category');
-  const selectedCategory=categories.includes(requestedCategory)?requestedCategory:'All';
+  const requestedSubject=route?.params?.get('subject');
+  const legacyCategory=route?.params?.get('category');
+  const legacySubject=legacyCategory?primaryToolSubject(toolCatalog.find(tool=>tool.category===legacyCategory)||{}).id:null;
+  const selectedSubject=toolSubjects.some(subject=>subject.id===(requestedSubject||legacySubject))?(requestedSubject||legacySubject):'All';
   const options=(label,values,key,selected='All')=>`<label><span>${label}</span><select data-tool-filter="${key}"><option value="All" ${selected==='All'?'selected':''}>All</option>${[...new Set(values)].sort().map(value=>`<option value="${esc(value)}" ${selected===value?'selected':''}>${esc(value)}</option>`).join('')}</select></label>`;
+  const subjectOptions=`<label><span>Subject</span><select data-tool-filter="subject"><option value="All" ${selectedSubject==='All'?'selected':''}>All subjects</option>${toolSubjects.map(subject=>`<option value="${esc(subject.id)}" ${selectedSubject===subject.id?'selected':''}>${esc(subject.label)}</option>`).join('')}</select></label>`;
   const intents=[
     ['I have a PSD','Response & loads','Start with response, extremes, fatigue, or test planning.'],
     ['I need panel TL','Transmission & control','Move from mass law through coincidence and installed paths.'],
     ['I am planning a test','Test & validation','Build measurement, control, notching, and evidence.'],
     ['I need SEA parameters','SEA & energy','Inspect modal density, damping, coupling, and response recovery.']
   ];
-  const page=`${renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Engineering calculators'}])}${intro({eyebrow:'Engineering calculators',title:'Start with the decision.<br>Then choose the model.',lede:'Quick screens stay fast. Physics labs expose behavior. Guided workbenches preserve multi-step engineering decisions and evidence.',aside:'<p>Calculations run locally in the browser. Imported engineering data is not uploaded by this static application.</p>',metrics:[{value:toolCatalog.length,label:'tools'},{value:Object.keys(workbenchRegistry).length,label:'guided workbenches'},{value:'Local',label:'data processing'}],buttons:[{label:'Open project workspace',href:'#/workspace'},{label:'Verification center',href:'#/validation',secondary:true}]})}<section class="tool-intents" aria-label="Common engineering starting points">${intents.map(([title,task,description])=>`<button type="button" data-tool-intent="${esc(task)}"><strong>${esc(title)}</strong><span>${esc(description)}</span><b aria-hidden="true">→</b></button>`).join('')}</section><div class="tool-discovery" aria-label="Tool decision filters"><label class="tool-filter-search"><span>Search</span><input id="tool-filter-search" type="search" placeholder="Method, output, hardware, or input…"/></label>${options('Discipline',categories.slice(1),'category',selectedCategory)}${options('Engineering task',profiles.map(profile=>profile.task),'task')}${options('Hardware',profiles.map(profile=>profile.hardware),'hardware')}${options('Available input',profiles.map(profile=>profile.input),'input')}${options('Tool depth',profiles.map(profile=>profile.level),'level')}<button type="button" class="button-quiet" data-action="clear-tool-filters">Clear</button><span id="tool-count" class="filter-count">${toolCatalog.length} shown</span></div><div class="tool-grid">${toolCatalog.map(toolCard).join('')}</div>`;
+  const page=`${renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Engineering tools'}])}${intro({eyebrow:'Engineering tools',title:'Start with the subject.<br>Then choose the model.',lede:'Quick screens stay fast. Physics demos expose behavior. Guided workbenches preserve multi-step engineering decisions and evidence.',aside:'<p>Calculations run locally in the browser. Imported engineering data is not uploaded by this static application.</p>',metrics:[{value:toolCatalog.length,label:'tools'},{value:Object.keys(workbenchRegistry).length,label:'guided workbenches'},{value:subjectWheel.length,label:'subjects'}],buttons:[{label:'Browse subjects',href:'#/'},{label:'Explore demos',href:'#/demos',secondary:true}]})}<section class="tool-intents" aria-label="Common engineering starting points">${intents.map(([title,task,description])=>`<button type="button" data-tool-intent="${esc(task)}"><strong>${esc(title)}</strong><span>${esc(description)}</span><b aria-hidden="true">→</b></button>`).join('')}</section><div class="tool-discovery" aria-label="Tool decision filters"><label class="tool-filter-search"><span>Search</span><input id="tool-filter-search" type="search" placeholder="Method, output, subject, or input…"/></label>${subjectOptions}${options('Engineering task',profiles.map(profile=>profile.task),'task')}${options('Available input',profiles.map(profile=>profile.input),'input')}${options('Tool depth',profiles.map(profile=>profile.level),'level')}<button type="button" class="button-quiet" data-action="clear-tool-filters">Clear</button><span id="tool-count" class="filter-count">${toolCatalog.length} shown</span></div><div class="tool-grid">${toolCatalog.map(toolCard).join('')}</div>`;
   return renderPageShell(page,{variant:'tool-library'});
 }
 function fieldHtml(field,value){
@@ -20106,20 +20036,21 @@ function renderTool(route){
   if(workbenchRegistry[id]&&route.params.get('mode')!=='quick')return workbenchRegistry[id].render();
   const proof=isCalculatorDesignProof(route);
   const profile=classifyTool(meta,Object.keys(workbenchRegistry));
+  const subject=primaryToolSubject(meta);
   const projectHandoff=route.params.get('fromProject')==='1'?handoffInputs(id):null;
   const values={};for(const field of calc.inputs||[])values[field.key]=route.params.has(field.key)?route.params.get(field.key):(projectHandoff?.inputs&&Object.hasOwn(projectHandoff.inputs,field.key)?projectHandoff.inputs[field.key]:field.default);
   const refs=relevantReferences(meta.category);
   const handoffs=toolHandoffs(meta,toolCatalog).map(tool=>({title:tool.title,description:`${classifyTool(tool,Object.keys(workbenchRegistry)).level} · ${tool.category}`,href:`#/tool/${encodeURIComponent(tool.id)}`}));
   const concepts=conceptLinksForTool(id);
   const breadcrumbs=renderBreadcrumbs([{label:'Tools',href:'#/tools'},{label:meta.category,href:'#/tools'},{label:meta.title}]);
-  const context=`<section class="site-context-grid" aria-label="Calculator context">${renderLinkCollection({label:'Related concepts',items:concepts.length?concepts:calculatorRelatedLinks,variant:'related'})}${renderLinkCollection({label:'Recommended handoffs',items:handoffs,variant:'hardware'})}</section>`;
+  const context=`<section class="site-context-grid" aria-label="Calculator context">${renderLinkCollection({label:'Related concepts',items:concepts.length?concepts:calculatorRelatedLinks,variant:'related'})}${renderLinkCollection({label:'Recommended handoffs',items:handoffs,variant:'related'})}</section>`;
   const assumptionRule=renderCallout({tone:'assumption',label:'Use rule',body:'A polished numerical result does not expand the validity of its governing model.'});
-  const provenance=`<aside class="model-provenance"><p class="eyebrow">Model provenance</p><dl><div><dt>Tool depth</dt><dd>${esc(profile.level)}</dd></div><div><dt>Engineering task</dt><dd>${esc(profile.task)}</dd></div><div><dt>Primary hardware</dt><dd>${esc(profile.hardware)}</dd></div><div><dt>Expected input</dt><dd>${esc(profile.input)}</dd></div></dl></aside>`;
+  const provenance=`<aside class="model-provenance"><p class="eyebrow">Model provenance</p><dl><div><dt>Tool depth</dt><dd>${esc(profile.level)}</dd></div><div><dt>Engineering task</dt><dd>${esc(profile.task)}</dd></div><div><dt>Primary subject</dt><dd>${esc(subject.label)}</dd></div><div><dt>Expected input</dt><dd>${esc(profile.input)}</dd></div></dl></aside>`;
   const handoffBanner=projectHandoff?renderCallout({tone:'warning',label:'Project handoff applied',body:`Matching field keys were transferred from ${projectHandoff.source}. Confirm units, statistical basis, frequency convention, and physical meaning before accepting the imported values.`}):'';
   const page=`${breadcrumbs}${handoffBanner}<section class="tool-hero site-page-header"><div class="tool-hero-copy"><p class="eyebrow">${esc(meta.category)} · ${esc(profile.level)}</p><h1>${esc(meta.title)}</h1><p>${esc(meta.description)}</p></div><aside class="tool-status site-status-panel"><dl><dt>Basis</dt><dd>${esc(calc.basis||'Documented engineering relation')}</dd><dt>Result</dt><dd>${esc(calc.confidence||'Screening calculation')}</dd><dt>Execution</dt><dd>Local browser</dd><dt>Route</dt><dd><code>${esc(id)}</code></dd></dl></aside></section>${context}<div class="calculator-layout site-calculator-container"><section class="calc-panel site-calculator-panel"><header class="calc-panel-header site-panel-header"><h2>Inputs</h2><button class="button-quiet" data-action="reset-calculator">Reset</button></header><form class="calc-form" id="calculator-form">${(calc.inputs||[]).map(f=>fieldHtml(f,values[f.key])).join('')}<div class="calc-form-actions"><button class="button" type="submit">Calculate</button><button class="button-secondary" type="button" data-action="share-calculation">Copy share link</button></div></form></section><section class="calc-panel site-calculator-panel"><header class="calc-panel-header site-panel-header"><h2>Results</h2><div><button class="button-quiet" data-action="copy-results">Copy engineering result</button><button class="button-quiet" data-action="print">Print / PDF</button></div></header><div class="calc-results" id="calculator-results"><div class="calc-empty">Enter values and calculate.</div></div></section></div><section class="tabs site-tabs"><div class="tab-list" role="tablist"><button class="tab-button active" data-tab="theory" role="tab">Theory</button><button class="tab-button" data-tab="example" role="tab">Worked example</button><button class="tab-button" data-tab="assumptions" role="tab">Assumptions</button><button class="tab-button" data-tab="references" role="tab">References & provenance</button></div><div class="tab-panel site-theory-panel" id="tab-panel"><h2>Governing model</h2>${calc.theory||'<p>This calculator implements the documented governing relationship shown in the cheat sheet.</p>'}<h3>Inputs and units</h3><div class="variable-table">${(calc.inputs||[]).map(f=>`<div>${esc(f.key)}</div><div>${esc(f.label)}${f.unit?` · ${esc(f.unit)}`:''}</div>`).join('')}</div></div><template id="tab-theory"><h2>Governing model</h2>${calc.theory||''}<h3>Inputs and units</h3><div class="variable-table">${(calc.inputs||[]).map(f=>`<div>${esc(f.key)}</div><div>${esc(f.label)}${f.unit?` · ${esc(f.unit)}`:''}</div>`).join('')}</div></template><template id="tab-example"><h2>Worked example</h2><p>${esc(calc.example||'Load the defaults and compare the reported primary result with a hand calculation using the governing equation.')}</p><p><a class="concept-tool-link site-inline-link" href="#/cheat-sheet">Open the linked cheat-sheet context <span aria-hidden="true">→</span></a></p></template><template id="tab-assumptions"><h2>Assumptions and validity</h2><ul>${(calc.assumptions||['Linear response and consistent units.']).map(a=>`<li>${esc(a)}</li>`).join('')}</ul>${assumptionRule}</template><template id="tab-references"><h2>References for this topic</h2><ul class="reference-list">${refs.map(r=>`<li><strong>${esc(r.title)}</strong><span>${esc(r.note)}</span></li>`).join('')}</ul>${provenance}<p>Also verify the controlled analysis method, handbook revision, material data, and program-specific statistical convention used by the actual deliverable.</p></template></section>`;
   return renderPageShell(page,{variant:proof?'calculator-proof':''});
 }
-function renderDemos(){const topics=[...new Set(demos.map(d=>d.topic))].sort();const page=`${renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Interactive demos'}])}${intro({eyebrow:'Interactive physics',title:'Form a hypothesis.<br>Move the variables.',lede:'The shared lab format connects physical behavior to limiting cases, scenario comparisons, applied hardware, and a recorded engineering takeaway.',aside:'<p>Use demos for exploration, calculators for numerical screening, and workbenches for multi-step decisions.</p>',metrics:[{value:demos.length,label:'physics labs'},{value:topics.length,label:'topics'},{value:'Local',label:'scenario notebook'}],buttons:[{label:'Browse learning pathways',href:'#/pathways'},{label:'Open project workspace',href:'#/workspace',secondary:true}]})}<div class="demo-discovery"><label><span>Filter labs</span><input id="demo-filter-search" type="search" placeholder="Resonance, SEA, shock, radiation…"/></label><label><span>Topic</span><select id="demo-topic-filter"><option value="All">All topics</option>${topics.map(topic=>`<option value="${esc(topic)}">${esc(topic)}</option>`).join('')}</select></label><span id="demo-count">${demos.length} labs</span></div><div class="demo-grid">${demos.map(d=>`<a class="demo-card site-demo-card" href="#/demo/${encodeURIComponent(d.id)}" data-demo-topic="${esc(d.topic)}" data-demo-search="${esc(`${d.title} ${d.description} ${d.topic}`.toLowerCase())}"><div class="demo-preview">${demoPreviewSvg(d.id)}</div><div class="demo-card-copy"><p class="eyebrow">${esc(d.topic)} · Physics lab</p><h3>${esc(d.title)}</h3><p>${esc(d.description)}</p><span class="concept-tool-link site-inline-link">Open lab →</span></div></a>`).join('')}</div>`;return renderPageShell(page,{variant:'demo-library'});}
+function renderDemos(){const topics=[...new Set(demos.map(d=>d.topic))].sort();const page=`${renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Interactive demos'}])}${intro({eyebrow:'Interactive physics',title:'Form a hypothesis.<br>Move the variables.',lede:'The shared lab format connects physical behavior to limiting cases, scenario comparisons, paired tools, and a recorded engineering takeaway.',aside:'<p>Use demos for exploration, tools for numerical screening, and case studies for applied engineering judgment.</p>',metrics:[{value:demos.length,label:'physics labs'},{value:topics.length,label:'topics'},{value:subjectWheel.length,label:'subjects'}],buttons:[{label:'Browse subjects',href:'#/'},{label:'Open engineering tools',href:'#/tools',secondary:true}]})}<div class="demo-discovery"><label><span>Filter labs</span><input id="demo-filter-search" type="search" placeholder="Resonance, SEA, shock, radiation…"/></label><label><span>Topic</span><select id="demo-topic-filter"><option value="All">All topics</option>${topics.map(topic=>`<option value="${esc(topic)}">${esc(topic)}</option>`).join('')}</select></label><span id="demo-count">${demos.length} labs</span></div><div class="demo-grid">${demos.map(d=>`<a class="demo-card site-demo-card" href="#/demo/${encodeURIComponent(d.id)}" data-demo-topic="${esc(d.topic)}" data-demo-search="${esc(`${d.title} ${d.description} ${d.topic}`.toLowerCase())}"><div class="demo-preview">${demoPreviewSvg(d.id)}</div><div class="demo-card-copy"><p class="eyebrow">${esc(d.topic)} · Physics lab</p><h3>${esc(d.title)}</h3><p>${esc(d.description)}</p><span class="concept-tool-link site-inline-link">Open lab →</span></div></a>`).join('')}</div>`;return renderPageShell(page,{variant:'demo-library'});}
 function demoLabPrompts(d){
   const text=`${d.id} ${d.topic}`.toLowerCase();
   if(/sea|energy|coupling/.test(text))return ['Start with weak coupling and equal damping.','Increase coupling until subsystem energies converge.','Identify the assumption that fails first at low modal population.'];
@@ -20127,40 +20058,19 @@ function demoLabPrompts(d){
   if(/wave|coincidence|radiation|shell|panel/.test(text))return ['Locate the long-wavelength limiting regime.','Move through the matching or coincidence region.','Compare the finite-structure behavior with the asymptotic expectation.'];
   return ['Establish the nominal configuration.','Change one physically meaningful parameter at a time.','Record the mechanism controlling the observed change.'];
 }
-function renderDemo(route){const id=decodeURIComponent(route.segments[1]||''),d=demos.find(x=>x.id===id);if(!d)return renderNotFound('Demo not found','The requested interactive demonstration is not in this build.');const prompts=demoLabPrompts(d);const hardware=hardwareTopics.filter(topic=>`${topic.summary} ${topic.sources.join(' ')} ${topic.paths.join(' ')}`.toLowerCase().includes(d.topic.toLowerCase().split(' ')[0])).slice(0,2);const page=`${renderBreadcrumbs([{label:'Demos',href:'#/demos'},{label:d.topic},{label:d.title}])}<section class="tool-hero site-page-header"><div class="tool-hero-copy"><p class="eyebrow">${esc(d.topic)} · Interactive physics lab</p><h1>${esc(d.title)}</h1><p>${esc(d.description)}</p><div class="button-row"><a class="button" href="#/tool/${encodeURIComponent(d.toolId)}">Open paired calculator</a><a class="button-secondary" href="#/demos">All labs</a></div></div><aside class="tool-status site-status-panel"><dl><dt>Question</dt><dd>What mechanism controls the trend?</dd><dt>Method</dt><dd>Hypothesis → variation → comparison</dd><dt>Record</dt><dd>Browser-local project artifact</dd></dl></aside></section><section class="lab-guide" aria-label="Engineering lab guide"><div><p class="eyebrow">Hypothesis</p><h2>Predict before moving the controls.</h2><p>${esc(`If the controlling ${d.topic.toLowerCase()} mechanism is represented correctly, a one-at-a-time parameter change should produce a physically explainable trend rather than only a new number.`)}</p></div><ol>${prompts.map((prompt,index)=>`<li><span>${String(index+1).padStart(2,'0')}</span>${esc(prompt)}</li>`).join('')}</ol></section><section class="demo-stage site-demo-container" id="demo-mount"></section><section class="lab-notebook" data-demo-lab="${esc(d.id)}"><header><div><p class="eyebrow">Scenario notebook</p><h2>Compare two engineering observations</h2></div><p>Record the parameter change, the physical response, and why it matters.</p></header><div><label><span>Scenario A · baseline observation</span><textarea data-lab-scenario="A" placeholder="Parameters, trend, controlling mechanism…"></textarea></label><label><span>Scenario B · changed configuration</span><textarea data-lab-scenario="B" placeholder="What changed, what responded, and why…"></textarea></label></div><div class="lab-notebook-actions"><button type="button" class="button" data-action="save-lab-observation">Add comparison to project</button>${hardware.map(topic=>`<a class="button-secondary" href="#/hardware/${topic.id}">${esc(topic.title)}</a>`).join('')}</div>${renderCallout({tone:'assumption',label:'Lab boundary',body:'This interactive lab exposes model behavior. The paired calculator, controlled input data, convergence evidence, and applicable hardware assumptions are still required for a design decision.'})}</section>`;return renderPageShell(page,{variant:'demo'});}
-function renderCaseNotes(){const page=`${renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Applied case notes'}])}${intro({eyebrow:'Applied engineering notes',title:'Where the equation<br>meets the messy system.',lede:'Short case notes on the mistakes, judgment calls, and cross-checks that matter in real structural-acoustic analysis.',aside:'<p>The notes connect measurement, numerical methods, statistics, and interpretation—especially where one convenient shortcut can become a bad conclusion.</p>',metrics:[{value:caseNotes.length,label:'case notes'},{value:'Applied',label:'engineering depth'},{value:'Linked',label:'to tools'}]})}<div class="case-grid">${caseNotes.map(c=>`<a class="case-card site-case-card" href="#/case-note/${encodeURIComponent(c.id)}"><span class="case-number">CASE ${esc(c.number)}</span><h3>${esc(c.title)}</h3><p>${esc(c.summary)}</p><div class="card-meta">${c.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div><footer>${esc(c.readTime)} read →</footer></a>`).join('')}</div>`;return renderPageShell(page,{variant:'case-library'});}
-function renderCaseNote(route){const id=decodeURIComponent(route.segments[1]||''),c=caseNotes.find(x=>x.id===id);if(!c)return renderNotFound('Case note not found','The requested engineering note is not in this build.');const page=`<article class="article-shell site-article-shell">${renderBreadcrumbs([{label:'Case notes',href:'#/case-notes'},{label:`Case ${c.number}`}])}<header class="article-header"><p class="eyebrow">Applied engineering · Case ${esc(c.number)}</p><h1>${esc(c.title)}</h1><p class="lede">${esc(c.summary)}</p><div class="article-meta"><span>${esc(c.readTime)} read</span>${c.tags.map(t=>`<span>${esc(t)}</span>`).join('')}</div><div class="button-row"><button type="button" class="button-secondary" data-action="add-case-to-project" data-case-id="${esc(c.id)}">Add note to project</button><a class="button-secondary" href="#/workspace">Open project</a></div></header><div class="article-body">${c.body}</div></article>`;return renderPageShell(page,{variant:'article'});}
-
-function renderHardware(route){
-  const id=decodeURIComponent(route.segments[1]||'');
-  const topic=hardwareTopics.find(item=>item.id===id);
-  if(!topic){
-    const page=`${renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Launch-vehicle hardware atlas'}])}${intro({eyebrow:'Hardware-first navigation',title:'Start with the vehicle.<br>Trace the energy.',lede:'Each hardware page connects physical sources, transmission paths, responses, measurements, mitigation decisions, chapters, and existing engineering tools.',aside:'<p>The atlas is a map of model choices and evidence—not a claim that one reduced-order method fits every frequency or configuration.</p>',metrics:[{value:hardwareTopics.length,label:'hardware systems'},{value:'Source → response',label:'analysis chain'},{value:'Linked',label:'existing content'}],buttons:[{label:'Open engineering project',href:'#/workspace'},{label:'Follow a role pathway',href:'#/pathways',secondary:true}]})}<div class="hardware-grid">${hardwareTopics.map(item=>`<a class="hardware-card" href="#/hardware/${item.id}" style="--hardware-accent:${item.accent}"><span class="hardware-orbit" aria-hidden="true"></span><p class="eyebrow">${esc(item.eyebrow)}</p><h2>${esc(item.title)}</h2><p>${esc(item.summary)}</p><dl><div><dt>Sources</dt><dd>${item.sources.length}</dd></div><div><dt>Paths</dt><dd>${item.paths.length}</dd></div><div><dt>Models</dt><dd>${item.models.length}</dd></div></dl><b>Open hardware system →</b></a>`).join('')}</div>`;
-    return renderPageShell(page,{variant:'hardware-library'});
-  }
-  const flowColumn=(label,items,index)=>`<section><span>${String(index).padStart(2,'0')}</span><h2>${label}</h2><ul>${items.map(item=>`<li>${esc(item)}</li>`).join('')}</ul></section>`;
-  const chapterLinks=topic.chapters.map(id=>sections.find(section=>section.id===id)).filter(Boolean).map(section=>({title:section.title,description:section.summary,href:`#/cheat-sheet?section=${encodeURIComponent(section.id)}`}));
-  const page=`${renderBreadcrumbs([{label:'Hardware atlas',href:'#/hardware'},{label:topic.title}])}<section class="hardware-hero" style="--hardware-accent:${topic.accent}"><div><p class="eyebrow">${esc(topic.eyebrow)}</p><h1>${esc(topic.title)}</h1><p>${esc(topic.summary)}</p><div class="button-row"><button type="button" class="button" data-action="start-hardware-project" data-hardware-id="${esc(topic.id)}">Start project from hardware</button><a class="button-secondary" href="#/hardware">All hardware</a></div></div><div class="hardware-schematic" aria-hidden="true"><span></span><span></span><span></span><b>${esc(topic.title)}</b></div></section><section class="hardware-flow" aria-label="Source path response chain">${flowColumn('Sources',topic.sources,1)}${flowColumn('Transmission paths',topic.paths,2)}${flowColumn('Responses',topic.responses,3)}</section><p class="engineering-chain-takeaway"><strong>Engineering takeaway</strong>A credible hardware model follows the complete source–path–response chain and records which measurement or validity check supports each reduction.</p><section class="hardware-evidence-grid"><article><p class="eyebrow">Measurement evidence</p><h2>What to observe</h2><ul>${topic.measurements.map(item=>`<li>${esc(item)}</li>`).join('')}</ul></article><article><p class="eyebrow">Design decisions</p><h2>What can change</h2><ul>${topic.mitigations.map(item=>`<li>${esc(item)}</li>`).join('')}</ul></article></section><section class="hardware-models"><header><p class="eyebrow">Existing engineering models</p><h2>Move from hardware to analysis</h2></header><div>${topic.models.map(model=>`<a href="${model.href}"><span>${esc(model.title)}</span><b>Open →</b></a>`).join('')}</div></section>${chapterLinks.length?renderLinkCollection({label:'Supporting chapters and deep dives',items:chapterLinks,variant:'related'}):''}`;
-  return renderPageShell(page,{variant:'hardware'});
+function renderDemo(route){const id=decodeURIComponent(route.segments[1]||''),d=demos.find(x=>x.id===id);if(!d)return renderNotFound('Demo not found','The requested interactive demonstration is not in this build.');const prompts=demoLabPrompts(d);const subject=subjectWheel.find(item=>item.demoIds.includes(d.id));const caseHref=subject?`#/case-studies?subject=${encodeURIComponent(subject.id)}`:'#/case-studies';const page=`${renderBreadcrumbs([{label:'Demos',href:'#/demos'},{label:d.topic},{label:d.title}])}<section class="tool-hero site-page-header"><div class="tool-hero-copy"><p class="eyebrow">${esc(d.topic)} · Interactive physics lab</p><h1>${esc(d.title)}</h1><p>${esc(d.description)}</p><div class="button-row"><a class="button" href="#/tool/${encodeURIComponent(d.toolId)}">Open paired calculator</a><a class="button-secondary" href="#/demos">All demos</a></div></div><aside class="tool-status site-status-panel"><dl><dt>Question</dt><dd>What mechanism controls the trend?</dd><dt>Method</dt><dd>Hypothesis → variation → comparison</dd><dt>Continue</dt><dd>Tool → applied case study</dd></dl></aside></section><section class="lab-guide" aria-label="Engineering lab guide"><div><p class="eyebrow">Hypothesis</p><h2>Predict before moving the controls.</h2><p>${esc(`If the controlling ${d.topic.toLowerCase()} mechanism is represented correctly, a one-at-a-time parameter change should produce a physically explainable trend rather than only a new number.`)}</p></div><ol>${prompts.map((prompt,index)=>`<li><span>${String(index+1).padStart(2,'0')}</span>${esc(prompt)}</li>`).join('')}</ol></section><section class="demo-stage site-demo-container" id="demo-mount"></section><section class="lab-notebook" data-demo-lab="${esc(d.id)}"><header><div><p class="eyebrow">Scenario notebook</p><h2>Compare two engineering observations</h2></div><p>Record the parameter change, the physical response, and why it matters.</p></header><div><label><span>Scenario A · baseline observation</span><textarea data-lab-scenario="A" placeholder="Parameters, trend, controlling mechanism…"></textarea></label><label><span>Scenario B · changed configuration</span><textarea data-lab-scenario="B" placeholder="What changed, what responded, and why…"></textarea></label></div><div class="lab-notebook-actions"><button type="button" class="button" data-action="save-lab-observation">Add comparison to project</button><a class="button-secondary" href="${caseHref}">Related case studies</a></div>${renderCallout({tone:'assumption',label:'Lab boundary',body:'This interactive lab exposes model behavior. The paired tool, controlled input data, convergence evidence, and documented assumptions are still required for a design decision.'})}</section>`;return renderPageShell(page,{variant:'demo'});}
+function renderCaseStudies(route){
+  const requested=route?.params?.get('subject');
+  const selected=subjectWheel.some(subject=>subject.id===requested)?requested:'All';
+  const page=`${renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Case studies'}])}${intro({eyebrow:'Case studies & articles',title:'Where the equation<br>meets the messy system.',lede:'Applied engineering stories about the assumptions, judgment calls, measurements, and cross-checks that change a structural-acoustic conclusion.',aside:'<p>Use subjects to learn the physics, demos to explore behavior, tools to calculate, and these cases to see how real decisions get complicated.</p>',metrics:[{value:caseNotes.length,label:'case studies'},{value:subjectWheel.length,label:'subjects'},{value:'Applied',label:'engineering judgment'}],buttons:[{label:'Browse subjects',href:'#/'},{label:'Explore demos',href:'#/demos',secondary:true}]})}<div class="case-study-discovery"><label><span>Find a case study</span><input id="case-study-search" type="search" placeholder="Assumption, method, failure mode, or result…"/></label><label><span>Subject</span><select id="case-study-subject-filter"><option value="All" ${selected==='All'?'selected':''}>All subjects</option>${subjectWheel.map(subject=>`<option value="${esc(subject.id)}" ${selected===subject.id?'selected':''}>${esc(subject.label)}</option>`).join('')}</select></label><span id="case-study-count">${caseNotes.length} cases</span></div><div class="case-grid">${caseNotes.map(study=>{const subjects=caseStudySubjects(study);return `<a class="case-card site-case-card" href="#/case-study/${encodeURIComponent(study.id)}" data-case-subjects="${esc(subjects.map(subject=>subject.id).join(' '))}" data-case-search="${esc(`${study.title} ${study.summary} ${study.tags.join(' ')} ${subjects.map(subject=>subject.label).join(' ')}`.toLowerCase())}"><span class="case-number">CASE ${esc(study.number)} · ${esc(subjects[0]?.shortLabel||'Applied')}</span><h3>${esc(study.title)}</h3><p>${esc(study.summary)}</p><div class="card-meta">${subjects.slice(0,2).map(subject=>`<span class="tag">${esc(subject.shortLabel)}</span>`).join('')}${study.tags.slice(0,2).map(tag=>`<span class="tag">${esc(tag)}</span>`).join('')}</div><footer>${esc(study.readTime)} read →</footer></a>`;}).join('')}</div>`;
+  return renderPageShell(page,{variant:'case-library'});
 }
-
-function renderPathways(route){
-  const id=decodeURIComponent(route.segments[1]||'');
-  const pathway=learningPathways.find(item=>item.id===id);
-  if(!pathway){
-    const page=`${renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Engineering pathways'}])}${intro({eyebrow:'Role and task pathways',title:'Learn what the work<br>actually requires.',lede:'Each pathway connects focused chapters, physics labs, calculators, guided workbenches, capstones, and project evidence in a deliberate sequence.',aside:'<p>Progress is stored locally. A pathway is guidance, not a substitute for program-specific methods, mentoring, or independent review.</p>',metrics:[{value:learningPathways.length,label:'guided pathways'},{value:'Local',label:'progress tracking'},{value:'Applied',label:'capstone outcomes'}],buttons:[{label:'Open chapter library',href:'#/cheat-sheet'},{label:'Open project workspace',href:'#/workspace',secondary:true}]})}<div class="pathway-grid">${learningPathways.map(item=>`<a class="pathway-card" href="#/pathway/${item.id}"><p class="eyebrow">${esc(item.role)}</p><h2>${esc(item.title)}</h2><p>${esc(item.summary)}</p><div><span>${item.steps.length} steps</span><b>Open pathway →</b></div></a>`).join('')}</div>`;
-    return renderPageShell(page,{variant:'pathway-library'});
-  }
-  const project=loadEngineeringProject();
-  const completed=project.completedPathSteps[pathway.id]||[];
-  const page=`${renderBreadcrumbs([{label:'Engineering pathways',href:'#/pathways'},{label:pathway.title}])}<section class="pathway-hero"><div><p class="eyebrow">${esc(pathway.role)} · Guided engineering pathway</p><h1>${esc(pathway.title)}</h1><p>${esc(pathway.summary)}</p></div><aside><strong>${completed.length}/${pathway.steps.length}</strong><span>steps reviewed</span><progress max="${pathway.steps.length}" value="${completed.length}"></progress></aside></section><ol class="pathway-steps">${pathway.steps.map((step,index)=>`<li class="${completed.includes(index)?'is-complete':''}"><label><input type="checkbox" data-pathway-step="${index}" data-pathway-id="${esc(pathway.id)}" ${completed.includes(index)?'checked':''}/><span>${String(index+1).padStart(2,'0')}</span></label><div><p class="eyebrow">${esc(step.kind)}</p><h2>${esc(step.title)}</h2><p>${esc(step.why)}</p></div><a href="${step.href}">Open step →</a></li>`).join('')}</ol><section class="pathway-completion"><div><p class="eyebrow">Capstone record</p><h2>Preserve what you learned and decided.</h2><p>Add calculations, lab observations, case notes, validity statements, and analyst notes to the shared engineering project.</p></div><a class="button" href="#/workspace">Open engineering project</a></section>`;
-  return renderPageShell(page,{variant:'pathway'});
-}
+function renderCaseStudy(route){const id=decodeURIComponent(route.segments[1]||''),study=caseNotes.find(item=>item.id===id);if(!study)return renderNotFound('Case study not found','The requested engineering article is not in this build.');const subjects=caseStudySubjects(study);const page=`<article class="article-shell site-article-shell">${renderBreadcrumbs([{label:'Case studies',href:'#/case-studies'},{label:`Case ${study.number}`}])}<header class="article-header"><p class="eyebrow">Applied engineering · Case ${esc(study.number)}</p><h1>${esc(study.title)}</h1><p class="lede">${esc(study.summary)}</p><div class="article-meta"><span>${esc(study.readTime)} read</span>${subjects.map(subject=>`<span>${esc(subject.shortLabel)}</span>`).join('')}${study.tags.map(tag=>`<span>${esc(tag)}</span>`).join('')}</div><div class="button-row"><button type="button" class="button-secondary" data-action="add-case-to-project" data-case-id="${esc(study.id)}">Add case to project</button><a class="button-secondary" href="#/case-studies">All case studies</a></div></header><div class="article-body">${study.body}</div></article>`;return renderPageShell(page,{variant:'article'});}
 
 function renderWorkspace(){
   const project=loadEngineeringProject();
   const template=projectTemplates.find(item=>item.id===project.templateId)||projectTemplates[0];
-  const artifacts=project.artifacts.length?project.artifacts.map((artifact,index)=>`<article class="project-artifact"><header><div><span>${String(index+1).padStart(2,'0')} · ${esc(artifact.type)}</span><h3>${esc(artifact.title)}</h3></div><button type="button" class="button-quiet" data-remove-artifact="${esc(artifact.id)}">Remove</button></header><p>${esc(artifact.takeaway||'No takeaway recorded.')}</p><dl><div><dt>Validity</dt><dd>${esc(artifact.validity||'Not recorded')}</dd></div><div><dt>Source</dt><dd>${artifact.route?`<a href="${esc(artifact.route)}">Open record</a>`:'Not recorded'}</dd></div><div><dt>Warnings</dt><dd>${artifact.warnings.length}</dd></div><div><dt>Saved</dt><dd>${esc(new Date(artifact.createdAt).toLocaleString())}</dd></div></dl></article>`).join(''):'<div class="project-empty"><h3>No engineering records yet.</h3><p>Run a calculator, capture a lab comparison, add a case note, or save a workbench step.</p><a class="button-secondary" href="#/tools">Browse tools</a></div>';
+  const artifacts=project.artifacts.length?project.artifacts.map((artifact,index)=>`<article class="project-artifact"><header><div><span>${String(index+1).padStart(2,'0')} · ${esc(artifact.type)}</span><h3>${esc(artifact.title)}</h3></div><button type="button" class="button-quiet" data-remove-artifact="${esc(artifact.id)}">Remove</button></header><p>${esc(artifact.takeaway||'No takeaway recorded.')}</p><dl><div><dt>Validity</dt><dd>${esc(artifact.validity||'Not recorded')}</dd></div><div><dt>Source</dt><dd>${artifact.route?`<a href="${esc(artifact.route)}">Open record</a>`:'Not recorded'}</dd></div><div><dt>Warnings</dt><dd>${artifact.warnings.length}</dd></div><div><dt>Saved</dt><dd>${esc(new Date(artifact.createdAt).toLocaleString())}</dd></div></dl></article>`).join(''):'<div class="project-empty"><h3>No engineering records yet.</h3><p>Run a calculator, capture a lab comparison, add a case study, or save a workbench step.</p><a class="button-secondary" href="#/tools">Browse tools</a></div>';
   const page=`${renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Engineering project'}])}<section class="workspace-hero"><div><p class="eyebrow">Browser-local project workspace</p><h1>${esc(project.name)}</h1><p>${esc(template.summary)}</p></div><aside><strong>${project.artifacts.length}</strong><span>traceable records</span><small>Updated ${esc(new Date(project.updatedAt).toLocaleString())}</small></aside></section><section class="workspace-layout"><aside class="workspace-context"><header><p class="eyebrow">Shared project context</p><h2>Configuration & conventions</h2></header><label><span>Project template</span><select data-project-field="templateId">${projectTemplates.map(item=>`<option value="${item.id}" ${item.id===project.templateId?'selected':''}>${esc(item.name)}</option>`).join('')}</select></label><label><span>Project name</span><input data-project-field="name" value="${esc(project.name)}"/></label><label><span>Analyst</span><input data-project-context="analyst" value="${esc(project.context.analyst)}" placeholder="Name or role"/></label><label><span>Configuration</span><input data-project-context="configuration" value="${esc(project.context.configuration)}"/></label><label><span>Shared geometry</span><textarea data-project-context="geometry">${esc(project.context.geometry)}</textarea></label><label><span>Shared assumptions</span><textarea data-project-context="assumptions">${esc(project.context.assumptions)}</textarea></label><label><span>Mission environment</span><input data-project-context="environment" value="${esc(project.context.environment)}"/></label><label><span>Band convention</span><input data-project-context="bandSet" value="${esc(project.context.bandSet)}"/></label><label><span>Units</span><select data-project-context="units"><option ${project.context.units==='SI'?'selected':''}>SI</option><option ${project.context.units==='US customary'?'selected':''}>US customary</option></select></label><label><span>Material library</span><select data-project-context="materialId">${materialLibrary.map(item=>`<option value="${item.id}" ${item.id===project.context.materialId?'selected':''}>${esc(item.name)}</option>`).join('')}</select></label><label><span>Fluid / medium library</span><select data-project-context="fluidId">${environmentLibrary.map(item=>`<option value="${item.id}" ${item.id===project.context.fluidId?'selected':''}>${esc(item.name)}</option>`).join('')}</select></label><label><span>Project notes</span><textarea data-project-field="notes">${esc(project.notes)}</textarea></label><div class="workspace-actions"><button type="button" class="button" data-project-action="save">Save context</button><button type="button" class="button-secondary" data-project-action="export-report">Export report</button><button type="button" class="button-secondary" data-project-action="export-json">Export JSON</button><button type="button" class="button-quiet" data-project-action="import-json">Import JSON</button><input type="file" data-project-import hidden accept="application/json,.json"/></div>${renderCallout({tone:'assumption',label:'Shared-library rule',body:'Representative material and fluid values are starting points. Record controlled temperature, orientation, fabrication, damping, and configuration data before production use.'})}</aside><div class="workspace-records"><header><div><p class="eyebrow">Engineering report builder</p><h2>Saved calculations, labs, notes, and workbench evidence</h2></div><a class="button-secondary" href="#/validation">Verification center</a></header><div class="project-chain" aria-label="Cross-tool analysis chain"><span>Source</span><b>→</b><span>Acceptance</span><b>→</b><span>System model</span><b>→</b><span>Response</span><b>→</b><span>Test evidence</span></div>${artifacts}</div></section>`;
   return renderPageShell(page,{variant:'workspace'});
 }
@@ -20231,14 +20141,12 @@ const searchItems=(()=>{
   toolCatalog.forEach(t=>out.push({type:'Tool',title:t.title,description:t.description,href:`#/tool/${t.id}`,text:`${t.title} ${t.description} ${t.category} ${(t.keywords||[]).join(' ')}`}));
   sections.forEach(s=>{out.push({type:'Chapter',title:s.title,description:s.summary,href:`#/cheat-sheet?section=${s.id}`,text:`${s.title} ${s.summary} ${s.eyebrow}`});s.concepts.forEach(c=>out.push({type:'Chapter',title:c.title,description:c.body,href:`#/cheat-sheet?section=${s.id}&concept=${encodeURIComponent(slug(c.title))}`,text:`${c.title} ${c.body} ${c.interpretation||''} ${c.mistake||''} ${(c.tags||[]).join(' ')}`}));});
   demos.forEach(d=>out.push({type:'Demo',title:d.title,description:d.description,href:`#/demo/${d.id}`,text:`${d.title} ${d.description} ${d.topic}`}));
-  caseNotes.forEach(c=>out.push({type:'Case note',title:c.title,description:c.summary,href:`#/case-note/${c.id}`,text:`${c.title} ${c.summary} ${stripHtml(c.body)} ${c.tags.join(' ')}`}));
-  hardwareTopics.forEach(topic=>out.push({type:'Hardware',title:topic.title,description:topic.summary,href:`#/hardware/${topic.id}`,text:`${topic.title} ${topic.summary} ${topic.sources.join(' ')} ${topic.paths.join(' ')} ${topic.responses.join(' ')}`}));
-  learningPathways.forEach(pathway=>out.push({type:'Pathway',title:pathway.title,description:pathway.summary,href:`#/pathway/${pathway.id}`,text:`${pathway.title} ${pathway.role} ${pathway.summary} ${pathway.steps.map(step=>step.title).join(' ')}`}));
+  caseNotes.forEach(study=>out.push({type:'Case study',title:study.title,description:study.summary,href:`#/case-study/${study.id}`,text:`${study.title} ${study.summary} ${stripHtml(study.body)} ${study.tags.join(' ')} ${caseStudySubjects(study).map(subject=>subject.label).join(' ')}`}));
   glossary.forEach(([term,def])=>out.push({type:'Glossary',title:term,description:def,href:'#/references',text:`${term} ${def}`}));
   return out.map(x=>({...x,normalized:x.text.toLowerCase()}));
 })();
 function search(q,type=activeSearchType){const terms=q.toLowerCase().trim().split(/\s+/).filter(Boolean);const candidates=type==='All'?searchItems:searchItems.filter(item=>item.type===type);if(!terms.length)return candidates.slice(0,12);return candidates.map(item=>{let score=0;for(const term of terms){if(item.title.toLowerCase()===term)score+=20;if(item.title.toLowerCase().includes(term))score+=8;if(item.normalized.includes(term))score+=2;else score-=20;}return{item,score};}).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||a.item.title.localeCompare(b.item.title)).slice(0,18).map(x=>x.item);}
-function renderSearchResults(q){const el=document.querySelector('#search-results');if(!el)return;const items=search(q);const terms=q.toLowerCase().trim().split(/\s+/).filter(Boolean);el.innerHTML=items.length?items.map(x=>`<a class="search-result" href="${x.href}"><span class="search-result-type">${esc(x.type)}</span><span><strong>${esc(x.title)}</strong><p>${esc(x.description).slice(0,180)}</p>${terms.length?`<small>Matched ${esc(terms.filter(term=>x.normalized.includes(term)).join(' · ')||'title relevance')}</small>`:''}</span></a>`).join(''):`<div class="search-empty">No matching subject, equation, hardware topic, method, tool, demo, case note, pathway, or glossary term.</div>`;el.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>document.querySelector('.search-dialog')?.close()));}
+function renderSearchResults(q){const el=document.querySelector('#search-results');if(!el)return;const items=search(q);const terms=q.toLowerCase().trim().split(/\s+/).filter(Boolean);el.innerHTML=items.length?items.map(x=>`<a class="search-result" href="${x.href}"><span class="search-result-type">${esc(x.type)}</span><span><strong>${esc(x.title)}</strong><p>${esc(x.description).slice(0,180)}</p>${terms.length?`<small>Matched ${esc(terms.filter(term=>x.normalized.includes(term)).join(' · ')||'title relevance')}</small>`:''}</span></a>`).join(''):`<div class="search-empty">No matching subject, demo, tool, case study, chapter, or glossary term.</div>`;el.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>document.querySelector('.search-dialog')?.close()));}
 function openSearch(){const dialog=document.querySelector('.search-dialog');if(!dialog)return;if(!dialog.open)dialog.showModal();const input=dialog.querySelector('#global-search');input.value='';activeSearchType='All';dialog.querySelectorAll('[data-search-type]').forEach(button=>button.classList.toggle('active',button.dataset.searchType==='All'));renderSearchResults('');setTimeout(()=>input.focus(),0);}
 function bindEmbeddedDemos(){
   const mounts=[...document.querySelectorAll('[data-embedded-demo]')];
@@ -20274,11 +20182,10 @@ function bindGlobal(route){
   }
   if(route.segments[0]==='demo'){const mount=document.querySelector('#demo-mount');if(mount)routeCleanup=mountDemo(mount,decodeURIComponent(route.segments[1]||''));bindDemoLab(route);}
   if(route.segments[0]==='demos')bindDemoFilters();
-  if(route.segments[0]==='case-note'){bindEmbeddedDemos();bindCaseNote(route);}
+  if(route.segments[0]==='case-studies')bindCaseStudyFilters();
+  if(route.segments[0]==='case-study'){bindEmbeddedDemos();bindCaseStudy(route);}
   if(route.segments[0]==='cheat-sheet'||route.segments[0]==='chapter')bindCheat(route);
   if(route.segments[0]==='references')bindReferenceFilters();
-  if(route.segments[0]==='hardware')bindHardware(route);
-  if(route.segments[0]==='pathway')bindPathway(route);
   if(route.segments[0]==='workspace')bindWorkspace();
   if(!route.segments.length){const cleanup=bindHomepage();const old=routeCleanup;routeCleanup=()=>{old();cleanup();};}
 }
@@ -20300,15 +20207,13 @@ function bindCheat(route){
 
 function bindDemoFilters(){const cards=[...document.querySelectorAll('[data-demo-search]')],input=document.querySelector('#demo-filter-search'),select=document.querySelector('#demo-topic-filter'),count=document.querySelector('#demo-count');const update=()=>{const q=(input?.value||'').trim().toLowerCase(),topic=select?.value||'All';let shown=0;cards.forEach(card=>{const visible=(topic==='All'||card.dataset.demoTopic===topic)&&(!q||card.dataset.demoSearch.includes(q));card.hidden=!visible;if(visible)shown++;});if(count)count.textContent=`${shown} labs`;};input?.addEventListener('input',update);select?.addEventListener('change',update);}
 
-function bindDemoLab(route){const id=decodeURIComponent(route.segments[1]||''),demo=demos.find(item=>item.id===id);document.querySelector('[data-action="save-lab-observation"]')?.addEventListener('click',()=>{const a=document.querySelector('[data-lab-scenario="A"]')?.value.trim()||'',b=document.querySelector('[data-lab-scenario="B"]')?.value.trim()||'';if(!a&&!b){showToast('Record at least one observation first');return;}addEngineeringArtifact({type:'Physics lab comparison',title:demo?.title||id,route:location.hash,takeaway:b?`The changed scenario was recorded against the baseline: ${b}`:a,notes:`Scenario A: ${a||'Not recorded'}\nScenario B: ${b||'Not recorded'}`,assumptions:['Interactive teaching model; paired calculator and hardware-specific validity checks remain required.'],provenance:`Interactive demo · ${id}`});showToast('Lab comparison added to project');document.querySelector('.project-pill b').textContent=loadEngineeringProject().artifacts.length;});}
+function bindCaseStudyFilters(){const cards=[...document.querySelectorAll('[data-case-search]')],input=document.querySelector('#case-study-search'),select=document.querySelector('#case-study-subject-filter'),count=document.querySelector('#case-study-count');const update=()=>{const q=(input?.value||'').trim().toLowerCase(),subject=select?.value||'All';let shown=0;cards.forEach(card=>{const subjects=(card.dataset.caseSubjects||'').split(' ');const visible=(subject==='All'||subjects.includes(subject))&&(!q||card.dataset.caseSearch.includes(q));card.hidden=!visible;if(visible)shown++;});if(count)count.textContent=`${shown} cases`;};input?.addEventListener('input',update);select?.addEventListener('change',update);update();}
 
-function bindCaseNote(route){const id=decodeURIComponent(route.segments[1]||''),note=caseNotes.find(item=>item.id===id);document.querySelector('[data-action="add-case-to-project"]')?.addEventListener('click',()=>{if(!note)return;addEngineeringArtifact({type:'Applied case note',title:note.title,route:location.hash,takeaway:note.summary,notes:`Tags: ${note.tags.join(', ')}`,provenance:`Case ${note.number} · Structural Acoustics, Understood`});showToast('Case note added to project');document.querySelector('.project-pill b').textContent=loadEngineeringProject().artifacts.length;});}
+function bindDemoLab(route){const id=decodeURIComponent(route.segments[1]||''),demo=demos.find(item=>item.id===id);document.querySelector('[data-action="save-lab-observation"]')?.addEventListener('click',()=>{const a=document.querySelector('[data-lab-scenario="A"]')?.value.trim()||'',b=document.querySelector('[data-lab-scenario="B"]')?.value.trim()||'';if(!a&&!b){showToast('Record at least one observation first');return;}addEngineeringArtifact({type:'Physics lab comparison',title:demo?.title||id,route:location.hash,takeaway:b?`The changed scenario was recorded against the baseline: ${b}`:a,notes:`Scenario A: ${a||'Not recorded'}\nScenario B: ${b||'Not recorded'}`,assumptions:['Interactive teaching model; paired tool and documented validity checks remain required.'],provenance:`Interactive demo · ${id}`});showToast('Lab comparison added to project');document.querySelector('.project-pill b').textContent=loadEngineeringProject().artifacts.length;});}
+
+function bindCaseStudy(route){const id=decodeURIComponent(route.segments[1]||''),study=caseNotes.find(item=>item.id===id);document.querySelector('[data-action="add-case-to-project"]')?.addEventListener('click',()=>{if(!study)return;addEngineeringArtifact({type:'Applied case study',title:study.title,route:location.hash,takeaway:study.summary,notes:`Tags: ${study.tags.join(', ')}`,provenance:`Case ${study.number} · Structural Acoustics, Understood`});showToast('Case study added to project');document.querySelector('.project-pill b').textContent=loadEngineeringProject().artifacts.length;});}
 
 function bindReferenceFilters(){const input=document.querySelector('#reference-search'),select=document.querySelector('#reference-group-filter'),items=[...document.querySelectorAll('[data-reference-search]')],groups=[...document.querySelectorAll('[data-reference-group]')],count=document.querySelector('#reference-count');const update=()=>{const q=(input?.value||'').trim().toLowerCase(),group=select?.value||'All';let shown=0;items.forEach(item=>{const inGroup=group==='All'||item.closest('[data-reference-group]')?.dataset.referenceGroup===group;const visible=inGroup&&(!q||item.dataset.referenceSearch.includes(q));item.hidden=!visible;if(visible)shown++;});groups.forEach(section=>section.hidden=![...section.querySelectorAll('[data-reference-search]')].some(item=>!item.hidden));if(count)count.textContent=`${shown} sources`;};input?.addEventListener('input',update);select?.addEventListener('change',update);}
-
-function bindHardware(route){const topic=hardwareTopics.find(item=>item.id===decodeURIComponent(route.segments[1]||''));document.querySelector('[data-action="start-hardware-project"]')?.addEventListener('click',()=>{if(!topic)return;const current=loadEngineeringProject();if(current.artifacts.length&&!confirm('Start a new hardware project? Existing project records will be replaced.'))return;const template=projectTemplates.find(item=>item.hardwareId===topic.id)??projectTemplates[0];const project=createEngineeringProject(template.id);project.name=`${topic.title} engineering study`;project.context.hardwareId=topic.id;saveEngineeringProject(project);location.hash='#/workspace';});}
-
-function bindPathway(route){const pathway=learningPathways.find(item=>item.id===decodeURIComponent(route.segments[1]||''));document.querySelectorAll('[data-pathway-step]').forEach(input=>input.addEventListener('change',()=>{if(!pathway)return;const project=loadEngineeringProject(),completed=new Set(project.completedPathSteps[pathway.id]||[]),index=Number(input.dataset.pathwayStep);if(input.checked)completed.add(index);else completed.delete(index);project.completedPathSteps[pathway.id]=[...completed].sort((a,b)=>a-b);saveEngineeringProject(project);render();}));}
 
 function bindWorkspace(){
   let project=loadEngineeringProject();
@@ -20320,20 +20225,34 @@ function bindWorkspace(){
   document.querySelector('[data-project-import]')?.addEventListener('change',async event=>{const file=event.target.files?.[0];if(!file)return;try{project=saveEngineeringProject(normalizeEngineeringProject(JSON.parse(await file.text())));render();}catch{showToast('Project JSON could not be imported');}});
   document.querySelectorAll('[data-remove-artifact]').forEach(button=>button.addEventListener('click',()=>{project.artifacts=project.artifacts.filter(artifact=>artifact.id!==button.dataset.removeArtifact);saveEngineeringProject(project);render();}));
 }
+function legacyRouteTarget(route){
+  const first=route.segments[0]||'',id=decodeURIComponent(route.segments[1]||'');
+  if(first==='case-notes')return `/case-studies${route.params.size?`?${route.params}`:''}`;
+  if(first==='case-note')return `/case-study/${encodeURIComponent(id)}`;
+  if(first==='hardware'){
+    const subjects={fairing:'structural-acoustics',tank:'structures-waves',interstage:'structures-waves',avionics:'random-vibration','feed-system':'acoustics',propulsion:'distributed-loads','payload-deck':'measurement-test'};
+    return id?`/subject/${subjects[id]||'structural-acoustics'}`:'/';
+  }
+  if(first==='pathways')return '/';
+  if(first==='pathway'){
+    const subjects={'new-analyst':'structural-acoustics','sea-analyst':'sea','structural-dynamicist':'dynamics','test-engineer':'measurement-test','launch-integrator':'distributed-loads','noise-control':'acoustics'};
+    return `/subject/${subjects[id]||'structural-acoustics'}`;
+  }
+  return '';
+}
 function render(){
   routeCleanup();routeCleanup=()=>{};const route=routeInfo();let main;
   const [first]=route.segments;
-  if(!first)main=renderHomepage({sections,tools:toolCatalog,demos});
-  else if(first==='subject')main=renderSubjectPage(decodeURIComponent(route.segments[1]||''),{sections,tools:toolCatalog,demos,hardware:hardwareTopics,pathways:learningPathways});
+  const redirect=legacyRouteTarget(route);if(redirect){history.replaceState(null,'',`${location.pathname}${location.search}#${redirect}`);return render();}
+  if(!first)main=renderHomepage({sections,tools:toolCatalog,demos,caseStudies:caseNotes});
+  else if(first==='subject')main=renderSubjectPage(decodeURIComponent(route.segments[1]||''),{sections,tools:toolCatalog,demos,caseStudies:caseNotes});
   else if(first==='cheat-sheet'||first==='chapter')main=renderCheat(route);
   else if(first==='tools')main=renderTools(route);
   else if(first==='tool')main=renderTool(route);
   else if(first==='demos')main=renderDemos();
   else if(first==='demo')main=renderDemo(route);
-  else if(first==='case-notes')main=renderCaseNotes();
-  else if(first==='case-note')main=renderCaseNote(route);
-  else if(first==='hardware')main=renderHardware(route);
-  else if(first==='pathways'||first==='pathway')main=renderPathways(route);
+  else if(first==='case-studies')main=renderCaseStudies(route);
+  else if(first==='case-study')main=renderCaseStudy(route);
   else if(first==='workspace')main=renderWorkspace();
   else if(first==='validation')main=renderValidation();
   else if(first==='references')main=renderReferences();
@@ -20344,10 +20263,10 @@ function render(){
   document.body.classList.toggle('site-system-chapter',first==='cheat-sheet'||first==='chapter');
   document.body.classList.toggle('site-system-calculator',first==='tool'||first==='tools');
   document.body.classList.toggle('site-system-demo',first==='demo'||first==='demos');
-  document.body.classList.toggle('site-system-article',first==='case-note'||first==='case-notes');
+  document.body.classList.toggle('site-system-article',first==='case-study'||first==='case-studies');
   document.body.classList.toggle('site-system-reference',first==='references');
-  document.body.classList.toggle('site-system-hardware',first==='hardware');
-  document.body.classList.toggle('site-system-pathway',first==='pathways'||first==='pathway');
+  document.body.classList.toggle('site-system-hardware',false);
+  document.body.classList.toggle('site-system-pathway',false);
   document.body.classList.toggle('site-system-workspace',first==='workspace');
   document.body.classList.toggle('site-system-validation',first==='validation');
   document.body.classList.toggle('site-system-workbench',first==='tool'&&Boolean(workbenchRegistry[decodeURIComponent(route.segments[1]||'')])&&route.params.get('mode')!=='quick');

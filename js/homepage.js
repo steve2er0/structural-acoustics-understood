@@ -1,15 +1,17 @@
-// Data-driven subject navigation and generic launch-vehicle structural atlas.
+// Data-driven subject navigation for the Wheel of Acoustics.
 
 export const homepageNavigation = [
   { id: 'subjects', label: 'Subjects', descriptor: 'Wheel of acoustics', href: '#/' },
-  { id: 'hardware', label: 'Hardware', descriptor: 'Structural atlas', href: '#/hardware' },
-  { id: 'workflows', label: 'Workflows', descriptor: 'Engineering paths', href: '#/pathways' }
+  { id: 'demos', label: 'Demos', descriptor: 'Interactive physics', href: '#/demos' },
+  { id: 'tools', label: 'Tools', descriptor: 'Models & workbenches', href: '#/tools' },
+  { id: 'cases', label: 'Case Studies', descriptor: 'Applied engineering', href: '#/case-studies' }
 ];
 
 export function homepageNavKey(first = '') {
   if (first === 'tool' || first === 'tools') return 'tools';
-  if (first === 'hardware') return 'hardware';
-  if (first === 'pathway' || first === 'pathways' || first === 'workspace' || first === 'validation') return 'workflows';
+  if (first === 'demo' || first === 'demos') return 'demos';
+  if (first === 'case-study' || first === 'case-studies' || first === 'case-note' || first === 'case-notes') return 'cases';
+  if (first === 'hardware' || first === 'pathway' || first === 'pathways' || first === 'workspace' || first === 'validation' || first === 'references') return 'utilities';
   return 'subjects';
 }
 
@@ -29,8 +31,15 @@ export const subjectWheel = [
     ],
     demoIds: ['multipole-source-lab', 'noise-control-path-lab', 'acoustic-treatment-lab', 'outdoor-propagation-lab'],
     toolIds: ['db', 'sound-power', 'acoustic-field', 'noise-control-path', 'acoustic-treatment', 'acoustic-measurement-planner'],
-    hardwareIds: ['fairing', 'feed-system', 'propulsion'],
-    pathwayIds: ['noise-control', 'new-analyst']
+    caseStudyIds: [
+      'acs519-khie-deep-dive', 'program-acoustic-treatments', 'program-noise-control-workflow',
+      'program-psychoacoustics-binaural-hearing', 'program-noise-metrics-receiver-criteria',
+      'program-acoustic-measurement-practice', 'program-canonical-acoustic-sources',
+      'program-fans-duct-flow-noise', 'program-outdoor-propagation-ground-barriers',
+      'program-room-fields-installed-enclosures', 'indoor-barrier-direct-reverberant',
+      'purge-fan-duct-network', 'compressor-enclosure-weakest-link', 'microphone-placement-trap',
+      'pad-weather-ground-propagation'
+    ]
   },
   {
     id: 'dynamics',
@@ -43,8 +52,7 @@ export const subjectWheel = [
     chapterIds: ['sdof', 'damping-isolation', 'modal-dynamics', 'loss-factors-deep-dive', 'nonlinear-dynamics-joints'],
     demoIds: ['sdof-motion', 'damping-transmissibility', 'two-mode', 'nonlinear-joint-behavior'],
     toolIds: ['sdof', 'damping', 'isolation', 'two-dof', 'modal-density', 'nonlinear-joint'],
-    hardwareIds: ['avionics', 'payload-deck', 'interstage'],
-    pathwayIds: ['new-analyst', 'structural-dynamicist']
+    caseStudyIds: ['accel-displacement', 'acs519-loss-factors-deep-dive', 'workflow-nonlinear-dynamics-joints', 'pump-line-tuned-absorber']
   },
   {
     id: 'structures-waves',
@@ -61,8 +69,12 @@ export const subjectWheel = [
     ],
     demoIds: ['beam-wave', 'dispersion', 'ring', 'orthotropic-coincidence'],
     toolIds: ['beam', 'bending-wave', 'plate-modes', 'shell-acoustics', 'wave-matching-atlas', 'wet-tank-dynamics'],
-    hardwareIds: ['tank', 'interstage', 'fairing'],
-    pathwayIds: ['structural-dynamicist', 'new-analyst']
+    caseStudyIds: [
+      'bending-delay', 'ring-vs-critical', 'honeycomb-junctions-exp-sea',
+      'acs519-shell-acoustics-deep-dive', 'acs519-orthotropic-panels-deep-dive',
+      'acs519-pipe-flow-noise-deep-dive', 'acs519-wave-matching-deep-dive',
+      'acs519-wet-tank-dynamics-deep-dive', 'program-hybrid-method-handoffs'
+    ]
   },
   {
     id: 'random-vibration',
@@ -75,8 +87,7 @@ export const subjectWheel = [
     chapterIds: ['random-psd', 'statistics-extremes', 'miles-equation', 'extreme-response-spectrum', 'nonstationary-nongaussian-environments'],
     demoIds: ['psd-response', 'miles-validity', 'extreme-response-spectrum', 'nonstationary-environment-lab'],
     toolIds: ['time-psd', 'psd-combination', 'grms', 'miles', 'vrs', 'extreme-response', 'nonstationary-environment'],
-    hardwareIds: ['avionics', 'payload-deck'],
-    pathwayIds: ['structural-dynamicist', 'test-engineer']
+    caseStudyIds: ['combine-psds', 'workflow-miles-equation', 'workflow-extreme-response-spectrum', 'program-nonstationary-nongaussian-environments', 'program-combined-environment-timeline']
   },
   {
     id: 'shock',
@@ -89,8 +100,7 @@ export const subjectWheel = [
     chapterIds: ['shock-fatigue'],
     demoIds: ['srs-bank', 'stress-environment-map', 'qualification-notching'],
     toolIds: ['shock-pulse', 'srs', 'pyroshock', 'dynamic-stress-environment', 'qualification-test-planner'],
-    hardwareIds: ['avionics', 'payload-deck', 'propulsion'],
-    pathwayIds: ['structural-dynamicist', 'test-engineer']
+    caseStudyIds: ['acs519-qualification-testing-deep-dive', 'program-multiaxis-mimo-testing', 'program-combined-environment-timeline']
   },
   {
     id: 'fatigue',
@@ -103,8 +113,7 @@ export const subjectWheel = [
     chapterIds: ['vibroacoustic-fatigue'],
     demoIds: ['vibroacoustic-fatigue-lab', 'stress-environment-map', 'mission-environment-timeline'],
     toolIds: ['vibroacoustic-fatigue', 'fds', 'duration-scaling', 'dynamic-stress-environment', 'mission-environment-timeline'],
-    hardwareIds: ['avionics', 'payload-deck', 'fairing'],
-    pathwayIds: ['structural-dynamicist', 'test-engineer']
+    caseStudyIds: ['program-vibroacoustic-fatigue', 'workflow-mitigation-trade-studies', 'program-nonstationary-nongaussian-environments', 'workflow-extreme-response-spectrum']
   },
   {
     id: 'structural-acoustics',
@@ -121,8 +130,12 @@ export const subjectWheel = [
     ],
     demoIds: ['coincidence', 'radiation-efficiency', 'modal-radiation-patterns', 'force-to-sound-power'],
     toolIds: ['critical-frequency', 'radiation-efficiency', 'modal-radiation', 'elastic-panel-tl', 'driven-radiation', 'panel-cavity'],
-    hardwareIds: ['fairing', 'tank', 'feed-system'],
-    pathwayIds: ['new-analyst', 'launch-integrator']
+    caseStudyIds: [
+      'acs519-modal-radiation-deep-dive', 'acs519-piston-fluid-loading-deep-dive',
+      'acs519-computational-vibroacoustics-deep-dive', 'acs519-elastic-panel-tl-deep-dive',
+      'acs519-driven-radiation-deep-dive', 'workflow-transfer-path-analysis',
+      'workflow-payload-fairing-cavities', 'program-launch-vibroacoustic-capstone'
+    ]
   },
   {
     id: 'distributed-loads',
@@ -135,8 +148,7 @@ export const subjectWheel = [
     chapterIds: ['distributed-loads', 'launch-acoustic-sources-deep-dive', 'combined-environment-timeline'],
     demoIds: ['spatial-field', 'joint-acceptance', 'launch-source-map', 'tbl-convection-velocity-map'],
     toolIds: ['spatial-correlation', 'tbl-convection-model', 'fsp-generator', 'launch-acoustic-source', 'equivalent-power-injection', 'vibroacoustic-scaling'],
-    hardwareIds: ['propulsion', 'fairing', 'tank'],
-    pathwayIds: ['launch-integrator', 'structural-dynamicist']
+    caseStudyIds: ['spatial-correlation-loads', 'liftoff-ascent-forcing', 'acs519-launch-acoustic-sources-deep-dive', 'program-source-identification-arrays', 'sea-parameters-equivalent-sea-source-power']
   },
   {
     id: 'sea',
@@ -153,8 +165,14 @@ export const subjectWheel = [
     ],
     demoIds: ['sea-flow', 'sea-validity-map', 'branching-sea-network', 'sea-parameter-chain'],
     toolIds: ['two-subsystem-sea', 'multi-subsystem-sea', 'modal-density-atlas', 'sea-validity-confidence', 'sea-parameter-workbench', 'launch-vibroacoustic-capstone'],
-    hardwareIds: ['fairing', 'tank', 'interstage'],
-    pathwayIds: ['sea-analyst', 'launch-integrator']
+    caseStudyIds: [
+      'sea-readiness', 'honeycomb-junctions-exp-sea', 'clf-not-a-percentage',
+      'acs519-sea-validity-deep-dive', 'acs519-double-panel-sea-deep-dive',
+      'workflow-general-sea-networks', 'sea-parameters-sea-parameter-provenance',
+      'sea-parameters-modal-density-wave-regime-atlas', 'sea-parameters-sea-mobility-radiation-coupling',
+      'sea-parameters-equivalent-sea-source-power', 'sea-parameters-sea-response-recovery-concentration',
+      'sea-parameters-installed-fairing-sea-parameters'
+    ]
   },
   {
     id: 'measurement-test',
@@ -171,47 +189,14 @@ export const subjectWheel = [
     ],
     demoIds: ['modal-test-grid', 'intensity-probe-lab', 'model-test-correlation-lab', 'credibility-scorecard-lab'],
     toolIds: ['time-psd', 'accelerometer', 'modal-test-planner', 'sound-intensity-probe', 'model-test-correlation', 'qualification-test-planner', 'credibility-scorecard'],
-    hardwareIds: ['payload-deck', 'avionics', 'fairing'],
-    pathwayIds: ['test-engineer', 'launch-integrator']
-  }
-];
-
-export const atlasSections = [
-  {
-    id: 'engine', title: 'Engine section', shortTitle: 'Engine', descriptor: 'Propulsion region',
-    summary: 'Broadband turbomachinery forcing, mount loads, plume acoustics, and high-frequency shock enter the vehicle here.',
-    subjects: ['Turbomachinery forcing', 'Pyroshock', 'Mount loads'], href: '#/hardware/propulsion', accent: '#ff9b7a',
-    hotspot: 'M95 790 390 650 585 665 525 955 165 1010 95 940Z', callout: { x: 41, y: 80, align: 'right', line: 235 }
-  },
-  {
-    id: 'lower-tank', title: 'Lower tank barrel', shortTitle: 'Lower tank', descriptor: 'Wet shell structure',
-    summary: 'Shell modes, propellant added mass, slosh, axial load, and distributed pressure couple through the lower barrel.',
-    subjects: ['Wet-wall modes', 'Slosh coupling', 'Axial response'], href: '#/hardware/tank', accent: '#55b8ff',
-    hotspot: 'M390 555 745 390 925 505 600 800 445 830Z', callout: { x: 20, y: 57, align: 'left', line: 0 }
-  },
-  {
-    id: 'intertank', title: 'Intertank', shortTitle: 'Intertank', descriptor: 'Transition structure',
-    summary: 'A stiffness and impedance transition where shell waves, joints, concentrated load paths, and cavity fields exchange energy.',
-    subjects: ['Shell vibration', 'Acoustic coupling', 'Joint transmission'], href: '#/hardware/interstage', accent: '#58d59b',
-    hotspot: 'M740 390 905 315 1018 455 885 585 760 535Z', callout: { x: 22, y: 40, align: 'left', line: 55 }
-  },
-  {
-    id: 'upper-tank', title: 'Upper tank barrel', shortTitle: 'Upper tank', descriptor: 'Cylindrical shell',
-    summary: 'Curvature creates ring and lobar modes while bending-wave speed and coincidence govern structural-acoustic transfer.',
-    subjects: ['Bending waves', 'Ring frequency', 'Acoustic radiation'], href: '#/hardware/tank', accent: '#9478ff',
-    hotspot: 'M900 255 1115 165 1260 315 1030 475 930 415Z', callout: { x: 30, y: 25, align: 'left', line: 105 }
-  },
-  {
-    id: 'forward-skirt', title: 'Forward skirt', shortTitle: 'Forward skirt', descriptor: 'Upper structure',
-    summary: 'Local modes, joints, avionics attachments, and shock paths bridge the tank stack to the payload region.',
-    subjects: ['Structural modes', 'Shock transmission', 'Joint behavior'], href: '#/hardware/avionics', accent: '#f2c663',
-    hotspot: 'M1085 160 1265 95 1360 255 1215 355 1115 305Z', callout: { x: 42, y: 8, align: 'left', line: 85 }
-  },
-  {
-    id: 'fairing', title: 'Payload fairing', shortTitle: 'Fairing', descriptor: 'Payload region',
-    summary: 'The external acoustic field drives the fairing shell, cavity modes, blankets, equipment, and payload interface through parallel paths.',
-    subjects: ['Acoustic environment', 'Panel response', 'Cavity coupling'], href: '#/hardware/fairing', accent: '#6f8cff',
-    hotspot: 'M1050 170 1175 55 1450 15 1485 55 1370 205 1240 305 1110 345 1185 245Z', callout: { x: 83, y: 9, align: 'right', line: 108 }
+    caseStudyIds: [
+      'acs519-modal-testing-deep-dive', 'acs519-intensity-testing-deep-dive',
+      'acs519-qualification-testing-deep-dive', 'workflow-model-test-correlation',
+      'workflow-requirements-margin-flowdown', 'workflow-uncertainty-sensitivity',
+      'program-multiaxis-mimo-testing', 'program-source-identification-arrays',
+      'program-verification-validation-evidence', 'program-acoustic-measurement-practice',
+      'microphone-placement-trap'
+    ]
   }
 ];
 
@@ -225,8 +210,6 @@ export const featuredItems = [
 ];
 
 const defaultSubjectId = 'structural-acoustics';
-const defaultAtlasSectionId = 'fairing';
-const launchVehicleAsset = './assets/homepage/launch-vehicle-cutaway.png';
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -298,35 +281,6 @@ function renderSubjectWheel(sectionMap, demoMap) {
   </div>`;
 }
 
-function segmentMarkup(section) {
-  const common = `class="atlas-region atlas-region-${section.id}" data-atlas-section="${section.id}" href="${section.href}" tabindex="0" aria-label="${esc(section.title)}. ${esc(section.summary)}" style="--region-accent:${section.accent}"`;
-  return `<a ${common}><path class="atlas-hit-region" d="${section.hotspot}" vector-effect="non-scaling-stroke"/></a>`;
-}
-
-function launchVehicleSvg() {
-  return `<svg class="launch-vehicle-svg" viewBox="0 0 1536 1024" preserveAspectRatio="none" role="img" aria-labelledby="atlas-svg-title atlas-svg-description">
-    <title id="atlas-svg-title">Interactive generic launch-vehicle structural atlas</title>
-    <desc id="atlas-svg-description">A sectioned launch vehicle shown diagonally with interactive engine, lower tank, intertank, upper tank, forward skirt, and payload fairing regions.</desc>
-    <defs><radialGradient id="atlas-plume" cx="1" cy=".5" r="1"><stop stop-color="#fff" stop-opacity=".82"/><stop offset=".16" stop-color="#f2c663" stop-opacity=".72"/><stop offset=".48" stop-color="#9478ff" stop-opacity=".32"/><stop offset="1" stop-color="#55b8ff" stop-opacity="0"/></radialGradient><radialGradient id="atlas-plume-core" cx="1" cy=".5" r="1"><stop stop-color="#fff"/><stop offset=".24" stop-color="#fff0c7" stop-opacity=".92"/><stop offset=".55" stop-color="#f2c663" stop-opacity=".48"/><stop offset="1" stop-color="#9478ff" stop-opacity="0"/></radialGradient><filter id="atlas-glow"><feGaussianBlur stdDeviation="8"/></filter></defs>
-    <g class="atlas-orbit-lines" aria-hidden="true"><path d="M90 935C420 670 860 300 1450 65"/><path d="M35 980C470 790 880 330 1510 115"/><path d="M170 1010C530 845 980 425 1500 225"/></g>
-    <g class="atlas-plume" aria-hidden="true"><ellipse cx="42" cy="930" rx="185" ry="82" fill="url(#atlas-plume)" filter="url(#atlas-glow)"/><path d="M155 860C95 872 22 899-85 952 34 974 102 967 180 930Z" fill="url(#atlas-plume)"/><ellipse class="atlas-plume-core" cx="86" cy="922" rx="118" ry="38" fill="url(#atlas-plume-core)"/><path class="atlas-plume-core" d="M180 878C118 886 52 907-24 946c83 7 145-2 216-32Z" fill="url(#atlas-plume-core)"/></g>
-    <image class="atlas-generated-vehicle" href="${launchVehicleAsset}" x="0" y="0" width="1536" height="1024" preserveAspectRatio="none"/>
-    <g class="atlas-hotspots">${atlasSections.map(segmentMarkup).join('')}</g>
-  </svg>`;
-}
-
-function renderAtlasDetails() {
-  return atlasSections.map(section => `<article class="atlas-detail" data-atlas-detail="${section.id}" ${section.id === defaultAtlasSectionId ? '' : 'hidden'}><p class="atlas-detail-kicker">Structural atlas · ${esc(section.descriptor)}</p><h3>${esc(section.title)}</h3><p>${esc(section.summary)}</p><ul>${section.subjects.map(subject => `<li>${esc(subject)}</li>`).join('')}</ul><a href="${section.href}">Open related physics <span aria-hidden="true">→</span></a></article>`).join('');
-}
-
-function renderAtlasMiniature() {
-  return `<svg class="atlas-detail-silhouette" viewBox="0 0 52 184" aria-hidden="true"><path d="M26 4c-8 12-12 29-12 48v36l-5 14v54h34v-54l-5-14V52C38 33 34 16 26 4Z"/><path d="M14 52h24M14 72h24M14 88h24M9 112h34M9 132h34M9 150h34M16 102v54m10-68v68m10-54v54M14 52l24 20M38 52 14 72M14 72l24 16M38 72 14 88"/><path d="m14 156-7 20h12l7-20 7 20h12l-7-20"/></svg>`;
-}
-
-function renderAtlas() {
-  return `<section class="vehicle-atlas" id="vehicle-atlas" data-launch-atlas data-selected="${defaultAtlasSectionId}" aria-labelledby="atlas-heading"><div class="atlas-heading-row"><div><p class="home-kicker">Interactive structural atlas</p><h2 id="atlas-heading">Follow energy through the vehicle.</h2></div><p>Hover, focus, or tap a region.</p></div><div class="atlas-visual">${launchVehicleSvg()}<div class="atlas-callouts" aria-label="Launch vehicle regions">${atlasSections.map(section => `<a class="atlas-callout atlas-callout-${section.id} atlas-callout-${section.callout.align}" data-atlas-section="${section.id}" href="${section.href}" style="--callout-x:${section.callout.x}%;--callout-y:${section.callout.y}%;--line-width:${section.callout.line}px;--region-accent:${section.accent}"><strong>${esc(section.title)}</strong><span>${esc(section.subjects.join(' · '))}</span></a>`).join('')}</div><div class="atlas-detail-stack" aria-live="polite">${renderAtlasDetails()}${renderAtlasMiniature()}</div></div><div class="atlas-region-key" aria-label="Select vehicle region">${atlasSections.map(section => `<button type="button" data-atlas-section="${section.id}" class="${section.id === defaultAtlasSectionId ? 'is-active' : ''}" style="--region-accent:${section.accent}">${esc(section.shortTitle)}</button>`).join('')}</div></section>`;
-}
-
 function renderFeaturedItems() {
   return `<section class="home-section featured-library" aria-labelledby="featured-library-title"><div class="featured-heading"><h2 id="featured-library-title">Featured demos & tools</h2><a href="#/demos">View the full interactive library <span aria-hidden="true">→</span></a></div><div class="featured-strip">${featuredItems.map(item => `<a class="featured-item" href="${item.href}"><div><h3>${esc(item.title)}</h3><p>${esc(item.purpose)}</p></div><div class="featured-visual">${featuredMotif(item.motif)}</div></a>`).join('')}</div></section>`;
 }
@@ -359,18 +313,15 @@ export function renderSubjectPage(subjectId, stats = {}) {
   const sections = Array.isArray(stats.sections) ? stats.sections : [];
   const demos = Array.isArray(stats.demos) ? stats.demos : [];
   const tools = Array.isArray(stats.tools) ? stats.tools : [];
-  const hardware = Array.isArray(stats.hardware) ? stats.hardware : [];
-  const pathways = Array.isArray(stats.pathways) ? stats.pathways : [];
+  const caseStudies = Array.isArray(stats.caseStudies) ? stats.caseStudies : [];
   const sectionMap = new Map(sections.map(section => [section.id, section]));
   const demoMap = new Map(demos.map(demo => [demo.id, demo]));
   const toolMap = new Map(tools.map(tool => [tool.id, tool]));
-  const hardwareMap = new Map(hardware.map(topic => [topic.id, topic]));
-  const pathwayMap = new Map(pathways.map(pathway => [pathway.id, pathway]));
+  const caseStudyMap = new Map(caseStudies.map(study => [study.id, study]));
   const chapters = resolveMappedItems(subject.chapterIds, sectionMap);
   const subjectDemos = resolveMappedItems(subject.demoIds, demoMap);
   const subjectToolset = subjectTools(subject, chapters, subjectDemos, toolMap);
-  const subjectHardware = resolveMappedItems(subject.hardwareIds, hardwareMap);
-  const subjectPathways = resolveMappedItems(subject.pathwayIds, pathwayMap);
+  const subjectCaseStudies = resolveMappedItems(subject.caseStudyIds, caseStudyMap);
   const subjectIndex = subjectWheel.indexOf(subject);
   const previous = subjectWheel[(subjectIndex - 1 + subjectWheel.length) % subjectWheel.length];
   const next = subjectWheel[(subjectIndex + 1) % subjectWheel.length];
@@ -382,16 +333,15 @@ export function renderSubjectPage(subjectId, stats = {}) {
       <div class="subject-page-hero-copy"><p class="home-kicker">Subject ${String(subjectIndex + 1).padStart(2, '0')} · Wheel of Acoustics</p><h1>${esc(subject.label)}</h1><p class="subject-page-question">${esc(subject.question)}</p><p class="subject-page-summary">${esc(subject.summary)}</p><div class="subject-page-actions">${firstChapter ? `<a class="home-primary-action" href="#/cheat-sheet?section=${encodeURIComponent(firstChapter.id)}">Start learning <span aria-hidden="true">→</span></a>` : ''}${firstDemo ? `<a class="home-search-action" href="#/demo/${encodeURIComponent(firstDemo.id)}">Open the first lab</a>` : ''}</div></div>
       <aside class="subject-page-signal" aria-label="Subject contents"><span class="subject-page-symbol">${esc(subject.symbol)}</span><div><strong>${chapters.length}</strong><span>chapters</span></div><div><strong>${subjectDemos.length}</strong><span>interactive labs</span></div><div><strong>${subjectToolset.length}</strong><span>selected tools</span></div></aside>
     </header>
-    <nav class="subject-page-local" aria-label="On this subject page"><a href="#subject-learning">Learning route</a><a href="#subject-labs">Interactive labs</a><a href="#subject-tools">Engineering tools</a><a href="#subject-hardware">Hardware context</a></nav>
+    <nav class="subject-page-local" aria-label="On this subject page"><a href="#subject-learning">Learning route</a><a href="#subject-labs">Interactive demos</a><a href="#subject-tools">Engineering tools</a><a href="#subject-cases">Case studies</a></nav>
     <div class="subject-page-content">
-      <section class="subject-page-intuition" aria-labelledby="subject-intuition-title"><div><p class="subject-section-index">01 · Physical intuition</p><h2 id="subject-intuition-title">Begin with the engineering question.</h2></div><div class="subject-intuition-grid"><article><span>Observe</span><h3>${esc(subject.question)}</h3><p>Identify the physical quantities, frequency range, boundary conditions, and energy paths before choosing a model.</p></article><article><span>Model</span><h3>Move from mechanism to response.</h3><p>Use the ordered chapters to connect governing behavior, assumptions, screening equations, and higher-fidelity methods.</p></article><article><span>Verify</span><h3>Challenge the result with evidence.</h3><p>Use the labs, tools, hardware applications, and test context to expose limits before making a design decision.</p></article></div></section>
+      <section class="subject-page-intuition" aria-labelledby="subject-intuition-title"><div><p class="subject-section-index">01 · Physical intuition</p><h2 id="subject-intuition-title">Begin with the engineering question.</h2></div><div class="subject-intuition-grid"><article><span>Observe</span><h3>${esc(subject.question)}</h3><p>Identify the physical quantities, frequency range, boundary conditions, and energy paths before choosing a model.</p></article><article><span>Model</span><h3>Move from mechanism to response.</h3><p>Use the ordered chapters to connect governing behavior, assumptions, screening equations, and higher-fidelity methods.</p></article><article><span>Verify</span><h3>Challenge the result with evidence.</h3><p>Use the demos, tools, and applied case studies to expose model limits before making a design decision.</p></article></div></section>
       <section class="subject-page-section" id="subject-learning" aria-labelledby="subject-learning-title"><header><div><p class="subject-section-index">02 · Learning route</p><h2 id="subject-learning-title">Follow the subject from foundation to application.</h2></div><p>${chapters.length} curated chapters, ordered to preserve the physical story.</p></header><div class="subject-learning-grid">${chapters.map((chapter, index) => `<a href="#/cheat-sheet?section=${encodeURIComponent(chapter.id)}" class="subject-learning-card"><span class="subject-card-step">${String(index + 1).padStart(2, '0')} · ${subjectLearningStage(index, chapters.length)}</span><p>${esc(chapter.eyebrow)}</p><h3>${esc(chapter.title)}</h3><small>${esc(chapter.summary)}</small><footer><span>${chapter.concepts?.length || 0} concepts</span><b aria-hidden="true">→</b></footer></a>`).join('')}</div></section>
       <section class="subject-page-pair">
         <section class="subject-page-section" id="subject-labs" aria-labelledby="subject-labs-title"><header><div><p class="subject-section-index">03 · Interactive behavior</p><h2 id="subject-labs-title">See the physics move.</h2></div><a href="#/demos">All labs →</a></header><div class="subject-resource-list">${subjectDemos.map(demo => `<a href="#/demo/${encodeURIComponent(demo.id)}"><span>Interactive lab</span><div><h3>${esc(demo.title)}</h3><p>${esc(demo.description)}</p></div><b aria-hidden="true">↗</b></a>`).join('')}</div></section>
         <section class="subject-page-section" id="subject-tools" aria-labelledby="subject-tools-title"><header><div><p class="subject-section-index">04 · Engineering models</p><h2 id="subject-tools-title">Calculate and interpret.</h2></div><a href="#/tools">All tools →</a></header><div class="subject-resource-list subject-tool-list">${subjectToolset.map(tool => `<a href="#/tool/${encodeURIComponent(tool.id)}"><span>${esc(tool.complexity || 'Engineering tool')} · ${esc(tool.category)}</span><div><h3>${esc(tool.title)}</h3><p>${esc(tool.description)}</p></div><b aria-hidden="true">↗</b></a>`).join('')}</div></section>
       </section>
-      <section class="subject-page-section subject-hardware-section" id="subject-hardware" aria-labelledby="subject-hardware-title"><header><div><p class="subject-section-index">05 · Hardware application</p><h2 id="subject-hardware-title">Put the subject on real structure.</h2></div><a href="#/hardware">Complete hardware atlas →</a></header><div class="subject-hardware-grid">${subjectHardware.map(topic => `<a href="#/hardware/${encodeURIComponent(topic.id)}" style="--hardware-color:${topic.accent || subject.accent}"><span>${esc(topic.eyebrow)}</span><h3>${esc(topic.title)}</h3><p>${esc(topic.summary)}</p><dl><div><dt>Typical source</dt><dd>${esc(topic.sources?.[0] || 'Configuration dependent')}</dd></div><div><dt>Response evidence</dt><dd>${esc(topic.responses?.[0] || 'Model and test dependent')}</dd></div></dl><b>Open hardware guide <i aria-hidden="true">→</i></b></a>`).join('')}</div></section>
-      ${subjectPathways.length ? `<section class="subject-page-section subject-pathways-section" aria-labelledby="subject-pathways-title"><header><div><p class="subject-section-index">06 · Guided workflows</p><h2 id="subject-pathways-title">Continue through an analyst pathway.</h2></div><a href="#/pathways">All workflows →</a></header><div class="subject-pathway-grid">${subjectPathways.map(pathway => `<a href="#/pathway/${encodeURIComponent(pathway.id)}"><span>${esc(pathway.role)}</span><h3>${esc(pathway.title)}</h3><p>${esc(pathway.summary)}</p><small>${pathway.steps?.length || 0} guided steps <b aria-hidden="true">→</b></small></a>`).join('')}</div></section>` : ''}
+      <section class="subject-page-section subject-cases-section" id="subject-cases" aria-labelledby="subject-cases-title"><header><div><p class="subject-section-index">05 · Applied engineering</p><h2 id="subject-cases-title">See where judgment changes the answer.</h2></div><a href="#/case-studies?subject=${encodeURIComponent(subject.id)}">All ${esc(subject.shortLabel)} cases →</a></header><div class="subject-case-grid">${subjectCaseStudies.slice(0, 6).map(study => `<a href="#/case-study/${encodeURIComponent(study.id)}"><span>Case ${esc(study.number)} · ${esc(study.readTime)} read</span><h3>${esc(study.title)}</h3><p>${esc(study.summary)}</p><b>Read case study <i aria-hidden="true">→</i></b></a>`).join('')}</div></section>
     </div>
     <nav class="subject-page-pagination" aria-label="Adjacent subjects"><a href="#/subject/${encodeURIComponent(previous.id)}"><small>Previous subject</small><strong>${esc(previous.label)}</strong></a><a class="subject-page-wheel-link" href="#/">Back to wheel</a><a href="#/subject/${encodeURIComponent(next.id)}"><small>Next subject</small><strong>${esc(next.label)}</strong></a></nav>
   </div>`;
@@ -401,20 +351,21 @@ export function renderHomepage(stats = {}) {
   const sections = Array.isArray(stats.sections) ? stats.sections : [];
   const tools = Array.isArray(stats.tools) ? stats.tools : [];
   const demos = Array.isArray(stats.demos) ? stats.demos : [];
+  const caseStudies = Array.isArray(stats.caseStudies) ? stats.caseStudies : [];
   const sectionMap = new Map(sections.map(section => [section.id, section]));
   const demoMap = new Map(demos.map(demo => [demo.id, demo]));
   const counts = [
     `${stats.chapters ?? (sections.length || '60+')} chapters`,
     `${Array.isArray(stats.tools) ? tools.length : stats.tools ?? '100+'} tools`,
-    `${Array.isArray(stats.demos) ? demos.length : stats.demos ?? '70+'} demos`
+    `${Array.isArray(stats.demos) ? demos.length : stats.demos ?? '70+'} demos`,
+    `${Array.isArray(stats.caseStudies) ? caseStudies.length : stats.caseStudies ?? '60+'} case studies`
   ];
   return `<div class="atlas-home wheel-home">
     <section class="subject-home-hero" id="subjects" aria-labelledby="homepage-title">
-      <header class="subject-home-copy"><p class="home-kicker">Structural acoustics · subject-first navigation</p><h1 id="homepage-title">Navigate the wheel of acoustics.</h1><p class="home-lede">Choose the physical subject first. Then move directly into its chapters, interactive behavior, hardware applications, or engineering tools.</p><div class="home-actions"><button type="button" class="home-primary-action" data-action="search">Search the knowledge base <span aria-hidden="true">⌘K</span></button><a class="home-search-action" href="#/cheat-sheet">Browse every chapter</a></div><p class="home-counts">${counts.map(count => `<span>${esc(count)}</span>`).join('')}</p></header>
+      <header class="subject-home-copy"><p class="home-kicker">Structural acoustics · subject-first navigation</p><h1 id="homepage-title">Navigate the wheel of acoustics.</h1><p class="home-lede">Choose the physical subject first. Then learn the concepts, explore interactive demos, use engineering tools, and read applied case studies.</p><div class="home-actions"><button type="button" class="home-primary-action" data-action="search">Search the knowledge base <span aria-hidden="true">⌘K</span></button><a class="home-search-action" href="#/cheat-sheet">Browse every chapter</a></div><p class="home-counts">${counts.map(count => `<span>${esc(count)}</span>`).join('')}</p></header>
       ${renderSubjectWheel(sectionMap, demoMap)}
     </section>
-    <section class="home-entry-strip" aria-label="Other ways to navigate"><a href="#/hardware"><span>Apply it</span><strong>Browse by hardware</strong><p>Trace sources, paths, responses, measurements, and models through the launch vehicle.</p></a><a href="#/pathways"><span>Do the work</span><strong>Follow a workflow</strong><p>Move through analysis, test, verification, and handoff decisions in sequence.</p></a><a href="#/case-notes"><span>Use judgment</span><strong>Read applied case notes</strong><p>See where assumptions, shortcuts, and model boundaries change the conclusion.</p></a></section>
-    <section class="home-section home-hardware-section" aria-labelledby="home-hardware-title"><div class="home-content-heading"><div><p class="home-kicker">Hardware application</p><h2 id="home-hardware-title">Then follow the energy through the vehicle.</h2></div><a href="#/hardware">Open the complete hardware atlas <span aria-hidden="true">→</span></a></div>${renderAtlas()}</section>
+    <section class="home-entry-strip" aria-label="Explore the library"><a href="#/demos"><span>Explore</span><strong>Interactive demos</strong><p>Form a hypothesis, move the variables, and see the controlling physics respond.</p></a><a href="#/tools"><span>Calculate</span><strong>Engineering tools</strong><p>Use quick screens and guided workbenches organized by the same subject taxonomy.</p></a><a href="#/case-studies"><span>Apply judgment</span><strong>Case studies & articles</strong><p>See where assumptions, shortcuts, measurements, and model boundaries change the conclusion.</p></a></section>
     ${renderFeaturedItems()}
   </div>`;
 }
@@ -457,24 +408,5 @@ export function bindHomepage(root = document) {
     selectSubject(explorer.dataset.selected || defaultSubjectId);
   }
 
-  const atlas = root.querySelector('[data-launch-atlas]');
-  if (atlas) {
-    const targets = [...atlas.querySelectorAll('[data-atlas-section]')];
-    const details = [...atlas.querySelectorAll('[data-atlas-detail]')];
-    const selectAtlas = id => {
-      if (!atlasSections.some(section => section.id === id)) return;
-      atlas.dataset.selected = id;
-      targets.forEach(target => target.classList.toggle('is-active', target.dataset.atlasSection === id));
-      details.forEach(detail => { detail.hidden = detail.dataset.atlasDetail !== id; });
-    };
-    targets.forEach(target => {
-      const activate = () => selectAtlas(target.dataset.atlasSection);
-      target.addEventListener('pointerenter', activate);
-      target.addEventListener('focus', activate);
-      controllers.push(() => { target.removeEventListener('pointerenter', activate); target.removeEventListener('focus', activate); });
-      if (target.tagName === 'BUTTON') { target.addEventListener('click', activate); controllers.push(() => target.removeEventListener('click', activate)); }
-    });
-    selectAtlas(atlas.dataset.selected || defaultAtlasSectionId);
-  }
   return () => controllers.forEach(cleanup => cleanup());
 }

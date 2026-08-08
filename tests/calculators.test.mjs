@@ -79,7 +79,6 @@ import { jointAcceptance, spatialCoherence, supportedDemoIds } from '../js/demos
 import { assertDemoTakeawayRegistry, buildDemoTakeaway, demoTakeawayRegistry } from '../js/demo-takeaways.js';
 import { assertEngineeringResult, engineeringResultToText } from '../js/engineering-results.js';
 import {
-  atlasSections,
   featuredItems,
   homepageNavigation,
   homepageNavKey,
@@ -691,7 +690,8 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   assert.match(html,/const __demoTakeaways=\(\(\)=>\{/);
   assert.match(html,/function mountDemoTakeaway\(root, id\)/);
   assert.match(html,/Engineering takeaway/);
-  assert.match(html,/Read the complete launch-vehicle deep dive/);
+  assert.match(html,/Read the complete applied case study/);
+  assert.match(html,/#\/case-studies/);
   assert.match(html,/id: 'model-test-correlation'/);
   assert.match(html,/id: 'miles-equation'/);
   assert.match(html,/id: 'extreme-response-spectrum'/);
@@ -719,7 +719,8 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   assert.match(html,/site-system-chapter/);
   assert.match(html,/function renderHomepage\(stats = \{\}\)/);
   assert.match(html,/function bindHomepage\(root = document\)/);
-  assert.match(html,/Interactive generic launch-vehicle structural atlas/);
+  assert.match(html,/Navigate the wheel of acoustics/);
+  assert.doesNotMatch(html,/Interactive generic launch-vehicle structural atlas/);
   assert.match(html,/const __launchSeaCapstone=\(\(\)=>\{/);
   assert.match(html,/const __workbenchRuntime=\(\(\)=>\{/);
   assert.match(html,/const __engineeringWorkbenches=\(\(\)=>\{/);
@@ -827,12 +828,12 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
   const allSections=[...baseSections,...acs519Sections,...workflowExpansionSections,...programExpansionSections,...seaParameterSections];
   const allTools=[...toolCatalog,...extraToolCatalog,...acs519ToolCatalog,...workflowExpansionToolCatalog,...programExpansionToolCatalog,...seaParameterToolCatalog];
   const allDemos=[...baseDemos,...acs519Demos,...workflowExpansionDemos,...programExpansionDemos,...seaParameterDemos];
+  const allCaseStudies=[...baseCaseNotes,...acs519CaseNotes,...workflowExpansionCaseNotes,...programExpansionCaseNotes,...seaParameterCaseNotes];
   const sectionIds=new Set(allSections.map(section=>section.id));
   const toolIds=new Set(allTools.map(tool=>tool.id));
   const demoIds=new Set(allDemos.map(demo=>demo.id));
-  const hardwareIds=new Set(hardwareTopics.map(topic=>topic.id));
-  const pathwayIds=new Set(learningPathways.map(pathway=>pathway.id));
-  const routeItems=[...homepageNavigation,...atlasSections,...featuredItems];
+  const caseStudyIds=new Set(allCaseStudies.map(study=>study.id));
+  const routeItems=[...homepageNavigation,...featuredItems];
   const verifyRoute=href=>{
     const tool=href.match(/^#\/tool\/([^?]+)/)?.[1];
     const demo=href.match(/^#\/demo\/([^?]+)/)?.[1];
@@ -842,8 +843,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
     if(section)assert.ok(sectionIds.has(section),`homepage section route ${section} is missing`);
     assert.match(href,/^#\//,`homepage route ${href} must use the SPA router`);
   };
-  assert.equal(homepageNavigation.length,3);
-  assert.equal(atlasSections.length,6);
+  assert.deepEqual(homepageNavigation.map(item=>item.id),['subjects','demos','tools','cases']);
   assert.equal(featuredItems.length,6);
   assert.equal(subjectWheel.length,10);
   assert.deepEqual(subjectWheel.map(subject=>subject.id).filter(id=>['random-vibration','shock','fatigue'].includes(id)),['random-vibration','shock','fatigue']);
@@ -856,53 +856,62 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
     subject.demoIds.forEach(id=>assert.ok(demoIds.has(id),`${subject.id} references missing demo ${id}`));
     assert.ok(subject.toolIds.length>=5,`${subject.id} needs at least five selected tools`);
     subject.toolIds.forEach(id=>assert.ok(toolIds.has(id),`${subject.id} references missing tool ${id}`));
-    assert.ok(subject.hardwareIds.length>=2,`${subject.id} needs at least two hardware applications`);
-    subject.hardwareIds.forEach(id=>assert.ok(hardwareIds.has(id),`${subject.id} references missing hardware ${id}`));
-    assert.ok(subject.pathwayIds.length>=2,`${subject.id} needs at least two guided pathways`);
-    subject.pathwayIds.forEach(id=>assert.ok(pathwayIds.has(id),`${subject.id} references missing pathway ${id}`));
-    const subjectHtml=renderSubjectPage(subject.id,{sections:allSections,tools:allTools,demos:allDemos,hardware:hardwareTopics,pathways:learningPathways});
+    assert.ok(subject.caseStudyIds.length>=3,`${subject.id} needs at least three applied case studies`);
+    subject.caseStudyIds.forEach(id=>assert.ok(caseStudyIds.has(id),`${subject.id} references missing case study ${id}`));
+    const subjectHtml=renderSubjectPage(subject.id,{sections:allSections,tools:allTools,demos:allDemos,caseStudies:allCaseStudies});
     assert.match(subjectHtml,new RegExp(`class="subject-page" style="--subject-color:${subject.accent}"`));
     assert.match(subjectHtml,/Physical intuition/);
     assert.match(subjectHtml,/Learning route/);
     assert.match(subjectHtml,/Interactive behavior/);
     assert.match(subjectHtml,/Engineering models/);
-    assert.match(subjectHtml,/Hardware application/);
-    assert.match(subjectHtml,/Guided workflows/);
+    assert.match(subjectHtml,/Applied engineering/);
+    assert.match(subjectHtml,/Case studies/);
+    assert.doesNotMatch(subjectHtml,/Hardware application/);
+    assert.doesNotMatch(subjectHtml,/Guided workflows/);
     assert.doesNotMatch(subjectHtml,/\bundefined\b/);
   }
-  assert.equal(new Set(atlasSections.map(section=>section.id)).size,atlasSections.length);
-  atlasSections.forEach(section=>assert.equal(section.subjects.length,3,`${section.id} must expose three engineering subjects`));
+  assert.deepEqual([...new Set(subjectWheel.flatMap(subject=>subject.caseStudyIds))].sort(),[...caseStudyIds].sort(),'subject guides must expose every case study');
   routeItems.forEach(item=>verifyRoute(item.href));
   assert.equal(homepageNavKey('tool'),'tools');
-  assert.equal(homepageNavKey('hardware'),'hardware');
-  assert.equal(homepageNavKey('pathways'),'workflows');
+  assert.equal(homepageNavKey('demos'),'demos');
+  assert.equal(homepageNavKey('case-studies'),'cases');
+  assert.equal(homepageNavKey('hardware'),'utilities');
+  assert.equal(homepageNavKey('pathways'),'utilities');
   assert.equal(homepageNavKey('cheat-sheet','shell-acoustics-deep-dive'),'subjects');
-  const html=renderHomepage({sections:allSections,tools:allTools,demos:allDemos});
+  const html=renderHomepage({sections:allSections,tools:allTools,demos:allDemos,caseStudies:allCaseStudies});
   assert.match(html,/Navigate the wheel of acoustics/);
   assert.match(html,/data-subject-select="random-vibration"/);
   assert.match(html,/data-subject-select="shock"/);
   assert.match(html,/data-subject-select="fatigue"/);
   assert.match(html,/data-subject-detail="measurement-test"/);
-  assert.match(html,/aria-labelledby="atlas-heading"/);
   assert.match(html,/aria-live="polite"/);
-  assert.match(html,/data-atlas-section="fairing"/);
-  assert.match(html,/assets\/homepage\/launch-vehicle-cutaway\.png/);
-  assert.match(html,/class="atlas-hit-region"/);
+  assert.match(html,/#\/demos/);
+  assert.match(html,/#\/tools/);
+  assert.match(html,/#\/case-studies/);
   assert.match(html,/113 tools/);
+  assert.match(html,/66 case studies/);
+  assert.doesNotMatch(html,/#\/hardware/);
+  assert.doesNotMatch(html,/Guided workflows/);
   assert.match(appSource,/data-tools-menu/);
   assert.match(appSource,/tools\.slice\(0,3\)/);
-  assert.match(appSource,/#\/tools\?category=/);
+  assert.match(appSource,/#\/tools\?subject=/);
+  assert.match(appSource,/data-tool-filter="subject"/);
   assert.match(appSource,/first==='subject'.*renderSubjectPage/);
+  assert.match(appSource,/first==='case-studies'.*renderCaseStudies/);
+  assert.match(appSource,/function legacyRouteTarget/);
+  assert.doesNotMatch(appSource,/function renderHardware/);
+  assert.doesNotMatch(appSource,/function renderPathways/);
   assert.match(appSource,/site-system-subject/);
   assert.match(appSource,/type:'Subject'.*#\/subject\//);
+  assert.match(appSource,/type:'Case study'.*#\/case-study\//);
   assert.match(renderSubjectPage('missing-subject'),/That subject is not on the wheel/);
 });
 
 test('offline cache includes the demo takeaway runtime',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v34'/);
+  assert.match(worker,/const CACHE = 'sau-v35'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
-  assert.match(worker,/\.\/assets\/homepage\/launch-vehicle-cutaway\.png/);
+  assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);
   assert.match(worker,/\.\/js\/site-components\.js/);
   assert.match(worker,/\.\/js\/engineering-system\.js/);

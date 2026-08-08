@@ -208,7 +208,7 @@ const demosWithAcs519Block = demosBlock.replace(
   'const {twoSubsystemEnergyBalance}=__seaCoupling;',
   'const {twoSubsystemEnergyBalance}=__seaCoupling;\nconst {acs519PreviewSvg,mountAcs519Demo,acs519SupportedDemoIds}=__acs519Demos;\nconst {workflowExpansionPreviewSvg,mountWorkflowExpansionDemo,workflowExpansionSupportedDemoIds}=__workflowExpansionDemos;\nconst {programExpansionPreviewSvg,mountProgramExpansionDemo,programExpansionSupportedDemoIds}=__programExpansionDemos;\nconst {seaParameterPreviewSvg,mountSeaParameterDemo,seaParameterSupportedDemoIds}=__seaParameterDemos;'
 );
-const homepageBlock = `const __homepage=(()=>{\n${moduleSource(homepageModule)}\nreturn {homepageNavigation,homepageNavKey,subjectWheel,atlasSections,featuredItems,renderHomepage,renderSubjectPage,bindHomepage};\n})();\n\n`;
+const homepageBlock = `const __homepage=(()=>{\n${moduleSource(homepageModule)}\nreturn {homepageNavigation,homepageNavKey,subjectWheel,featuredItems,renderHomepage,renderSubjectPage,bindHomepage};\n})();\n\n`;
 const siteComponentsBlock = `const __siteComponents=(()=>{\n${moduleSource(siteComponentsModule)}\nreturn {renderPageShell,renderBreadcrumbs,renderSectionHeader,renderCallout,renderLinkCollection,siteComponentInventory};\n})();\n\n`;
 const engineeringSystemExports = [
   'engineeringSystemSchema', 'engineeringSystemVersion', 'engineeringProjectStorageKey',

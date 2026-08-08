@@ -176,7 +176,7 @@ export const learningPathways = Object.freeze([
     pathStep('Model–test validation lab', 'Workbench', '#/tool/model-test-correlation', 'Document correlation and residual evidence.')
   ] },
   { id: 'launch-integrator', title: 'Launch-vehicle integrator', role: 'Program-level vibroacoustics', summary: 'Follow mission events from propulsion and aerodynamics to vehicle, payload, test, and credibility decisions.', steps: [
-    pathStep('Launch hardware atlas', 'Atlas', '#/hardware', 'Identify physical sources, paths, and receivers by region.'),
+    pathStep('Launch-vehicle subjects', 'Subject hub', '#/subject/distributed-loads', 'Connect physical sources, paths, and receivers through the subject-first curriculum.'),
     pathStep('Launch excitation workbench', 'Workbench', '#/tool/launch-acoustic-source', 'Define distributed forcing and accepted power.'),
     pathStep('Launch SEA capstone', 'Capstone', '#/tool/launch-vibroacoustic-capstone', 'Solve subsystem energy, coupling, and response.'),
     pathStep('Mission environment center', 'Workbench', '#/tool/mission-environment-timeline', 'Map event controllers and evidence maturity.'),
