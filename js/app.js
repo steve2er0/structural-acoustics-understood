@@ -10,7 +10,7 @@ import { programExpansionCalculatorRegistry } from './program-expansion-calculat
 import { programExpansionSections, programExpansionToolCatalog, programExpansionDemos, programExpansionCaseNotes, programExpansionReferenceGroups } from './program-expansion-data.js';
 import { seaParameterCalculatorRegistry } from './sea-parameters-calculators.js';
 import { seaParameterSections, seaParameterToolCatalog, seaParameterDemos, seaParameterCaseNotes, seaParameterReferenceGroups } from './sea-parameters-data.js';
-import { lineChartSvg, heatmapSvg, downloadCsv, downloadSvg, downloadText } from './charts.js';
+import { lineChartSvg, heatmapSvg, harmonicPhase, signedHeatColor, downloadCsv, downloadSvg, downloadText } from './charts.js';
 import { demoPreviewSvg, mountDemo } from './demos.js';
 import { engineeringResultToText } from './engineering-results.js';
 import { homepageNavigation, homepageNavKey, renderHomepage, renderSubjectPage, bindHomepage, subjectWheel } from './homepage.js';
@@ -336,12 +336,18 @@ function renderResult(result,meta){
   const renderPlot=(p,i,primary=false)=>{const svg=lineChartSvg(p);return `<div class="result-block${primary?' result-block-primary':''}" data-result-section="plot"><div class="chart-toolbar"><button data-chart-data="${i}">View data</button><button data-chart-csv="${i}">Download CSV</button><button data-chart-svg="${i}">Download SVG</button><button data-chart-png="${i}">Download PNG</button></div><div class="chart-shell site-chart-container" data-chart="${i}">${svg}</div><div class="chart-data-panel" data-chart-data-panel="${i}" hidden></div></div>`;};
   const renderHeatmap=(h,i,primary=false)=>`<div class="result-block${primary?' result-block-primary':''}" data-result-section="heatmap"><div class="chart-toolbar"><button data-heatmap-svg="${i}">Download SVG</button><button data-heatmap-png="${i}">Download PNG</button></div><div class="chart-shell site-chart-container" data-heatmap="${i}">${heatmapSvg(h)}</div></div>`;
   const evidence=result.presentation?.primaryEvidence;
+  const animation=result.presentation?.animation;
+  const animationControls=animation?.type==='harmonic'?`<section class="mode-animation-panel" data-mode-animation data-default-rate="${animation.defaultRateHz}"><div class="mode-animation-copy"><p class="eyebrow">Harmonic mode animation</p><p>${esc(animation.note)}</p></div><div class="mode-animation-actions"><button type="button" class="button-secondary" data-mode-animation-toggle aria-pressed="true">Pause</button><label><span>Visual speed</span><select data-mode-animation-rate><option value="0.25">Slow</option><option value="0.5" ${animation.defaultRateHz===.5?'selected':''}>Normal</option><option value="1">Fast</option></select></label><button type="button" class="button-quiet" data-mode-animation-reset>Reset</button><output data-mode-animation-phase aria-hidden="true">+1.00 phase</output><span class="sr-only" data-mode-animation-status aria-live="polite"></span></div></section>`:'';
+  const primaryHeatmapIndices=new Set();
   let primaryEvidence='';
   if(evidence?.type==='plot'&&result.plots?.[evidence.index])primaryEvidence=renderPlot(result.plots[evidence.index],evidence.index,true);
-  else if(evidence?.type==='heatmap'&&result.heatmaps?.[evidence.index])primaryEvidence=renderHeatmap(result.heatmaps[evidence.index],evidence.index,true);
+  else if(evidence?.type==='heatmap'&&result.heatmaps?.[evidence.index]){
+    const count=Math.max(1,result.presentation?.primaryEvidenceCount||1),indices=result.heatmaps.map((_,index)=>index).slice(evidence.index,evidence.index+count);indices.forEach(index=>primaryHeatmapIndices.add(index));
+    const maps=indices.map(index=>renderHeatmap(result.heatmaps[index],index,true)).join('');primaryEvidence=indices.length>1?`<div class="result-evidence-grid" aria-label="Primary mode-shape plots">${maps}</div>`:maps;
+  }
   else if(evidence?.type==='table'&&result.tables?.[evidence.index])primaryEvidence=renderTable(result.tables[evidence.index],{primary:true,index:evidence.index});
   const supportingPlots=(result.plots||[]).map((plot,index)=>evidence?.type==='plot'&&evidence.index===index?'':renderPlot(plot,index)).join('');
-  const supportingHeatmaps=(result.heatmaps||[]).map((heatmap,index)=>evidence?.type==='heatmap'&&evidence.index===index?'':renderHeatmap(heatmap,index)).join('');
+  const supportingHeatmaps=(result.heatmaps||[]).map((heatmap,index)=>primaryHeatmapIndices.has(index)?'':renderHeatmap(heatmap,index)).join('');
   const supportingTables=(result.tables||[]).map((table,index)=>evidence?.type==='table'&&evidence.index===index?'':renderTable(table,{index})).join('');
   const supportingEvidence=`${supportingPlots}${supportingHeatmaps}${supportingTables}`;
   const csv=result.csv?`<div class="result-block"><button class="button-secondary" data-action="download-csv">Download result CSV</button></div>`:'';
@@ -349,7 +355,7 @@ function renderResult(result,meta){
   const secondaryValues=supportingValues?`<details class="supporting-values"><summary>Supporting values <span>${result.values.length-primaryValueCount}</span></summary><div class="result-summary result-summary-supporting">${supportingValues}</div></details>`:'';
   const numericalResults=`<section class="numerical-results-section" data-result-section="numerical"><h3 class="result-section-title">Numerical results</h3><div class="result-summary">${primaryValues}</div>${secondaryValues}</section>`;
   const supportingSection=supportingEvidence?`<details class="supporting-evidence"><summary>Supporting plots and tables</summary><div class="supporting-evidence-body">${supportingEvidence}</div></details>`:'';
-  const resultBody=evidence?.type==='plot'||evidence?.type==='heatmap'?`${primaryEvidence}${numericalResults}${commentary}`:evidence?.type==='table'?`${numericalResults}${primaryEvidence}${commentary}`:`${numericalResults}${commentary}`;
+  const resultBody=evidence?.type==='plot'||evidence?.type==='heatmap'?`${animationControls}${primaryEvidence}${numericalResults}${commentary}`:evidence?.type==='table'?`${numericalResults}${primaryEvidence}${commentary}`:`${numericalResults}${commentary}`;
   return `${resultBody}${supportingSection}${csv}${actions}`;
 }
 function svgToPng(svgText,filename){
@@ -360,8 +366,18 @@ function bindTool(route){
   const id=decodeURIComponent(route.segments[1]||''),meta=toolById.get(id),calc=calculatorRegistry[id],form=document.querySelector('#calculator-form'),resultsEl=document.querySelector('#calculator-results');if(!form||!calc)return;
   const unitSystem=form.querySelector('[data-unit-system]');
   const fieldsByKey=new Map((calc.inputs||[]).map(field=>[field.key,field]));
-  let latest=null,latestCanonical=null,lastUnitSystem=unitSystem?.value||'SI';
-  const run=()=>{try{latestCanonical=calc.compute(collectForm(form));latest=displayEngineeringResult(latestCanonical,unitSystem?.value||'SI');resultsEl.innerHTML=renderResult(latest,meta);bindResultActions(latest,meta,latestCanonical);}catch(err){latest=latestCanonical=null;resultsEl.innerHTML=`<div class="calc-error"><strong>Calculation could not be completed.</strong><br>${esc(err.message||String(err))}</div>`;}};
+  let latest=null,latestCanonical=null,lastUnitSystem=unitSystem?.value||'SI',resultCleanup=()=>{};
+  const run=()=>{resultCleanup();resultCleanup=()=>{};try{latestCanonical=calc.compute(collectForm(form));latest=displayEngineeringResult(latestCanonical,unitSystem?.value||'SI');resultsEl.innerHTML=renderResult(latest,meta);resultCleanup=bindResultActions(latest,meta,latestCanonical)||(()=>{});}catch(err){latest=latestCanonical=null;resultsEl.innerHTML=`<div class="calc-error"><strong>Calculation could not be completed.</strong><br>${esc(err.message||String(err))}</div>`;}};
+  const applyPresetDependencies=target=>{
+    if(target?.dataset.key!=='material'||typeof calc.syncPreset!=='function')return;
+    const current=collectForm(form),synced=calc.syncPreset(current),system=unitSystem?.value||'SI';
+    for(const field of calc.inputs||[]){
+      if(!(field.key in synced)||Object.is(synced[field.key],current[field.key]))continue;
+      const input=form.querySelector(`[data-key="${CSS.escape(field.key)}"]`);if(!input)continue;
+      const displayValue=input.matches('input[type="number"],input[type="range"]')?toDisplayNumber(synced[field.key],field.unit,system):synced[field.key];
+      input.value=Number.isFinite(Number(displayValue))?String(Number(Number(displayValue).toPrecision(12))):String(displayValue??'');
+    }
+  };
   const syncUnitSystem=()=>{
     const next=unitSystem?.value||'SI';
     if(next===lastUnitSystem)return;
@@ -372,14 +388,42 @@ function bindTool(route){
   form.addEventListener('submit',e=>{e.preventDefault();run();});
   unitSystem?.addEventListener('input',syncUnitSystem);
   unitSystem?.addEventListener('change',syncUnitSystem);
-  let timer;form.addEventListener('input',e=>{if(e.target===unitSystem||e.target.matches('textarea'))return;clearTimeout(timer);timer=setTimeout(run,120);});
+  let timer;form.addEventListener('input',e=>{if(e.target===unitSystem||e.target.matches('textarea'))return;applyPresetDependencies(e.target);clearTimeout(timer);timer=setTimeout(run,120);});
   document.querySelector('[data-action="reset-calculator"]')?.addEventListener('click',()=>{const system=unitSystem?.value||'SI';for(const f of calc.inputs||[]){const el=form.querySelector(`[data-key="${CSS.escape(f.key)}"]`);if(el)el.value=el.matches('input[type="number"],input[type="range"]')?toDisplayNumber(f.default,f.unit,system):f.default??'';}run();});
   document.querySelector('[data-action="share-calculation"]')?.addEventListener('click',async()=>{const values=collectForm(form),params=new URLSearchParams();if(unitSystem?.value==='English')params.set('units','English');for(const f of calc.inputs||[]){const value=String(values[f.key]??'');if(value===String(f.default??''))continue;if(f.type==='textarea'&&value.length>800)continue;params.set(f.key,value);}const url=`${location.origin}${location.pathname}#/tool/${encodeURIComponent(id)}${params.size?`?${params}`:''}`;try{await navigator.clipboard.writeText(url);showToast(params.size?'Share link copied':'Link copied; large pasted data remains local');}catch{prompt('Copy this link',url);}});
   document.querySelector('[data-action="copy-results"]')?.addEventListener('click',async()=>{if(!latest){showToast('Calculate first');return;}const text=engineeringResultToText(meta.title,latest,formatNumber);try{await navigator.clipboard.writeText(text);showToast('Engineering result copied');}catch{prompt('Copy engineering result',text);}});
   document.querySelectorAll('.file-load').forEach(btn=>btn.addEventListener('click',()=>document.querySelector(`.file-input[data-target="${CSS.escape(btn.dataset.target)}"]`)?.click()));
   document.querySelectorAll('.file-input').forEach(input=>input.addEventListener('change',async()=>{const file=input.files?.[0];if(!file)return;const text=await file.text(),target=document.getElementById(input.dataset.target);if(target){target.value=text;run();showToast(`${file.name} loaded locally`);}}));
   document.querySelectorAll('.tab-button').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.tab-button').forEach(b=>b.classList.toggle('active',b===btn));const tpl=document.querySelector(`#tab-${CSS.escape(btn.dataset.tab)}`);document.querySelector('#tab-panel').innerHTML=tpl?.innerHTML||'';}));
+  const priorCleanup=routeCleanup;routeCleanup=()=>{priorCleanup();resultCleanup();clearTimeout(timer);};
   run();
+}
+function bindHarmonicAnimation(result){
+  const controls=document.querySelector('[data-mode-animation]');
+  if(!controls||result.presentation?.animation?.type!=='harmonic')return()=>{};
+  const plotSvgs=[...document.querySelectorAll('svg[data-chart-animation="harmonic"]')];
+  const heatmapCells=[...document.querySelectorAll('[data-heatmap-base-value]')];
+  if(!plotSvgs.length&&!heatmapCells.length)return()=>{};
+  const toggle=controls.querySelector('[data-mode-animation-toggle]'),rateInput=controls.querySelector('[data-mode-animation-rate]'),reset=controls.querySelector('[data-mode-animation-reset]'),phaseOutput=controls.querySelector('[data-mode-animation-phase]'),status=controls.querySelector('[data-mode-animation-status]'),reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
+  let running=!reducedMotion.matches,elapsed=0,lastTime=null,lastDraw=-Infinity,frameId=0,rate=Number(rateInput?.value)||Number(controls.dataset.defaultRate)||.5;
+  const setControlState=message=>{toggle.textContent=running?'Pause':'Play';toggle.setAttribute('aria-pressed',String(running));controls.classList.toggle('is-paused',!running);if(message)status.textContent=message;};
+  const applyPhase=phase=>{
+    phaseOutput.textContent=`${phase>=0?'+':''}${phase.toFixed(2)} phase`;
+    controls.style.setProperty('--mode-phase',String((phase+1)/2));
+    plotSvgs.forEach(svg=>{const zero=Number(svg.dataset.chartZeroY)||0;svg.querySelectorAll('[data-chart-animated-path]').forEach(path=>path.setAttribute('transform',`translate(0 ${zero}) scale(1 ${phase}) translate(0 ${-zero})`));});
+    heatmapCells.forEach(cell=>cell.setAttribute('fill',signedHeatColor(Number(cell.dataset.heatmapBaseValue)*phase,Number(cell.dataset.heatmapScale))));
+  };
+  const schedule=()=>{if(running&&!document.hidden&&!frameId)frameId=requestAnimationFrame(step);};
+  const step=now=>{frameId=0;if(!running)return;if(lastTime!=null)elapsed+=(now-lastTime)/1000;lastTime=now;if(now-lastDraw>=50){applyPhase(harmonicPhase(elapsed,rate));lastDraw=now;}schedule();};
+  const setRunning=(next,message)=>{running=next;lastTime=null;if(!running&&frameId){cancelAnimationFrame(frameId);frameId=0;}setControlState(message);schedule();};
+  const onToggle=()=>setRunning(!running,running?'Mode animation paused.':'Mode animation playing.');
+  const onRate=()=>{rate=Number(rateInput.value)||.5;status.textContent=`Visual speed set to ${rateInput.selectedOptions[0]?.textContent||rate}.`;};
+  const onReset=()=>{elapsed=0;lastTime=null;lastDraw=-Infinity;applyPhase(1);status.textContent='Mode animation reset to maximum positive displacement.';};
+  const onVisibility=()=>{lastTime=null;if(document.hidden&&frameId){cancelAnimationFrame(frameId);frameId=0;}else schedule();};
+  const onReducedMotion=event=>{if(event.matches)setRunning(false,'Mode animation paused because reduced motion is enabled.');};
+  toggle.addEventListener('click',onToggle);rateInput.addEventListener('change',onRate);reset.addEventListener('click',onReset);document.addEventListener('visibilitychange',onVisibility);reducedMotion.addEventListener?.('change',onReducedMotion);
+  applyPhase(1);setControlState(reducedMotion.matches?'Mode animation starts paused because reduced motion is enabled.':'Mode animation playing.');schedule();
+  return()=>{running=false;if(frameId)cancelAnimationFrame(frameId);toggle.removeEventListener('click',onToggle);rateInput.removeEventListener('change',onRate);reset.removeEventListener('click',onReset);document.removeEventListener('visibilitychange',onVisibility);reducedMotion.removeEventListener?.('change',onReducedMotion);};
 }
 function bindResultActions(result,meta,canonicalResult=result){
   document.querySelector('[data-action="download-csv"]')?.addEventListener('click',()=>downloadCsv(result.csv));
@@ -401,6 +445,7 @@ function bindResultActions(result,meta,canonicalResult=result){
   });
   (result.heatmaps||[]).forEach((h,i)=>{const svg=heatmapSvg(h);document.querySelector(`[data-heatmap-svg="${i}"]`)?.addEventListener('click',()=>downloadSvg(`${slug(meta.title)}-heatmap-${i+1}.svg`,svg));document.querySelector(`[data-heatmap-png="${i}"]`)?.addEventListener('click',()=>svgToPng(svg,`${slug(meta.title)}-heatmap-${i+1}.png`));});
   document.querySelector('[data-action="add-result-to-project"]')?.addEventListener('click',()=>{const nextTools=toolHandoffs(meta,toolCatalog).map(tool=>tool.id);const form=document.querySelector('#calculator-form');addEngineeringArtifact({type:'Calculator result',title:meta.title,route:location.hash,sourceToolId:meta.id,inputs:form?collectForm(form):{},nextTools,takeaway:canonicalResult.interpretation.summary,validity:`${canonicalResult.validity.regime} ${canonicalResult.validity.confidence}`,assumptions:[...canonicalResult.assumptions.satisfied,...canonicalResult.assumptions.limitations.map(item=>`Limitation: ${item}`)],warnings:canonicalResult.assumptions.alerts,values:canonicalResult.values,provenance:`${primaryToolSubject(meta).label} · ${meta.id||location.hash.split('/').pop()}`});showToast('Result added to engineering project');document.querySelector('.project-pill b').textContent=loadEngineeringProject().artifacts.length;});
+  return bindHarmonicAnimation(result);
 }
 
 const searchItems=(()=>{

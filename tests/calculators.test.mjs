@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { sections as baseSections, toolCatalog, demos as baseDemos, caseNotes as baseCaseNotes } from '../js/data.js';
 import { extraToolCatalog } from '../js/extra-data.js';
-import { calculatorRegistry } from '../js/calculators.js';
+import { calculatorRegistry, materials } from '../js/calculators.js';
 import { extraCalculatorRegistry } from '../js/extra-calculators.js';
 import { acs519Sections, acs519ToolCatalog, acs519Demos, acs519CaseNotes } from '../js/acs519-data.js';
 import { acs519CalculatorRegistry } from '../js/acs519-calculators.js';
@@ -79,6 +79,7 @@ import { jointAcceptance, spatialCoherence, supportedDemoIds } from '../js/demos
 import { assertDemoTakeawayRegistry, buildDemoTakeaway, demoTakeawayRegistry } from '../js/demo-takeaways.js';
 import { assertEngineeringResult, engineeringResultToText } from '../js/engineering-results.js';
 import { axisUnitInfo, displayEngineeringResult, fromDisplayNumber, toDisplayNumber, toDisplayStep, unitConversion } from '../js/unit-system.js';
+import { heatmapSvg, harmonicPhase, lineChartSvg, signedHeatColor } from '../js/charts.js';
 import {
   featuredItems,
   homepageNavigation,
@@ -238,6 +239,89 @@ test('structural wave-speed tool compares elastic families and locates plate cri
   assert.match(result.interpretation.physicalMeaning,/critical frequency.*bending phase speed equals.*sound speed/i);
   assert.match(result.interpretationByUnit.English.summary,/16573.*10162.*ft\/s/);
   assert.ok(registry['bending-wave'].references.some(reference=>/Wave Motion in Elastic Solids/.test(reference.title)));
+});
+
+test('material presets synchronize dependent properties and plate modal frequencies',()=>{
+  const plate=registry['plate-modes'],base=defaults('plate-modes'),frequencies=new Map();
+  for(const [id,material] of Object.entries(materials)){
+    const synced=plate.syncPreset({...base,material:id});
+    assert.equal(synced.E_gpa,material.E/1e9);
+    assert.equal(synced.rho,material.rho);
+    assert.equal(synced.nu,material.nu);
+    const result=plate.compute(synced),h=Number(synced.thickness_mm)/1000,a=Number(synced.a),b=Number(synced.b),D=material.E*h**3/(12*(1-material.nu**2));
+    const expected=Math.PI/2*Math.sqrt(D/(material.rho*h))*(1/a**2+1/b**2);
+    close(metric(result,'Fundamental mode'),expected,1e-10);
+    frequencies.set(id,metric(result,'Fundamental mode'));
+  }
+  assert.notEqual(frequencies.get('aluminum'),frequencies.get('steel'));
+  assert.ok(frequencies.get('cfrp')>frequencies.get('aluminum'));
+  const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
+  assert.match(appSource,/function calc\.syncPreset|typeof calc\.syncPreset/);
+  assert.match(appSource,/applyPresetDependencies\(e\.target\)/);
+  assert.match(appSource,/toDisplayNumber\(synced\[field\.key\],field\.unit,system\)/);
+});
+
+test('beam, plate, and cylinder tools expose boundary-consistent normalized mode shapes',()=>{
+  for(const boundary of ['simply-supported','cantilever','fixed-fixed']){
+    const beam=registry.beam.compute({...defaults('beam'),boundary}),shapePlot=beam.plots[0];
+    assert.match(shapePlot.title,/normalized mode shapes/i);
+    assert.equal(beam.presentation.animation.type,'harmonic');
+    assert.equal(shapePlot.animation.type,'harmonic');
+    assert.equal(shapePlot.traces.length,4);
+    shapePlot.traces.forEach(shape=>{
+      close(Math.max(...shape.y.map(Math.abs)),1,1e-10);
+      close(shape.y[0],0,1e-10);
+      if(boundary!=='cantilever')close(shape.y.at(-1),0,1e-10);
+      assert.match(shape.name,/Mode \d · [\d.]+ Hz/);
+    });
+  }
+
+  const plate=registry['plate-modes'].compute(defaults('plate-modes'));
+  assert.equal(plate.presentation.primaryEvidence.type,'heatmap');
+  assert.equal(plate.presentation.primaryEvidenceCount,4);
+  assert.equal(plate.heatmaps.length,4);
+  assert.equal(plate.presentation.animation.type,'harmonic');
+  plate.heatmaps.forEach(shape=>{
+    const values=shape.matrix.flat();
+    close(Math.max(...values.map(Math.abs)),1,1e-10);
+    assert.ok(shape.matrix[0].every(value=>Math.abs(value)<1e-10));
+    assert.ok(shape.matrix.at(-1).every(value=>Math.abs(value)<1e-10));
+    assert.ok(shape.matrix.every(row=>Math.abs(row[0])<1e-10&&Math.abs(row.at(-1))<1e-10));
+    assert.equal(shape.diverging,true);
+    assert.equal(shape.animation.type,'harmonic');
+  });
+  const plateSvg=heatmapSvg(plate.heatmaps[0]);
+  assert.match(plateSvg,/Normalized position x\/a/);
+  assert.match(plateSvg,/Normalized position y\/b/);
+
+  const cylinder=registry['ring-frequency'].compute(defaults('ring-frequency'));
+  assert.equal(cylinder.presentation.primaryEvidence.type,'heatmap');
+  assert.equal(cylinder.presentation.primaryEvidenceCount,4);
+  assert.equal(cylinder.heatmaps.length,4);
+  assert.equal(cylinder.presentation.animation.type,'harmonic');
+  assert.equal(cylinder.plots[0].traces.length,4);
+  cylinder.heatmaps.forEach(shape=>{
+    const values=shape.matrix.flat();
+    close(Math.max(...values.map(Math.abs)),1,1e-10);
+    assert.ok(shape.matrix[0].every(value=>Math.abs(value)<1e-10));
+    assert.ok(shape.matrix.at(-1).every(value=>Math.abs(value)<1e-10));
+    assert.ok(shape.matrix.every(row=>Math.abs(row[0]-row.at(-1))<1e-10));
+    assert.equal(shape.animation.type,'harmonic');
+  });
+  assert.match(cylinder.interpretation.physicalMeaning,/basis shapes, not frequency-tagged eigenmodes/i);
+  const beamSvg=lineChartSvg(registry.beam.compute(defaults('beam')).plots[0]);
+  assert.match(beamSvg,/data-chart-animation="harmonic"/);
+  assert.match(beamSvg,/data-chart-zero-y=/);
+  assert.match(plateSvg,/data-heatmap-base-value=/);
+  close(harmonicPhase(0,1),1,1e-12);
+  close(harmonicPhase(.25,1),0,1e-12);
+  close(harmonicPhase(.5,1),-1,1e-12);
+  assert.notEqual(signedHeatColor(-1,1),signedHeatColor(1,1));
+  assert.equal(signedHeatColor(0,1),'rgb(238,242,244)');
+  const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
+  assert.match(appSource,/data-mode-animation-toggle/);
+  assert.match(appSource,/requestAnimationFrame\(step\)/);
+  assert.match(appSource,/prefers-reduced-motion: reduce/);
 });
 
 test('every calculator result uses the shared card, plot, and table unit conversion',()=>{
@@ -744,7 +828,13 @@ test('CLF uncertainty study is reproducible and distinguishes random spread from
 
 test('standalone build contains the current catalogs, renderers, and demo takeaways',()=>{
   const html=readFileSync(new URL('../standalone.html',import.meta.url),'utf8');
+  const syncSource=readFileSync(new URL('../scripts/sync-standalone.mjs',import.meta.url),'utf8');
+  assert.match(syncSource,/const chartsModule = await read\('js\/charts\.js'\)/);
+  assert.match(syncSource,/const chartsBlock = `const __charts=/);
   assert.match(html,/const __calculators=\(\(\)=>\{[\s\S]*Integrated acceleration/);
+  assert.match(html,/const __charts=\(\(\)=>\{[\s\S]*function harmonicPhase/);
+  assert.match(html,/data-chart-animation="harmonic"/);
+  assert.match(html,/data-heatmap-base-value/);
   assert.doesNotMatch(html,/Total mean square/);
   assert.match(html,/"title": "Spatial Correlation Fields"/);
   assert.match(html,/function spatialCoherence\(model,params=\{\}\)/);
@@ -1036,7 +1126,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes the demo takeaway runtime',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v51'/);
+  assert.match(worker,/const CACHE = 'sau-v55'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);

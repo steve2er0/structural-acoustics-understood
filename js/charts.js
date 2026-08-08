@@ -104,7 +104,8 @@ export function lineChartSvg(plot, { width = 840, height = 390 } = {}) {
   const xTicks = xLog ? logTicks(xmin, xmax) : linearTicks(xmin, xmax).map(value => ({ value, major: true }));
   const yTicks = yLog ? logTicks(ymin, ymax) : linearTicks(ymin, ymax).map(value => ({ value, major: true }));
   const clipId = `clip-${Math.random().toString(36).slice(2)}`;
-  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(plot.title || 'Engineering chart')}">`;
+  const harmonic=plot.animation?.type==='harmonic';
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(plot.title || 'Engineering chart')}"${harmonic?` data-chart-animation="harmonic" data-chart-zero-y="${sy(0).toFixed(3)}"`:''}>`;
   s += `<rect width="${width}" height="${height}" fill="#fff"/><defs><clipPath id="${clipId}"><rect x="${m.left}" y="${m.top}" width="${innerW}" height="${innerH}"/></clipPath></defs>`;
   s += `<text x="${m.left}" y="22" font-family="ui-sans-serif,system-ui" font-size="13" font-weight="700" fill="#172027">${escapeHtml(plot.title || '')}</text>`;
   for (const t of xTicks) {
@@ -122,7 +123,7 @@ export function lineChartSvg(plot, { width = 840, height = 390 } = {}) {
   (plot.traces ?? []).forEach((t, i) => {
     const color = t.color || palette[i % palette.length];
     const path = pathFromTrace(t, sx, sy, xLog, yLog);
-    if (path) s += `<path data-chart-trace="${i}" d="${path}" fill="none" stroke="${color}" stroke-width="${t.emphasis ? 3 : 2}" stroke-linejoin="round" stroke-linecap="round" ${t.dash ? 'stroke-dasharray="7 5"' : ''}/>`;
+    if (path) s += `<path data-chart-trace="${i}"${harmonic?' data-chart-animated-path="true" vector-effect="non-scaling-stroke"':''} d="${path}" fill="none" stroke="${color}" stroke-width="${t.emphasis ? 3 : 2}" stroke-linejoin="round" stroke-linecap="round" ${t.dash ? 'stroke-dasharray="7 5"' : ''}/>`;
     const count=Math.min(t.x?.length??0,t.y?.length??0),step=Math.max(1,Math.ceil(count/80));
     for(let point=0;point<count;point+=step){const x=Number(t.x[point]),y=Number(t.y[point]);if(!Number.isFinite(x)||!Number.isFinite(y)||(xLog&&x<=0)||(yLog&&y<=0))continue;s+=`<circle data-chart-trace="${i}" cx="${sx(x).toFixed(2)}" cy="${sy(y).toFixed(2)}" r="5" fill="transparent" stroke="transparent" pointer-events="all"><title>${escapeHtml(t.name||`Trace ${i+1}`)} · ${escapeHtml(plot.xLabel||'x')}: ${escapeHtml(formatNumber(x))} · ${escapeHtml(plot.yLabel||'y')}: ${escapeHtml(formatNumber(y))}</title></circle>`;}
   });
@@ -149,30 +150,51 @@ function heatColor(t) {
   return `rgb(${c.join(',')})`;
 }
 
+export function signedHeatColor(value, scale) {
+  const t = Math.max(-1, Math.min(1, value / Math.max(scale, 1e-12)));
+  const neutral = [238,242,244], target = t < 0 ? [39,105,171] : [205,83,57], amount = Math.abs(t);
+  const color = neutral.map((channel,index)=>Math.round(channel+(target[index]-channel)*amount));
+  return `rgb(${color.join(',')})`;
+}
+
+export function harmonicPhase(elapsedSeconds, cyclesPerSecond = .5) {
+  return Math.cos(2*Math.PI*Math.max(0,Number(elapsedSeconds)||0)*Math.max(0,Number(cyclesPerSecond)||0));
+}
+
 export function heatmapSvg(hm, { width = 720, height = 560 } = {}) {
   const matrix = hm.matrix || [];
-  const N = matrix.length;
-  if (!N) return '';
-  const m = { left: 78, top: 54, right: 42, bottom: 62 };
-  const size = Math.min(width - m.left - m.right, height - m.top - m.bottom);
-  const cell = size / N;
+  const rows = matrix.length, columns = Math.max(0,...matrix.map(row=>row.length));
+  if (!rows || !columns) return '';
+  const m = { left: 82, top: 54, right: 72, bottom: 72 };
+  const availableW=width-m.left-m.right,availableH=height-m.top-m.bottom;
+  const aspect=Math.max(.55,Math.min(2.4,Number(hm.aspectRatio)||columns/rows));
+  const plotW=Math.min(availableW,availableH*aspect),plotH=Math.min(availableH,availableW/aspect);
+  const cellW=plotW/columns,cellH=plotH/rows;
   const values = matrix.flat().filter(Number.isFinite);
   const min = hm.min ?? Math.min(...values), max = hm.max ?? Math.max(...values);
+  const magnitude=Math.max(Math.abs(min),Math.abs(max),1e-12);
   let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(hm.title || 'Heatmap')}"><rect width="${width}" height="${height}" fill="#fff"/>`;
   s += `<text x="${m.left}" y="25" font-family="ui-sans-serif,system-ui" font-size="13" font-weight="700" fill="#172027">${escapeHtml(hm.title || '')}</text>`;
-  for (let i=0;i<N;i++) for (let j=0;j<N;j++) {
+  for (let i=0;i<rows;i++) for (let j=0;j<columns;j++) {
     const value = matrix[i][j];
-    const t = max === min ? .5 : (value-min)/(max-min);
-    s += `<rect x="${m.left+j*cell}" y="${m.top+i*cell}" width="${cell+.2}" height="${cell+.2}" fill="${heatColor(t)}"><title>${i+1}, ${j+1}: ${formatNumber(value)}</title></rect>`;
+    if(!Number.isFinite(value)){s+=`<rect x="${m.left+j*cellW}" y="${m.top+i*cellH}" width="${cellW+.2}" height="${cellH+.2}" fill="#d9d4ca" opacity=".18"/>`;continue;}
+    const t = max === min ? .5 : (value-min)/(max-min),harmonic=hm.animation?.type==='harmonic',color=hm.diverging?signedHeatColor(value,magnitude):heatColor(t);
+    const xValue=hm.xValues?.[j],yValue=hm.yValues?.[i],coordinates=xValue!=null&&yValue!=null?`${formatNumber(xValue)}, ${formatNumber(yValue)}`:`${i+1}, ${j+1}`;
+    s += `<rect x="${m.left+j*cellW}" y="${m.top+i*cellH}" width="${cellW+.2}" height="${cellH+.2}" fill="${color}"${harmonic?` data-heatmap-base-value="${value}" data-heatmap-scale="${magnitude}"`:''}><title>${escapeHtml(coordinates)}: ${formatNumber(value)}</title></rect>`;
   }
-  const step = Math.max(1, Math.ceil(N/10));
-  for(let i=0;i<N;i+=step){
-    const label=hm.labels?.[i] ?? String(i+1);
-    s += `<text x="${m.left+i*cell+cell/2}" y="${m.top+size+18}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="#667176">${escapeHtml(label)}</text>`;
-    s += `<text x="${m.left-8}" y="${m.top+i*cell+cell/2+3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="#667176">${escapeHtml(label)}</text>`;
+  const xStep=Math.max(1,Math.ceil(columns/8)),yStep=Math.max(1,Math.ceil(rows/8));
+  for(let j=0;j<columns;j+=xStep){
+    const label=hm.xLabels?.[j]??hm.labels?.[j]??String(j+1);
+    s += `<text x="${m.left+j*cellW+cellW/2}" y="${m.top+plotH+18}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="#667176">${escapeHtml(label)}</text>`;
   }
-  const gx=m.left+size+18, gy=m.top, gh=size;
-  for(let i=0;i<80;i++)s+=`<rect x="${gx}" y="${gy+i*gh/80}" width="13" height="${gh/80+1}" fill="${heatColor(1-i/79)}"/>`;
+  for(let i=0;i<rows;i+=yStep){
+    const label=hm.yLabels?.[i]??hm.labels?.[i]??String(i+1);
+    s += `<text x="${m.left-8}" y="${m.top+i*cellH+cellH/2+3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="#667176">${escapeHtml(label)}</text>`;
+  }
+  if(hm.xLabel)s+=`<text x="${m.left+plotW/2}" y="${height-12}" text-anchor="middle" font-family="ui-sans-serif,system-ui" font-size="11" fill="#5f6b70">${escapeHtml(hm.xLabel)}</text>`;
+  if(hm.yLabel)s+=`<text x="16" y="${m.top+plotH/2}" text-anchor="middle" transform="rotate(-90 16 ${m.top+plotH/2})" font-family="ui-sans-serif,system-ui" font-size="11" fill="#5f6b70">${escapeHtml(hm.yLabel)}</text>`;
+  const gx=m.left+plotW+18, gy=m.top, gh=plotH;
+  for(let i=0;i<80;i++){const fraction=1-i/79,value=max-(max-min)*(i/79),color=hm.diverging?signedHeatColor(value,magnitude):heatColor(fraction);s+=`<rect x="${gx}" y="${gy+i*gh/80}" width="13" height="${gh/80+1}" fill="${color}"/>`;}
   s += `<text x="${gx+18}" y="${gy+8}" font-family="ui-monospace,monospace" font-size="9" fill="#667176">${formatNumber(max)}</text><text x="${gx+18}" y="${gy+gh}" font-family="ui-monospace,monospace" font-size="9" fill="#667176">${formatNumber(min)}</text></svg>`;
   return s;
 }

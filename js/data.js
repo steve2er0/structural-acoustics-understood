@@ -1594,7 +1594,7 @@ export const toolCatalog = [
     "id": "beam",
     "title": "Beam Response",
     "category": "Structures",
-    "description": "Calculate section properties, static response, stress, and first natural frequencies for common beam boundary conditions.",
+    "description": "Calculate section properties, static response, stress, natural frequencies, and normalized bending mode shapes for common beam boundary conditions.",
     "complexity": "Core",
     "keywords": [
       "beam",
@@ -1606,7 +1606,7 @@ export const toolCatalog = [
     "id": "plate-modes",
     "title": "Rectangular Plate Modes",
     "category": "Structures",
-    "description": "Calculate thin, simply supported isotropic plate modes and identify near-degenerate mode pairs.",
+    "description": "Calculate thin, simply supported isotropic plate modes, view their signed mode shapes, and identify near-degenerate pairs.",
     "complexity": "Core",
     "keywords": [
       "plate",
@@ -1633,7 +1633,7 @@ export const toolCatalog = [
     "id": "ring-frequency",
     "title": "Cylinder Ring Frequency",
     "category": "Structural Acoustics",
-    "description": "Estimate the thin-shell ring frequency and compare the shell scale with plate-like local bending behavior.",
+    "description": "Estimate the thin-shell ring frequency, compare it with plate-like bending, and explore axial-circumferential shell mode-shape families.",
     "complexity": "Core",
     "keywords": [
       "cylinder",

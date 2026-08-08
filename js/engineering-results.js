@@ -17,7 +17,7 @@
  * @property {{satisfied: string[], warnings: string[], alerts: string[], limitations: string[]}} assumptions
  * @property {{regime: string, confidence: string}} validity
  * @property {RelatedConcept[]} relatedConcepts
- * @property {{primaryEvidence: {type: string, index: number}|null, primaryValueCount: number}} presentation
+ * @property {{primaryEvidence: {type: string, index: number}|null, primaryEvidenceCount: number, primaryValueCount: number, animation: Object|null}} presentation
  * @property {Array<Object>} [plots]
  * @property {Array<Object>} [heatmaps]
  * @property {Array<Object>} [tables]
@@ -210,7 +210,13 @@ function buildPresentation(id, result, values) {
   }
   return {
     primaryEvidence,
-    primaryValueCount: Math.max(1, Math.min(values.length, Number(requested.primaryValueCount) || 6))
+    primaryEvidenceCount: Math.max(1, Math.min(6, Number(requested.primaryEvidenceCount) || 1)),
+    primaryValueCount: Math.max(1, Math.min(values.length, Number(requested.primaryValueCount) || 6)),
+    animation: requested.animation?.type==='harmonic'?{
+      type:'harmonic',
+      defaultRateHz:Math.max(.05,Math.min(2,Number(requested.animation.defaultRateHz)||.5)),
+      note:requested.animation.note||'Animation uses a slowed common visual phase; it does not reproduce physical frequency ratios or amplitude.'
+    }:null
   };
 }
 

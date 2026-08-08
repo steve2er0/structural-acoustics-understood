@@ -23,6 +23,7 @@ const seaCouplingModule = await read('js/sea-coupling.js');
 const honeycombModule = await read('js/honeycomb-paper.js');
 const extraCalculatorsModule = await read('js/extra-calculators.js');
 const extraDataModule = await read('js/extra-data.js');
+const chartsModule = await read('js/charts.js');
 const acs519DataModule = await read('js/acs519-data.js');
 const acs519PhysicsModule = await read('js/acs519-physics.js');
 const acs519CalculatorsModule = await read('js/acs519-calculators.js');
@@ -202,6 +203,9 @@ standalone = replaceRange(standalone, extraCalculatorsStart, 'const __extraData=
 const extraDataBlock = `const __extraData=(()=>{\n${moduleSource(extraDataModule)}\nreturn {extraToolCatalog};\n})();\n\n`;
 standalone = replaceRange(standalone, 'const __extraData=(()=>{', 'const __charts=(()=>{', extraDataBlock);
 
+const chartsBlock = `const __charts=(()=>{\n${moduleSource(chartsModule)}\nreturn {escapeHtml,formatNumber,lineChartSvg,signedHeatColor,harmonicPhase,heatmapSvg,downloadText,downloadCsv,downloadSvg};\n})();\n\n`;
+standalone = replaceRange(standalone, 'const __charts=(()=>{', 'const __demoTakeaways=(()=>{', chartsBlock);
+
 const demoHoneycombNames = [
   'PAPER_LAP_TRANSMISSION',
   'honeycombCoincidenceFrequency',
@@ -261,7 +265,7 @@ const appPrelude = [
   'const {programExpansionCalculatorRegistry}=__programExpansionCalculators;',
   'const {seaParameterCalculatorRegistry}=__seaParameterCalculators;',
   'const {extraToolCatalog}=__extraData;',
-  'const {lineChartSvg,heatmapSvg,downloadCsv,downloadSvg,downloadText}=__charts;',
+  'const {lineChartSvg,heatmapSvg,harmonicPhase,signedHeatColor,downloadCsv,downloadSvg,downloadText}=__charts;',
   'const {demoPreviewSvg,mountDemo}=__demosModule;',
   'const {homepageNavigation,homepageNavKey,renderHomepage,renderSubjectPage,bindHomepage,subjectWheel}=__homepage;',
   'const {renderPageShell,renderBreadcrumbs,renderSectionHeader,renderCallout,renderLinkCollection}=__siteComponents;',

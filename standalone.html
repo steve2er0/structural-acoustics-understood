@@ -360,6 +360,20 @@ h3 { font-size: 1.07rem; line-height: 1.2; letter-spacing: -.018em; }
 .related-concept span { color: var(--quiet); font-size: .65rem; }
 .result-block { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--line); }
 .result-block-primary { margin-top: 0; padding-top: 0; border-top: 0; }
+.result-evidence-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+.result-evidence-grid .result-block { min-width: 0; }
+.result-evidence-grid .chart-shell, .result-evidence-grid .chart-shell svg { min-height: 0; }
+.mode-animation-panel { --mode-phase: 1; display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .8rem; padding: .75rem .85rem; border: 1px solid var(--line); border-left: 3px solid var(--accent); background: rgba(255,255,255,.48); }
+.mode-animation-panel::before { content: ''; width: .58rem; height: 2.4rem; flex: 0 0 auto; border-radius: 999px; background: linear-gradient(to top,#2769ab 0 50%,#cd5339 50% 100%); opacity: calc(.25 + var(--mode-phase) * .75); }
+.mode-animation-copy { min-width: 180px; flex: 1; }
+.mode-animation-copy .eyebrow { margin: 0 0 .18rem; }
+.mode-animation-copy > p:last-child { max-width: 660px; margin: 0; color: var(--muted); font-size: .68rem; line-height: 1.45; }
+.mode-animation-actions { display: flex; align-items: end; justify-content: flex-end; gap: .45rem; flex-wrap: wrap; }
+.mode-animation-actions > button { min-height: 38px; }
+.mode-animation-actions label { display: grid; gap: .16rem; color: var(--quiet); font-family: var(--mono); font-size: .55rem; letter-spacing: .05em; text-transform: uppercase; }
+.mode-animation-actions select { min-height: 38px; padding: .35rem 1.8rem .35rem .55rem; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
+.mode-animation-actions output { min-width: 6.8rem; padding: .58rem .65rem; color: var(--muted); font: .62rem var(--mono); text-align: right; }
+.mode-animation-panel.is-paused::before { opacity: .35; }
 .result-block h3 { margin-bottom: .7rem; font-size: .82rem; font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em; }
 .interpretation { padding: .85rem; border-left: 3px solid var(--accent); background: var(--accent-soft); color: #24454f; font-size: .82rem; }
 .warning-list { display: grid; gap: .45rem; margin: .8rem 0 0; padding: 0; list-style: none; }
@@ -643,7 +657,7 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
 
 @media print {
   :root { --paper: white; --paper-2: white; --paper-3: #f3f3f3; }
-  body::before, .site-header, .site-footer, .section-rail, .button-row, .filter-bar, .calc-form-actions, .chart-toolbar, .tabs .tab-list, .breadcrumbs, .toast { display: none !important; }
+  body::before, .site-header, .site-footer, .section-rail, .button-row, .filter-bar, .calc-form-actions, .chart-toolbar, .mode-animation-panel, .tabs .tab-list, .breadcrumbs, .toast { display: none !important; }
   body { background: white; color: black; font-size: 10pt; }
   .page-shell { max-width: none; padding: 0; }
   .page-intro { grid-template-columns: 1fr; padding-bottom: 18pt; }
@@ -1635,6 +1649,10 @@ body.site-system-route th,
 body.site-system-route td { border-color: var(--site-color-border); }
 body.site-system-route .chart-shell { border-color: var(--site-color-border); background: #07192b; }
 body.site-system-route .chart-toolbar button { min-height: 44px; color: #8fb5ff; }
+body.site-system-route .mode-animation-panel { border-color: var(--site-color-border); border-left-color: #55b8ff; background: rgba(9,31,52,.86); }
+body.site-system-route .mode-animation-copy > p:last-child, body.site-system-route .mode-animation-actions output { color: #9badc2; }
+body.site-system-route .mode-animation-actions label { color: #7189a3; }
+body.site-system-route .mode-animation-actions select { border-color: var(--site-color-border); background: #07192b; color: #dce8f7; }
 body.site-system-route .calc-error { color: #ffb0aa; background: rgba(255, 136, 136, .1); }
 
 body.site-system-route .search-dialog {
@@ -3265,6 +3283,10 @@ body.site-system-subject #main-content {
 }
 
 @media (max-width: 760px) {
+  .result-evidence-grid { grid-template-columns: 1fr; }
+  .mode-animation-panel { align-items: stretch; flex-wrap: wrap; }
+  .mode-animation-panel::before { display: none; }
+  .mode-animation-actions { width: 100%; justify-content: flex-start; }
   .subject-page { padding-inline: 15px; }
   .subject-page-hero { min-height: 0; grid-template-columns: 1fr; gap: 30px; padding-block: 42px 52px; }
   .subject-page-hero h1 { font-size: clamp(3rem, 14vw, 5rem); }
@@ -4914,7 +4936,7 @@ const toolCatalog = [
     "id": "beam",
     "title": "Beam Response",
     "category": "Structures",
-    "description": "Calculate section properties, static response, stress, and first natural frequencies for common beam boundary conditions.",
+    "description": "Calculate section properties, static response, stress, natural frequencies, and normalized bending mode shapes for common beam boundary conditions.",
     "complexity": "Core",
     "keywords": [
       "beam",
@@ -4926,7 +4948,7 @@ const toolCatalog = [
     "id": "plate-modes",
     "title": "Rectangular Plate Modes",
     "category": "Structures",
-    "description": "Calculate thin, simply supported isotropic plate modes and identify near-degenerate mode pairs.",
+    "description": "Calculate thin, simply supported isotropic plate modes, view their signed mode shapes, and identify near-degenerate pairs.",
     "complexity": "Core",
     "keywords": [
       "plate",
@@ -4953,7 +4975,7 @@ const toolCatalog = [
     "id": "ring-frequency",
     "title": "Cylinder Ring Frequency",
     "category": "Structural Acoustics",
-    "description": "Estimate the thin-shell ring frequency and compare the shell scale with plate-like local bending behavior.",
+    "description": "Estimate the thin-shell ring frequency, compare it with plate-like bending, and explore axial-circumferential shell mode-shape families.",
     "complexity": "Core",
     "keywords": [
       "cylinder",
@@ -7268,6 +7290,8 @@ function cPhase(a) { return deg(Math.atan2(a.im, a.re)); }
 
 function stat(label, value, unit = '', tone = '') { return { label, value, unit, tone }; }
 function trace(name, x, y, extra = {}) { return { name, x, y, ...extra }; }
+function normalizeSeries(values){const scale=Math.max(...values.map(value=>Math.abs(value)),1e-12);return values.map(value=>value/scale);}
+function normalizeMatrix(matrix){const scale=Math.max(...matrix.flat().map(value=>Math.abs(value)),1e-12);return matrix.map(row=>row.map(value=>value/scale));}
 
 const commonMaterialInputs = [
   { key: 'material', label: 'Material preset', type: 'select', default: 'aluminum', options: materialOptions, help: 'Preset values populate the defaults shown below.' },
@@ -7765,7 +7789,7 @@ const calculatorDefinitions = {
       {key:'rho',label:'Density',unit:'kg/m³',type:'number',default:2700,min:0.001},
       {key:'load',label:'Point load',unit:'N',type:'number',default:1000}
     ],
-    theory:'<p>Static response and modal frequencies use a prismatic Euler–Bernoulli beam with small deflection. The first four β values are selected by boundary condition.</p>',
+    theory:'<p>Static response and modal frequencies use a prismatic Euler–Bernoulli beam with small deflection. The first four β values and their exact normalized bending shapes are selected by boundary condition.</p>',
     assumptions:['Uniform rectangular section.','Small deflection and linear elastic material.','Shear deformation and rotary inertia neglected.'],
     example:'A simply supported beam under a center point load has δ<sub>max</sub>=PL³/(48EI).',
     compute(v){
@@ -7777,12 +7801,24 @@ const calculatorDefinitions = {
       else {defl=P*L**3/(48*E*I);Mmax=Math.abs(P*L/4);betas=[Math.PI,2*Math.PI,3*Math.PI,4*Math.PI];label='Simply supported';}
       const stress=Mmax*(h/2)/I;
       const freqs=betas.map(beta=>beta**2/(2*Math.PI*L**2)*Math.sqrt(E*I/(rho*A)));
+      const positions=linspace(0,L,121),normalizedPositions=positions.map(position=>position/L);
+      const modeShapes=betas.map((beta,index)=>{
+        let values;
+        if(v.boundary==='simply-supported')values=normalizedPositions.map(position=>Math.sin((index+1)*Math.PI*position));
+        else{
+          const sigma=v.boundary==='cantilever'?(Math.cosh(beta)+Math.cos(beta))/(Math.sinh(beta)+Math.sin(beta)):(Math.cosh(beta)-Math.cos(beta))/(Math.sinh(beta)-Math.sin(beta));
+          values=normalizedPositions.map(position=>Math.cosh(beta*position)-Math.cos(beta*position)-sigma*(Math.sinh(beta*position)-Math.sin(beta*position)));
+        }
+        values[0]=0;if(v.boundary!=='cantilever')values[values.length-1]=0;
+        return normalizeSeries(values);
+      });
       return{
         summary:[stat('Area',A,'m²'),stat('Second moment I',I,'m⁴'),stat('Beam mass',mass,'kg'),stat('Maximum deflection',defl,'m'),stat('Maximum bending stress',stress/1e6,'MPa'),stat('First natural frequency',freqs[0],'Hz')],
-        interpretation:`The ${label.toLowerCase()} idealization predicts a first bending mode at ${freqs[0].toFixed(2)} Hz. Boundary flexibility usually lowers this value.`,
+        interpretation:{summary:`The ${label.toLowerCase()} idealization predicts a first bending mode at ${freqs[0].toFixed(2)} Hz. Boundary flexibility usually lowers this value.`,physicalMeaning:'Each displayed curve is a unit-normalized transverse bending shape; its sign is arbitrary, while its nodes and curvature show where motion reverses and where bending strain concentrates. Higher modes add internal nodes and are more sensitive to local attachments and non-ideal boundaries.'},
         warnings:['Check slenderness, local section behavior, stress concentrations, and actual joint stiffness before design use.'],
         tables:[{title:'Ideal bending modes',columns:['Mode','β','Frequency (Hz)'],rows:freqs.map((f,i)=>[i+1,betas[i],f])}],
-        plots:[{title:'First four modal frequencies',xLabel:'Mode',yLabel:'Frequency (Hz)',traces:[trace('Frequency',[1,2,3,4],freqs)]}]
+        plots:[{title:`${label} beam · first four normalized mode shapes`,xLabel:'Position along beam (m)',yLabel:'Normalized transverse displacement',animation:{type:'harmonic'},traces:modeShapes.map((shape,index)=>trace(`Mode ${index+1} · ${freqs[index].toFixed(1)} Hz`,positions,shape,{emphasis:index===0}))},{title:'First four modal frequencies',xLabel:'Mode',yLabel:'Frequency (Hz)',traces:[trace('Frequency',[1,2,3,4],freqs,{emphasis:true})]}],
+        presentation:{primaryEvidence:{type:'plot',index:0},primaryValueCount:6,animation:{type:'harmonic',defaultRateHz:.5,note:'All four beam shapes use one slowed visual phase so their nodes remain comparable; the animation does not reproduce their different natural frequencies or physical amplitudes.'}}
       };
     }
   },
@@ -7797,7 +7833,7 @@ const calculatorDefinitions = {
       {key:'max_order',label:'Maximum m,n order',type:'number',default:6,min:1,max:20,step:1}
     ],
     syncPreset:syncMaterialDefaults,
-    theory:'<p>For a simply supported isotropic plate, each mode is a product of sine half-waves and the frequency depends on (m/a)²+(n/b)².</p>',
+    theory:'<p>For a simply supported isotropic plate, each mode is the exact product shape sin(mπx/a)sin(nπy/b), and its frequency depends on (m/a)²+(n/b)².</p>',
     assumptions:['Thin, flat, homogeneous isotropic plate.','All four edges simply supported.','No added mass, stiffeners, prestress, or fluid loading.'],
     example:'A nearly square plate produces closely spaced (1,2) and (2,1) modes.',
     compute(v){
@@ -7809,14 +7845,18 @@ const calculatorDefinitions = {
       }
       modes.sort((x,y)=>x[2]-y[2]);
       const first=modes.slice(0,Math.min(30,modes.length));
+      const shapeModes=first.slice(0,4),xNormalized=linspace(0,1,25),yNormalized=linspace(0,1,25),axisLabels=values=>values.map(value=>value.toFixed(2));
+      const heatmaps=shapeModes.map(([m,nn,frequency])=>({title:`Plate mode (${m},${nn}) · ${frequency.toFixed(1)} Hz`,matrix:normalizeMatrix(yNormalized.map(y=>xNormalized.map(x=>Math.sin(m*Math.PI*x)*Math.sin(nn*Math.PI*y)))),min:-1,max:1,diverging:true,animation:{type:'harmonic'},aspectRatio:a/b,xValues:xNormalized,yValues:yNormalized,xLabels:axisLabels(xNormalized),yLabels:axisLabels(yNormalized),xLabel:'Normalized position x/a',yLabel:'Normalized position y/b'}));
       const warnings=[];
       for(let i=1;i<Math.min(12,first.length);i++) if((first[i][2]-first[i-1][2])/first[i][2]<0.01){warnings.push(`Modes (${first[i-1][0]},${first[i-1][1]}) and (${first[i][0]},${first[i][1]}) are within 1%; small asymmetry may split or mix them.`);break;}
       return{
         summary:[stat('Bending stiffness D',D,'N·m'),stat('Surface mass',rho*h,'kg/m²'),stat('Fundamental mode',first[0][2],'Hz'),stat('Modes calculated',modes.length)],
-        interpretation:`The lowest ideal mode is (${first[0][0]},${first[0][1]}). The result is especially sensitive to boundary restraint and thickness because D scales with h³.`,
+        interpretation:{summary:`The lowest ideal mode is (${first[0][0]},${first[0][1]}). The result is especially sensitive to boundary restraint and thickness because D scales with h³.`,physicalMeaning:'The signed color maps show normalized transverse displacement. Nodal lines separate regions moving in opposite phase; the m and n indices count half-waves along dimensions a and b. Closely spaced modes can mix when small asymmetries, attachments, or boundary flexibility are introduced.'},
         warnings,
         tables:[{title:'Lowest plate modes',columns:['m','n','Frequency (Hz)'],rows:first}],
         plots:[{title:'Ordered plate modes',xLabel:'Ordered mode index',yLabel:'Frequency (Hz)',traces:[trace('Modes',first.map((_,i)=>i+1),first.map(r=>r[2]))]}],
+        heatmaps,
+        presentation:{primaryEvidence:{type:'heatmap',index:0},primaryEvidenceCount:4,primaryValueCount:4,animation:{type:'harmonic',defaultRateHz:.5,note:'The four plate modes share a slowed visual phase. Colors pass through the neutral undeformed state and reverse sign; timing and amplitude are normalized for comparison.'}},
         csv:{filename:'plate-modes.csv',columns:['m','n','frequency_hz'],rows:modes}
       };
     }
@@ -7867,20 +7907,28 @@ const calculatorDefinitions = {
       ...commonMaterialInputs,
       {key:'diameter_m',label:'Cylinder diameter',unit:'m',type:'number',default:0.4064,min:0.001},
       {key:'thickness_mm',label:'Wall thickness',unit:'mm',type:'number',default:9.525,min:0.001},
-      {key:'length_m',label:'Cylinder length',unit:'m',type:'number',default:1,min:0.001}
+      {key:'length_m',label:'Cylinder length',unit:'m',type:'number',default:1,min:0.001},
+      {key:'axial_order',label:'Axial half-waves m',type:'number',default:1,min:1,max:8,step:1},
+      {key:'circumferential_start',label:'Starting circumferential order n',type:'number',default:2,min:0,max:12,step:1,help:'Displays this order and the next three circumferential shapes.'}
     ],
     syncPreset:syncMaterialDefaults,
-    theory:'<p>The ring-frequency scale is f<sub>r</sub>=[1/(2πR)]√[E/(ρ(1−ν²))]. Thickness does not enter this thin-shell scale directly but controls bending stiffness and local modes.</p>',
-    assumptions:['Thin, isotropic, uniform circular cylinder.','No stiffeners, cutouts, prestress, fluid loading, or detailed end constraints.'],
+    theory:'<p>The ring-frequency scale is f<sub>r</sub>=[1/(2πR)]√[E/(ρ(1−ν²))]. Thickness does not enter this thin-shell scale directly but controls bending stiffness and local modes. The displayed shape basis uses w(θ,z)=cos(nθ)sin(mπz/L).</p>',
+    assumptions:['Thin, isotropic, uniform circular cylinder.','Displayed mode-shape maps use a simply supported axial sinusoid and circumferential harmonics.','No stiffeners, cutouts, prestress, fluid loading, or detailed end constraints.'],
     example:'For a 16 inch aluminum cylinder, the ring-frequency scale is several kilohertz and differs strongly from the plate coincidence frequency.',
     compute(v){
-      const {E,rho,nu}=materialFrom(v),DIA=positive(v.diameter_m,'Diameter'),h=positive(v.thickness_mm,'Thickness')/1000,L=positive(v.length_m,'Length'),R=DIA/2;
+      const {E,rho,nu}=materialFrom(v),DIA=positive(v.diameter_m,'Diameter'),h=positive(v.thickness_mm,'Thickness')/1000,L=positive(v.length_m,'Length'),R=DIA/2,mOrder=clamp(Math.round(n(v.axial_order,1)),1,8),nStart=clamp(Math.round(n(v.circumferential_start,2)),0,12);
       const cRing=Math.sqrt(E/(rho*(1-nu*nu))),fr=cRing/(2*Math.PI*R),circ=Math.PI*DIA,surfaceMass=rho*h,slender=L/DIA;
       const Dp=plateD(E,h,nu),fc=AIR_C**2/(2*Math.PI)*Math.sqrt(rho*h/Dp);
+      const theta=linspace(0,2*Math.PI,49),thetaDegrees=theta.map(value=>deg(value)),zNormalized=linspace(0,1,25),orders=Array.from({length:4},(_,index)=>nStart+index),labelEvery=(values,suffix='')=>values.map(value=>`${value.toFixed(value>=10?0:2)}${suffix}`);
+      const heatmaps=orders.map(order=>({title:`Cylinder shape basis · m=${mOrder}, n=${order}`,matrix:normalizeMatrix(zNormalized.map(z=>theta.map(angle=>Math.sin(mOrder*Math.PI*z)*Math.cos(order*angle)))),min:-1,max:1,diverging:true,animation:{type:'harmonic'},aspectRatio:Math.min(2.4,Math.max(.8,circ/L)),xValues:thetaDegrees,yValues:zNormalized,xLabels:labelEvery(thetaDegrees,'°'),yLabels:labelEvery(zNormalized),xLabel:'Circumferential angle θ',yLabel:'Normalized axial position z/L'}));
       return{
         summary:[stat('Ring frequency',fr,'Hz'),stat('Ring wave speed',cRing,'m/s'),stat('Circumference',circ,'m'),stat('Surface mass',surfaceMass,'kg/m²'),stat('Plate critical frequency',fc,'Hz'),stat('Length / diameter',slender)],
-        interpretation:`The ring-frequency scale is ${fr.toFixed(1)} Hz. The flat-plate coincidence estimate is ${fc.toFixed(1)} Hz, demonstrating that the two frequencies describe different physics.`,
-        warnings:[h/R>0.1?'The wall is not especially thin relative to radius; a thick-shell model may be more appropriate.':'Finite length, stiffeners, attachments, and boundary conditions create discrete shell modes around this scale.']
+        interpretation:{summary:`The ring-frequency scale is ${fr.toFixed(1)} Hz. The flat-plate coincidence estimate is ${fc.toFixed(1)} Hz, demonstrating that the two frequencies describe different physics.`,physicalMeaning:`The signed maps show normalized radial displacement for axial order m=${mOrder} and circumferential orders n=${nStart}–${nStart+3}. Order n counts waves around the circumference; the alternating colors identify inward and outward lobes. These are shell basis shapes, not frequency-tagged eigenmodes of the finite installed cylinder.`},
+        warnings:[h/R>0.1?'The wall is not especially thin relative to radius; a thick-shell model may be more appropriate.':'Finite length, stiffeners, attachments, and boundary conditions create discrete shell modes around this scale.','Use a shell eigenvalue model to attach frequencies to these basis shapes for the actual end constraints and installed mass.'],
+        plots:[{title:`Circumferential shapes at an axial antinode · m=${mOrder}`,xLabel:'Circumferential angle (deg)',yLabel:'Normalized radial displacement',traces:orders.map((order,index)=>trace(`n = ${order}`,thetaDegrees,theta.map(angle=>Math.cos(order*angle)),{emphasis:index===0}))}],
+        heatmaps,
+        tables:[{title:'Displayed cylinder shape basis',columns:['Axial half-waves m','Circumferential order n','Circumferential lobes'],rows:orders.map(order=>[mOrder,order,order===0?1:2*order])}],
+        presentation:{primaryEvidence:{type:'heatmap',index:0},primaryEvidenceCount:4,primaryValueCount:6,animation:{type:'harmonic',defaultRateHz:.5,note:'The cylinder basis shapes use one slowed visual phase. The motion shows inward and outward radial lobes, not actual frequency-tagged finite-shell response.'}}
       };
     }
   },
@@ -16929,7 +16977,9 @@ function pathFromTrace(t, sx, sy, xLog, yLog) {
 }
 
 function lineChartSvg(plot, { width = 840, height = 390 } = {}) {
-  const m = { left: 72, right: 24, top: 36, bottom: 60 };
+  const legendWidth=width-72-24-16;let legendRows=1,legendCursor=0;
+  for(const trace of plot.traces??[]){const itemWidth=Math.max(90,String(trace.name||'Trace').length*6.3+36);if(legendCursor&&legendCursor+itemWidth>legendWidth){legendRows++;legendCursor=0;}legendCursor+=itemWidth;}
+  const m = { left: 72, right: 24, top: 55+(legendRows-1)*19, bottom: 60 };
   const innerW = width - m.left - m.right, innerH = height - m.top - m.bottom;
   const [xmin, xmax] = extent(plot, 'x'), [ymin, ymax] = extent(plot, 'y');
   const xLog = plot.xScale === 'log', yLog = plot.yScale === 'log';
@@ -16938,7 +16988,8 @@ function lineChartSvg(plot, { width = 840, height = 390 } = {}) {
   const xTicks = xLog ? logTicks(xmin, xmax) : linearTicks(xmin, xmax).map(value => ({ value, major: true }));
   const yTicks = yLog ? logTicks(ymin, ymax) : linearTicks(ymin, ymax).map(value => ({ value, major: true }));
   const clipId = `clip-${Math.random().toString(36).slice(2)}`;
-  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(plot.title || 'Engineering chart')}">`;
+  const harmonic=plot.animation?.type==='harmonic';
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(plot.title || 'Engineering chart')}"${harmonic?` data-chart-animation="harmonic" data-chart-zero-y="${sy(0).toFixed(3)}"`:''}>`;
   s += `<rect width="${width}" height="${height}" fill="#fff"/><defs><clipPath id="${clipId}"><rect x="${m.left}" y="${m.top}" width="${innerW}" height="${innerH}"/></clipPath></defs>`;
   s += `<text x="${m.left}" y="22" font-family="ui-sans-serif,system-ui" font-size="13" font-weight="700" fill="#172027">${escapeHtml(plot.title || '')}</text>`;
   for (const t of xTicks) {
@@ -16956,18 +17007,20 @@ function lineChartSvg(plot, { width = 840, height = 390 } = {}) {
   (plot.traces ?? []).forEach((t, i) => {
     const color = t.color || palette[i % palette.length];
     const path = pathFromTrace(t, sx, sy, xLog, yLog);
-    if (path) s += `<path d="${path}" fill="none" stroke="${color}" stroke-width="${t.emphasis ? 3 : 2}" stroke-linejoin="round" stroke-linecap="round" ${t.dash ? 'stroke-dasharray="7 5"' : ''}/>`;
+    if (path) s += `<path data-chart-trace="${i}"${harmonic?' data-chart-animated-path="true" vector-effect="non-scaling-stroke"':''} d="${path}" fill="none" stroke="${color}" stroke-width="${t.emphasis ? 3 : 2}" stroke-linejoin="round" stroke-linecap="round" ${t.dash ? 'stroke-dasharray="7 5"' : ''}/>`;
+    const count=Math.min(t.x?.length??0,t.y?.length??0),step=Math.max(1,Math.ceil(count/80));
+    for(let point=0;point<count;point+=step){const x=Number(t.x[point]),y=Number(t.y[point]);if(!Number.isFinite(x)||!Number.isFinite(y)||(xLog&&x<=0)||(yLog&&y<=0))continue;s+=`<circle data-chart-trace="${i}" cx="${sx(x).toFixed(2)}" cy="${sy(y).toFixed(2)}" r="5" fill="transparent" stroke="transparent" pointer-events="all"><title>${escapeHtml(t.name||`Trace ${i+1}`)} · ${escapeHtml(plot.xLabel||'x')}: ${escapeHtml(formatNumber(x))} · ${escapeHtml(plot.yLabel||'y')}: ${escapeHtml(formatNumber(y))}</title></circle>`;}
   });
   s += `</g>`;
   s += `<text x="${m.left + innerW/2}" y="${height - 12}" text-anchor="middle" font-family="ui-sans-serif,system-ui" font-size="11" fill="#5f6b70">${escapeHtml(plot.xLabel || '')}</text>`;
   s += `<text x="16" y="${m.top + innerH/2}" text-anchor="middle" transform="rotate(-90 16 ${m.top + innerH/2})" font-family="ui-sans-serif,system-ui" font-size="11" fill="#5f6b70">${escapeHtml(plot.yLabel || '')}</text>`;
-  let lx = m.left + 8, ly = m.top + 14;
+  let lx = m.left + 8, ly = 42;
   (plot.traces ?? []).forEach((t, i) => {
     const color = t.color || palette[i % palette.length];
     const label = String(t.name || `Trace ${i+1}`);
     const itemW = Math.max(90, label.length * 6.3 + 36);
     if (lx + itemW > m.left + innerW) { lx = m.left + 8; ly += 19; }
-    s += `<line x1="${lx}" x2="${lx+19}" y1="${ly}" y2="${ly}" stroke="${color}" stroke-width="2.5" ${t.dash ? 'stroke-dasharray="6 4"' : ''}/><text x="${lx+25}" y="${ly+3}" font-family="ui-sans-serif,system-ui" font-size="10" fill="#344047">${escapeHtml(label)}</text>`;
+    s += `<g data-legend-trace="${i}" role="button" tabindex="0" style="cursor:pointer"><line x1="${lx}" x2="${lx+19}" y1="${ly}" y2="${ly}" stroke="${color}" stroke-width="2.5" ${t.dash ? 'stroke-dasharray="6 4"' : ''}/><text x="${lx+25}" y="${ly+3}" font-family="ui-sans-serif,system-ui" font-size="10" fill="#344047">${escapeHtml(label)}</text><title>Toggle ${escapeHtml(label)}</title></g>`;
     lx += itemW;
   });
   s += `</svg>`;
@@ -16981,30 +17034,51 @@ function heatColor(t) {
   return `rgb(${c.join(',')})`;
 }
 
+function signedHeatColor(value, scale) {
+  const t = Math.max(-1, Math.min(1, value / Math.max(scale, 1e-12)));
+  const neutral = [238,242,244], target = t < 0 ? [39,105,171] : [205,83,57], amount = Math.abs(t);
+  const color = neutral.map((channel,index)=>Math.round(channel+(target[index]-channel)*amount));
+  return `rgb(${color.join(',')})`;
+}
+
+function harmonicPhase(elapsedSeconds, cyclesPerSecond = .5) {
+  return Math.cos(2*Math.PI*Math.max(0,Number(elapsedSeconds)||0)*Math.max(0,Number(cyclesPerSecond)||0));
+}
+
 function heatmapSvg(hm, { width = 720, height = 560 } = {}) {
   const matrix = hm.matrix || [];
-  const N = matrix.length;
-  if (!N) return '';
-  const m = { left: 78, top: 54, right: 42, bottom: 62 };
-  const size = Math.min(width - m.left - m.right, height - m.top - m.bottom);
-  const cell = size / N;
+  const rows = matrix.length, columns = Math.max(0,...matrix.map(row=>row.length));
+  if (!rows || !columns) return '';
+  const m = { left: 82, top: 54, right: 72, bottom: 72 };
+  const availableW=width-m.left-m.right,availableH=height-m.top-m.bottom;
+  const aspect=Math.max(.55,Math.min(2.4,Number(hm.aspectRatio)||columns/rows));
+  const plotW=Math.min(availableW,availableH*aspect),plotH=Math.min(availableH,availableW/aspect);
+  const cellW=plotW/columns,cellH=plotH/rows;
   const values = matrix.flat().filter(Number.isFinite);
   const min = hm.min ?? Math.min(...values), max = hm.max ?? Math.max(...values);
+  const magnitude=Math.max(Math.abs(min),Math.abs(max),1e-12);
   let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(hm.title || 'Heatmap')}"><rect width="${width}" height="${height}" fill="#fff"/>`;
   s += `<text x="${m.left}" y="25" font-family="ui-sans-serif,system-ui" font-size="13" font-weight="700" fill="#172027">${escapeHtml(hm.title || '')}</text>`;
-  for (let i=0;i<N;i++) for (let j=0;j<N;j++) {
+  for (let i=0;i<rows;i++) for (let j=0;j<columns;j++) {
     const value = matrix[i][j];
-    const t = max === min ? .5 : (value-min)/(max-min);
-    s += `<rect x="${m.left+j*cell}" y="${m.top+i*cell}" width="${cell+.2}" height="${cell+.2}" fill="${heatColor(t)}"><title>${i+1}, ${j+1}: ${formatNumber(value)}</title></rect>`;
+    if(!Number.isFinite(value)){s+=`<rect x="${m.left+j*cellW}" y="${m.top+i*cellH}" width="${cellW+.2}" height="${cellH+.2}" fill="#d9d4ca" opacity=".18"/>`;continue;}
+    const t = max === min ? .5 : (value-min)/(max-min),harmonic=hm.animation?.type==='harmonic',color=hm.diverging?signedHeatColor(value,magnitude):heatColor(t);
+    const xValue=hm.xValues?.[j],yValue=hm.yValues?.[i],coordinates=xValue!=null&&yValue!=null?`${formatNumber(xValue)}, ${formatNumber(yValue)}`:`${i+1}, ${j+1}`;
+    s += `<rect x="${m.left+j*cellW}" y="${m.top+i*cellH}" width="${cellW+.2}" height="${cellH+.2}" fill="${color}"${harmonic?` data-heatmap-base-value="${value}" data-heatmap-scale="${magnitude}"`:''}><title>${escapeHtml(coordinates)}: ${formatNumber(value)}</title></rect>`;
   }
-  const step = Math.max(1, Math.ceil(N/10));
-  for(let i=0;i<N;i+=step){
-    const label=hm.labels?.[i] ?? String(i+1);
-    s += `<text x="${m.left+i*cell+cell/2}" y="${m.top+size+18}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="#667176">${escapeHtml(label)}</text>`;
-    s += `<text x="${m.left-8}" y="${m.top+i*cell+cell/2+3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="#667176">${escapeHtml(label)}</text>`;
+  const xStep=Math.max(1,Math.ceil(columns/8)),yStep=Math.max(1,Math.ceil(rows/8));
+  for(let j=0;j<columns;j+=xStep){
+    const label=hm.xLabels?.[j]??hm.labels?.[j]??String(j+1);
+    s += `<text x="${m.left+j*cellW+cellW/2}" y="${m.top+plotH+18}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="#667176">${escapeHtml(label)}</text>`;
   }
-  const gx=m.left+size+18, gy=m.top, gh=size;
-  for(let i=0;i<80;i++)s+=`<rect x="${gx}" y="${gy+i*gh/80}" width="13" height="${gh/80+1}" fill="${heatColor(1-i/79)}"/>`;
+  for(let i=0;i<rows;i+=yStep){
+    const label=hm.yLabels?.[i]??hm.labels?.[i]??String(i+1);
+    s += `<text x="${m.left-8}" y="${m.top+i*cellH+cellH/2+3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="#667176">${escapeHtml(label)}</text>`;
+  }
+  if(hm.xLabel)s+=`<text x="${m.left+plotW/2}" y="${height-12}" text-anchor="middle" font-family="ui-sans-serif,system-ui" font-size="11" fill="#5f6b70">${escapeHtml(hm.xLabel)}</text>`;
+  if(hm.yLabel)s+=`<text x="16" y="${m.top+plotH/2}" text-anchor="middle" transform="rotate(-90 16 ${m.top+plotH/2})" font-family="ui-sans-serif,system-ui" font-size="11" fill="#5f6b70">${escapeHtml(hm.yLabel)}</text>`;
+  const gx=m.left+plotW+18, gy=m.top, gh=plotH;
+  for(let i=0;i<80;i++){const fraction=1-i/79,value=max-(max-min)*(i/79),color=hm.diverging?signedHeatColor(value,magnitude):heatColor(fraction);s+=`<rect x="${gx}" y="${gy+i*gh/80}" width="13" height="${gh/80+1}" fill="${color}"/>`;}
   s += `<text x="${gx+18}" y="${gy+8}" font-family="ui-monospace,monospace" font-size="9" fill="#667176">${formatNumber(max)}</text><text x="${gx+18}" y="${gy+gh}" font-family="ui-monospace,monospace" font-size="9" fill="#667176">${formatNumber(min)}</text></svg>`;
   return s;
 }
@@ -17031,7 +17105,7 @@ function downloadSvg(filename, svgText) {
   downloadText(filename, svgText, 'image/svg+xml;charset=utf-8');
 }
 
-return {escapeHtml,formatNumber,lineChartSvg,heatmapSvg,downloadText,downloadCsv,downloadSvg};
+return {escapeHtml,formatNumber,lineChartSvg,signedHeatColor,harmonicPhase,heatmapSvg,downloadText,downloadCsv,downloadSvg};
 })();
 
 const __demoTakeaways=(()=>{
@@ -19120,7 +19194,7 @@ const __engineeringResults=(()=>{
  * @property {{satisfied: string[], warnings: string[], alerts: string[], limitations: string[]}} assumptions
  * @property {{regime: string, confidence: string}} validity
  * @property {RelatedConcept[]} relatedConcepts
- * @property {{primaryEvidence: {type: string, index: number}|null, primaryValueCount: number}} presentation
+ * @property {{primaryEvidence: {type: string, index: number}|null, primaryEvidenceCount: number, primaryValueCount: number, animation: Object|null}} presentation
  * @property {Array<Object>} [plots]
  * @property {Array<Object>} [heatmaps]
  * @property {Array<Object>} [tables]
@@ -19313,7 +19387,13 @@ function buildPresentation(id, result, values) {
   }
   return {
     primaryEvidence,
-    primaryValueCount: Math.max(1, Math.min(values.length, Number(requested.primaryValueCount) || 6))
+    primaryEvidenceCount: Math.max(1, Math.min(6, Number(requested.primaryEvidenceCount) || 1)),
+    primaryValueCount: Math.max(1, Math.min(values.length, Number(requested.primaryValueCount) || 6)),
+    animation: requested.animation?.type==='harmonic'?{
+      type:'harmonic',
+      defaultRateHz:Math.max(.05,Math.min(2,Number(requested.animation.defaultRateHz)||.5)),
+      note:requested.animation.note||'Animation uses a slowed common visual phase; it does not reproduce physical frequency ratios or amplitude.'
+    }:null
   };
 }
 
@@ -20054,7 +20134,7 @@ const {workflowExpansionCalculatorRegistry}=__workflowExpansionCalculators;
 const {programExpansionCalculatorRegistry}=__programExpansionCalculators;
 const {seaParameterCalculatorRegistry}=__seaParameterCalculators;
 const {extraToolCatalog}=__extraData;
-const {lineChartSvg,heatmapSvg,downloadCsv,downloadSvg,downloadText}=__charts;
+const {lineChartSvg,heatmapSvg,harmonicPhase,signedHeatColor,downloadCsv,downloadSvg,downloadText}=__charts;
 const {demoPreviewSvg,mountDemo}=__demosModule;
 const {homepageNavigation,homepageNavKey,renderHomepage,renderSubjectPage,bindHomepage,subjectWheel}=__homepage;
 const {renderPageShell,renderBreadcrumbs,renderSectionHeader,renderCallout,renderLinkCollection}=__siteComponents;
@@ -20366,12 +20446,18 @@ function renderResult(result,meta){
   const renderPlot=(p,i,primary=false)=>{const svg=lineChartSvg(p);return `<div class="result-block${primary?' result-block-primary':''}" data-result-section="plot"><div class="chart-toolbar"><button data-chart-data="${i}">View data</button><button data-chart-csv="${i}">Download CSV</button><button data-chart-svg="${i}">Download SVG</button><button data-chart-png="${i}">Download PNG</button></div><div class="chart-shell site-chart-container" data-chart="${i}">${svg}</div><div class="chart-data-panel" data-chart-data-panel="${i}" hidden></div></div>`;};
   const renderHeatmap=(h,i,primary=false)=>`<div class="result-block${primary?' result-block-primary':''}" data-result-section="heatmap"><div class="chart-toolbar"><button data-heatmap-svg="${i}">Download SVG</button><button data-heatmap-png="${i}">Download PNG</button></div><div class="chart-shell site-chart-container" data-heatmap="${i}">${heatmapSvg(h)}</div></div>`;
   const evidence=result.presentation?.primaryEvidence;
+  const animation=result.presentation?.animation;
+  const animationControls=animation?.type==='harmonic'?`<section class="mode-animation-panel" data-mode-animation data-default-rate="${animation.defaultRateHz}"><div class="mode-animation-copy"><p class="eyebrow">Harmonic mode animation</p><p>${esc(animation.note)}</p></div><div class="mode-animation-actions"><button type="button" class="button-secondary" data-mode-animation-toggle aria-pressed="true">Pause</button><label><span>Visual speed</span><select data-mode-animation-rate><option value="0.25">Slow</option><option value="0.5" ${animation.defaultRateHz===.5?'selected':''}>Normal</option><option value="1">Fast</option></select></label><button type="button" class="button-quiet" data-mode-animation-reset>Reset</button><output data-mode-animation-phase aria-hidden="true">+1.00 phase</output><span class="sr-only" data-mode-animation-status aria-live="polite"></span></div></section>`:'';
+  const primaryHeatmapIndices=new Set();
   let primaryEvidence='';
   if(evidence?.type==='plot'&&result.plots?.[evidence.index])primaryEvidence=renderPlot(result.plots[evidence.index],evidence.index,true);
-  else if(evidence?.type==='heatmap'&&result.heatmaps?.[evidence.index])primaryEvidence=renderHeatmap(result.heatmaps[evidence.index],evidence.index,true);
+  else if(evidence?.type==='heatmap'&&result.heatmaps?.[evidence.index]){
+    const count=Math.max(1,result.presentation?.primaryEvidenceCount||1),indices=result.heatmaps.map((_,index)=>index).slice(evidence.index,evidence.index+count);indices.forEach(index=>primaryHeatmapIndices.add(index));
+    const maps=indices.map(index=>renderHeatmap(result.heatmaps[index],index,true)).join('');primaryEvidence=indices.length>1?`<div class="result-evidence-grid" aria-label="Primary mode-shape plots">${maps}</div>`:maps;
+  }
   else if(evidence?.type==='table'&&result.tables?.[evidence.index])primaryEvidence=renderTable(result.tables[evidence.index],{primary:true,index:evidence.index});
   const supportingPlots=(result.plots||[]).map((plot,index)=>evidence?.type==='plot'&&evidence.index===index?'':renderPlot(plot,index)).join('');
-  const supportingHeatmaps=(result.heatmaps||[]).map((heatmap,index)=>evidence?.type==='heatmap'&&evidence.index===index?'':renderHeatmap(heatmap,index)).join('');
+  const supportingHeatmaps=(result.heatmaps||[]).map((heatmap,index)=>primaryHeatmapIndices.has(index)?'':renderHeatmap(heatmap,index)).join('');
   const supportingTables=(result.tables||[]).map((table,index)=>evidence?.type==='table'&&evidence.index===index?'':renderTable(table,{index})).join('');
   const supportingEvidence=`${supportingPlots}${supportingHeatmaps}${supportingTables}`;
   const csv=result.csv?`<div class="result-block"><button class="button-secondary" data-action="download-csv">Download result CSV</button></div>`:'';
@@ -20379,7 +20465,7 @@ function renderResult(result,meta){
   const secondaryValues=supportingValues?`<details class="supporting-values"><summary>Supporting values <span>${result.values.length-primaryValueCount}</span></summary><div class="result-summary result-summary-supporting">${supportingValues}</div></details>`:'';
   const numericalResults=`<section class="numerical-results-section" data-result-section="numerical"><h3 class="result-section-title">Numerical results</h3><div class="result-summary">${primaryValues}</div>${secondaryValues}</section>`;
   const supportingSection=supportingEvidence?`<details class="supporting-evidence"><summary>Supporting plots and tables</summary><div class="supporting-evidence-body">${supportingEvidence}</div></details>`:'';
-  const resultBody=evidence?.type==='plot'||evidence?.type==='heatmap'?`${primaryEvidence}${numericalResults}${commentary}`:evidence?.type==='table'?`${numericalResults}${primaryEvidence}${commentary}`:`${numericalResults}${commentary}`;
+  const resultBody=evidence?.type==='plot'||evidence?.type==='heatmap'?`${animationControls}${primaryEvidence}${numericalResults}${commentary}`:evidence?.type==='table'?`${numericalResults}${primaryEvidence}${commentary}`:`${numericalResults}${commentary}`;
   return `${resultBody}${supportingSection}${csv}${actions}`;
 }
 function svgToPng(svgText,filename){
@@ -20390,8 +20476,18 @@ function bindTool(route){
   const id=decodeURIComponent(route.segments[1]||''),meta=toolById.get(id),calc=calculatorRegistry[id],form=document.querySelector('#calculator-form'),resultsEl=document.querySelector('#calculator-results');if(!form||!calc)return;
   const unitSystem=form.querySelector('[data-unit-system]');
   const fieldsByKey=new Map((calc.inputs||[]).map(field=>[field.key,field]));
-  let latest=null,latestCanonical=null,lastUnitSystem=unitSystem?.value||'SI';
-  const run=()=>{try{latestCanonical=calc.compute(collectForm(form));latest=displayEngineeringResult(latestCanonical,unitSystem?.value||'SI');resultsEl.innerHTML=renderResult(latest,meta);bindResultActions(latest,meta,latestCanonical);}catch(err){latest=latestCanonical=null;resultsEl.innerHTML=`<div class="calc-error"><strong>Calculation could not be completed.</strong><br>${esc(err.message||String(err))}</div>`;}};
+  let latest=null,latestCanonical=null,lastUnitSystem=unitSystem?.value||'SI',resultCleanup=()=>{};
+  const run=()=>{resultCleanup();resultCleanup=()=>{};try{latestCanonical=calc.compute(collectForm(form));latest=displayEngineeringResult(latestCanonical,unitSystem?.value||'SI');resultsEl.innerHTML=renderResult(latest,meta);resultCleanup=bindResultActions(latest,meta,latestCanonical)||(()=>{});}catch(err){latest=latestCanonical=null;resultsEl.innerHTML=`<div class="calc-error"><strong>Calculation could not be completed.</strong><br>${esc(err.message||String(err))}</div>`;}};
+  const applyPresetDependencies=target=>{
+    if(target?.dataset.key!=='material'||typeof calc.syncPreset!=='function')return;
+    const current=collectForm(form),synced=calc.syncPreset(current),system=unitSystem?.value||'SI';
+    for(const field of calc.inputs||[]){
+      if(!(field.key in synced)||Object.is(synced[field.key],current[field.key]))continue;
+      const input=form.querySelector(`[data-key="${CSS.escape(field.key)}"]`);if(!input)continue;
+      const displayValue=input.matches('input[type="number"],input[type="range"]')?toDisplayNumber(synced[field.key],field.unit,system):synced[field.key];
+      input.value=Number.isFinite(Number(displayValue))?String(Number(Number(displayValue).toPrecision(12))):String(displayValue??'');
+    }
+  };
   const syncUnitSystem=()=>{
     const next=unitSystem?.value||'SI';
     if(next===lastUnitSystem)return;
@@ -20402,14 +20498,42 @@ function bindTool(route){
   form.addEventListener('submit',e=>{e.preventDefault();run();});
   unitSystem?.addEventListener('input',syncUnitSystem);
   unitSystem?.addEventListener('change',syncUnitSystem);
-  let timer;form.addEventListener('input',e=>{if(e.target===unitSystem||e.target.matches('textarea'))return;clearTimeout(timer);timer=setTimeout(run,120);});
+  let timer;form.addEventListener('input',e=>{if(e.target===unitSystem||e.target.matches('textarea'))return;applyPresetDependencies(e.target);clearTimeout(timer);timer=setTimeout(run,120);});
   document.querySelector('[data-action="reset-calculator"]')?.addEventListener('click',()=>{const system=unitSystem?.value||'SI';for(const f of calc.inputs||[]){const el=form.querySelector(`[data-key="${CSS.escape(f.key)}"]`);if(el)el.value=el.matches('input[type="number"],input[type="range"]')?toDisplayNumber(f.default,f.unit,system):f.default??'';}run();});
   document.querySelector('[data-action="share-calculation"]')?.addEventListener('click',async()=>{const values=collectForm(form),params=new URLSearchParams();if(unitSystem?.value==='English')params.set('units','English');for(const f of calc.inputs||[]){const value=String(values[f.key]??'');if(value===String(f.default??''))continue;if(f.type==='textarea'&&value.length>800)continue;params.set(f.key,value);}const url=`${location.origin}${location.pathname}#/tool/${encodeURIComponent(id)}${params.size?`?${params}`:''}`;try{await navigator.clipboard.writeText(url);showToast(params.size?'Share link copied':'Link copied; large pasted data remains local');}catch{prompt('Copy this link',url);}});
   document.querySelector('[data-action="copy-results"]')?.addEventListener('click',async()=>{if(!latest){showToast('Calculate first');return;}const text=engineeringResultToText(meta.title,latest,formatNumber);try{await navigator.clipboard.writeText(text);showToast('Engineering result copied');}catch{prompt('Copy engineering result',text);}});
   document.querySelectorAll('.file-load').forEach(btn=>btn.addEventListener('click',()=>document.querySelector(`.file-input[data-target="${CSS.escape(btn.dataset.target)}"]`)?.click()));
   document.querySelectorAll('.file-input').forEach(input=>input.addEventListener('change',async()=>{const file=input.files?.[0];if(!file)return;const text=await file.text(),target=document.getElementById(input.dataset.target);if(target){target.value=text;run();showToast(`${file.name} loaded locally`);}}));
   document.querySelectorAll('.tab-button').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.tab-button').forEach(b=>b.classList.toggle('active',b===btn));const tpl=document.querySelector(`#tab-${CSS.escape(btn.dataset.tab)}`);document.querySelector('#tab-panel').innerHTML=tpl?.innerHTML||'';}));
+  const priorCleanup=routeCleanup;routeCleanup=()=>{priorCleanup();resultCleanup();clearTimeout(timer);};
   run();
+}
+function bindHarmonicAnimation(result){
+  const controls=document.querySelector('[data-mode-animation]');
+  if(!controls||result.presentation?.animation?.type!=='harmonic')return()=>{};
+  const plotSvgs=[...document.querySelectorAll('svg[data-chart-animation="harmonic"]')];
+  const heatmapCells=[...document.querySelectorAll('[data-heatmap-base-value]')];
+  if(!plotSvgs.length&&!heatmapCells.length)return()=>{};
+  const toggle=controls.querySelector('[data-mode-animation-toggle]'),rateInput=controls.querySelector('[data-mode-animation-rate]'),reset=controls.querySelector('[data-mode-animation-reset]'),phaseOutput=controls.querySelector('[data-mode-animation-phase]'),status=controls.querySelector('[data-mode-animation-status]'),reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
+  let running=!reducedMotion.matches,elapsed=0,lastTime=null,lastDraw=-Infinity,frameId=0,rate=Number(rateInput?.value)||Number(controls.dataset.defaultRate)||.5;
+  const setControlState=message=>{toggle.textContent=running?'Pause':'Play';toggle.setAttribute('aria-pressed',String(running));controls.classList.toggle('is-paused',!running);if(message)status.textContent=message;};
+  const applyPhase=phase=>{
+    phaseOutput.textContent=`${phase>=0?'+':''}${phase.toFixed(2)} phase`;
+    controls.style.setProperty('--mode-phase',String((phase+1)/2));
+    plotSvgs.forEach(svg=>{const zero=Number(svg.dataset.chartZeroY)||0;svg.querySelectorAll('[data-chart-animated-path]').forEach(path=>path.setAttribute('transform',`translate(0 ${zero}) scale(1 ${phase}) translate(0 ${-zero})`));});
+    heatmapCells.forEach(cell=>cell.setAttribute('fill',signedHeatColor(Number(cell.dataset.heatmapBaseValue)*phase,Number(cell.dataset.heatmapScale))));
+  };
+  const schedule=()=>{if(running&&!document.hidden&&!frameId)frameId=requestAnimationFrame(step);};
+  const step=now=>{frameId=0;if(!running)return;if(lastTime!=null)elapsed+=(now-lastTime)/1000;lastTime=now;if(now-lastDraw>=50){applyPhase(harmonicPhase(elapsed,rate));lastDraw=now;}schedule();};
+  const setRunning=(next,message)=>{running=next;lastTime=null;if(!running&&frameId){cancelAnimationFrame(frameId);frameId=0;}setControlState(message);schedule();};
+  const onToggle=()=>setRunning(!running,running?'Mode animation paused.':'Mode animation playing.');
+  const onRate=()=>{rate=Number(rateInput.value)||.5;status.textContent=`Visual speed set to ${rateInput.selectedOptions[0]?.textContent||rate}.`;};
+  const onReset=()=>{elapsed=0;lastTime=null;lastDraw=-Infinity;applyPhase(1);status.textContent='Mode animation reset to maximum positive displacement.';};
+  const onVisibility=()=>{lastTime=null;if(document.hidden&&frameId){cancelAnimationFrame(frameId);frameId=0;}else schedule();};
+  const onReducedMotion=event=>{if(event.matches)setRunning(false,'Mode animation paused because reduced motion is enabled.');};
+  toggle.addEventListener('click',onToggle);rateInput.addEventListener('change',onRate);reset.addEventListener('click',onReset);document.addEventListener('visibilitychange',onVisibility);reducedMotion.addEventListener?.('change',onReducedMotion);
+  applyPhase(1);setControlState(reducedMotion.matches?'Mode animation starts paused because reduced motion is enabled.':'Mode animation playing.');schedule();
+  return()=>{running=false;if(frameId)cancelAnimationFrame(frameId);toggle.removeEventListener('click',onToggle);rateInput.removeEventListener('change',onRate);reset.removeEventListener('click',onReset);document.removeEventListener('visibilitychange',onVisibility);reducedMotion.removeEventListener?.('change',onReducedMotion);};
 }
 function bindResultActions(result,meta,canonicalResult=result){
   document.querySelector('[data-action="download-csv"]')?.addEventListener('click',()=>downloadCsv(result.csv));
@@ -20431,6 +20555,7 @@ function bindResultActions(result,meta,canonicalResult=result){
   });
   (result.heatmaps||[]).forEach((h,i)=>{const svg=heatmapSvg(h);document.querySelector(`[data-heatmap-svg="${i}"]`)?.addEventListener('click',()=>downloadSvg(`${slug(meta.title)}-heatmap-${i+1}.svg`,svg));document.querySelector(`[data-heatmap-png="${i}"]`)?.addEventListener('click',()=>svgToPng(svg,`${slug(meta.title)}-heatmap-${i+1}.png`));});
   document.querySelector('[data-action="add-result-to-project"]')?.addEventListener('click',()=>{const nextTools=toolHandoffs(meta,toolCatalog).map(tool=>tool.id);const form=document.querySelector('#calculator-form');addEngineeringArtifact({type:'Calculator result',title:meta.title,route:location.hash,sourceToolId:meta.id,inputs:form?collectForm(form):{},nextTools,takeaway:canonicalResult.interpretation.summary,validity:`${canonicalResult.validity.regime} ${canonicalResult.validity.confidence}`,assumptions:[...canonicalResult.assumptions.satisfied,...canonicalResult.assumptions.limitations.map(item=>`Limitation: ${item}`)],warnings:canonicalResult.assumptions.alerts,values:canonicalResult.values,provenance:`${primaryToolSubject(meta).label} · ${meta.id||location.hash.split('/').pop()}`});showToast('Result added to engineering project');document.querySelector('.project-pill b').textContent=loadEngineeringProject().artifacts.length;});
+  return bindHarmonicAnimation(result);
 }
 
 const searchItems=(()=>{
