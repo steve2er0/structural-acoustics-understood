@@ -17,6 +17,7 @@ import { homepageNavigation, homepageNavKey, renderHomepage, renderSubjectPage, 
 import { renderPageShell, renderBreadcrumbs, renderSectionHeader, renderCallout, renderLinkCollection } from './site-components.js';
 import { renderLaunchSeaCapstone, bindLaunchSeaCapstone } from './launch-sea-capstone.js';
 import { engineeringWorkbenchRegistry } from './engineering-workbenches.js';
+import { displayEngineeringResult, fromDisplayNumber, toDisplayNumber, toDisplayStep, toDisplayUnit, unitConversion } from './unit-system.js';
 import {
   addEngineeringArtifact,
   classifyTool,
@@ -220,45 +221,17 @@ function renderTools(route){
   const page=`${renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Engineering tools'}])}${intro({eyebrow:'Engineering tools',title:'Start with the subject.<br>Then choose the model.',lede:'Quick screens stay fast. Physics demos expose behavior. Guided workbenches preserve multi-step engineering decisions and evidence.',aside:'<p>Calculations run locally in the browser. Imported engineering data is not uploaded by this static application.</p>',metrics:[{value:toolCatalog.length,label:'tools'},{value:Object.keys(workbenchRegistry).length,label:'guided workbenches'},{value:subjectWheel.length,label:'subjects'}],buttons:[{label:'Browse subjects',href:'#/'},{label:'Explore demos',href:'#/demos',secondary:true}]})}<section class="tool-intents" aria-label="Common engineering starting points">${intents.map(([title,task,description])=>`<button type="button" data-tool-intent="${esc(task)}"><strong>${esc(title)}</strong><span>${esc(description)}</span><b aria-hidden="true">→</b></button>`).join('')}</section><div class="tool-discovery" aria-label="Tool decision filters"><label class="tool-filter-search"><span>Search</span><input id="tool-filter-search" type="search" placeholder="Method, output, subject, or input…"/></label>${subjectOptions}${options('Engineering task',profiles.map(profile=>profile.task),'task')}${options('Available input',profiles.map(profile=>profile.input),'input')}${options('Tool depth',profiles.map(profile=>profile.level),'level')}<button type="button" class="button-quiet" data-action="clear-tool-filters">Clear</button><span id="tool-count" class="filter-count">${toolCatalog.length} shown</span></div><div class="tool-grid">${toolCatalog.map(toolCard).join('')}</div>`;
   return renderPageShell(page,{variant:'tool-library'});
 }
-const ENGLISH_UNIT_CONVERSIONS = {
-  m:{unit:'ft',factor:3.280839895},mm:{unit:'in',factor:0.03937007874},'µm':{unit:'mil',factor:0.03937007874},
-  'm²':{unit:'ft²',factor:10.76391042},'m³':{unit:'ft³',factor:35.31466672},'m⁴':{unit:'ft⁴',factor:115.862369},
-  'm/s':{unit:'ft/s',factor:3.280839895},'mm/s':{unit:'in/s',factor:0.03937007874},'m/s peak':{unit:'ft/s peak',factor:3.280839895},
-  'm/s²':{unit:'ft/s²',factor:3.280839895},'m/s² RMS':{unit:'ft/s² RMS',factor:3.280839895},
-  'm RMS':{unit:'in RMS',factor:39.37007874},'m peak':{unit:'in peak',factor:39.37007874},'mm RMS':{unit:'in RMS',factor:0.03937007874},'mm/s RMS':{unit:'in/s RMS',factor:0.03937007874},
-  kg:{unit:'lbm',factor:2.204622622},'kg/m':{unit:'lbm/ft',factor:0.6719689751},'kg/m²':{unit:'lbm/ft²',factor:0.2048161436},'kg/m³':{unit:'lbm/ft³',factor:0.06242796058},
-  N:{unit:'lbf',factor:0.2248089431},MN:{unit:'kip',factor:224.8089431},'N peak':{unit:'lbf peak',factor:0.2248089431},'N RMS':{unit:'lbf RMS',factor:0.2248089431},'N/√Hz':{unit:'lbf/√Hz',factor:0.2248089431},
-  'N/m':{unit:'lbf/in',factor:0.005710147163},'N·m':{unit:'lbf·in',factor:8.850745791},'N·s/m':{unit:'lbf·s/in',factor:0.005710147163},'N/(m/s)':{unit:'lbf/(in/s)',factor:0.005710147163},
-  Pa:{unit:'psi',factor:0.0001450377377},kPa:{unit:'psi',factor:0.1450377377},MPa:{unit:'ksi',factor:0.1450377377},GPa:{unit:'Mpsi',factor:0.1450377377},'Pa RMS':{unit:'psi RMS',factor:0.0001450377377},
-  'W/m²':{unit:'W/ft²',factor:0.09290304},'W/m':{unit:'W/ft',factor:0.3048},
-  'm/(N·s)':{unit:'in/(lbf·s)',factor:175.1268352},'m/N':{unit:'in/lbf',factor:175.1268352},'(m/s)/N':{unit:'(in/s)/lbf',factor:175.1268352},'(m/s²)/N':{unit:'(in/s²)/lbf',factor:175.1268352},
-  'Pa·s/m':{unit:'psi·s/in',factor:0.000003683958},'Pa·s/m²':{unit:'psi·s/in²',factor:9.357258e-8},
-  'rad/m':{unit:'rad/ft',factor:0.3048},'1/m':{unit:'1/ft',factor:0.3048},'s/kg':{unit:'s/lbm',factor:0.45359237},
-  '°C':{unit:'°F',factor:1.8,offset:32}
-};
-const unitConversion=unit=>ENGLISH_UNIT_CONVERSIONS[unit]||null;
-const toDisplayUnit=(unit,system)=>system==='English'&&unitConversion(unit)?.unit||unit;
-const toDisplayNumber=(value,unit,system)=>{const x=Number(value),conversion=system==='English'?unitConversion(unit):null;return Number.isFinite(x)&&conversion?x*conversion.factor+(conversion.offset||0):value;};
-const fromDisplayNumber=(value,unit,system)=>{const x=Number(value),conversion=system==='English'?unitConversion(unit):null;return Number.isFinite(x)&&conversion?(x-(conversion.offset||0))/conversion.factor:value;};
-function displayEngineeringResult(result,system){
-  if(system!=='English')return result;
-  const convertValue=value=>{const conversion=unitConversion(value.unit);return conversion&&Number.isFinite(Number(value.value))?{...value,value:toDisplayNumber(value.value,value.unit,system),unit:conversion.unit}:{...value};};
-  const axisInfo=label=>{const match=String(label||'').match(/\(([^()]+)\)\s*$/),unit=match?.[1],conversion=unitConversion(unit);return conversion?{unit,conversion,label:String(label).replace(/\(([^()]+)\)\s*$/,`(${conversion.unit})`)}:null;};
-  const plots=(result.plots||[]).map(plot=>{const x=axisInfo(plot.xLabel),y=axisInfo(plot.yLabel);return {...plot,xLabel:x?.label||plot.xLabel,yLabel:y?.label||plot.yLabel,traces:(plot.traces||[]).map(trace=>({...trace,x:x?trace.x.map(value=>toDisplayNumber(value,x.unit,system)):[...trace.x],y:y?trace.y.map(value=>toDisplayNumber(value,y.unit,system)):[...trace.y]}))};});
-  const tables=(result.tables||[]).map(table=>{const conversions=(table.columns||[]).map(column=>axisInfo(column));return {...table,columns:(table.columns||[]).map((column,index)=>conversions[index]?.label||column),rows:(table.rows||[]).map(row=>row.map((value,index)=>conversions[index]?toDisplayNumber(value,conversions[index].unit,system):value))};});
-  return {...result,values:result.values.map(convertValue),plots,tables};
-}
 function fieldHtml(field,value,unitSystem='SI'){
   const key=esc(field.key),displayUnit=toDisplayUnit(field.unit,unitSystem),label=`<label for="field-${key}">${esc(field.label)}${field.unit?`<span data-field-unit="${key}" data-native-unit="${esc(field.unit)}">${esc(displayUnit)}</span>`:''}</label>`;
   const convertible=field.type!=='textarea'&&unitConversion(field.unit),displayValue=convertible?toDisplayNumber(value,field.unit,unitSystem):value;
   const unitData=field.unit?` data-native-unit="${esc(field.unit)}"`:'';
   const limit=(name,raw)=>raw!=null?`${name}="${esc(convertible?toDisplayNumber(raw,field.unit,unitSystem):raw)}"`:'';
-  const displayStep=field.step!=null&&convertible?Number(field.step)*convertible.factor:field.step;
+  const displayStep=field.step!=null?toDisplayStep(field.step,field.unit,unitSystem):field.step;
   let control='';
   if(field.type==='select')control=`<select id="field-${key}" data-key="${key}"${unitData}>${(field.options||[]).map(o=>{const opt=Array.isArray(o)?{value:o[0],label:o[1]}:o;return `<option value="${esc(opt.value)}" ${String(opt.value)===String(value)?'selected':''}>${esc(opt.label)}</option>`;}).join('')}</select>`;
   else if(field.type==='textarea')control=`<textarea id="field-${key}" data-key="${key}"${unitData} spellcheck="false">${esc(value)}</textarea><div class="field-file-row"><button type="button" class="button-quiet file-load" data-target="field-${key}">Load CSV / text</button><input class="file-input" type="file" accept=".csv,.txt,text/csv,text/plain" data-target="field-${key}" hidden/></div>`;
   else if(field.type==='range')control=`<input id="field-${key}" data-key="${key}"${unitData} type="range" value="${esc(displayValue)}" ${limit('min',field.min)} ${limit('max',field.max)} ${field.step!=null?`step="${esc(displayStep)}"`:''}/>`;
-  else control=`<input id="field-${key}" data-key="${key}"${unitData} type="${field.type==='text'?'text':'number'}" value="${esc(displayValue)}" ${limit('min',field.min)} ${limit('max',field.max)} ${field.step!=null?`step="${esc(displayStep)}"`:'step="any"'}/>`;
+  else control=`<input id="field-${key}" data-key="${key}"${unitData} type="${field.type==='text'?'text':'number'}" value="${esc(displayValue)}" ${limit('min',field.min)} ${limit('max',field.max)} ${field.type==='number'?'step="any"':''}/>`;
   return `<div class="field-group">${label}${control}${field.help?`<div class="field-help">${esc(field.help)}</div>`:''}</div>`;
 }
 function fieldGroup(field){
@@ -275,7 +248,7 @@ function renderInputFields(fields,values,unitSystem){
   return [...groups].map(([name,items],index)=>`<details class="calc-input-group" ${index<2?'open':''}><summary>${esc(name)} <span>${items.length}</span></summary><div>${items.map(field=>fieldHtml(field,values[field.key],unitSystem)).join('')}</div></details>`).join('');
 }
 function relevantReferences(category){
-  const map={Acoustics:'Acoustics and noise control',Dynamics:'Structural dynamics','Random & Shock':'Random vibration and shock',Structures:'Structures and waves','Structural Acoustics':'Structural acoustics','Aero / Distributed Loads':'Aeroacoustics and distributed loading','SEA & Energy':'Statistical energy analysis','Test & Signal':'Measurement and signal processing','Noise Control':'Acoustics and noise control'};
+  const map={Acoustics:'Structural acoustics',Dynamics:'Structural dynamics','Random & Shock':'Random vibration and shock',Structures:'Structural dynamics','Waves & Structures':'Structural acoustics','Structural Acoustics':'Structural acoustics','Aero / Distributed Loads':'Aeroacoustics and distributed pressure','SEA & Energy':'SEA and high frequency','Test & Signal':'Signal processing and measurements','Noise Control':'Structural acoustics',Utilities:'Signal processing and measurements'};
   const wanted=map[category];
   return referenceGroups.find(g=>g.group===wanted)?.items ?? referenceGroups.flatMap(g=>g.items).slice(0,4);
 }
@@ -293,7 +266,7 @@ function renderTool(route){
   const unitSystem=route.params.get('units')==='English'||(!route.params.has('units')&&/english|imperial/i.test(project.context?.units||''))?'English':'SI';
   const projectHandoff=route.params.get('fromProject')==='1'?handoffInputs(id):null;
   const values={};for(const field of calc.inputs||[])values[field.key]=route.params.has(field.key)?route.params.get(field.key):(projectHandoff?.inputs&&Object.hasOwn(projectHandoff.inputs,field.key)?projectHandoff.inputs[field.key]:field.default);
-  const refs=relevantReferences(meta.category);
+  const refs=calc.references?.length?calc.references:relevantReferences(meta.category);
   const concepts=conceptLinksForTool(id);
   const breadcrumbs=renderBreadcrumbs([{label:'Tools',href:'#/tools'},{label:subject.label,href:`#/tools?subject=${encodeURIComponent(subject.id)}`},{label:meta.title}]);
   const context=`<section class="site-context-grid calculator-context-grid" aria-label="Calculator context">${renderLinkCollection({label:'Related concepts',items:concepts.length?concepts:calculatorRelatedLinks,variant:'related'})}</section>`;
@@ -391,11 +364,13 @@ function bindTool(route){
   const run=()=>{try{latestCanonical=calc.compute(collectForm(form));latest=displayEngineeringResult(latestCanonical,unitSystem?.value||'SI');resultsEl.innerHTML=renderResult(latest,meta);bindResultActions(latest,meta,latestCanonical);}catch(err){latest=latestCanonical=null;resultsEl.innerHTML=`<div class="calc-error"><strong>Calculation could not be completed.</strong><br>${esc(err.message||String(err))}</div>`;}};
   const syncUnitSystem=()=>{
     const next=unitSystem?.value||'SI';
-    form.querySelectorAll('input[data-native-unit]').forEach(input=>{const native=fromDisplayNumber(input.value,input.dataset.nativeUnit,lastUnitSystem),field=fieldsByKey.get(input.dataset.key),conversion=next==='English'?unitConversion(input.dataset.nativeUnit):null;input.value=String(Number(toDisplayNumber(native,input.dataset.nativeUnit,next).toPrecision(12)));if(field?.min!=null)input.min=String(toDisplayNumber(field.min,input.dataset.nativeUnit,next));if(field?.max!=null)input.max=String(toDisplayNumber(field.max,input.dataset.nativeUnit,next));if(field?.step!=null)input.step=String(conversion?Number(field.step)*conversion.factor:field.step);});
+    if(next===lastUnitSystem)return;
+    form.querySelectorAll('input[data-native-unit]').forEach(input=>{const native=fromDisplayNumber(input.value,input.dataset.nativeUnit,lastUnitSystem),field=fieldsByKey.get(input.dataset.key);input.value=String(Number(toDisplayNumber(native,input.dataset.nativeUnit,next).toPrecision(12)));if(field?.min!=null)input.min=String(toDisplayNumber(field.min,input.dataset.nativeUnit,next));if(field?.max!=null)input.max=String(toDisplayNumber(field.max,input.dataset.nativeUnit,next));input.step=input.matches('input[type="range"]')&&field?.step!=null?String(toDisplayStep(field.step,input.dataset.nativeUnit,next)):'any';});
     form.querySelectorAll('[data-field-unit]').forEach(label=>{label.textContent=toDisplayUnit(label.dataset.nativeUnit,next);});
     lastUnitSystem=next;run();
   };
   form.addEventListener('submit',e=>{e.preventDefault();run();});
+  unitSystem?.addEventListener('input',syncUnitSystem);
   unitSystem?.addEventListener('change',syncUnitSystem);
   let timer;form.addEventListener('input',e=>{if(e.target===unitSystem||e.target.matches('textarea'))return;clearTimeout(timer);timer=setTimeout(run,120);});
   document.querySelector('[data-action="reset-calculator"]')?.addEventListener('click',()=>{const system=unitSystem?.value||'SI';for(const f of calc.inputs||[]){const el=form.querySelector(`[data-key="${CSS.escape(f.key)}"]`);if(el)el.value=el.matches('input[type="number"],input[type="range"]')?toDisplayNumber(f.default,f.unit,system):f.default??'';}run();});

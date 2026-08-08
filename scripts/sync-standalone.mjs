@@ -15,6 +15,7 @@ function replaceRange(source, startMarker, endMarker, replacement) {
 let standalone = await read('standalone.html');
 const styles = await read('styles.css');
 const app = await read('js/app.js');
+const unitSystemModule = await read('js/unit-system.js');
 const frameworkModule = await read('js/engineering-results.js');
 const dataModule = await read('js/data.js');
 const calculatorsModule = await read('js/calculators.js');
@@ -247,6 +248,7 @@ if (standalone.includes(frameworkStart)) {
 const oldRegistry = 'const calculatorRegistry = { ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry };';
 const newRegistry = 'const calculatorRegistry = createEngineeringRegistry({ ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry });';
 const appPrelude = [
+  moduleSource(unitSystemModule),
   appImports,
   'const {acs519Sections,acs519ToolCatalog,acs519Demos,acs519CaseNotes,acs519ReferenceGroups}=__acs519Data;',
   'const {workflowExpansionSections,workflowExpansionToolCatalog,workflowExpansionDemos,workflowExpansionCaseNotes,workflowExpansionReferenceGroups}=__workflowExpansionData;',

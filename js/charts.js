@@ -93,7 +93,9 @@ function pathFromTrace(t, sx, sy, xLog, yLog) {
 }
 
 export function lineChartSvg(plot, { width = 840, height = 390 } = {}) {
-  const m = { left: 72, right: 24, top: 36, bottom: 60 };
+  const legendWidth=width-72-24-16;let legendRows=1,legendCursor=0;
+  for(const trace of plot.traces??[]){const itemWidth=Math.max(90,String(trace.name||'Trace').length*6.3+36);if(legendCursor&&legendCursor+itemWidth>legendWidth){legendRows++;legendCursor=0;}legendCursor+=itemWidth;}
+  const m = { left: 72, right: 24, top: 55+(legendRows-1)*19, bottom: 60 };
   const innerW = width - m.left - m.right, innerH = height - m.top - m.bottom;
   const [xmin, xmax] = extent(plot, 'x'), [ymin, ymax] = extent(plot, 'y');
   const xLog = plot.xScale === 'log', yLog = plot.yScale === 'log';
@@ -127,7 +129,7 @@ export function lineChartSvg(plot, { width = 840, height = 390 } = {}) {
   s += `</g>`;
   s += `<text x="${m.left + innerW/2}" y="${height - 12}" text-anchor="middle" font-family="ui-sans-serif,system-ui" font-size="11" fill="#5f6b70">${escapeHtml(plot.xLabel || '')}</text>`;
   s += `<text x="16" y="${m.top + innerH/2}" text-anchor="middle" transform="rotate(-90 16 ${m.top + innerH/2})" font-family="ui-sans-serif,system-ui" font-size="11" fill="#5f6b70">${escapeHtml(plot.yLabel || '')}</text>`;
-  let lx = m.left + 8, ly = m.top + 14;
+  let lx = m.left + 8, ly = 42;
   (plot.traces ?? []).forEach((t, i) => {
     const color = t.color || palette[i % palette.length];
     const label = String(t.name || `Trace ${i+1}`);

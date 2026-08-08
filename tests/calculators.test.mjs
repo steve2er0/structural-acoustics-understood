@@ -78,6 +78,7 @@ import {
 import { jointAcceptance, spatialCoherence, supportedDemoIds } from '../js/demos.js';
 import { assertDemoTakeawayRegistry, buildDemoTakeaway, demoTakeawayRegistry } from '../js/demo-takeaways.js';
 import { assertEngineeringResult, engineeringResultToText } from '../js/engineering-results.js';
+import { axisUnitInfo, displayEngineeringResult, fromDisplayNumber, toDisplayNumber, toDisplayStep, unitConversion } from '../js/unit-system.js';
 import {
   featuredItems,
   homepageNavigation,
@@ -221,6 +222,71 @@ test('Miles equation matches the standard narrowband expression',()=>{
   const v=defaults('miles');v.fn=100;v.q=10;v.psd=0.01;
   const expected=Math.sqrt(Math.PI/2*10*100*0.01);
   close(metric(registry.miles.compute(v),'Acceleration response'),expected,1e-10);
+});
+
+test('structural wave-speed tool compares elastic families and locates plate critical frequency',()=>{
+  const values=defaults('bending-wave'),result=registry['bending-wave'].compute(values),E=Number(values.E_gpa)*1e9,rho=Number(values.rho),nu=Number(values.nu),h=Number(values.thickness_mm)/1000,D=E*h**3/(12*(1-nu**2));
+  const longitudinal=Math.sqrt(E/rho),shear=Math.sqrt(E/(2*(1+nu))/rho),critical=Number(values.sound_speed)**2/(2*Math.PI)*Math.sqrt(rho*h/D);
+  close(metric(result,'Longitudinal extensional speed'),longitudinal,1e-10);
+  close(metric(result,'Shear wave speed'),shear,1e-10);
+  close(metric(result,'Plate critical frequency'),critical,1e-10);
+  const speedPlot=result.plots[0],traceNames=speedPlot.traces.map(item=>item.name);
+  for(const name of ['Bending phase','Bending group'])assert.ok(traceNames.includes(name));
+  for(const name of ['Longitudinal','Shear','Fluid'])assert.ok(traceNames.some(traceName=>traceName.startsWith(name)));
+  const criticalTrace=speedPlot.traces.find(item=>item.name.startsWith('Critical f'));
+  assert.deepEqual(criticalTrace.x,[critical,critical]);
+  assert.match(result.interpretation.physicalMeaning,/critical frequency.*bending phase speed equals.*sound speed/i);
+  assert.match(result.interpretationByUnit.English.summary,/16573.*10162.*ft\/s/);
+  assert.ok(registry['bending-wave'].references.some(reference=>/Wave Motion in Elastic Solids/.test(reference.title)));
+});
+
+test('every calculator result uses the shared card, plot, and table unit conversion',()=>{
+  let convertedValues=0,convertedAxes=0,convertedColumns=0;
+  for(const tool of catalog){
+    const canonical=registry[tool.id].compute(defaults(tool.id)),english=displayEngineeringResult(canonical,'English');
+    canonical.values.forEach((value,index)=>{
+      const conversion=unitConversion(value.unit);
+      if(!conversion||!Number.isFinite(Number(value.value)))return;
+      convertedValues++;
+      close(english.values[index].value,toDisplayNumber(value.value,value.unit,'English'),1e-10);
+      assert.equal(english.values[index].unit,conversion.unit,`${tool.id} card ${value.label} has the wrong English unit`);
+    });
+    (canonical.plots||[]).forEach((plot,plotIndex)=>{
+      const converted=english.plots[plotIndex];
+      for(const dimension of ['x','y']){
+        const labelKey=`${dimension}Label`,info=axisUnitInfo(plot[labelKey]);
+        if(!info)continue;
+        convertedAxes++;
+        assert.equal(converted[labelKey],info.label,`${tool.id} plot ${plotIndex} has the wrong ${dimension}-axis unit`);
+        plot.traces.forEach((trace,traceIndex)=>{
+          trace[dimension].forEach((value,valueIndex)=>close(converted.traces[traceIndex][dimension][valueIndex],toDisplayNumber(value,info.unit,'English'),1e-10));
+        });
+      }
+      plot.traces.forEach((trace,traceIndex)=>assert.equal(converted.traces[traceIndex].name,trace.displayNameByUnit?.English||trace.name,`${tool.id} plot ${plotIndex} trace name is out of sync`));
+    });
+    (canonical.tables||[]).forEach((table,tableIndex)=>{
+      const converted=english.tables[tableIndex];
+      table.columns.forEach((column,columnIndex)=>{
+        const info=axisUnitInfo(column);
+        if(!info)return;
+        convertedColumns++;
+        assert.equal(converted.columns[columnIndex],info.label,`${tool.id} table ${tableIndex} has the wrong column unit`);
+        table.rows.forEach((row,rowIndex)=>assert.equal(converted.rows[rowIndex][columnIndex],toDisplayNumber(row[columnIndex],info.unit,'English')));
+      });
+    });
+  }
+  assert.ok(convertedValues>100,'expected broad result-card conversion coverage');
+  assert.ok(convertedAxes>25,`expected broad plot-axis conversion coverage; found ${convertedAxes}`);
+  assert.ok(convertedColumns>20,`expected broad table-column conversion coverage; found ${convertedColumns}`);
+});
+
+test('continuous number inputs do not inherit converted HTML step restrictions',()=>{
+  const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
+  assert.match(appSource,/field\.type==='number'\?'step="any"'/);
+  assert.match(appSource,/input\.matches\('input\[type="range"\]'\).*:'any'/);
+  assert.equal(toDisplayStep(0.1,'GPa','SI'),0.1);
+  close(toDisplayStep(0.1,'GPa','English'),0.01450377377,1e-12);
+  close(fromDisplayNumber(toDisplayNumber(68.9,'GPa','English'),'GPa','English'),68.9,1e-12);
 });
 
 test('priority gap-analysis tools expose behavior plots and separate alerts from limitations',()=>{
@@ -853,6 +919,7 @@ test('site visual system exposes reusable components and themes every non-home r
   assert.match(renderLinkCollection({label:'Hardware',variant:'hardware',items:[{title:'Fairing',href:'#/cheat-sheet?section=payload-fairing-cavities'}]}),/site-hardware-links/);
   const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
   const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
+  const unitSource=readFileSync(new URL('../js/unit-system.js',import.meta.url),'utf8');
   assert.match(css,/--site-color-canvas-deep:/);
   assert.match(css,/--site-space-8:/);
   assert.match(css,/--site-type-display:/);
@@ -865,12 +932,13 @@ test('site visual system exposes reusable components and themes every non-home r
   assert.match(appSource,/classList\.toggle\('home-route',!first\)/);
   assert.match(appSource,/calculator-context-grid/);
   assert.match(appSource,/page\.replace\(context,''\).*\$\{context\}/);
-  assert.match(appSource,/const ENGLISH_UNIT_CONVERSIONS/);
-  assert.match(appSource,/function displayEngineeringResult/);
+  assert.match(unitSource,/const ENGLISH_UNIT_CONVERSIONS/);
+  assert.match(unitSource,/function displayEngineeringResult/);
   assert.doesNotMatch(appSource,/const conceptCard=/);
   assert.match(appSource,/commentary-card commentary-card-wide/);
   assert.match(appSource,/data-field-unit=/);
   assert.match(appSource,/syncUnitSystem/);
+  assert.match(appSource,/unitSystem\?\.addEventListener\('input',syncUnitSystem\)/);
   assert.match(appSource,/function renderInputFields/);
   assert.match(css,/\.commentary-card-wide \{ grid-column: 1 \/ -1; \}/);
   assert.doesNotMatch(appSource,/No automatic warning/i);
@@ -968,10 +1036,11 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes the demo takeaway runtime',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v46'/);
+  assert.match(worker,/const CACHE = 'sau-v51'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);
+  assert.match(worker,/\.\/js\/unit-system\.js/);
   assert.match(worker,/\.\/js\/site-components\.js/);
   assert.match(worker,/\.\/js\/engineering-system\.js/);
   assert.match(worker,/\.\/js\/demo-takeaways\.js/);

@@ -1615,14 +1615,18 @@ export const toolCatalog = [
   },
   {
     "id": "bending-wave",
-    "title": "Bending Wave Speed",
+    "title": "Structural Wave Speeds",
     "category": "Structures",
-    "description": "Plot flexural wavenumber, wavelength, phase velocity, group velocity, and propagation delay versus frequency.",
+    "description": "Compare longitudinal, shear, and dispersive bending-wave speeds, then locate the plate critical frequency set by material and thickness.",
     "complexity": "Core",
     "keywords": [
       "dispersion",
       "group velocity",
-      "plate"
+      "plate",
+      "longitudinal wave",
+      "shear wave",
+      "critical frequency",
+      "coincidence"
     ]
   },
   {

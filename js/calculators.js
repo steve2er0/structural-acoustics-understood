@@ -670,31 +670,40 @@ const calculatorDefinitions = {
   },
 
   'bending-wave': {
-    category:'Structures', basis:'Kirchhoff thin-plate dispersion', confidence:'Exact within thin-plate model',
+    category:'Structures', basis:'Isotropic extensional, shear, and Kirchhoff thin-plate wave relations', confidence:'Exact within the stated ideal wave models',
     inputs:[
       ...commonMaterialInputs,
       {key:'thickness_mm',label:'Plate thickness',unit:'mm',type:'number',default:3,min:0.001},
+      {key:'sound_speed',label:'Surrounding-fluid sound speed',unit:'m/s',type:'number',default:AIR_C,min:1,help:'Used to locate plate coincidence (critical frequency).'},
       {key:'fmin',label:'Minimum frequency',unit:'Hz',type:'number',default:10,min:0.001},
       {key:'fmax',label:'Maximum frequency',unit:'Hz',type:'number',default:5000,min:0.002},
       {key:'distance',label:'Propagation distance',unit:'m',type:'number',default:1,min:0}
     ],
     syncPreset:syncMaterialDefaults,
-    theory:'<p>Kirchhoff plate bending has k=(ρhω²/D)<sup>1/4</sup>, phase speed c<sub>p</sub>=ω/k, and group speed c<sub>g</sub>=2c<sub>p</sub>.</p>',
-    assumptions:['Thin isotropic plate and wavelengths long relative to thickness.','No curvature, stiffeners, joints, or reflections.'],
-    example:'Because c<sub>g</sub>∝√f, a 1 kHz flexural packet travels about twice as fast as a 250 Hz packet in the same plate.',
+    theory:'<p>The longitudinal extensional screen uses c<sub>L</sub>=√(E/ρ). The isotropic shear speed is c<sub>S</sub>=√(G/ρ), with G=E/[2(1+ν)]. Kirchhoff plate bending has k<sub>b</sub>=(ρhω²/D)<sup>1/4</sup>, phase speed c<sub>b</sub>=ω/k<sub>b</sub>, and group speed c<sub>g</sub>=2c<sub>b</sub>. Acoustic coincidence occurs where c<sub>b</sub>=c₀, giving f<sub>c</sub>=c₀²√(ρh/D)/(2π).</p>',
+    assumptions:['Homogeneous isotropic material; the longitudinal value is the one-dimensional extensional speed √(E/ρ).','Thin Kirchhoff plate with bending wavelengths long relative to thickness.','Critical frequency represents an infinite flat plate in the entered surrounding fluid.','No curvature, stiffeners, joints, reflections, orthotropy, or strong fluid loading.'],
+    example:'Longitudinal and shear speeds remain nearly constant in this idealization, while bending-wave speed rises with √f and reaches the surrounding-fluid sound speed at the thickness-dependent critical frequency.',
+    references:[
+      {title:'Graff — Wave Motion in Elastic Solids',note:'Longitudinal, shear, flexural, and guided elastic-wave definitions and propagation behavior.'},
+      {title:'Cremer, Heckl & Petersson — Structure-Borne Sound',note:'Structural-wave propagation, dispersion, mobility, junction behavior, and coincidence.'},
+      {title:'Fahy & Gardonio — Sound and Structural Vibration',note:'Bending waves, phase and group velocity, acoustic coincidence, radiation, and fluid loading.'},
+      {title:'Leissa — Vibration of Plates (NASA SP-160)',note:'Classical thin-plate theory, assumptions, modal behavior, and applicability limits.'}
+    ],
     compute(v){
-      const {E,rho,nu}=materialFrom(v),h=positive(v.thickness_mm,'Thickness')/1000,fmin=positive(v.fmin,'Minimum frequency'),fmax=positive(v.fmax,'Maximum frequency'),dist=Math.max(0,n(v.distance));
+      const {E,rho,nu}=materialFrom(v),h=positive(v.thickness_mm,'Thickness')/1000,c0=positive(v.sound_speed,'Sound speed'),fmin=positive(v.fmin,'Minimum frequency'),fmax=positive(v.fmax,'Maximum frequency'),dist=Math.max(0,n(v.distance));
       if(fmax<=fmin) throw new Error('Maximum frequency must exceed minimum.');
-      const D=plateD(E,h,nu),fs=logspace(fmin,fmax,160),k=[],lambda=[],cp=[],cg=[],delay=[];
+      const D=plateD(E,h,nu),G=E/(2*(1+nu)),cLongitudinal=Math.sqrt(E/rho),cShear=Math.sqrt(G/rho),criticalFrequency=c0*c0/(2*Math.PI)*Math.sqrt(rho*h/D),fs=logspace(fmin,fmax,160),k=[],lambda=[],cp=[],cg=[],delay=[];
       for(const f of fs){const w=rad(f),kk=(rho*h*w*w/D)**0.25;k.push(kk);lambda.push(2*Math.PI/kk);cp.push(w/kk);cg.push(2*w/kk);delay.push(dist/(2*w/kk));}
-      const mid=Math.floor(fs.length/2);
+      const mid=Math.floor(fs.length/2),reportFrequency=fs[mid],criticalLocation=criticalFrequency<fmin?'below':criticalFrequency>fmax?'above':'inside',speedMin=Math.min(cp[0],c0,cShear,cLongitudinal)*0.75,speedMax=Math.max(cg.at(-1),c0,cShear,cLongitudinal)*1.25,constant=value=>fs.map(()=>value),selectedIndices=fs.map((_,index)=>index).filter(index=>index%16===0||index===fs.length-1),mpsToFps=3.280839895;
+      const physicalMeaning='Longitudinal and shear waves move through the material by extensional and distortional deformation and are treated as nondispersive here. Plate bending motion is much slower at low frequency and becomes faster as frequency rises. At the critical frequency, the bending phase speed equals the surrounding-fluid sound speed, allowing classical infinite-plate acoustic coincidence; finite edges can still radiate below this frequency.';
       return{
-        summary:[stat('Bending stiffness D',D,'N·m'),stat(`Phase speed at ${fs[mid].toFixed(0)} Hz`,cp[mid],'m/s'),stat(`Group speed at ${fs[mid].toFixed(0)} Hz`,cg[mid],'m/s'),stat('Transit delay at mid frequency',delay[mid],'s')],
-        interpretation:`Over ${dist} m, the predicted group delay falls from ${delay[0].toFixed(5)} s at ${fmin} Hz to ${delay.at(-1).toFixed(5)} s at ${fmax} Hz.`,
-        warnings:['Use a shell or waveguide model when curvature, ribs, joints, or thickness effects are important.'],
-        plots:[{title:'Flexural wave speed',xLabel:'Frequency (Hz)',yLabel:'Speed (m/s)',xScale:'log',yScale:'log',traces:[trace('Phase velocity',fs,cp),trace('Group velocity',fs,cg)]},{title:'Wavelength and delay',xLabel:'Frequency (Hz)',yLabel:'Value',xScale:'log',yScale:'log',traces:[trace('Wavelength (m)',fs,lambda),trace('Delay (s)',fs,delay)]}],
-        tables:[{title:'Selected wave values',columns:['Frequency (Hz)','k (rad/m)','Wavelength (m)','Phase speed (m/s)','Group speed (m/s)','Delay (s)'],rows:fs.filter((_,i)=>i%16===0||i===fs.length-1).map((f,i2)=>{const i=i2*16<fs.length?i2*16:fs.length-1;return[fs[i],k[i],lambda[i],cp[i],cg[i],delay[i]];})}],
-        csv:{filename:'bending-wave.csv',columns:['frequency_hz','wavenumber_rad_per_m','wavelength_m','phase_speed_mps','group_speed_mps','delay_s'],rows:fs.map((f,i)=>[f,k[i],lambda[i],cp[i],cg[i],delay[i]])}
+        summary:[stat('Longitudinal extensional speed',cLongitudinal,'m/s'),stat('Shear wave speed',cShear,'m/s'),stat(`Bending phase speed at ${reportFrequency.toFixed(0)} Hz`,cp[mid],'m/s'),stat(`Bending group speed at ${reportFrequency.toFixed(0)} Hz`,cg[mid],'m/s'),stat('Plate critical frequency',criticalFrequency,'Hz'),stat('Bending stiffness D',D,'N·m')],
+        interpretation:{summary:`The ideal longitudinal and shear speeds are ${cLongitudinal.toFixed(0)} and ${cShear.toFixed(0)} m/s. Bending phase speed is dispersive and reaches the entered fluid sound speed of ${c0.toFixed(1)} m/s at the ${criticalFrequency.toFixed(1)} Hz plate critical frequency, which lies ${criticalLocation} the requested ${fmin}–${fmax} Hz band.`,physicalMeaning},
+        interpretationByUnit:{English:{summary:`The ideal longitudinal and shear speeds are ${(cLongitudinal*mpsToFps).toFixed(0)} and ${(cShear*mpsToFps).toFixed(0)} ft/s. Bending phase speed is dispersive and reaches the entered fluid sound speed of ${(c0*mpsToFps).toFixed(1)} ft/s at the ${criticalFrequency.toFixed(1)} Hz plate critical frequency, which lies ${criticalLocation} the requested ${fmin}–${fmax} Hz band.`,physicalMeaning}},
+        warnings:['Use a shell, Mindlin plate, or guided-wave model when curvature, ribs, joints, short wavelengths, or thickness effects are important.'],
+        plots:[{title:'Structural wave speeds and acoustic coincidence',xLabel:'Frequency (Hz)',yLabel:'Wave speed (m/s)',xScale:'log',yScale:'log',traces:[trace('Bending phase',fs,cp,{emphasis:true}),trace('Bending group',fs,cg),trace(`Longitudinal · ${(cLongitudinal/1000).toFixed(2)} km/s`,fs,constant(cLongitudinal),{emphasis:true,displayNameByUnit:{English:`Longitudinal · ${(cLongitudinal*mpsToFps/1000).toFixed(2)} kft/s`}}),trace(`Shear · ${(cShear/1000).toFixed(2)} km/s`,fs,constant(cShear),{emphasis:true,displayNameByUnit:{English:`Shear · ${(cShear*mpsToFps/1000).toFixed(2)} kft/s`}}),trace(`Fluid · ${c0.toFixed(0)} m/s`,fs,constant(c0),{dash:true,displayNameByUnit:{English:`Fluid · ${(c0*mpsToFps).toFixed(0)} ft/s`}}),trace(`Critical f = ${criticalFrequency.toFixed(1)} Hz`,[criticalFrequency,criticalFrequency],[speedMin,speedMax],{dash:true})]},{title:'Bending wavelength',xLabel:'Frequency (Hz)',yLabel:'Wavelength (m)',xScale:'log',yScale:'log',traces:[trace('Bending wavelength',fs,lambda,{emphasis:true})]},{title:`Group transit delay over ${dist} m`,xLabel:'Frequency (Hz)',yLabel:'Delay (s)',xScale:'log',yScale:dist>0?'log':'linear',traces:[trace('Bending group delay',fs,delay,{emphasis:true})]}],
+        tables:[{title:'Selected wave values',columns:['Frequency (Hz)','Bending k (rad/m)','Bending wavelength (m)','Bending phase speed (m/s)','Bending group speed (m/s)','Longitudinal speed (m/s)','Shear speed (m/s)','Fluid sound speed (m/s)','Group delay (s)'],rows:selectedIndices.map(i=>[fs[i],k[i],lambda[i],cp[i],cg[i],cLongitudinal,cShear,c0,delay[i]])}],
+        csv:{filename:'structural-wave-speeds.csv',columns:['frequency_hz','bending_wavenumber_rad_per_m','bending_wavelength_m','bending_phase_speed_mps','bending_group_speed_mps','longitudinal_extensional_speed_mps','shear_speed_mps','fluid_sound_speed_mps','group_delay_s'],rows:fs.map((f,i)=>[f,k[i],lambda[i],cp[i],cg[i],cLongitudinal,cShear,c0,delay[i]])}
       };
     }
   },
