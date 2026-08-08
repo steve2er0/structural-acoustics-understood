@@ -13,7 +13,7 @@ import { seaParameterSections, seaParameterToolCatalog, seaParameterDemos, seaPa
 import { lineChartSvg, heatmapSvg, downloadCsv, downloadSvg, downloadText } from './charts.js';
 import { demoPreviewSvg, mountDemo } from './demos.js';
 import { engineeringResultToText } from './engineering-results.js';
-import { homepageNavigation, homepageNavKey, renderHomepage, bindHomepage } from './homepage.js';
+import { homepageNavigation, homepageNavKey, renderHomepage, renderSubjectPage, bindHomepage, subjectWheel } from './homepage.js';
 import { renderPageShell, renderBreadcrumbs, renderSectionHeader, renderCallout, renderLinkCollection } from './site-components.js';
 import { renderLaunchSeaCapstone, bindLaunchSeaCapstone } from './launch-sea-capstone.js';
 import { engineeringWorkbenchRegistry } from './engineering-workbenches.js';
@@ -94,6 +94,7 @@ function showToast(message) {
 function icon(name) {
   if(name==='search')return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>';
   if(name==='print')return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V3h10v6M7 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-3"/><path d="M7 14h10v7H7z"/></svg>';
+  if(name==='tools')return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4.6 4.6 0 0 0-5.8 5.8l-5.7 5.7a2.1 2.1 0 0 0 3 3l5.7-5.7a4.6 4.6 0 0 0 5.8-5.8l-2.5 2.5-3-3z"/></svg>';
   return '';
 }
 function brandMark(){return `<svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21"/><path d="M8 27c6-13 12-13 18 0s11 13 14 1"/><path d="M8 19c6 8 12 8 18 0s10-8 14-1"/></svg>`;}
@@ -106,19 +107,27 @@ function routeInfo(){
 function navKey(route){
   return homepageNavKey(route.segments[0]||'',route.params.get('section')||'');
 }
+function renderToolsMenu(active=false){
+  const preferred=['Utilities','Dynamics','Structures','Acoustics','Noise Control','Random & Shock','Structural Acoustics','Aero / Distributed Loads','SEA & Energy','Test & Signal'];
+  const categories=[...new Set(toolCatalog.map(tool=>tool.category))].sort((a,b)=>{
+    const ai=preferred.indexOf(a),bi=preferred.indexOf(b);
+    return (ai<0?preferred.length:ai)-(bi<0?preferred.length:bi)||a.localeCompare(b);
+  });
+  return `<div class="tools-menu" data-tools-menu><button type="button" class="tools-menu-trigger ${active?'active':''}" data-tools-toggle aria-expanded="false" aria-controls="tools-menu-panel">${icon('tools')}<span>Tools<small>Calculators & workbenches</small></span><b aria-hidden="true">⌄</b></button><div class="tools-menu-panel" id="tools-menu-panel" hidden><header><div><p class="eyebrow">Engineering tools</p><h2>Choose the model by discipline.</h2></div><a class="tools-menu-all" href="#/tools">Browse all ${toolCatalog.length} tools <span aria-hidden="true">→</span></a></header><div class="tools-menu-grid">${categories.map(category=>{const tools=toolCatalog.filter(tool=>tool.category===category);return `<section><a class="tools-menu-category" href="#/tools?category=${encodeURIComponent(category)}"><strong>${esc(category)}</strong><span>${tools.length} tools</span></a><div>${tools.slice(0,3).map(tool=>`<a href="#/tool/${encodeURIComponent(tool.id)}">${esc(tool.title)}</a>`).join('')}</div>${tools.length>3?`<a class="tools-menu-more" href="#/tools?category=${encodeURIComponent(category)}">View all ${tools.length} →</a>`:''}</section>`;}).join('')}</div></div></div>`;
+}
 function shell(main, route) {
   const active=navKey(route);
   const project=loadEngineeringProject();
   return `<header class="site-header">
     <a class="brand" href="#/">${brandMark()}<span class="brand-copy"><strong>Structural Acoustics</strong><small>Understood</small></span></a>
-    <nav class="primary-nav" aria-label="Primary">${homepageNavigation.map(item=>`<a href="${item.href}" class="${active===item.id?'active':''}" ${active===item.id?'aria-current="page"':''}><span>${item.label}</span><small>${item.descriptor}</small></a>`).join('')}</nav>
+    <nav class="primary-nav" aria-label="Primary">${homepageNavigation.map(item=>`<a href="${item.href}" class="${active===item.id?'active':''}" ${active===item.id?'aria-current="page"':''}><span>${item.label}</span><small>${item.descriptor}</small></a>`).join('')}${renderToolsMenu(active==='tools')}</nav>
     <div class="header-actions"><a class="project-pill" href="#/workspace" aria-label="Open engineering project"><span>Project</span><b>${project.artifacts.length}</b></a><button class="icon-button header-search" data-action="search" aria-label="Search">${icon('search')}<span>Search</span></button><button class="icon-button header-print" data-action="print" aria-label="Print current page">${icon('print')}</button><button class="menu-button" aria-label="Toggle navigation" aria-expanded="false"><span></span><span></span><span></span></button></div>
   </header>
   <main id="main-content">${main}</main>
   <footer class="site-footer"><div><strong>Structural Acoustics, Understood</strong><p>Original engineering reference and browser-based screening tools. Verify controlled methods before design or qualification use.</p></div><div class="footer-links"><a href="#/validation">Verification center</a><a href="#/references">Assumptions & references</a><a href="#/workspace">Engineering project</a><a href="#/tools">${toolCatalog.length} tools</a><a href="#/demos">${demos.length} demos</a><button class="link-button" data-action="print">Print / PDF</button></div></footer>
   ${searchDialog()}<div class="toast" role="status" aria-live="polite"></div>`;
 }
-function searchDialog(){return `<dialog class="search-dialog"><div class="search-shell"><div class="search-input-wrap">${icon('search')}<input id="global-search" type="search" placeholder="Search equation, hardware, method, output…" autocomplete="off" aria-label="Search engineering reference"/><button class="kbd-button" data-action="close-search">Esc</button></div><div class="search-facets" aria-label="Search result types"><button class="active" data-search-type="All">All</button>${['Tool','Chapter','Demo','Case note','Hardware','Pathway','Glossary'].map(type=>`<button data-search-type="${type}">${type}</button>`).join('')}</div><div class="search-results" id="search-results"></div></div></dialog>`;}
+function searchDialog(){return `<dialog class="search-dialog"><div class="search-shell"><div class="search-input-wrap">${icon('search')}<input id="global-search" type="search" placeholder="Search equation, hardware, method, output…" autocomplete="off" aria-label="Search engineering reference"/><button class="kbd-button" data-action="close-search">Esc</button></div><div class="search-facets" aria-label="Search result types"><button class="active" data-search-type="All">All</button>${['Subject','Tool','Chapter','Demo','Case note','Hardware','Pathway','Glossary'].map(type=>`<button data-search-type="${type}">${type}</button>`).join('')}</div><div class="search-results" id="search-results"></div></div></dialog>`;}
 function intro({eyebrow,title,lede,aside='',metrics=[],buttons=[]}){
   return `<section class="page-intro"><div><p class="eyebrow">${esc(eyebrow)}</p><h1>${title}</h1><p class="lede">${lede}</p>${buttons.length?`<div class="button-row">${buttons.map(b=>`<${b.href?'a':'button'} class="${b.secondary?'button-secondary':'button'}" ${b.href?`href="${b.href}"`:`data-action="${b.action}"`}>${b.label}</${b.href?'a':'button'}>`).join('')}</div>`:''}</div><aside class="intro-aside">${aside}${metrics.length?`<div class="intro-metrics">${metrics.map(m=>`<div class="metric"><strong>${esc(m.value)}</strong><span>${esc(m.label)}</span></div>`).join('')}</div>`:''}</aside></section>`;
 }
@@ -181,17 +190,19 @@ function renderCheat(route){
   return renderPageShell(page,{variant:'focused-chapter'});
 }
 function toolCard(t,index){const profile=classifyTool(t,Object.keys(workbenchRegistry));return `<a class="tool-card site-tool-card" href="#/tool/${encodeURIComponent(t.id)}" data-category="${esc(t.category)}" data-task="${esc(profile.task)}" data-hardware="${esc(profile.hardware)}" data-input="${esc(profile.input)}" data-level="${esc(profile.level)}" data-search="${esc(`${t.title} ${t.description} ${(t.keywords||[]).join(' ')} ${profile.task} ${profile.hardware} ${profile.input}`.toLowerCase())}"><span class="tool-index">${String(index+1).padStart(2,'0')}</span><div class="tool-type-row"><span>${esc(profile.level)}</span>${profile.workbench?'<b>GUIDED</b>':''}</div><h3>${esc(t.title)}</h3><p>${esc(t.description)}</p><footer><span>${esc(t.category)} · ${esc(profile.hardware)}</span><span class="arrow">→</span></footer></a>`;}
-function renderTools(){
+function renderTools(route){
   const categories=['All',...new Set(toolCatalog.map(t=>t.category))];
   const profiles=toolCatalog.map(tool=>classifyTool(tool,Object.keys(workbenchRegistry)));
-  const options=(label,values,key)=>`<label><span>${label}</span><select data-tool-filter="${key}"><option value="All">All</option>${[...new Set(values)].sort().map(value=>`<option value="${esc(value)}">${esc(value)}</option>`).join('')}</select></label>`;
+  const requestedCategory=route?.params?.get('category');
+  const selectedCategory=categories.includes(requestedCategory)?requestedCategory:'All';
+  const options=(label,values,key,selected='All')=>`<label><span>${label}</span><select data-tool-filter="${key}"><option value="All" ${selected==='All'?'selected':''}>All</option>${[...new Set(values)].sort().map(value=>`<option value="${esc(value)}" ${selected===value?'selected':''}>${esc(value)}</option>`).join('')}</select></label>`;
   const intents=[
     ['I have a PSD','Response & loads','Start with response, extremes, fatigue, or test planning.'],
     ['I need panel TL','Transmission & control','Move from mass law through coincidence and installed paths.'],
     ['I am planning a test','Test & validation','Build measurement, control, notching, and evidence.'],
     ['I need SEA parameters','SEA & energy','Inspect modal density, damping, coupling, and response recovery.']
   ];
-  const page=`${renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Engineering calculators'}])}${intro({eyebrow:'Engineering calculators',title:'Start with the decision.<br>Then choose the model.',lede:'Quick screens stay fast. Physics labs expose behavior. Guided workbenches preserve multi-step engineering decisions and evidence.',aside:'<p>Calculations run locally in the browser. Imported engineering data is not uploaded by this static application.</p>',metrics:[{value:toolCatalog.length,label:'tools'},{value:Object.keys(workbenchRegistry).length,label:'guided workbenches'},{value:'Local',label:'data processing'}],buttons:[{label:'Open project workspace',href:'#/workspace'},{label:'Verification center',href:'#/validation',secondary:true}]})}<section class="tool-intents" aria-label="Common engineering starting points">${intents.map(([title,task,description])=>`<button type="button" data-tool-intent="${esc(task)}"><strong>${esc(title)}</strong><span>${esc(description)}</span><b aria-hidden="true">→</b></button>`).join('')}</section><div class="tool-discovery" aria-label="Tool decision filters"><label class="tool-filter-search"><span>Search</span><input id="tool-filter-search" type="search" placeholder="Method, output, hardware, or input…"/></label>${options('Discipline',categories.slice(1),'category')}${options('Engineering task',profiles.map(profile=>profile.task),'task')}${options('Hardware',profiles.map(profile=>profile.hardware),'hardware')}${options('Available input',profiles.map(profile=>profile.input),'input')}${options('Tool depth',profiles.map(profile=>profile.level),'level')}<button type="button" class="button-quiet" data-action="clear-tool-filters">Clear</button><span id="tool-count" class="filter-count">${toolCatalog.length} shown</span></div><div class="tool-grid">${toolCatalog.map(toolCard).join('')}</div>`;
+  const page=`${renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Engineering calculators'}])}${intro({eyebrow:'Engineering calculators',title:'Start with the decision.<br>Then choose the model.',lede:'Quick screens stay fast. Physics labs expose behavior. Guided workbenches preserve multi-step engineering decisions and evidence.',aside:'<p>Calculations run locally in the browser. Imported engineering data is not uploaded by this static application.</p>',metrics:[{value:toolCatalog.length,label:'tools'},{value:Object.keys(workbenchRegistry).length,label:'guided workbenches'},{value:'Local',label:'data processing'}],buttons:[{label:'Open project workspace',href:'#/workspace'},{label:'Verification center',href:'#/validation',secondary:true}]})}<section class="tool-intents" aria-label="Common engineering starting points">${intents.map(([title,task,description])=>`<button type="button" data-tool-intent="${esc(task)}"><strong>${esc(title)}</strong><span>${esc(description)}</span><b aria-hidden="true">→</b></button>`).join('')}</section><div class="tool-discovery" aria-label="Tool decision filters"><label class="tool-filter-search"><span>Search</span><input id="tool-filter-search" type="search" placeholder="Method, output, hardware, or input…"/></label>${options('Discipline',categories.slice(1),'category',selectedCategory)}${options('Engineering task',profiles.map(profile=>profile.task),'task')}${options('Hardware',profiles.map(profile=>profile.hardware),'hardware')}${options('Available input',profiles.map(profile=>profile.input),'input')}${options('Tool depth',profiles.map(profile=>profile.level),'level')}<button type="button" class="button-quiet" data-action="clear-tool-filters">Clear</button><span id="tool-count" class="filter-count">${toolCatalog.length} shown</span></div><div class="tool-grid">${toolCatalog.map(toolCard).join('')}</div>`;
   return renderPageShell(page,{variant:'tool-library'});
 }
 function fieldHtml(field,value){
@@ -338,6 +349,7 @@ function bindResultActions(result,meta){
 
 const searchItems=(()=>{
   const out=[];
+  subjectWheel.forEach(subject=>out.push({type:'Subject',title:subject.label,description:subject.summary,href:`#/subject/${subject.id}`,text:`${subject.label} ${subject.shortLabel} ${subject.question} ${subject.summary} ${subject.chapterIds.join(' ')}`}));
   toolCatalog.forEach(t=>out.push({type:'Tool',title:t.title,description:t.description,href:`#/tool/${t.id}`,text:`${t.title} ${t.description} ${t.category} ${(t.keywords||[]).join(' ')}`}));
   sections.forEach(s=>{out.push({type:'Chapter',title:s.title,description:s.summary,href:`#/cheat-sheet?section=${s.id}`,text:`${s.title} ${s.summary} ${s.eyebrow}`});s.concepts.forEach(c=>out.push({type:'Chapter',title:c.title,description:c.body,href:`#/cheat-sheet?section=${s.id}&concept=${encodeURIComponent(slug(c.title))}`,text:`${c.title} ${c.body} ${c.interpretation||''} ${c.mistake||''} ${(c.tags||[]).join(' ')}`}));});
   demos.forEach(d=>out.push({type:'Demo',title:d.title,description:d.description,href:`#/demo/${d.id}`,text:`${d.title} ${d.description} ${d.topic}`}));
@@ -348,7 +360,7 @@ const searchItems=(()=>{
   return out.map(x=>({...x,normalized:x.text.toLowerCase()}));
 })();
 function search(q,type=activeSearchType){const terms=q.toLowerCase().trim().split(/\s+/).filter(Boolean);const candidates=type==='All'?searchItems:searchItems.filter(item=>item.type===type);if(!terms.length)return candidates.slice(0,12);return candidates.map(item=>{let score=0;for(const term of terms){if(item.title.toLowerCase()===term)score+=20;if(item.title.toLowerCase().includes(term))score+=8;if(item.normalized.includes(term))score+=2;else score-=20;}return{item,score};}).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||a.item.title.localeCompare(b.item.title)).slice(0,18).map(x=>x.item);}
-function renderSearchResults(q){const el=document.querySelector('#search-results');if(!el)return;const items=search(q);const terms=q.toLowerCase().trim().split(/\s+/).filter(Boolean);el.innerHTML=items.length?items.map(x=>`<a class="search-result" href="${x.href}"><span class="search-result-type">${esc(x.type)}</span><span><strong>${esc(x.title)}</strong><p>${esc(x.description).slice(0,180)}</p>${terms.length?`<small>Matched ${esc(terms.filter(term=>x.normalized.includes(term)).join(' · ')||'title relevance')}</small>`:''}</span></a>`).join(''):`<div class="search-empty">No matching equation, hardware topic, method, tool, demo, case note, pathway, or glossary term.</div>`;el.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>document.querySelector('.search-dialog')?.close()));}
+function renderSearchResults(q){const el=document.querySelector('#search-results');if(!el)return;const items=search(q);const terms=q.toLowerCase().trim().split(/\s+/).filter(Boolean);el.innerHTML=items.length?items.map(x=>`<a class="search-result" href="${x.href}"><span class="search-result-type">${esc(x.type)}</span><span><strong>${esc(x.title)}</strong><p>${esc(x.description).slice(0,180)}</p>${terms.length?`<small>Matched ${esc(terms.filter(term=>x.normalized.includes(term)).join(' · ')||'title relevance')}</small>`:''}</span></a>`).join(''):`<div class="search-empty">No matching subject, equation, hardware topic, method, tool, demo, case note, pathway, or glossary term.</div>`;el.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>document.querySelector('.search-dialog')?.close()));}
 function openSearch(){const dialog=document.querySelector('.search-dialog');if(!dialog)return;if(!dialog.open)dialog.showModal();const input=dialog.querySelector('#global-search');input.value='';activeSearchType='All';dialog.querySelectorAll('[data-search-type]').forEach(button=>button.classList.toggle('active',button.dataset.searchType==='All'));renderSearchResults('');setTimeout(()=>input.focus(),0);}
 function bindEmbeddedDemos(){
   const mounts=[...document.querySelectorAll('[data-embedded-demo]')];
@@ -358,8 +370,16 @@ function bindEmbeddedDemos(){
   routeCleanup=()=>{old();cleanups.forEach(cleanup=>cleanup?.());};
 }
 function bindGlobal(route){
-  document.querySelector('.menu-button')?.addEventListener('click',e=>{const nav=document.querySelector('.primary-nav'),open=nav.classList.toggle('open');e.currentTarget.setAttribute('aria-expanded',open);});
-  document.querySelectorAll('.primary-nav a').forEach(link=>link.addEventListener('click',()=>{document.querySelector('.primary-nav')?.classList.remove('open');document.querySelector('.menu-button')?.setAttribute('aria-expanded','false');}));
+  const primaryNav=document.querySelector('.primary-nav'),mobileToggle=document.querySelector('.menu-button'),toolsMenu=document.querySelector('[data-tools-menu]'),toolsToggle=document.querySelector('[data-tools-toggle]'),toolsPanel=document.querySelector('#tools-menu-panel');
+  const setToolsOpen=open=>{if(!toolsPanel||!toolsToggle)return;toolsPanel.hidden=!open;toolsToggle.setAttribute('aria-expanded',String(open));toolsMenu?.classList.toggle('open',open);};
+  mobileToggle?.addEventListener('click',e=>{const open=primaryNav.classList.toggle('open');e.currentTarget.setAttribute('aria-expanded',open);if(!open)setToolsOpen(false);});
+  toolsToggle?.addEventListener('click',()=>setToolsOpen(toolsToggle.getAttribute('aria-expanded')!=='true'));
+  document.querySelectorAll('.primary-nav a').forEach(link=>link.addEventListener('click',()=>{setToolsOpen(false);primaryNav?.classList.remove('open');mobileToggle?.setAttribute('aria-expanded','false');}));
+  const dismissTools=event=>{if(toolsMenu&&!toolsMenu.contains(event.target))setToolsOpen(false);};
+  const escapeTools=event=>{if(event.key==='Escape'&&toolsToggle?.getAttribute('aria-expanded')==='true'){setToolsOpen(false);toolsToggle.focus();}};
+  document.addEventListener('pointerdown',dismissTools);
+  document.addEventListener('keydown',escapeTools);
+  const globalCleanup=routeCleanup;routeCleanup=()=>{globalCleanup();document.removeEventListener('pointerdown',dismissTools);document.removeEventListener('keydown',escapeTools);};
   document.querySelectorAll('[data-action="search"]').forEach(b=>b.addEventListener('click',openSearch));
   document.querySelectorAll('[data-action="print"]').forEach(b=>b.addEventListener('click',()=>window.print()));
   document.querySelector('[data-action="close-search"]')?.addEventListener('click',()=>document.querySelector('.search-dialog')?.close());
@@ -390,6 +410,7 @@ function bindToolFilters(){
   input?.addEventListener('input',update);selects.forEach(select=>select.addEventListener('change',update));
   document.querySelectorAll('[data-tool-intent]').forEach(button=>button.addEventListener('click',()=>{const task=selects.find(select=>select.dataset.toolFilter==='task');if(task)task.value=button.dataset.toolIntent;update();document.querySelector('.tool-discovery')?.scrollIntoView({behavior:'smooth',block:'start'});}));
   document.querySelector('[data-action="clear-tool-filters"]')?.addEventListener('click',()=>{if(input)input.value='';selects.forEach(select=>select.value='All');update();});
+  update();
 }
 function bindCheat(route){
   const input=document.querySelector('#chapter-filter'),cards=[...document.querySelectorAll('[data-chapter-search]')];
@@ -424,9 +445,10 @@ function bindWorkspace(){
 function render(){
   routeCleanup();routeCleanup=()=>{};const route=routeInfo();let main;
   const [first]=route.segments;
-  if(!first)main=renderHomepage({chapters:sections.length,tools:toolCatalog.length,demos:demos.length});
+  if(!first)main=renderHomepage({sections,tools:toolCatalog,demos});
+  else if(first==='subject')main=renderSubjectPage(decodeURIComponent(route.segments[1]||''),{sections,tools:toolCatalog,demos,hardware:hardwareTopics,pathways:learningPathways});
   else if(first==='cheat-sheet'||first==='chapter')main=renderCheat(route);
-  else if(first==='tools')main=renderTools();
+  else if(first==='tools')main=renderTools(route);
   else if(first==='tool')main=renderTool(route);
   else if(first==='demos')main=renderDemos();
   else if(first==='demo')main=renderDemo(route);
@@ -440,6 +462,7 @@ function render(){
   else main=renderNotFound();
   document.body.classList.toggle('home-route',!first);
   document.body.classList.toggle('site-system-route',Boolean(first));
+  document.body.classList.toggle('site-system-subject',first==='subject');
   document.body.classList.toggle('site-system-chapter',first==='cheat-sheet'||first==='chapter');
   document.body.classList.toggle('site-system-calculator',first==='tool'||first==='tools');
   document.body.classList.toggle('site-system-demo',first==='demo'||first==='demos');
@@ -453,7 +476,8 @@ function render(){
   document.body.classList.toggle('site-system-capstone',first==='tool'&&decodeURIComponent(route.segments[1]||'')===LAUNCH_SEA_CAPSTONE_ID&&route.params.get('mode')!=='quick');
   app.innerHTML=shell(main,route);bindGlobal(route);
   window.scrollTo({top:0,behavior:'instant'});
-  document.title=`${!first?'Structural Acoustics, Understood · Interactive Launch-Vehicle Atlas':`${first==='tool'&&toolById.get(route.segments[1])?`${toolById.get(route.segments[1]).title} · `:''}Structural Acoustics, Understood`}`;
+  const subjectTitle=first==='subject'?subjectWheel.find(subject=>subject.id===decodeURIComponent(route.segments[1]||''))?.label:'';
+  document.title=`${!first?'Structural Acoustics, Understood · Wheel of Acoustics':`${subjectTitle?`${subjectTitle} · `:first==='tool'&&toolById.get(route.segments[1])?`${toolById.get(route.segments[1]).title} · `:''}Structural Acoustics, Understood`}`;
 }
 
 window.addEventListener('hashchange',render);

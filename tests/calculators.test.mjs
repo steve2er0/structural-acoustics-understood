@@ -83,9 +83,9 @@ import {
   featuredItems,
   homepageNavigation,
   homepageNavKey,
-  navigationCards,
-  quickStartItems,
-  renderHomepage
+  renderHomepage,
+  renderSubjectPage,
+  subjectWheel
 } from '../js/homepage.js';
 import {
   renderBreadcrumbs,
@@ -822,14 +822,17 @@ test('site visual system exposes reusable components and themes every non-home r
   assert.match(appSource,/classList\.toggle\('home-route',!first\)/);
 });
 
-test('homepage atlas is data-driven, accessible, and linked to real content',()=>{
+test('wheel homepage is data-driven, accessible, and linked to real content',()=>{
+  const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
   const allSections=[...baseSections,...acs519Sections,...workflowExpansionSections,...programExpansionSections,...seaParameterSections];
   const allTools=[...toolCatalog,...extraToolCatalog,...acs519ToolCatalog,...workflowExpansionToolCatalog,...programExpansionToolCatalog,...seaParameterToolCatalog];
   const allDemos=[...baseDemos,...acs519Demos,...workflowExpansionDemos,...programExpansionDemos,...seaParameterDemos];
   const sectionIds=new Set(allSections.map(section=>section.id));
   const toolIds=new Set(allTools.map(tool=>tool.id));
   const demoIds=new Set(allDemos.map(demo=>demo.id));
-  const routeItems=[...homepageNavigation,...atlasSections,...quickStartItems,...navigationCards,...featuredItems];
+  const hardwareIds=new Set(hardwareTopics.map(topic=>topic.id));
+  const pathwayIds=new Set(learningPathways.map(pathway=>pathway.id));
+  const routeItems=[...homepageNavigation,...atlasSections,...featuredItems];
   const verifyRoute=href=>{
     const tool=href.match(/^#\/tool\/([^?]+)/)?.[1];
     const demo=href.match(/^#\/demo\/([^?]+)/)?.[1];
@@ -839,32 +842,65 @@ test('homepage atlas is data-driven, accessible, and linked to real content',()=
     if(section)assert.ok(sectionIds.has(section),`homepage section route ${section} is missing`);
     assert.match(href,/^#\//,`homepage route ${href} must use the SPA router`);
   };
-  assert.equal(homepageNavigation.length,6);
+  assert.equal(homepageNavigation.length,3);
   assert.equal(atlasSections.length,6);
-  assert.equal(quickStartItems.length,6);
-  assert.equal(navigationCards.length,6);
   assert.equal(featuredItems.length,6);
+  assert.equal(subjectWheel.length,10);
+  assert.deepEqual(subjectWheel.map(subject=>subject.id).filter(id=>['random-vibration','shock','fatigue'].includes(id)),['random-vibration','shock','fatigue']);
+  const assignedChapters=subjectWheel.flatMap(subject=>subject.chapterIds);
+  assert.equal(new Set(assignedChapters).size,assignedChapters.length,'each chapter must belong to exactly one wheel subject');
+  assert.deepEqual([...assignedChapters].sort(),[...sectionIds].sort(),'the wheel must cover every chapter');
+  for(const subject of subjectWheel){
+    assert.ok(subject.chapterIds.length>0,`${subject.id} needs at least one chapter`);
+    assert.ok(subject.demoIds.length>=3,`${subject.id} needs at least three interactive labs`);
+    subject.demoIds.forEach(id=>assert.ok(demoIds.has(id),`${subject.id} references missing demo ${id}`));
+    assert.ok(subject.toolIds.length>=5,`${subject.id} needs at least five selected tools`);
+    subject.toolIds.forEach(id=>assert.ok(toolIds.has(id),`${subject.id} references missing tool ${id}`));
+    assert.ok(subject.hardwareIds.length>=2,`${subject.id} needs at least two hardware applications`);
+    subject.hardwareIds.forEach(id=>assert.ok(hardwareIds.has(id),`${subject.id} references missing hardware ${id}`));
+    assert.ok(subject.pathwayIds.length>=2,`${subject.id} needs at least two guided pathways`);
+    subject.pathwayIds.forEach(id=>assert.ok(pathwayIds.has(id),`${subject.id} references missing pathway ${id}`));
+    const subjectHtml=renderSubjectPage(subject.id,{sections:allSections,tools:allTools,demos:allDemos,hardware:hardwareTopics,pathways:learningPathways});
+    assert.match(subjectHtml,new RegExp(`class="subject-page" style="--subject-color:${subject.accent}"`));
+    assert.match(subjectHtml,/Physical intuition/);
+    assert.match(subjectHtml,/Learning route/);
+    assert.match(subjectHtml,/Interactive behavior/);
+    assert.match(subjectHtml,/Engineering models/);
+    assert.match(subjectHtml,/Hardware application/);
+    assert.match(subjectHtml,/Guided workflows/);
+    assert.doesNotMatch(subjectHtml,/\bundefined\b/);
+  }
   assert.equal(new Set(atlasSections.map(section=>section.id)).size,atlasSections.length);
   atlasSections.forEach(section=>assert.equal(section.subjects.length,3,`${section.id} must expose three engineering subjects`));
   routeItems.forEach(item=>verifyRoute(item.href));
   assert.equal(homepageNavKey('tool'),'tools');
   assert.equal(homepageNavKey('hardware'),'hardware');
   assert.equal(homepageNavKey('pathways'),'workflows');
-  assert.equal(homepageNavKey('cheat-sheet','shell-acoustics-deep-dive'),'hardware');
-  assert.equal(homepageNavKey('cheat-sheet','launch-vibroacoustic-capstone'),'workflows');
-  const html=renderHomepage({chapters:allSections.length,tools:allTools.length,demos:allDemos.length});
-  assert.match(html,/Understand how vibration and sound move through structures/);
+  assert.equal(homepageNavKey('cheat-sheet','shell-acoustics-deep-dive'),'subjects');
+  const html=renderHomepage({sections:allSections,tools:allTools,demos:allDemos});
+  assert.match(html,/Navigate the wheel of acoustics/);
+  assert.match(html,/data-subject-select="random-vibration"/);
+  assert.match(html,/data-subject-select="shock"/);
+  assert.match(html,/data-subject-select="fatigue"/);
+  assert.match(html,/data-subject-detail="measurement-test"/);
   assert.match(html,/aria-labelledby="atlas-heading"/);
   assert.match(html,/aria-live="polite"/);
   assert.match(html,/data-atlas-section="fairing"/);
   assert.match(html,/assets\/homepage\/launch-vehicle-cutaway\.png/);
   assert.match(html,/class="atlas-hit-region"/);
   assert.match(html,/113 tools/);
+  assert.match(appSource,/data-tools-menu/);
+  assert.match(appSource,/tools\.slice\(0,3\)/);
+  assert.match(appSource,/#\/tools\?category=/);
+  assert.match(appSource,/first==='subject'.*renderSubjectPage/);
+  assert.match(appSource,/site-system-subject/);
+  assert.match(appSource,/type:'Subject'.*#\/subject\//);
+  assert.match(renderSubjectPage('missing-subject'),/That subject is not on the wheel/);
 });
 
 test('offline cache includes the demo takeaway runtime',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v30'/);
+  assert.match(worker,/const CACHE = 'sau-v34'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.match(worker,/\.\/assets\/homepage\/launch-vehicle-cutaway\.png/);
   assert.match(worker,/\.\/js\/homepage\.js/);
