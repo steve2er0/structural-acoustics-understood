@@ -1,5 +1,6 @@
 /* Calculators paired with the ACS 519 deep-dive modules and chapter expansions. */
 import { createEngineeringRegistry } from './engineering-results.js';
+import { materials } from './calculators.js';
 import { empiricalLossFactorState } from './sea-parameters-physics.js';
 import {
   SEA_MEDIA,
@@ -30,6 +31,16 @@ const trace = (name, x, y, extra = {}) => ({ name, x, y, ...extra });
 const num = (value, fallback) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 const mm = value => num(value, 0) / 1000;
 const gpa = value => num(value, 0) * 1e9;
+const linspace = (start, end, count) => Array.from({ length: count }, (_, index) => start + (end - start) * index / Math.max(1, count - 1));
+const normalizeMatrix = matrix => {
+  const scale = Math.max(...matrix.flat().map(value => Math.abs(value)), 1e-12);
+  return matrix.map(row => row.map(value => value / scale));
+};
+const materialOptions = Object.entries(materials).map(([value, material]) => ({ value, label: material.label }));
+const syncShellMaterial = values => {
+  const material = materials[values.material] || materials.aluminum;
+  return { ...values, modulus: material.E / 1e9, density: material.rho, poisson: material.nu };
+};
 
 const launchConsideration = text => [
   text,
@@ -106,28 +117,56 @@ const acs519CalculatorDefinitions = {
     basis: 'Donnell-type membrane/bending shell estimate with ring, coincidence, and duct cut-on scales',
     confidence: 'Screening estimate for a thin uniform simply supported cylinder',
     inputs: [
+      { key: 'material', label: 'Material preset', type: 'select', default: 'aluminum', options: materialOptions, help: 'Preset values populate the editable elastic properties below.' },
       { key: 'radius', label: 'Shell radius', unit: 'm', type: 'number', default: 1.8, min: 0.01 },
       { key: 'length', label: 'Shell length', unit: 'm', type: 'number', default: 7.5, min: 0.05 },
       { key: 'thickness', label: 'Wall thickness', unit: 'mm', type: 'number', default: 4, min: 0.05 },
-      { key: 'modulus', label: 'Young’s modulus', unit: 'GPa', type: 'number', default: 70, min: 0.01 },
-      { key: 'density', label: 'Material density', unit: 'kg/m³', type: 'number', default: 2700, min: 1 },
-      { key: 'poisson', label: 'Poisson ratio', type: 'number', default: 0.33, min: -0.49, max: 0.49 },
+      { key: 'modulus', label: 'Young’s modulus', unit: 'GPa', type: 'number', default: materials.aluminum.E / 1e9, min: 0.01 },
+      { key: 'density', label: 'Material density', unit: 'kg/m³', type: 'number', default: materials.aluminum.rho, min: 1 },
+      { key: 'poisson', label: 'Poisson ratio', type: 'number', default: materials.aluminum.nu, min: -0.49, max: 0.49 },
       { key: 'sound_speed', label: 'Internal sound speed', unit: 'm/s', type: 'number', default: 343, min: 1 },
       { key: 'axial_order', label: 'Axial order m', type: 'number', default: 1, min: 1, max: 20, step: 1 },
       { key: 'circ_order', label: 'Circumferential order n', type: 'number', default: 2, min: 0, max: 20, step: 1 }
     ],
+    syncPreset: syncShellMaterial,
     theory: '<p>Curvature couples membrane and radial bending motion. A useful screening estimate combines a curvature-controlled membrane term with local plate-bending stiffness. Ring frequency, plate-like critical frequency, and internal acoustic cut-on answer different questions.</p>',
     assumptions: ['Thin, uniform circular cylinder with small motion.', 'Simply supported axial wavenumber estimate.', 'No rings, stringers, joints, payload attachments, pressurization, or fluid added mass.'],
     example: 'Sweep circumferential order: unlike a flat plate, a shell can decrease in frequency before local bending causes the sequence to turn upward.',
     compute(values) {
-      const state = shellAcousticsState({ radius: values.radius, length: values.length, thickness: mm(values.thickness), modulus: gpa(values.modulus), density: values.density, poisson: values.poisson, soundSpeed: values.sound_speed, axialOrder: values.axial_order, circumferentialOrder: values.circ_order });
+      const shellInput = { radius: values.radius, length: values.length, thickness: mm(values.thickness), modulus: gpa(values.modulus), density: values.density, poisson: values.poisson, soundSpeed: values.sound_speed, axialOrder: values.axial_order, circumferentialOrder: values.circ_order };
+      const state = shellAcousticsState(shellInput);
       const thinRatio = state.thickness / state.radius;
+      const surfaceTheta = linspace(0, 2 * Math.PI, Math.max(37, state.circumferentialOrder * 3 + 1));
+      const surfaceZ = linspace(0, 1, Math.max(17, state.axialOrder * 3 + 1));
+      const selectedModeSurface = {
+        title: `3D selected shell mode · (m=${state.axialOrder}, n=${state.circumferentialOrder}) · ${state.modeFrequency.toFixed(1)} Hz`,
+        geometry: 'cylinder',
+        matrix: normalizeMatrix(surfaceZ.map(z => surfaceTheta.map(angle => Math.sin(state.axialOrder * Math.PI * z) * Math.cos(state.circumferentialOrder * angle)))),
+        animation: { type: 'harmonic' },
+        lengthToDiameter: state.length / (2 * state.radius),
+        deformationScale: .18,
+        xValues: surfaceTheta.map(angle => angle * 180 / Math.PI),
+        yValues: surfaceZ,
+        zLabel: 'radial motion'
+      };
+      const axialFamilyOrders = [...new Set([1, 2, 3, 4, 5, 6, state.axialOrder])].sort((a, b) => a - b);
+      const axialFamilyTraces = axialFamilyOrders.map(order => {
+        const family = order === state.axialOrder ? state : shellAcousticsState({ ...shellInput, axialOrder: order });
+        return trace(`m=${order}`, family.modeCurve, family.nValues, { emphasis: order === state.axialOrder });
+      });
+      const ringFrequencyTrace = trace(`Ring frequency · ${state.ringFrequency.toFixed(1)} Hz`, [state.ringFrequency, state.ringFrequency], [0, 16], { color: '#9ca6ae', dash: true });
+      const selectedModeTrace = trace(`Selected (m=${state.axialOrder}, n=${state.circumferentialOrder})`, [state.modeFrequency], [state.circumferentialOrder], { color: '#d56b43', showPoints: true, pointRadius: 5.5, emphasis: true });
       return {
         values: [stat('Estimated shell-mode frequency', state.modeFrequency, 'Hz'), stat('Ring frequency', state.ringFrequency, 'Hz'), stat('Plate-like critical frequency', state.criticalFrequency, 'Hz'), stat('First internal acoustic cut-on', state.firstAcousticCuton, 'Hz'), stat('Minimum-frequency n', state.minimumFrequencyOrder), stat('h / R', thinRatio)],
-        interpretation: `The selected (${state.axialOrder},${state.circumferentialOrder}) shell mode is estimated at ${state.modeFrequency.toFixed(1)} Hz and lies in the ${state.regime}. Ring frequency (${state.ringFrequency.toFixed(0)} Hz) and acoustic coincidence (${state.criticalFrequency.toFixed(0)} Hz) are separate scales.`,
+        interpretation: {
+          summary: `The selected (${state.axialOrder},${state.circumferentialOrder}) shell mode is estimated at ${state.modeFrequency.toFixed(1)} Hz and lies in the ${state.regime}. Ring frequency (${state.ringFrequency.toFixed(0)} Hz) and acoustic coincidence (${state.criticalFrequency.toFixed(0)} Hz) are separate scales.`,
+          physicalMeaning: `The animated 3D cylinder shows exaggerated, normalized radial deformation for the basis sin(mπz/L)cos(nθ). Axial order m=${state.axialOrder} counts axial half-waves; circumferential order n=${state.circumferentialOrder} counts waves around the shell, and shape plus alternating colors identify inward and outward radial lobes. The displayed frequency comes from the Donnell-type screening relation, while the shape is an ideal simply supported basis—not a physical-amplitude eigenvector of the installed shell.`
+        },
         engineeringConsiderations: launchConsideration('Launch-vehicle barrels, fairings, adapters, and tanks support axial/circumferential families; low circumferential orders can control global motion and cabin acoustics while dense local modes dominate high-frequency skin response.'),
         warnings: [thinRatio > 0.1 ? 'h/R exceeds 0.1; thin-shell screening relations are not appropriate.' : 'Real frames, longerons, cutouts, joints, internal pressure, and payload interfaces split and shift ideal shell modes.'],
-        plots: [{ title: `Shell family for axial order m=${state.axialOrder}`, xLabel: 'Circumferential order n', yLabel: 'Estimated frequency (Hz)', traces: [trace('Shell', state.nValues, state.modeCurve, { emphasis: true })] }]
+        surfaces3d: [selectedModeSurface],
+        plots: [{ title: 'Cylindrical-shell axial family map', xLabel: 'Estimated frequency (Hz)', yLabel: 'Circumferential order n', xScale: 'log', xMax: state.ringFrequency * 1.1, yMin: 0, yMax: 16, traces: [...axialFamilyTraces, ringFrequencyTrace, selectedModeTrace] }],
+        presentation: { primaryEvidence: { type: 'surface3d', index: 0 }, primaryEvidenceStack: [{ type: 'surface3d', index: 0 }, { type: 'plot', index: 0 }], primaryEvidenceCount: 1, primaryValueCount: 6, animation: { type: 'harmonic', defaultRateHz: .5, note: 'The selected 3D shell basis shape moves through one slowed visual phase. Radial deformation is exaggerated and normalized to show inward and outward lobes rather than physical modal amplitude or real-time frequency.' } }
       };
     }
   },

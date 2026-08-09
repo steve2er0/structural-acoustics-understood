@@ -61,6 +61,7 @@ import {
   SEA_MEDIA,
   doubleWindowSeaState,
   pistonRadiationState,
+  shellAcousticsState,
   orthotropicPanelState,
   seaValidityState,
   doublePanelSeaState,
@@ -79,7 +80,7 @@ import { jointAcceptance, spatialCoherence, supportedDemoIds } from '../js/demos
 import { assertDemoTakeawayRegistry, buildDemoTakeaway, demoTakeawayRegistry } from '../js/demo-takeaways.js';
 import { assertEngineeringResult, engineeringResultToText } from '../js/engineering-results.js';
 import { axisUnitInfo, displayEngineeringResult, fromDisplayNumber, toDisplayNumber, toDisplayStep, unitConversion } from '../js/unit-system.js';
-import { heatmapSvg, harmonicPhase, lineChartSvg, signedHeatColor } from '../js/charts.js';
+import { heatmapSvg, harmonicPhase, lineChartSvg, signedHeatColor, surface3dSvg } from '../js/charts.js';
 import {
   featuredItems,
   homepageNavigation,
@@ -145,6 +146,7 @@ const caseNotes=[...baseCaseNotes,...acs519CaseNotes,...workflowExpansionCaseNot
 const defaults=id=>Object.fromEntries(registry[id].inputs.map(f=>[f.key,f.default]));
 const metric=(result,label)=>result.values.find(x=>x.label===label)?.value;
 const close=(actual,expected,rel=1e-6)=>assert.ok(Math.abs(actual-expected)<=rel*Math.max(1,Math.abs(expected)),`${actual} ≠ ${expected}`);
+const evidenceCollection={plot:'plots',heatmap:'heatmaps',surface3d:'surfaces3d',table:'tables'};
 
 test('every catalog entry has a calculator and every default case runs',()=>{
   assert.equal(catalog.length,113);
@@ -176,7 +178,9 @@ test('every calculator returns the complete engineering response schema',()=>{
     assert.ok(result.relatedConcepts.length>=2,`${tool.id} needs related concepts`);
     assert.ok(result.relatedConcepts.every(item=>item.title&&item.description&&item.href),`${tool.id} has an incomplete related concept`);
     assert.ok(result.presentation&&Number.isInteger(result.presentation.primaryValueCount),`${tool.id} needs presentation metadata`);
-    if(result.presentation.primaryEvidence){const {type,index}=result.presentation.primaryEvidence;assert.ok(['plot','heatmap','table'].includes(type),`${tool.id} has an invalid primary evidence type`);assert.ok(result[`${type}s`]?.[index],`${tool.id} primary evidence does not exist`);}
+    if(result.presentation.primaryEvidence){const {type,index}=result.presentation.primaryEvidence;assert.ok(['plot','heatmap','surface3d','table'].includes(type),`${tool.id} has an invalid primary evidence type`);assert.ok(result[evidenceCollection[type]]?.[index],`${tool.id} primary evidence does not exist`);}
+    assert.ok(Array.isArray(result.presentation.primaryEvidenceStack),`${tool.id} needs a primary evidence stack`);
+    result.presentation.primaryEvidenceStack.forEach(({type,index})=>assert.ok(result[evidenceCollection[type]]?.[index],`${tool.id} stacked primary evidence does not exist`));
     assert.doesNotMatch(result.interpretation.physicalMeaning,/^The reported\b/,`${tool.id} retained generic category commentary`);
     assert.doesNotMatch(result.validity.confidence,/No automatic warning/i,`${tool.id} retained a no-warning strip`);
     const copied=engineeringResultToText(tool.title,result);
@@ -261,6 +265,35 @@ test('material presets synchronize dependent properties and plate modal frequenc
   assert.match(appSource,/toDisplayNumber\(synced\[field\.key\],field\.unit,system\)/);
 });
 
+test('material presets synchronize advanced cylinder properties and shell-mode frequencies',()=>{
+  const shell=registry['shell-acoustics'],base=defaults('shell-acoustics'),frequencies=new Map();
+  assert.equal(shell.inputs[0].key,'material');
+  assert.equal(shell.inputs[0].options.length,Object.keys(materials).length);
+  for(const [id,material] of Object.entries(materials)){
+    const synced=shell.syncPreset({...base,material:id});
+    assert.equal(synced.modulus,material.E/1e9);
+    assert.equal(synced.density,material.rho);
+    assert.equal(synced.poisson,material.nu);
+    const result=shell.compute(synced);
+    const expected=shellAcousticsState({
+      radius:synced.radius,
+      length:synced.length,
+      thickness:synced.thickness/1000,
+      modulus:material.E,
+      density:material.rho,
+      poisson:material.nu,
+      soundSpeed:synced.sound_speed,
+      axialOrder:synced.axial_order,
+      circumferentialOrder:synced.circ_order
+    }).modeFrequency;
+    close(metric(result,'Estimated shell-mode frequency'),expected,1e-10);
+    assert.match(result.surfaces3d[0].title,new RegExp(`${expected.toFixed(1)} Hz`));
+    frequencies.set(id,expected);
+  }
+  assert.notEqual(frequencies.get('aluminum'),frequencies.get('steel'));
+  assert.notEqual(frequencies.get('aluminum'),frequencies.get('cfrp'));
+});
+
 test('beam, plate, and cylinder tools expose boundary-consistent normalized mode shapes',()=>{
   for(const boundary of ['simply-supported','cantilever','fixed-fixed']){
     const beam=registry.beam.compute({...defaults('beam'),boundary}),shapePlot=beam.plots[0];
@@ -277,10 +310,20 @@ test('beam, plate, and cylinder tools expose boundary-consistent normalized mode
   }
 
   const plate=registry['plate-modes'].compute(defaults('plate-modes'));
-  assert.equal(plate.presentation.primaryEvidence.type,'heatmap');
+  assert.equal(plate.presentation.primaryEvidence.type,'surface3d');
   assert.equal(plate.presentation.primaryEvidenceCount,4);
+  assert.equal(plate.surfaces3d.length,4);
   assert.equal(plate.heatmaps.length,4);
   assert.equal(plate.presentation.animation.type,'harmonic');
+  plate.surfaces3d.forEach(shape=>{
+    assert.equal(shape.geometry,'plate');
+    assert.equal(shape.animation.type,'harmonic');
+    const values=shape.matrix.flat();
+    close(Math.max(...values.map(Math.abs)),1,1e-10);
+    assert.ok(shape.matrix[0].every(value=>Math.abs(value)<1e-10));
+    assert.ok(shape.matrix.at(-1).every(value=>Math.abs(value)<1e-10));
+    assert.ok(shape.matrix.every(row=>Math.abs(row[0])<1e-10&&Math.abs(row.at(-1))<1e-10));
+  });
   plate.heatmaps.forEach(shape=>{
     const values=shape.matrix.flat();
     close(Math.max(...values.map(Math.abs)),1,1e-10);
@@ -291,15 +334,30 @@ test('beam, plate, and cylinder tools expose boundary-consistent normalized mode
     assert.equal(shape.animation.type,'harmonic');
   });
   const plateSvg=heatmapSvg(plate.heatmaps[0]);
+  const plateSurfaceSvg=surface3dSvg(plate.surfaces3d[0]);
   assert.match(plateSvg,/Normalized position x\/a/);
   assert.match(plateSvg,/Normalized position y\/b/);
+  assert.match(plateSurfaceSvg,/data-surface-animation="harmonic"/);
+  assert.match(plateSurfaceSvg,/data-surface-geometry="plate"/);
+  assert.match(plateSurfaceSvg,/data-surface-base-points=/);
+  assert.match(plateSurfaceSvg,/data-surface-delta-points=/);
 
   const cylinder=registry['ring-frequency'].compute(defaults('ring-frequency'));
-  assert.equal(cylinder.presentation.primaryEvidence.type,'heatmap');
+  assert.equal(cylinder.presentation.primaryEvidence.type,'surface3d');
   assert.equal(cylinder.presentation.primaryEvidenceCount,4);
+  assert.equal(cylinder.surfaces3d.length,4);
   assert.equal(cylinder.heatmaps.length,4);
   assert.equal(cylinder.presentation.animation.type,'harmonic');
   assert.equal(cylinder.plots[0].traces.length,4);
+  cylinder.surfaces3d.forEach(shape=>{
+    assert.equal(shape.geometry,'cylinder');
+    assert.equal(shape.animation.type,'harmonic');
+    const values=shape.matrix.flat();
+    close(Math.max(...values.map(Math.abs)),1,1e-10);
+    assert.ok(shape.matrix[0].every(value=>Math.abs(value)<1e-10));
+    assert.ok(shape.matrix.at(-1).every(value=>Math.abs(value)<1e-10));
+    assert.ok(shape.matrix.every(row=>Math.abs(row[0]-row.at(-1))<1e-10));
+  });
   cylinder.heatmaps.forEach(shape=>{
     const values=shape.matrix.flat();
     close(Math.max(...values.map(Math.abs)),1,1e-10);
@@ -309,6 +367,9 @@ test('beam, plate, and cylinder tools expose boundary-consistent normalized mode
     assert.equal(shape.animation.type,'harmonic');
   });
   assert.match(cylinder.interpretation.physicalMeaning,/basis shapes, not frequency-tagged eigenmodes/i);
+  const cylinderSurfaceSvg=surface3dSvg(cylinder.surfaces3d[0]);
+  assert.match(cylinderSurfaceSvg,/data-surface-geometry="cylinder"/);
+  assert.match(cylinderSurfaceSvg,/3D oblique view/);
   const beamSvg=lineChartSvg(registry.beam.compute(defaults('beam')).plots[0]);
   assert.match(beamSvg,/data-chart-animation="harmonic"/);
   assert.match(beamSvg,/data-chart-zero-y=/);
@@ -320,8 +381,45 @@ test('beam, plate, and cylinder tools expose boundary-consistent normalized mode
   assert.equal(signedHeatColor(0,1),'rgb(238,242,244)');
   const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
   assert.match(appSource,/data-mode-animation-toggle/);
+  assert.match(appSource,/data-surface-base-points/);
+  assert.match(appSource,/surfaceCells\.forEach/);
   assert.match(appSource,/requestAnimationFrame\(step\)/);
   assert.match(appSource,/prefers-reduced-motion: reduce/);
+});
+
+test('advanced shell acoustics leads with the selected frequency-tagged animated mode shape',()=>{
+  const shell=registry['shell-acoustics'].compute({...defaults('shell-acoustics'),axial_order:2,circ_order:3});
+  assert.equal(shell.presentation.primaryEvidence.type,'surface3d');
+  assert.equal(shell.presentation.primaryEvidenceCount,1);
+  assert.equal(shell.presentation.animation.type,'harmonic');
+  assert.equal(shell.surfaces3d.length,1);
+  assert.equal(shell.heatmaps,undefined);
+  assert.deepEqual(shell.presentation.primaryEvidenceStack,[{type:'surface3d',index:0},{type:'plot',index:0}]);
+  assert.match(shell.interpretation.physicalMeaning,/normalized radial deformation.*basis/i);
+  assert.match(shell.interpretation.physicalMeaning,/not a physical-amplitude eigenvector/i);
+  const surfaceSvg=surface3dSvg(shell.surfaces3d[0]);
+  assert.match(surfaceSvg,/3D selected shell mode.*m=2, n=3.*Hz/);
+  assert.match(surfaceSvg,/data-surface-geometry="cylinder"/);
+  assert.match(surfaceSvg,/data-surface-base-value=/);
+  const familyPlot=shell.plots[0];
+  assert.equal(familyPlot.xLabel,'Estimated frequency (Hz)');
+  assert.equal(familyPlot.yLabel,'Circumferential order n');
+  assert.equal(familyPlot.xScale,'log');
+  close(familyPlot.xMax,metric(shell,'Ring frequency')*1.1,1e-12);
+  assert.deepEqual(familyPlot.traces.slice(0,6).map(item=>item.name),['m=1','m=2','m=3','m=4','m=5','m=6']);
+  familyPlot.traces.slice(0,6).forEach(item=>assert.deepEqual(item.y,Array.from({length:17},(_,index)=>index)));
+  const selectedCurve=familyPlot.traces.find(item=>item.name==='m=2');
+  assert.equal(selectedCurve.emphasis,true);
+  close(selectedCurve.x[3],metric(shell,'Estimated shell-mode frequency'),1e-10);
+  const ringReference=familyPlot.traces.find(item=>item.name.startsWith('Ring frequency'));
+  assert.deepEqual(ringReference.x,[metric(shell,'Ring frequency'),metric(shell,'Ring frequency')]);
+  assert.deepEqual(ringReference.y,[0,16]);
+  assert.equal(ringReference.dash,true);
+  const selectedPoint=familyPlot.traces.at(-1);
+  assert.deepEqual(selectedPoint.x,[metric(shell,'Estimated shell-mode frequency')]);
+  assert.deepEqual(selectedPoint.y,[3]);
+  assert.equal(selectedPoint.showPoints,true);
+  assert.match(lineChartSvg(familyPlot),/data-chart-visible-point=/);
 });
 
 test('every calculator result uses the shared card, plot, and table unit conversion',()=>{
@@ -831,8 +929,10 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   const syncSource=readFileSync(new URL('../scripts/sync-standalone.mjs',import.meta.url),'utf8');
   assert.match(syncSource,/const chartsModule = await read\('js\/charts\.js'\)/);
   assert.match(syncSource,/const chartsBlock = `const __charts=/);
+  assert.match(syncSource,/surface3dSvg/);
   assert.match(html,/const __calculators=\(\(\)=>\{[\s\S]*Integrated acceleration/);
   assert.match(html,/const __charts=\(\(\)=>\{[\s\S]*function harmonicPhase/);
+  assert.match(html,/function surface3dSvg\(surface/);
   assert.match(html,/data-chart-animation="harmonic"/);
   assert.match(html,/data-heatmap-base-value/);
   assert.doesNotMatch(html,/Total mean square/);
@@ -1032,7 +1132,8 @@ test('site visual system exposes reusable components and themes every non-home r
   assert.match(appSource,/function renderInputFields/);
   assert.match(css,/\.commentary-card-wide \{ grid-column: 1 \/ -1; \}/);
   assert.doesNotMatch(appSource,/No automatic warning/i);
-  assert.match(appSource,/const resultBody=evidence\?\.type/);
+  assert.match(appSource,/const resultBody=hasVisualPrimary/);
+  assert.match(appSource,/const evidenceStack=explicitEvidenceStack/);
   assert.match(appSource,/data-result-section="plot"/);
   assert.match(appSource,/data-result-section="numerical"/);
   assert.match(appSource,/data-result-section="explanation"/);
@@ -1126,7 +1227,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes the demo takeaway runtime',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v55'/);
+  assert.match(worker,/const CACHE = 'sau-v61'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);

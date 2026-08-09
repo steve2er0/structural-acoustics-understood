@@ -352,6 +352,9 @@ h3 { font-size: 1.07rem; line-height: 1.2; letter-spacing: -.018em; }
 .result-evidence-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1rem; }
 .result-evidence-grid .result-block { min-width: 0; }
 .result-evidence-grid .chart-shell, .result-evidence-grid .chart-shell svg { min-height: 0; }
+.surface3d-shell svg { display: block; }
+.surface3d-shell [data-surface-geometry] polygon { vector-effect: non-scaling-stroke; }
+.result-evidence-grid-3d .surface3d-shell { overflow: hidden; }
 .mode-animation-panel { --mode-phase: 1; display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .8rem; padding: .75rem .85rem; border: 1px solid var(--line); border-left: 3px solid var(--accent); background: rgba(255,255,255,.48); }
 .mode-animation-panel::before { content: ''; width: .58rem; height: 2.4rem; flex: 0 0 auto; border-radius: 999px; background: linear-gradient(to top,#2769ab 0 50%,#cd5339 50% 100%); opacity: calc(.25 + var(--mode-phase) * .75); }
 .mode-animation-copy { min-width: 180px; flex: 1; }

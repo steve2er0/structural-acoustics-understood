@@ -137,7 +137,7 @@ let acs519CalculatorsSource = moduleSource(acs519CalculatorsModule).replace(
   'const acs519CalculatorRegistry = createEngineeringRegistry(acs519CalculatorDefinitions);',
   'const acs519CalculatorRegistry = acs519CalculatorDefinitions;'
 );
-const acs519CalculatorsBlock = `const __acs519Calculators=(()=>{\n${acs519PhysicsImports}\nconst {empiricalLossFactorState}=__seaParameterPhysics;\n${acs519CalculatorsSource}\nreturn {acs519CalculatorRegistry};\n})();\n\n`;
+const acs519CalculatorsBlock = `const __acs519Calculators=(()=>{\n${acs519PhysicsImports}\nconst {materials}=__calculators;\nconst {empiricalLossFactorState}=__seaParameterPhysics;\n${acs519CalculatorsSource}\nreturn {acs519CalculatorRegistry};\n})();\n\n`;
 const acs519DemosBlock = `const __acs519Demos=(()=>{\n${acs519PhysicsImports}\n${moduleSource(acs519DemosModule)}\nreturn {acs519PreviewSvg,mountAcs519Demo,acs519SupportedDemoIds};\n})();\n\n`;
 const workflowExpansionPhysicsExports = [
   'modelTestCorrelationState', 'branchingSeaState', 'transferPathState', 'requirementsFlowdownState',
@@ -203,7 +203,7 @@ standalone = replaceRange(standalone, extraCalculatorsStart, 'const __extraData=
 const extraDataBlock = `const __extraData=(()=>{\n${moduleSource(extraDataModule)}\nreturn {extraToolCatalog};\n})();\n\n`;
 standalone = replaceRange(standalone, 'const __extraData=(()=>{', 'const __charts=(()=>{', extraDataBlock);
 
-const chartsBlock = `const __charts=(()=>{\n${moduleSource(chartsModule)}\nreturn {escapeHtml,formatNumber,lineChartSvg,signedHeatColor,harmonicPhase,heatmapSvg,downloadText,downloadCsv,downloadSvg};\n})();\n\n`;
+const chartsBlock = `const __charts=(()=>{\n${moduleSource(chartsModule)}\nreturn {escapeHtml,formatNumber,lineChartSvg,signedHeatColor,harmonicPhase,surface3dSvg,heatmapSvg,downloadText,downloadCsv,downloadSvg};\n})();\n\n`;
 standalone = replaceRange(standalone, 'const __charts=(()=>{', 'const __demoTakeaways=(()=>{', chartsBlock);
 
 const demoHoneycombNames = [
@@ -265,7 +265,7 @@ const appPrelude = [
   'const {programExpansionCalculatorRegistry}=__programExpansionCalculators;',
   'const {seaParameterCalculatorRegistry}=__seaParameterCalculators;',
   'const {extraToolCatalog}=__extraData;',
-  'const {lineChartSvg,heatmapSvg,harmonicPhase,signedHeatColor,downloadCsv,downloadSvg,downloadText}=__charts;',
+  'const {lineChartSvg,heatmapSvg,surface3dSvg,harmonicPhase,signedHeatColor,downloadCsv,downloadSvg,downloadText}=__charts;',
   'const {demoPreviewSvg,mountDemo}=__demosModule;',
   'const {homepageNavigation,homepageNavKey,renderHomepage,renderSubjectPage,bindHomepage,subjectWheel}=__homepage;',
   'const {renderPageShell,renderBreadcrumbs,renderSectionHeader,renderCallout,renderLinkCollection}=__siteComponents;',

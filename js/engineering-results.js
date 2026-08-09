@@ -17,8 +17,9 @@
  * @property {{satisfied: string[], warnings: string[], alerts: string[], limitations: string[]}} assumptions
  * @property {{regime: string, confidence: string}} validity
  * @property {RelatedConcept[]} relatedConcepts
- * @property {{primaryEvidence: {type: string, index: number}|null, primaryEvidenceCount: number, primaryValueCount: number, animation: Object|null}} presentation
+ * @property {{primaryEvidence: {type: string, index: number}|null, primaryEvidenceStack: Array<{type: string, index: number, count?: number}>, primaryEvidenceCount: number, primaryValueCount: number, animation: Object|null}} presentation
  * @property {Array<Object>} [plots]
+ * @property {Array<Object>} [surfaces3d]
  * @property {Array<Object>} [heatmaps]
  * @property {Array<Object>} [tables]
  * @property {Object} [csv]
@@ -204,12 +205,18 @@ function buildPresentation(id, result, values) {
   const requested = result.presentation || {};
   let primaryEvidence = requested.primaryEvidence || PRIMARY_EVIDENCE_OVERRIDES[id] || null;
   if (!primaryEvidence) {
-    if (result.plots?.length) primaryEvidence = { type: 'plot', index: 0 };
+    if (result.surfaces3d?.length) primaryEvidence = { type: 'surface3d', index: 0 };
+    else if (result.plots?.length) primaryEvidence = { type: 'plot', index: 0 };
     else if (result.heatmaps?.length) primaryEvidence = { type: 'heatmap', index: 0 };
     else if (result.tables?.length) primaryEvidence = { type: 'table', index: 0 };
   }
+  const validEvidenceTypes = new Set(['plot', 'heatmap', 'surface3d', 'table']);
+  const requestedStack = Array.isArray(requested.primaryEvidenceStack)
+    ? requested.primaryEvidenceStack.filter(item => item && validEvidenceTypes.has(item.type) && Number.isInteger(item.index) && item.index >= 0).map(item => ({ type: item.type, index: item.index, ...(Number.isInteger(item.count) ? { count: Math.max(1, Math.min(6, item.count)) } : {}) }))
+    : [];
   return {
     primaryEvidence,
+    primaryEvidenceStack: requestedStack.length ? requestedStack : primaryEvidence ? [primaryEvidence] : [],
     primaryEvidenceCount: Math.max(1, Math.min(6, Number(requested.primaryEvidenceCount) || 1)),
     primaryValueCount: Math.max(1, Math.min(values.length, Number(requested.primaryValueCount) || 6)),
     animation: requested.animation?.type==='harmonic'?{

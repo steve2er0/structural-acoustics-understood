@@ -670,18 +670,20 @@ const calculatorDefinitions = {
       }
       modes.sort((x,y)=>x[2]-y[2]);
       const first=modes.slice(0,Math.min(30,modes.length));
-      const shapeModes=first.slice(0,4),xNormalized=linspace(0,1,25),yNormalized=linspace(0,1,25),axisLabels=values=>values.map(value=>value.toFixed(2));
+      const shapeModes=first.slice(0,4),xNormalized=linspace(0,1,25),yNormalized=linspace(0,1,25),surfaceX=linspace(0,1,21),surfaceY=linspace(0,1,21),axisLabels=values=>values.map(value=>value.toFixed(2));
       const heatmaps=shapeModes.map(([m,nn,frequency])=>({title:`Plate mode (${m},${nn}) · ${frequency.toFixed(1)} Hz`,matrix:normalizeMatrix(yNormalized.map(y=>xNormalized.map(x=>Math.sin(m*Math.PI*x)*Math.sin(nn*Math.PI*y)))),min:-1,max:1,diverging:true,animation:{type:'harmonic'},aspectRatio:a/b,xValues:xNormalized,yValues:yNormalized,xLabels:axisLabels(xNormalized),yLabels:axisLabels(yNormalized),xLabel:'Normalized position x/a',yLabel:'Normalized position y/b'}));
+      const surfaces3d=shapeModes.map(([m,nn,frequency])=>({title:`3D plate mode (${m},${nn}) · ${frequency.toFixed(1)} Hz`,geometry:'plate',matrix:normalizeMatrix(surfaceY.map(y=>surfaceX.map(x=>Math.sin(m*Math.PI*x)*Math.sin(nn*Math.PI*y)))),animation:{type:'harmonic'},aspectRatio:a/b,deformationScale:.34,xValues:surfaceX,yValues:surfaceY,zLabel:'transverse motion'}));
       const warnings=[];
       for(let i=1;i<Math.min(12,first.length);i++) if((first[i][2]-first[i-1][2])/first[i][2]<0.01){warnings.push(`Modes (${first[i-1][0]},${first[i-1][1]}) and (${first[i][0]},${first[i][1]}) are within 1%; small asymmetry may split or mix them.`);break;}
       return{
         summary:[stat('Bending stiffness D',D,'N·m'),stat('Surface mass',rho*h,'kg/m²'),stat('Fundamental mode',first[0][2],'Hz'),stat('Modes calculated',modes.length)],
-        interpretation:{summary:`The lowest ideal mode is (${first[0][0]},${first[0][1]}). The result is especially sensitive to boundary restraint and thickness because D scales with h³.`,physicalMeaning:'The signed color maps show normalized transverse displacement. Nodal lines separate regions moving in opposite phase; the m and n indices count half-waves along dimensions a and b. Closely spaced modes can mix when small asymmetries, attachments, or boundary flexibility are introduced.'},
+        interpretation:{summary:`The lowest ideal mode is (${first[0][0]},${first[0][1]}). The result is especially sensitive to boundary restraint and thickness because D scales with h³.`,physicalMeaning:'The animated 3D surfaces show exaggerated, normalized transverse deformation; their signed colors distinguish regions moving in opposite phase. Nodal lines remain stationary while the surface passes through the undeformed plane. The m and n indices count half-waves along dimensions a and b, and closely spaced modes can mix when small asymmetries, attachments, or boundary flexibility are introduced.'},
         warnings,
         tables:[{title:'Lowest plate modes',columns:['m','n','Frequency (Hz)'],rows:first}],
         plots:[{title:'Ordered plate modes',xLabel:'Ordered mode index',yLabel:'Frequency (Hz)',traces:[trace('Modes',first.map((_,i)=>i+1),first.map(r=>r[2]))]}],
+        surfaces3d,
         heatmaps,
-        presentation:{primaryEvidence:{type:'heatmap',index:0},primaryEvidenceCount:4,primaryValueCount:4,animation:{type:'harmonic',defaultRateHz:.5,note:'The four plate modes share a slowed visual phase. Colors pass through the neutral undeformed state and reverse sign; timing and amplitude are normalized for comparison.'}},
+        presentation:{primaryEvidence:{type:'surface3d',index:0},primaryEvidenceCount:4,primaryValueCount:4,animation:{type:'harmonic',defaultRateHz:.5,note:'The four 3D plate shapes share a slowed visual phase. Deformation is exaggerated and normalized so nodes and opposite-phase regions remain easy to compare; this is not physical amplitude or real-time frequency.'}},
         csv:{filename:'plate-modes.csv',columns:['m','n','frequency_hz'],rows:modes}
       };
     }
@@ -746,14 +748,16 @@ const calculatorDefinitions = {
       const Dp=plateD(E,h,nu),fc=AIR_C**2/(2*Math.PI)*Math.sqrt(rho*h/Dp);
       const theta=linspace(0,2*Math.PI,49),thetaDegrees=theta.map(value=>deg(value)),zNormalized=linspace(0,1,25),orders=Array.from({length:4},(_,index)=>nStart+index),labelEvery=(values,suffix='')=>values.map(value=>`${value.toFixed(value>=10?0:2)}${suffix}`);
       const heatmaps=orders.map(order=>({title:`Cylinder shape basis · m=${mOrder}, n=${order}`,matrix:normalizeMatrix(zNormalized.map(z=>theta.map(angle=>Math.sin(mOrder*Math.PI*z)*Math.cos(order*angle)))),min:-1,max:1,diverging:true,animation:{type:'harmonic'},aspectRatio:Math.min(2.4,Math.max(.8,circ/L)),xValues:thetaDegrees,yValues:zNormalized,xLabels:labelEvery(thetaDegrees,'°'),yLabels:labelEvery(zNormalized),xLabel:'Circumferential angle θ',yLabel:'Normalized axial position z/L'}));
+      const surfaces3d=orders.map(order=>{const surfaceTheta=linspace(0,2*Math.PI,Math.max(37,order*4+1)),surfaceZ=linspace(0,1,Math.max(17,mOrder*4+1));return{title:`3D cylinder basis · m=${mOrder}, n=${order}`,geometry:'cylinder',matrix:normalizeMatrix(surfaceZ.map(z=>surfaceTheta.map(angle=>Math.sin(mOrder*Math.PI*z)*Math.cos(order*angle)))),animation:{type:'harmonic'},lengthToDiameter:slender,deformationScale:.18,xValues:surfaceTheta.map(value=>deg(value)),yValues:surfaceZ,zLabel:'radial motion'};});
       return{
         summary:[stat('Ring frequency',fr,'Hz'),stat('Ring wave speed',cRing,'m/s'),stat('Circumference',circ,'m'),stat('Surface mass',surfaceMass,'kg/m²'),stat('Plate critical frequency',fc,'Hz'),stat('Length / diameter',slender)],
-        interpretation:{summary:`The ring-frequency scale is ${fr.toFixed(1)} Hz. The flat-plate coincidence estimate is ${fc.toFixed(1)} Hz, demonstrating that the two frequencies describe different physics.`,physicalMeaning:`The signed maps show normalized radial displacement for axial order m=${mOrder} and circumferential orders n=${nStart}–${nStart+3}. Order n counts waves around the circumference; the alternating colors identify inward and outward lobes. These are shell basis shapes, not frequency-tagged eigenmodes of the finite installed cylinder.`},
+        interpretation:{summary:`The ring-frequency scale is ${fr.toFixed(1)} Hz. The flat-plate coincidence estimate is ${fc.toFixed(1)} Hz, demonstrating that the two frequencies describe different physics.`,physicalMeaning:`The animated 3D cylinders show exaggerated, normalized radial displacement for axial order m=${mOrder} and circumferential orders n=${nStart}–${nStart+3}. Order n counts waves around the circumference; shape and alternating colors identify inward and outward lobes. These are shell basis shapes, not frequency-tagged eigenmodes of the finite installed cylinder.`},
         warnings:[h/R>0.1?'The wall is not especially thin relative to radius; a thick-shell model may be more appropriate.':'Finite length, stiffeners, attachments, and boundary conditions create discrete shell modes around this scale.','Use a shell eigenvalue model to attach frequencies to these basis shapes for the actual end constraints and installed mass.'],
         plots:[{title:`Circumferential shapes at an axial antinode · m=${mOrder}`,xLabel:'Circumferential angle (deg)',yLabel:'Normalized radial displacement',traces:orders.map((order,index)=>trace(`n = ${order}`,thetaDegrees,theta.map(angle=>Math.cos(order*angle)),{emphasis:index===0}))}],
+        surfaces3d,
         heatmaps,
         tables:[{title:'Displayed cylinder shape basis',columns:['Axial half-waves m','Circumferential order n','Circumferential lobes'],rows:orders.map(order=>[mOrder,order,order===0?1:2*order])}],
-        presentation:{primaryEvidence:{type:'heatmap',index:0},primaryEvidenceCount:4,primaryValueCount:6,animation:{type:'harmonic',defaultRateHz:.5,note:'The cylinder basis shapes use one slowed visual phase. The motion shows inward and outward radial lobes, not actual frequency-tagged finite-shell response.'}}
+        presentation:{primaryEvidence:{type:'surface3d',index:0},primaryEvidenceCount:4,primaryValueCount:6,animation:{type:'harmonic',defaultRateHz:.5,note:'The 3D cylinder basis shapes use one slowed visual phase. Radial deformation is exaggerated and normalized to show inward and outward lobes, not actual finite-shell amplitude or frequency response.'}}
       };
     }
   },

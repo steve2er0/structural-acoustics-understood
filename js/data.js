@@ -1606,7 +1606,7 @@ export const toolCatalog = [
     "id": "plate-modes",
     "title": "Rectangular Plate Modes",
     "category": "Structures",
-    "description": "Calculate thin, simply supported isotropic plate modes, view their signed mode shapes, and identify near-degenerate pairs.",
+    "description": "Calculate thin, simply supported isotropic plate modes, animate their signed 3D shapes, and identify near-degenerate pairs.",
     "complexity": "Core",
     "keywords": [
       "plate",
@@ -1633,7 +1633,7 @@ export const toolCatalog = [
     "id": "ring-frequency",
     "title": "Cylinder Ring Frequency",
     "category": "Structural Acoustics",
-    "description": "Estimate the thin-shell ring frequency, compare it with plate-like bending, and explore axial-circumferential shell mode-shape families.",
+    "description": "Estimate the thin-shell ring frequency, compare it with plate-like bending, and animate axial-circumferential 3D shell-shape families.",
     "complexity": "Core",
     "keywords": [
       "cylinder",

@@ -10,7 +10,7 @@ import { programExpansionCalculatorRegistry } from './program-expansion-calculat
 import { programExpansionSections, programExpansionToolCatalog, programExpansionDemos, programExpansionCaseNotes, programExpansionReferenceGroups } from './program-expansion-data.js';
 import { seaParameterCalculatorRegistry } from './sea-parameters-calculators.js';
 import { seaParameterSections, seaParameterToolCatalog, seaParameterDemos, seaParameterCaseNotes, seaParameterReferenceGroups } from './sea-parameters-data.js';
-import { lineChartSvg, heatmapSvg, harmonicPhase, signedHeatColor, downloadCsv, downloadSvg, downloadText } from './charts.js';
+import { lineChartSvg, heatmapSvg, surface3dSvg, harmonicPhase, signedHeatColor, downloadCsv, downloadSvg, downloadText } from './charts.js';
 import { demoPreviewSvg, mountDemo } from './demos.js';
 import { engineeringResultToText } from './engineering-results.js';
 import { homepageNavigation, homepageNavKey, renderHomepage, renderSubjectPage, bindHomepage, subjectWheel } from './homepage.js';
@@ -335,27 +335,45 @@ function renderResult(result,meta){
   const commentary=`<section class="engineering-commentary" data-result-section="explanation" aria-label="Engineering commentary"><article class="commentary-lead"><p class="commentary-label">Engineering interpretation</p><p>${esc(result.interpretation.summary)}</p><h3>Physical meaning</h3><p>${esc(result.interpretation.physicalMeaning)}</p></article>${alertBlock}<div class="commentary-grid">${assumptionCard}</div></section>`;
   const renderPlot=(p,i,primary=false)=>{const svg=lineChartSvg(p);return `<div class="result-block${primary?' result-block-primary':''}" data-result-section="plot"><div class="chart-toolbar"><button data-chart-data="${i}">View data</button><button data-chart-csv="${i}">Download CSV</button><button data-chart-svg="${i}">Download SVG</button><button data-chart-png="${i}">Download PNG</button></div><div class="chart-shell site-chart-container" data-chart="${i}">${svg}</div><div class="chart-data-panel" data-chart-data-panel="${i}" hidden></div></div>`;};
   const renderHeatmap=(h,i,primary=false)=>`<div class="result-block${primary?' result-block-primary':''}" data-result-section="heatmap"><div class="chart-toolbar"><button data-heatmap-svg="${i}">Download SVG</button><button data-heatmap-png="${i}">Download PNG</button></div><div class="chart-shell site-chart-container" data-heatmap="${i}">${heatmapSvg(h)}</div></div>`;
+  const renderSurface3d=(surface,i,primary=false)=>`<div class="result-block${primary?' result-block-primary':''}" data-result-section="surface3d"><div class="chart-toolbar"><button data-surface3d-svg="${i}">Download SVG</button><button data-surface3d-png="${i}">Download PNG</button></div><div class="chart-shell surface3d-shell site-chart-container" data-surface3d="${i}">${surface3dSvg(surface)}</div></div>`;
   const evidence=result.presentation?.primaryEvidence;
+  const explicitEvidenceStack=Array.isArray(result.presentation?.primaryEvidenceStack)&&result.presentation.primaryEvidenceStack.length>1;
+  const evidenceStack=explicitEvidenceStack?result.presentation.primaryEvidenceStack:(evidence?[evidence]:[]);
   const animation=result.presentation?.animation;
   const animationControls=animation?.type==='harmonic'?`<section class="mode-animation-panel" data-mode-animation data-default-rate="${animation.defaultRateHz}"><div class="mode-animation-copy"><p class="eyebrow">Harmonic mode animation</p><p>${esc(animation.note)}</p></div><div class="mode-animation-actions"><button type="button" class="button-secondary" data-mode-animation-toggle aria-pressed="true">Pause</button><label><span>Visual speed</span><select data-mode-animation-rate><option value="0.25">Slow</option><option value="0.5" ${animation.defaultRateHz===.5?'selected':''}>Normal</option><option value="1">Fast</option></select></label><button type="button" class="button-quiet" data-mode-animation-reset>Reset</button><output data-mode-animation-phase aria-hidden="true">+1.00 phase</output><span class="sr-only" data-mode-animation-status aria-live="polite"></span></div></section>`:'';
   const primaryHeatmapIndices=new Set();
-  let primaryEvidence='';
-  if(evidence?.type==='plot'&&result.plots?.[evidence.index])primaryEvidence=renderPlot(result.plots[evidence.index],evidence.index,true);
-  else if(evidence?.type==='heatmap'&&result.heatmaps?.[evidence.index]){
-    const count=Math.max(1,result.presentation?.primaryEvidenceCount||1),indices=result.heatmaps.map((_,index)=>index).slice(evidence.index,evidence.index+count);indices.forEach(index=>primaryHeatmapIndices.add(index));
-    const maps=indices.map(index=>renderHeatmap(result.heatmaps[index],index,true)).join('');primaryEvidence=indices.length>1?`<div class="result-evidence-grid" aria-label="Primary mode-shape plots">${maps}</div>`:maps;
-  }
-  else if(evidence?.type==='table'&&result.tables?.[evidence.index])primaryEvidence=renderTable(result.tables[evidence.index],{primary:true,index:evidence.index});
-  const supportingPlots=(result.plots||[]).map((plot,index)=>evidence?.type==='plot'&&evidence.index===index?'':renderPlot(plot,index)).join('');
+  const primarySurfaceIndices=new Set();
+  const primaryPlotIndices=new Set();
+  const primaryTableIndices=new Set();
+  const renderPrimarySelection=(selection,selectionIndex)=>{
+    const defaultCount=!explicitEvidenceStack&&selectionIndex===0?result.presentation?.primaryEvidenceCount||1:1;
+    const count=Math.max(1,selection.count||defaultCount);
+    if(selection.type==='plot'&&result.plots?.[selection.index]){primaryPlotIndices.add(selection.index);return renderPlot(result.plots[selection.index],selection.index,true);}
+    if(selection.type==='heatmap'&&result.heatmaps?.[selection.index]){
+      const indices=result.heatmaps.map((_,index)=>index).slice(selection.index,selection.index+count);indices.forEach(index=>primaryHeatmapIndices.add(index));
+      const maps=indices.map(index=>renderHeatmap(result.heatmaps[index],index,true)).join('');return indices.length>1?`<div class="result-evidence-grid" aria-label="Primary mode-shape plots">${maps}</div>`:maps;
+    }
+    if(selection.type==='surface3d'&&result.surfaces3d?.[selection.index]){
+      const indices=result.surfaces3d.map((_,index)=>index).slice(selection.index,selection.index+count);indices.forEach(index=>primarySurfaceIndices.add(index));
+      const surfaces=indices.map(index=>renderSurface3d(result.surfaces3d[index],index,true)).join('');return indices.length>1?`<div class="result-evidence-grid result-evidence-grid-3d" aria-label="Primary 3D mode shapes">${surfaces}</div>`:surfaces;
+    }
+    if(selection.type==='table'&&result.tables?.[selection.index]){primaryTableIndices.add(selection.index);return renderTable(result.tables[selection.index],{primary:true,index:selection.index});}
+    return'';
+  };
+  const primaryEvidence=evidenceStack.map(renderPrimarySelection).join('');
+  const supportingPlots=(result.plots||[]).map((plot,index)=>primaryPlotIndices.has(index)?'':renderPlot(plot,index)).join('');
   const supportingHeatmaps=(result.heatmaps||[]).map((heatmap,index)=>primaryHeatmapIndices.has(index)?'':renderHeatmap(heatmap,index)).join('');
-  const supportingTables=(result.tables||[]).map((table,index)=>evidence?.type==='table'&&evidence.index===index?'':renderTable(table,{index})).join('');
-  const supportingEvidence=`${supportingPlots}${supportingHeatmaps}${supportingTables}`;
+  const supportingSurfaces=(result.surfaces3d||[]).map((surface,index)=>primarySurfaceIndices.has(index)?'':renderSurface3d(surface,index)).join('');
+  const supportingTables=(result.tables||[]).map((table,index)=>primaryTableIndices.has(index)?'':renderTable(table,{index})).join('');
+  const supportingEvidence=`${supportingSurfaces}${supportingPlots}${supportingHeatmaps}${supportingTables}`;
   const csv=result.csv?`<div class="result-block"><button class="button-secondary" data-action="download-csv">Download result CSV</button></div>`:'';
   const actions=`<section class="result-project-actions"><div><p class="eyebrow">Traceable next step</p><h3>Add this result to the engineering project</h3><p>Preserve inputs, values, interpretation, assumptions, warnings, validity, and source route with the shared project record.</p></div><button type="button" class="button" data-action="add-result-to-project">Add result</button></section>`;
   const secondaryValues=supportingValues?`<details class="supporting-values"><summary>Supporting values <span>${result.values.length-primaryValueCount}</span></summary><div class="result-summary result-summary-supporting">${supportingValues}</div></details>`:'';
   const numericalResults=`<section class="numerical-results-section" data-result-section="numerical"><h3 class="result-section-title">Numerical results</h3><div class="result-summary">${primaryValues}</div>${secondaryValues}</section>`;
-  const supportingSection=supportingEvidence?`<details class="supporting-evidence"><summary>Supporting plots and tables</summary><div class="supporting-evidence-body">${supportingEvidence}</div></details>`:'';
-  const resultBody=evidence?.type==='plot'||evidence?.type==='heatmap'?`${animationControls}${primaryEvidence}${numericalResults}${commentary}`:evidence?.type==='table'?`${numericalResults}${primaryEvidence}${commentary}`:`${numericalResults}${commentary}`;
+  const supportingSection=supportingEvidence?`<details class="supporting-evidence"><summary>Supporting plots, maps, and tables</summary><div class="supporting-evidence-body">${supportingEvidence}</div></details>`:'';
+  const hasVisualPrimary=evidenceStack.some(item=>item.type==='plot'||item.type==='heatmap'||item.type==='surface3d');
+  const hasTablePrimary=evidenceStack.some(item=>item.type==='table');
+  const resultBody=hasVisualPrimary?`${animationControls}${primaryEvidence}${numericalResults}${commentary}`:hasTablePrimary?`${numericalResults}${primaryEvidence}${commentary}`:`${numericalResults}${commentary}`;
   return `${resultBody}${supportingSection}${csv}${actions}`;
 }
 function svgToPng(svgText,filename){
@@ -402,8 +420,9 @@ function bindHarmonicAnimation(result){
   const controls=document.querySelector('[data-mode-animation]');
   if(!controls||result.presentation?.animation?.type!=='harmonic')return()=>{};
   const plotSvgs=[...document.querySelectorAll('svg[data-chart-animation="harmonic"]')];
-  const heatmapCells=[...document.querySelectorAll('[data-heatmap-base-value]')];
-  if(!plotSvgs.length&&!heatmapCells.length)return()=>{};
+  const heatmapCells=[...document.querySelectorAll('[data-heatmap-base-value]')].filter(cell=>!cell.closest('.supporting-evidence'));
+  const surfaceCells=[...document.querySelectorAll('[data-surface-base-points]')].filter(cell=>!cell.closest('.supporting-evidence')).map(cell=>({cell,base:cell.dataset.surfaceBasePoints.split(',').map(Number),delta:cell.dataset.surfaceDeltaPoints.split(',').map(Number),value:Number(cell.dataset.surfaceBaseValue),scale:Number(cell.dataset.surfaceScale)}));
+  if(!plotSvgs.length&&!heatmapCells.length&&!surfaceCells.length)return()=>{};
   const toggle=controls.querySelector('[data-mode-animation-toggle]'),rateInput=controls.querySelector('[data-mode-animation-rate]'),reset=controls.querySelector('[data-mode-animation-reset]'),phaseOutput=controls.querySelector('[data-mode-animation-phase]'),status=controls.querySelector('[data-mode-animation-status]'),reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
   let running=!reducedMotion.matches,elapsed=0,lastTime=null,lastDraw=-Infinity,frameId=0,rate=Number(rateInput?.value)||Number(controls.dataset.defaultRate)||.5;
   const setControlState=message=>{toggle.textContent=running?'Pause':'Play';toggle.setAttribute('aria-pressed',String(running));controls.classList.toggle('is-paused',!running);if(message)status.textContent=message;};
@@ -412,6 +431,7 @@ function bindHarmonicAnimation(result){
     controls.style.setProperty('--mode-phase',String((phase+1)/2));
     plotSvgs.forEach(svg=>{const zero=Number(svg.dataset.chartZeroY)||0;svg.querySelectorAll('[data-chart-animated-path]').forEach(path=>path.setAttribute('transform',`translate(0 ${zero}) scale(1 ${phase}) translate(0 ${-zero})`));});
     heatmapCells.forEach(cell=>cell.setAttribute('fill',signedHeatColor(Number(cell.dataset.heatmapBaseValue)*phase,Number(cell.dataset.heatmapScale))));
+    surfaceCells.forEach(({cell,base,delta,value,scale})=>{const points=[];for(let index=0;index<base.length;index+=2)points.push(`${(base[index]+phase*delta[index]).toFixed(2)},${(base[index+1]+phase*delta[index+1]).toFixed(2)}`);cell.setAttribute('points',points.join(' '));cell.setAttribute('fill',signedHeatColor(value*phase,scale));});
   };
   const schedule=()=>{if(running&&!document.hidden&&!frameId)frameId=requestAnimationFrame(step);};
   const step=now=>{frameId=0;if(!running)return;if(lastTime!=null)elapsed+=(now-lastTime)/1000;lastTime=now;if(now-lastDraw>=50){applyPhase(harmonicPhase(elapsed,rate));lastDraw=now;}schedule();};
@@ -444,6 +464,7 @@ function bindResultActions(result,meta,canonicalResult=result){
     shell?.addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&event.target.closest?.('[data-legend-trace]')){event.preventDefault();toggleTrace(event.target);}});
   });
   (result.heatmaps||[]).forEach((h,i)=>{const svg=heatmapSvg(h);document.querySelector(`[data-heatmap-svg="${i}"]`)?.addEventListener('click',()=>downloadSvg(`${slug(meta.title)}-heatmap-${i+1}.svg`,svg));document.querySelector(`[data-heatmap-png="${i}"]`)?.addEventListener('click',()=>svgToPng(svg,`${slug(meta.title)}-heatmap-${i+1}.png`));});
+  (result.surfaces3d||[]).forEach((surface,i)=>{const svg=surface3dSvg(surface);document.querySelector(`[data-surface3d-svg="${i}"]`)?.addEventListener('click',()=>downloadSvg(`${slug(meta.title)}-3d-mode-${i+1}.svg`,svg));document.querySelector(`[data-surface3d-png="${i}"]`)?.addEventListener('click',()=>svgToPng(svg,`${slug(meta.title)}-3d-mode-${i+1}.png`));});
   document.querySelector('[data-action="add-result-to-project"]')?.addEventListener('click',()=>{const nextTools=toolHandoffs(meta,toolCatalog).map(tool=>tool.id);const form=document.querySelector('#calculator-form');addEngineeringArtifact({type:'Calculator result',title:meta.title,route:location.hash,sourceToolId:meta.id,inputs:form?collectForm(form):{},nextTools,takeaway:canonicalResult.interpretation.summary,validity:`${canonicalResult.validity.regime} ${canonicalResult.validity.confidence}`,assumptions:[...canonicalResult.assumptions.satisfied,...canonicalResult.assumptions.limitations.map(item=>`Limitation: ${item}`)],warnings:canonicalResult.assumptions.alerts,values:canonicalResult.values,provenance:`${primaryToolSubject(meta).label} · ${meta.id||location.hash.split('/').pop()}`});showToast('Result added to engineering project');document.querySelector('.project-pill b').textContent=loadEngineeringProject().artifacts.length;});
   return bindHarmonicAnimation(result);
 }
