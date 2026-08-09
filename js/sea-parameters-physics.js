@@ -71,35 +71,102 @@ export function empiricalLossFactorState(input = {}) {
   };
 }
 
-export function modalDensityAtlasState(input = {}) {
-  const frequency = positive(input.frequency, 1000);
-  const lossFactor = positive(input.lossFactor, 0.02);
-  const bandFraction = positive(input.bandFraction, 2 ** (1 / 6) - 2 ** (-1 / 6));
+function rectangularMember(input = {}) {
+  const width = positive(input.memberWidth ?? input.beamWidth, 0.025);
+  const height = positive(input.memberHeight, 0.025);
+  const area = width * height;
+  const inertia = width * height ** 3 / 12;
+  const polarRadius = Math.sqrt((width ** 2 + height ** 2) / 12);
+  const major = Math.max(width, height), minor = Math.min(width, height);
+  const torsionConstant = major * minor ** 3 * (1 / 3 - 0.21 * minor / major * (1 - minor ** 4 / (12 * major ** 4)));
+  return { width, height, area, inertia, polarRadius, torsionConstant, radiusGyration: Math.sqrt(inertia / area) };
+}
+
+function beamBendingDensity(length, frequency, properties, member) {
+  const longitudinalSpeed = Math.sqrt(properties.modulus / properties.density);
+  return positive(length, properties.length) / Math.sqrt(TAU * frequency * member.radiusGyration * longitudinalSpeed);
+}
+
+function frameDensity(radius, frequency, properties, member) {
+  const longitudinalSpeed = Math.sqrt(properties.modulus / properties.density);
+  const ringFrequency = longitudinalSpeed / (TAU * radius);
+  return (member.area * radius ** 2 / member.inertia) ** 0.25 * radius / longitudinalSpeed * (frequency / ringFrequency) ** -0.5 * TAU;
+}
+
+function cylinderDensity(frequency, properties, radius, bandRatio) {
+  const ringFrequency = properties.longitudinalSpeed / (TAU * radius);
+  const ratio = frequency / ringFrequency;
+  const surfaceArea = TAU * radius * properties.length;
+  const scale = surfaceArea / (properties.thickness * properties.longitudinalSpeed);
+  if (ratio <= 0.48) return { modalDensity: 5 / Math.PI * Math.sqrt(ratio) * scale, ringFrequency };
+  if (ratio < 0.83) return { modalDensity: 7.2 / Math.PI * ratio * scale, ringFrequency };
+  const inverseRatioSquared = (ringFrequency / frequency) ** 2;
+  const firstAngle = Math.acos(clamp(1.745 / bandRatio ** 2 * inverseRatioSquared, -1, 1));
+  const secondAngle = Math.acos(clamp(1.745 * bandRatio ** 2 * inverseRatioSquared, -1, 1));
+  const bandTerm = bandRatio * firstAngle - secondAngle / bandRatio;
+  const modalDensity = 2 / Math.PI * scale * (2 + 0.569 / (bandRatio - 1 / bandRatio) * bandTerm);
+  return { modalDensity, ringFrequency };
+}
+
+function honeycombDensity(input, frequency, properties) {
+  const faceThickness = positive(input.faceThickness, 0.0006);
+  const coreThickness = positive(input.coreThickness, 0.0248);
+  const coreShearModulus = positive(input.coreShearModulus, 85e6);
+  const coreDensity = positive(input.coreDensity, 48);
+  const effectiveDepth = coreThickness + faceThickness;
+  const faceExtensionalStiffness = properties.modulus * faceThickness;
+  const faceplateLongitudinalStiffness = effectiveDepth ** 2 * faceExtensionalStiffness / 2;
+  const coreStiffness = coreShearModulus / coreThickness * 2 / faceExtensionalStiffness;
+  const surfaceMass = 2 * properties.density * faceThickness + coreDensity * coreThickness;
+  const omega = TAU * frequency;
+  const correctionNumerator = surfaceMass * omega ** 2 + 2 * coreStiffness ** 2 * faceplateLongitudinalStiffness * (1 - properties.poisson ** 2);
+  const correctionDenominator = Math.sqrt(surfaceMass ** 2 * omega ** 4 + 4 * surfaceMass * omega ** 2 * coreStiffness ** 2 * faceplateLongitudinalStiffness * (1 - properties.poisson ** 2));
+  const modalDensity = Math.PI * properties.area * surfaceMass / (coreStiffness * faceplateLongitudinalStiffness) * frequency * (1 + correctionNumerator / correctionDenominator);
+  const bendingStiffness = faceplateLongitudinalStiffness / (1 - properties.poisson ** 2);
+  const transitionFrequency = coreStiffness * Math.sqrt(faceplateLongitudinalStiffness * (1 - properties.poisson ** 2) / surfaceMass) / TAU;
+  return { modalDensity, surfaceMass, bendingStiffness, transitionFrequency };
+}
+
+function evaluateModalDensity(input = {}, frequency = positive(input.frequency, 1000)) {
   const type = String(input.type ?? 'plate-bending');
-  const boundary = String(input.boundary ?? 'simply-supported');
   const properties = plateProperties(input);
   const height = positive(input.height, 1.5);
-  const radius = positive(input.radius, properties.width / (2 * Math.PI));
+  const radius = positive(input.radius, properties.width / TAU);
   const soundSpeed = positive(input.soundSpeed, AIR_C);
+  const bandsPerOctave = positive(input.bandsPerOctave, 3);
+  const bandRatio = 2 ** (1 / (2 * bandsPerOctave));
   const omega = TAU * frequency;
+  const member = rectangularMember(input);
+  const totalMemberLength = Math.max(0, number(input.totalMemberLength, 12));
+  const frameCount = Math.max(0, number(input.frameCount, 4));
   let modalDensity = 0;
   let waveSpeed = properties.longitudinalSpeed;
   let dimension = 2;
   let basis = '';
   let transitionFrequency = null;
+  let sourceTopic = '';
+  let sourceRelation = '';
+  let specialization = '';
+  let components = [];
 
   if (type === 'acoustic-1d') {
     modalDensity = 2 * properties.length / soundSpeed;
     waveSpeed = soundSpeed;
     dimension = 1;
     transitionFrequency = soundSpeed / (2 * Math.max(properties.width, height));
-    basis = 'One-dimensional pipe density n=2L/c';
+    basis = 'ESA one-dimensional acoustic-cavity modal density';
+    sourceTopic = 'A.14(a) Acoustic cavity, 1D';
+    sourceRelation = 'n(f) = 2l/c₀';
+    specialization = 'Valid while the acoustic wavelength exceeds twice the largest cross-section dimension.';
   } else if (type === 'acoustic-2d') {
-    modalDensity = 2 * Math.PI * frequency * properties.area / soundSpeed ** 2 + properties.perimeter / soundSpeed;
+    modalDensity = TAU * frequency * properties.area / soundSpeed ** 2 + properties.perimeter / soundSpeed;
     waveSpeed = soundSpeed;
     dimension = 2;
     transitionFrequency = soundSpeed / (2 * height);
-    basis = 'Two-dimensional rectangular acoustic Weyl density';
+    basis = 'ESA two-dimensional acoustic-cavity modal density';
+    sourceTopic = 'A.14(b) Acoustic cavity, 2D';
+    sourceRelation = 'n(f) = 2πfA/c₀² + p/c₀';
+    specialization = 'Rectangular planform; valid while wavelength exceeds twice the cavity depth.';
   } else if (type === 'acoustic-3d') {
     const volume = properties.area * height;
     const surfaceArea = 2 * (properties.area + properties.length * height + properties.width * height);
@@ -107,142 +174,175 @@ export function modalDensityAtlasState(input = {}) {
     modalDensity = 4 * Math.PI * frequency ** 2 * volume / soundSpeed ** 3 + Math.PI * frequency * surfaceArea / (2 * soundSpeed ** 2) + totalEdges / (8 * soundSpeed);
     waveSpeed = soundSpeed;
     dimension = 3;
-    basis = 'Three-dimensional rectangular acoustic Weyl density with surface and edge corrections';
-  } else if (type === 'beam-bending') {
-    const crossWidth = positive(input.beamWidth, properties.width);
-    const area = crossWidth * properties.thickness;
-    const inertia = crossWidth * properties.thickness ** 3 / 12;
-    const radiusGyration = Math.sqrt(inertia / area);
-    modalDensity = properties.length / Math.sqrt(2 * Math.PI * frequency * radiusGyration * Math.sqrt(properties.modulus / properties.density));
-    const k = (properties.density * area * omega ** 2 / (properties.modulus * inertia)) ** 0.25;
+    basis = 'ESA three-dimensional acoustic-cavity modal density with surface and edge corrections';
+    sourceTopic = 'A.14(c) Acoustic cavity, 3D';
+    sourceRelation = 'n(f) = 4πf²V/c₀³ + πfA/(2c₀²) + lₑ/(8c₀)';
+    specialization = 'Rectangular cavity; A is total surface area and lₑ is total edge length.';
+  } else if (type === 'beam-bending' || type === 'grid-bending') {
+    const effectiveLength = type === 'grid-bending' ? totalMemberLength : properties.length;
+    modalDensity = beamBendingDensity(effectiveLength, frequency, properties, member);
+    const k = (properties.density * member.area * omega ** 2 / (properties.modulus * member.inertia)) ** 0.25;
     waveSpeed = omega / k;
     dimension = 1;
-    basis = 'Euler–Bernoulli beam bending modal density';
+    basis = type === 'grid-bending' ? 'ESA grid modal density using the total beam length' : 'ESA transverse beam modal density';
+    sourceTopic = type === 'grid-bending' ? 'A.13 Grid structure' : 'A.04(a) Beam transverse vibration';
+    sourceRelation = 'n(f) = (l/Cₗ)√[Cₗ/(k·2πf)]';
+    specialization = type === 'grid-bending' ? 'l is the summed length of all rectangular grid members.' : 'Uniform Euler–Bernoulli beam with the entered rectangular member section.';
+  } else if (type === 'beam-torsion') {
+    const shearModulus = properties.modulus / (2 * (1 + properties.poisson));
+    const shearSpeed = Math.sqrt(shearModulus / properties.density);
+    const sectionFactor = member.polarRadius * Math.sqrt(member.area / member.torsionConstant);
+    modalDensity = 2 * properties.length / shearSpeed * sectionFactor;
+    waveSpeed = shearSpeed / sectionFactor;
+    dimension = 1;
+    basis = 'ESA torsional beam modal density';
+    sourceTopic = 'A.04(b) Beam torsional vibration';
+    sourceRelation = 'n(f) = (2l/Cₛ)kₚ√(a/J)';
+    specialization = 'Saint-Venant torsion constant is approximated for the entered solid rectangular section.';
+  } else if (type === 'hoop-frame') {
+    modalDensity = frameDensity(radius, frequency, properties, member);
+    const k = (properties.density * member.area * omega ** 2 / (properties.modulus * member.inertia)) ** 0.25;
+    waveSpeed = omega / k;
+    dimension = 1;
+    transitionFrequency = Math.sqrt(properties.modulus / properties.density) / (TAU * radius);
+    basis = 'ESA hoop or frame modal density';
+    sourceTopic = 'A.05 Hoop or frame';
+    sourceRelation = 'n(f) = (aR²/I)¼(R/Cₗ)(f/fᵣ)⁻½·2π';
+    specialization = 'Uniform circular hoop with the entered solid rectangular section.';
   } else if (type === 'beam-longitudinal') {
     modalDensity = 2 * properties.length / Math.sqrt(properties.modulus / properties.density);
     waveSpeed = Math.sqrt(properties.modulus / properties.density);
     dimension = 1;
-    basis = 'Longitudinal beam mode spacing';
+    basis = 'Supplementary longitudinal beam mode spacing';
+    sourceTopic = 'Supplementary wave family';
+    sourceRelation = 'n(f) = 2l/√(E/ρ)';
+    specialization = 'Retained for comparison; not one of the Appendix A modal-density topics.';
   } else if (type === 'plate-inplane') {
     modalDensity = properties.area * omega * (1 / properties.longitudinalSpeed ** 2 + 1 / properties.shearSpeed ** 2);
     waveSpeed = properties.longitudinalSpeed;
     dimension = 2;
-    basis = 'Two-dimensional in-plane longitudinal-plus-shear Weyl density';
+    basis = 'Supplementary in-plane longitudinal-plus-shear Weyl density';
+    sourceTopic = 'Supplementary wave family';
+    sourceRelation = 'n(f) = Aω(1/cₗ² + 1/cₛ²)';
+    specialization = 'Retained for comparison; not one of the Appendix A modal-density topics.';
   } else if (type === 'circular-plate') {
-    const rectangular = properties.area / 2 * Math.sqrt(properties.surfaceMass / properties.bendingStiffness);
+    const rectangular = properties.area * Math.sqrt(3) / (properties.thickness * properties.longitudinalSpeed);
     modalDensity = 8 / Math.PI ** 2 * rectangular;
     const k = (properties.surfaceMass * omega ** 2 / properties.bendingStiffness) ** 0.25;
     waveSpeed = omega / k;
-    basis = 'Equal-area circular-plate correction applied to bending density';
+    basis = 'ESA equal-area circular-panel correction';
+    sourceTopic = 'A.03(b) Circular flat unstiffened panel';
+    sourceRelation = 'n(f)circular = (8/π²)n(f)rectangular';
+    specialization = 'Uses the entered length × width as the equal reference area.';
+  } else if (type === 'irregular-plate') {
+    modalDensity = properties.area * Math.sqrt(3) / (properties.thickness * properties.longitudinalSpeed);
+    const k = (properties.surfaceMass * omega ** 2 / properties.bendingStiffness) ** 0.25;
+    waveSpeed = omega / k;
+    basis = 'ESA equal-area irregular flat-panel approximation';
+    sourceTopic = 'A.03(c) Irregular flat unstiffened panel';
+    sourceRelation = 'n(f)irregular ≈ n(f)rectangular at equal area';
+    specialization = 'Perimeter and local shape details are not represented.';
   } else if (type === 'honeycomb') {
-    const faceThickness = positive(input.faceThickness, 0.0006);
-    const coreThickness = positive(input.coreThickness, Math.max(properties.thickness - 2 * faceThickness, 0.001));
-    const coreShearModulus = positive(input.coreShearModulus, 85e6);
-    const shearStiffness = coreShearModulus * coreThickness * (1 + faceThickness / coreThickness) ** 2;
-    const sandwichBending = properties.modulus * faceThickness * (coreThickness + faceThickness) ** 2 / (2 * (1 - properties.poisson ** 2));
-    const term = (properties.surfaceMass ** 2 * omega ** 4 + 4 * properties.surfaceMass * omega ** 2 * shearStiffness ** 2 / sandwichBending) ** -0.5;
-    modalDensity = Math.PI * properties.area * properties.surfaceMass * frequency / shearStiffness * (1 + term * (properties.surfaceMass * omega ** 2 + 2 * shearStiffness ** 2 / sandwichBending));
-    const bendingK = (properties.surfaceMass * omega ** 2 / sandwichBending) ** 0.25;
-    const shearSpeed = Math.sqrt(shearStiffness / properties.surfaceMass);
-    waveSpeed = Math.min(omega / bendingK, shearSpeed);
-    transitionFrequency = shearStiffness / (TAU * Math.sqrt(properties.surfaceMass * sandwichBending));
-    basis = 'Shear-corrected honeycomb sandwich modal density';
-  } else if (type === 'cylinder') {
-    const longitudinalSpeed = properties.longitudinalSpeed;
-    const ringFrequency = longitudinalSpeed / (TAU * radius);
-    const ratio = frequency / ringFrequency;
-    const bandShape = ratio <= 0.48 ? 2.5 * Math.sqrt(ratio) : ratio <= 0.83 ? 3.6 * ratio : 2.4 * Math.sqrt(ratio) + 0.8 * ratio;
-    modalDensity = Math.max(1e-12, bandShape * properties.length / (Math.PI * properties.thickness * ringFrequency));
+    const honeycomb = honeycombDensity(input, frequency, properties);
+    modalDensity = honeycomb.modalDensity;
+    const bendingK = (honeycomb.surfaceMass * omega ** 2 / honeycomb.bendingStiffness) ** 0.25;
+    waveSpeed = omega / bendingK;
+    transitionFrequency = honeycomb.transitionFrequency;
+    basis = 'ESA flat honeycomb-panel modal density with core shear correction';
+    sourceTopic = 'A.09 Flat honeycomb panel';
+    sourceRelation = 'n(f) = πabmf/(gB) · {1 + [mω²+2g²B(1−μ²)]/[m²ω⁴+4mω²g²B(1−μ²)]½}';
+    specialization = 'Symmetric identical isotropic faces and equal orthotropic core shear moduli Gₓ=Gᵧ.';
+  } else if (type === 'cylinder' || type === 'stiffened-cylinder') {
+    const skin = cylinderDensity(frequency, properties, radius, bandRatio);
+    const stringers = type === 'stiffened-cylinder' ? beamBendingDensity(totalMemberLength, frequency, properties, member) : 0;
+    const frames = type === 'stiffened-cylinder' ? frameCount * frameDensity(radius, frequency, properties, member) : 0;
+    modalDensity = skin.modalDensity + stringers + frames;
     const k = (properties.surfaceMass * omega ** 2 / properties.bendingStiffness) ** 0.25;
     waveSpeed = omega / k;
-    transitionFrequency = ringFrequency;
-    basis = 'Unstiffened-cylinder band-density screen referenced to ring frequency';
+    transitionFrequency = skin.ringFrequency;
+    basis = type === 'stiffened-cylinder' ? 'ESA constituent-sum stiffened-cylinder modal density' : 'ESA piecewise unstiffened-cylinder modal density';
+    sourceTopic = type === 'stiffened-cylinder' ? 'A.07 Stiffened cylinder' : 'A.06 Unstiffened cylinder';
+    sourceRelation = type === 'stiffened-cylinder' ? 'n(f) = nskin + nstringers + nframes' : 'Piecewise in f/fᵣ: 0–0.48, 0.48–0.83, and ≥0.83 with bandwidth factor F';
+    specialization = type === 'stiffened-cylinder' ? 'Identical rectangular stringers and frames; total stringer length and frame count are entered explicitly.' : 'Thin isotropic cylinder; the high-frequency branch depends on the selected fractional-octave bandwidth.';
+    components = [['Unstiffened cylindrical skin', skin.modalDensity], ['Transverse stringers', stringers], ['Hoop frames', frames]].filter(([, value]) => value > 0);
+  } else if (type === 'stiffened-panel') {
+    const skin = properties.area * Math.sqrt(3) / (properties.thickness * properties.longitudinalSpeed);
+    const stringers = beamBendingDensity(totalMemberLength, frequency, properties, member);
+    modalDensity = skin + stringers;
+    const k = (properties.surfaceMass * omega ** 2 / properties.bendingStiffness) ** 0.25;
+    waveSpeed = omega / k;
+    basis = 'ESA constituent-sum stiffened-panel modal density';
+    sourceTopic = 'A.08 Stiffened panel';
+    sourceRelation = 'n(f) = nunstiffened panel + nstringers';
+    specialization = 'Identical rectangular transverse-vibration stiffeners represented by their total entered length.';
+    components = [['Unstiffened panel', skin], ['Transverse stiffeners', stringers]];
   } else {
-    const baseOmegaDensity = properties.area / (4 * Math.PI) * Math.sqrt(properties.surfaceMass / properties.bendingStiffness);
-    const edgeScale = (properties.surfaceMass / properties.bendingStiffness) ** 0.25 * ((properties.length + properties.width) / Math.PI) / Math.sqrt(omega);
-    const coefficient = boundary === 'free' ? 0.5 : boundary === 'clamped' ? -0.5 : boundary === 'generic' ? 0 : -0.25;
-    modalDensity = TAU * Math.max(1e-12, baseOmegaDensity + coefficient * edgeScale);
+    modalDensity = properties.area * Math.sqrt(3) / (properties.thickness * properties.longitudinalSpeed);
     const k = (properties.surfaceMass * omega ** 2 / properties.bendingStiffness) ** 0.25;
     waveSpeed = omega / k;
-    basis = `${boundary.replaceAll('-', ' ')} rectangular-plate bending density with boundary correction`;
+    basis = 'ESA rectangular flat unstiffened-panel modal density';
+    sourceTopic = 'A.03(a) Rectangular flat unstiffened panel';
+    sourceRelation = 'n(f) = A√3/(tCₗ)';
+    specialization = 'Asymptotic thin isotropic panel; the Appendix A relation is boundary-condition independent.';
   }
 
+  return { modalDensity: Math.max(1e-12, modalDensity), waveSpeed, dimension, basis, transitionFrequency, sourceTopic, sourceRelation, specialization, components, properties };
+}
+
+export function modalDensityAtlasState(input = {}) {
+  const frequency = positive(input.frequency, 1000);
+  const lossFactor = positive(input.lossFactor, 0.02);
+  const bandsPerOctave = positive(input.bandsPerOctave, 3);
+  const bandRatio = 2 ** (1 / (2 * bandsPerOctave));
+  const bandFraction = positive(input.bandFraction, bandRatio - 1 / bandRatio);
+  const type = String(input.type ?? 'plate-bending');
+  const boundary = String(input.boundary ?? 'simply-supported');
+  const selected = evaluateModalDensity(input, frequency);
+  const { modalDensity, waveSpeed, dimension, basis, transitionFrequency, sourceTopic, sourceRelation, specialization, components, properties } = selected;
+
   const bandwidth = frequency * bandFraction;
+  const bandLow = frequency / bandRatio;
+  const bandHigh = frequency * bandRatio;
   const averageSpacing = 1 / modalDensity;
   const modesInBand = modalDensity * bandwidth;
   const modalOverlap = modalDensity * lossFactor * frequency;
   const wavelength = waveSpeed / frequency;
   const frequencies = logspace(Math.max(10, frequency / 16), frequency * 16, 100);
   const curve = frequencies.map(value => modalDensityAtlasStateNoCurve({ ...input, type, frequency: value }).modalDensity);
+  const modeCountBelow = integrateModalDensityCount({ ...input, type, boundary }, frequency);
+  const countCurve = [integrateModalDensityCount({ ...input, type, boundary }, frequencies[0])];
+  for (let index = 1; index < frequencies.length; index++) {
+    countCurve.push(countCurve[index - 1] + 0.5 * (curve[index - 1] + curve[index]) * (frequencies[index] - frequencies[index - 1]));
+  }
+  const modesInBandCurve = frequencies.map((value, index) => curve[index] * value * bandFraction);
   return {
-    type, boundary, frequency, lossFactor, bandFraction, bandwidth, modalDensity, averageSpacing,
-    modesInBand, modalOverlap, waveSpeed, wavelength, dimension, basis, transitionFrequency,
-    properties, frequencies, curve,
+    type, boundary, frequency, lossFactor, bandsPerOctave, bandRatio, bandFraction, bandwidth, bandLow, bandHigh,
+    modalDensity, averageSpacing, modesInBand, modeCountBelow, modalOverlap, waveSpeed, wavelength, dimension, basis, transitionFrequency,
+    sourceTopic, sourceRelation, specialization, components,
+    properties, frequencies, curve, countCurve, modesInBandCurve,
     readiness: modesInBand >= 5 && modalOverlap >= 1 ? 'well-populated statistical band' : modesInBand >= 2 && modalOverlap >= 0.3 ? 'transitional statistical band' : 'sparse or weakly overlapping band'
   };
 }
 
 function modalDensityAtlasStateNoCurve(input) {
-  const state = modalDensityAtlasStateCore(input);
-  return state;
-}
-
-function modalDensityAtlasStateCore(input = {}) {
-  /* Avoid recursive curve construction by asking the public model at one
-     frequency through the same equations with a private sentinel. */
-  if (input.__core) return input.__core;
-  const copy = { ...input };
-  const originalLogspace = copy.frequency;
-  // Re-evaluate with a compact inline call by temporarily using the public
-  // model's selected-frequency result and suppressing further curve creation.
-  return modalDensityScalar(copy, originalLogspace);
+  return modalDensityScalar(input, input.frequency);
 }
 
 function modalDensityScalar(input, frequency) {
-  const stateInput = { ...input, frequency };
-  const properties = plateProperties(stateInput);
-  const type = String(stateInput.type ?? 'plate-bending');
-  const boundary = String(stateInput.boundary ?? 'simply-supported');
-  const f = positive(frequency, 1000);
-  const omega = TAU * f;
-  const height = positive(stateInput.height, 1.5);
-  const radius = positive(stateInput.radius, properties.width / (2 * Math.PI));
-  const soundSpeed = positive(stateInput.soundSpeed, AIR_C);
-  let modalDensity;
-  if (type === 'acoustic-1d') modalDensity = 2 * properties.length / soundSpeed;
-  else if (type === 'acoustic-2d') modalDensity = 2 * Math.PI * f * properties.area / soundSpeed ** 2 + properties.perimeter / soundSpeed;
-  else if (type === 'acoustic-3d') {
-    const volume = properties.area * height;
-    const surfaceArea = 2 * (properties.area + properties.length * height + properties.width * height);
-    const totalEdges = 4 * (properties.length + properties.width + height);
-    modalDensity = 4 * Math.PI * f ** 2 * volume / soundSpeed ** 3 + Math.PI * f * surfaceArea / (2 * soundSpeed ** 2) + totalEdges / (8 * soundSpeed);
-  } else if (type === 'beam-bending') {
-    const crossWidth = positive(stateInput.beamWidth, properties.width);
-    const area = crossWidth * properties.thickness;
-    const inertia = crossWidth * properties.thickness ** 3 / 12;
-    modalDensity = properties.length / Math.sqrt(2 * Math.PI * f * Math.sqrt(inertia / area) * Math.sqrt(properties.modulus / properties.density));
-  } else if (type === 'beam-longitudinal') modalDensity = 2 * properties.length / Math.sqrt(properties.modulus / properties.density);
-  else if (type === 'plate-inplane') modalDensity = properties.area * omega * (1 / properties.longitudinalSpeed ** 2 + 1 / properties.shearSpeed ** 2);
-  else if (type === 'circular-plate') modalDensity = 8 / Math.PI ** 2 * properties.area / 2 * Math.sqrt(properties.surfaceMass / properties.bendingStiffness);
-  else if (type === 'honeycomb') {
-    const faceThickness = positive(stateInput.faceThickness, 0.0006);
-    const coreThickness = positive(stateInput.coreThickness, Math.max(properties.thickness - 2 * faceThickness, 0.001));
-    const shearStiffness = positive(stateInput.coreShearModulus, 85e6) * coreThickness * (1 + faceThickness / coreThickness) ** 2;
-    const bending = properties.modulus * faceThickness * (coreThickness + faceThickness) ** 2 / (2 * (1 - properties.poisson ** 2));
-    const term = (properties.surfaceMass ** 2 * omega ** 4 + 4 * properties.surfaceMass * omega ** 2 * shearStiffness ** 2 / bending) ** -0.5;
-    modalDensity = Math.PI * properties.area * properties.surfaceMass * f / shearStiffness * (1 + term * (properties.surfaceMass * omega ** 2 + 2 * shearStiffness ** 2 / bending));
-  } else if (type === 'cylinder') {
-    const ringFrequency = properties.longitudinalSpeed / (TAU * radius);
-    const ratio = f / ringFrequency;
-    const bandShape = ratio <= 0.48 ? 2.5 * Math.sqrt(ratio) : ratio <= 0.83 ? 3.6 * ratio : 2.4 * Math.sqrt(ratio) + 0.8 * ratio;
-    modalDensity = bandShape * properties.length / (Math.PI * properties.thickness * ringFrequency);
-  } else {
-    const base = properties.area / (4 * Math.PI) * Math.sqrt(properties.surfaceMass / properties.bendingStiffness);
-    const edge = (properties.surfaceMass / properties.bendingStiffness) ** 0.25 * ((properties.length + properties.width) / Math.PI) / Math.sqrt(omega);
-    const coefficient = boundary === 'free' ? 0.5 : boundary === 'clamped' ? -0.5 : boundary === 'generic' ? 0 : -0.25;
-    modalDensity = TAU * Math.max(1e-12, base + coefficient * edge);
+  return evaluateModalDensity(input, positive(frequency, 1000));
+}
+
+function integrateModalDensityCount(input, frequency) {
+  const upper = positive(frequency, 1000);
+  const lower = Math.max(1e-6, upper * 1e-6);
+  const points = logspace(lower, upper, 161);
+  let count = modalDensityScalar(input, lower).modalDensity * lower;
+  for (let index = 1; index < points.length; index++) {
+    const f0 = points[index - 1], f1 = points[index];
+    const n0 = modalDensityScalar(input, f0).modalDensity, n1 = modalDensityScalar(input, f1).modalDensity;
+    count += 0.5 * (n0 + n1) * (f1 - f0);
   }
-  return { modalDensity: Math.max(1e-12, modalDensity) };
+  return count;
 }
 
 export function radiationEfficiencyAtlasState(input = {}) {

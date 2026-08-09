@@ -181,7 +181,7 @@ let seaParameterCalculatorsSource = moduleSource(seaParameterCalculatorsModule).
   'const seaParameterCalculatorRegistry = createEngineeringRegistry(definitions);',
   'const seaParameterCalculatorRegistry = definitions;'
 );
-const seaParameterCalculatorsBlock = `const __seaParameterCalculators=(()=>{\n${seaParameterPhysicsImports}\n${seaParameterCalculatorsSource}\nreturn {seaParameterCalculatorRegistry};\n})();\n\n`;
+const seaParameterCalculatorsBlock = `const __seaParameterCalculators=(()=>{\n${seaParameterPhysicsImports}\nconst {materials}=__calculators;\n${seaParameterCalculatorsSource}\nreturn {seaParameterCalculatorRegistry};\n})();\n\n`;
 const seaParameterDemosBlock = `const __seaParameterDemos=(()=>{\n${seaParameterPhysicsImports}\n${moduleSource(seaParameterDemosModule)}\nreturn {seaParameterPreviewSvg,mountSeaParameterDemo,seaParameterSupportedDemoIds};\n})();\n\n`;
 const extraCalculatorsStart = 'const __extraCalculators=(()=>{';
 if (standalone.includes(honeycombStart)) {

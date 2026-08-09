@@ -149,7 +149,7 @@ const close=(actual,expected,rel=1e-6)=>assert.ok(Math.abs(actual-expected)<=rel
 const evidenceCollection={plot:'plots',heatmap:'heatmaps',surface3d:'surfaces3d',table:'tables'};
 
 test('every catalog entry has a calculator and every default case runs',()=>{
-  assert.equal(catalog.length,113);
+  assert.equal(catalog.length,112);
   assert.deepEqual(catalog.filter(t=>!registry[t.id]),[]);
   assert.deepEqual(Object.keys(registry).filter(id=>!catalog.some(t=>t.id===id)),[]);
   for(const tool of catalog){
@@ -515,6 +515,64 @@ test('panel-cavity shares plate controls and leads with a labeled modal frequenc
   assert.match(cccc.assumptions.limitations.join(' '),/Rayleigh trial shapes/i);
 });
 
+test('modal density combines population screening with the structural and acoustic atlas',()=>{
+  assert.equal(registry['modal-density-atlas'],undefined);
+  assert.deepEqual(catalog.filter(tool=>tool.id.includes('modal-density')).map(tool=>tool.id),['modal-density']);
+  const calculator=registry['modal-density'],base=defaults('modal-density');
+  assert.equal(calculator.inputs.find(input=>input.key==='type').options.length,16);
+  assert.deepEqual(calculator.inputs.find(input=>input.key==='band_fraction').options.map(option=>option.value),['1','3','6']);
+  assert.deepEqual(calculator.inputs.find(input=>input.key==='material').options.map(option=>option.value),Object.keys(materials));
+  assert.equal(base.modulus,materials.aluminum.E/1e9);
+  assert.equal(base.density,materials.aluminum.rho);
+  assert.equal(base.poisson,materials.aluminum.nu);
+  const steel=calculator.syncPreset({...base,material:'steel'});
+  assert.equal(steel.modulus,materials.steel.E/1e9);
+  assert.equal(steel.density,materials.steel.rho);
+  assert.equal(steel.poisson,materials.steel.nu);
+
+  const plate=calculator.compute(base);
+  assert.ok(metric(plate,'Mode count below f')>metric(plate,'Modes in selected band'));
+  assert.equal(plate.presentation.primaryEvidence.type,'plot');
+  assert.match(plate.plots[0].title,/Panel modal-density atlas/);
+  assert.deepEqual(plate.plots[0].traceSelector,{label:'Modal densities to display',initial:'emphasis'});
+  assert.equal(plate.plots[0].traces.filter(trace=>trace.emphasis).length,1);
+  assert.equal(plate.plots[0].traces.length,6);
+  assert.equal(plate.plots[1].traces.length,2);
+  assert.equal(plate.tables[0].title,'ESA Appendix A formulation used');
+  assert.match(plate.tables[0].rows[0][0],/A\.03\(a\)/);
+  assert.match(calculator.references[0].title,/ESA PSS-03-204/);
+  assert.match(plate.plots[1].traces[0].name,/N\(f\)/);
+  assert.match(plate.plots[1].traces[1].name,/n\(f\)Δf/);
+  assert.ok(plate.plots[1].traces[0].y.every((value,index,values)=>index===0||value>=values[index-1]));
+
+  const octave=calculator.compute({...base,band_fraction:'1'}),sixth=calculator.compute({...base,band_fraction:'6'});
+  assert.ok(metric(octave,'Modes in selected band')>metric(sixth,'Modes in selected band'));
+  const acoustic=calculator.compute({...base,type:'acoustic-3d'}),beam=calculator.compute({...base,type:'beam-bending'});
+  assert.equal(acoustic.plots[0].traces.length,3);
+  assert.equal(beam.plots[0].traces.length,4);
+  assert.match(acoustic.plots[0].title,/Acoustic modal-density atlas/);
+  assert.match(beam.plots[0].title,/Beam and grid modal-density atlas/);
+  const shell=calculator.compute({...base,type:'stiffened-cylinder'});
+  assert.equal(shell.plots[0].traces.length,3);
+  assert.match(shell.plots[0].title,/Cylinder and frame modal-density atlas/);
+  assert.equal(shell.tables[1].rows.length,3);
+  for(const option of calculator.inputs.find(input=>input.key==='type').options){
+    const result=calculator.compute({...base,type:option.value});
+    assert.ok(Number.isFinite(metric(result,'Modal density'))&&metric(result,'Modal density')>0,`${option.value} must return a finite positive modal density`);
+  }
+  assert.equal(plate.relatedConcepts[0].href,'#/tool/modal-overlap');
+
+  const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
+  assert.match(appSource,/function initialChartTraceIndices/);
+  assert.match(appSource,/data-chart-trace-option/);
+  const indexedSvg=lineChartSvg({...plate.plots[0],traces:[{...plate.plots[0].traces[2],sourceIndex:2}]});
+  assert.match(indexedSvg,/data-legend-trace="2"/);
+  assert.match(indexedSvg,/data-chart-trace="2"/);
+  assert.match(appSource,/id==='modal-density-atlas'.*\/tool\/modal-density/);
+  assert.match(appSource,/params\.get\('structure'\)==='beam'\?'beam-bending':'plate-bending'/);
+  for(const legacy of ['E_gpa','rho','nu','thickness_mm'])assert.match(appSource,new RegExp(`'${legacy}'`));
+});
+
 test('every calculator result uses the shared card, plot, and table unit conversion',()=>{
   let convertedValues=0,convertedAxes=0,convertedColumns=0;
   for(const tool of catalog){
@@ -652,6 +710,61 @@ test('SEA parameter models preserve dimensional, reciprocity, power, and recover
   assert.ok(tight.installedNoiseReduction>leaky.installedNoiseReduction);
   const workbench=seaParameterWorkbenchState();
   assert.ok(workbench.externalPower>0&&workbench.energy>0&&workbench.provenance.length>=7);
+});
+
+test('ESA Appendix A modal-density formulations reproduce their published relations',()=>{
+  const E=70e9,rho=2700,nu=.33,length=2.4,width=1.4,thickness=.003,frequency=1000;
+  const common={E,modulus:E,rho,density:rho,nu,poisson:nu,length,width,thickness,frequency,memberWidth:.025,memberHeight:.04,totalMemberLength:12,frameCount:4,radius:1.8,bandsPerOctave:3};
+  const cPlate=Math.sqrt(E/(rho*(1-nu**2)));
+  const plate=modalDensityAtlasState({...common,type:'plate-bending'});
+  close(plate.modalDensity,length*width*Math.sqrt(3)/(thickness*cPlate),1e-11);
+  assert.equal(plate.sourceTopic,'A.03(a) Rectangular flat unstiffened panel');
+  const circular=modalDensityAtlasState({...common,type:'circular-plate'});
+  const irregular=modalDensityAtlasState({...common,type:'irregular-plate'});
+  close(circular.modalDensity/plate.modalDensity,8/Math.PI**2,1e-11);
+  close(irregular.modalDensity,plate.modalDensity,1e-11);
+
+  const memberArea=common.memberWidth*common.memberHeight;
+  const inertia=common.memberWidth*common.memberHeight**3/12;
+  const radiusGyration=Math.sqrt(inertia/memberArea);
+  const cLongitudinal=Math.sqrt(E/rho);
+  const beam=modalDensityAtlasState({...common,type:'beam-bending'});
+  close(beam.modalDensity,length/Math.sqrt(2*Math.PI*frequency*radiusGyration*cLongitudinal),1e-11);
+  const major=Math.max(common.memberWidth,common.memberHeight),minor=Math.min(common.memberWidth,common.memberHeight);
+  const torsionConstant=major*minor**3*(1/3-.21*minor/major*(1-minor**4/(12*major**4)));
+  const polarRadius=Math.sqrt((common.memberWidth**2+common.memberHeight**2)/12);
+  const shearSpeed=Math.sqrt(E/(2*(1+nu))/rho);
+  const torsion=modalDensityAtlasState({...common,type:'beam-torsion'});
+  close(torsion.modalDensity,2*length/shearSpeed*polarRadius*Math.sqrt(memberArea/torsionConstant),1e-11);
+  const grid=modalDensityAtlasState({...common,type:'grid-bending'});
+  close(grid.modalDensity,12/length*beam.modalDensity,1e-11);
+
+  const ringFrequency=cLongitudinal/(2*Math.PI*common.radius);
+  const frame=modalDensityAtlasState({...common,type:'hoop-frame'});
+  const expectedFrame=(memberArea*common.radius**2/inertia)**.25*common.radius/cLongitudinal*(frequency/ringFrequency)**-.5*2*Math.PI;
+  close(frame.modalDensity,expectedFrame,1e-11);
+
+  const surfaceArea=2*Math.PI*common.radius*length,scale=surfaceArea/(thickness*cPlate);
+  const low=modalDensityAtlasState({...common,type:'cylinder',frequency:.3*cPlate/(2*Math.PI*common.radius)});
+  const mid=modalDensityAtlasState({...common,type:'cylinder',frequency:.6*cPlate/(2*Math.PI*common.radius)});
+  close(low.modalDensity,5/Math.PI*Math.sqrt(.3)*scale,1e-11);
+  close(mid.modalDensity,7.2/Math.PI*.6*scale,1e-11);
+  const high=modalDensityAtlasState({...common,type:'cylinder',frequency:2*cPlate/(2*Math.PI*common.radius)});
+  assert.ok(Number.isFinite(high.modalDensity)&&high.modalDensity>0);
+  const highOctave=modalDensityAtlasState({...common,type:'cylinder',frequency:2*cPlate/(2*Math.PI*common.radius),bandsPerOctave:1});
+  assert.notEqual(highOctave.modalDensity,high.modalDensity);
+  const stiffCylinder=modalDensityAtlasState({...common,type:'stiffened-cylinder'});
+  const totalStringers=modalDensityAtlasState({...common,type:'beam-bending',length:common.totalMemberLength});
+  close(stiffCylinder.modalDensity,modalDensityAtlasState({...common,type:'cylinder'}).modalDensity+totalStringers.modalDensity+common.frameCount*frame.modalDensity,1e-10);
+  const stiffPanel=modalDensityAtlasState({...common,type:'stiffened-panel'});
+  close(stiffPanel.modalDensity,plate.modalDensity+totalStringers.modalDensity,1e-10);
+
+  const faceThickness=.0006,coreThickness=.0248,coreShearModulus=85e6,coreDensity=48;
+  const honeycomb=modalDensityAtlasState({...common,type:'honeycomb',faceThickness,coreThickness,coreShearModulus,coreDensity});
+  const d=coreThickness+faceThickness,B=d**2*E*faceThickness/2,g=coreShearModulus/coreThickness*2/(E*faceThickness),m=2*rho*faceThickness+coreDensity*coreThickness,omega=2*Math.PI*frequency;
+  const expectedHoneycomb=Math.PI*length*width*m/(g*B)*frequency*(1+(m*omega**2+2*g**2*B*(1-nu**2))/Math.sqrt(m**2*omega**4+4*m*omega**2*g**2*B*(1-nu**2)));
+  close(honeycomb.modalDensity,expectedHoneycomb,1e-10);
+  assert.equal(honeycomb.sourceTopic,'A.09 Flat honeycomb panel');
 });
 
 test('program-level launch models preserve limiting behavior and end-to-end directionality',()=>{
@@ -1299,7 +1412,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
   assert.match(html,/#\/demos/);
   assert.match(html,/#\/tools/);
   assert.match(html,/#\/case-studies/);
-  assert.match(html,/113 tools/);
+  assert.match(html,/112 tools/);
   assert.match(html,/66 case studies/);
   assert.doesNotMatch(html,/#\/hardware/);
   assert.doesNotMatch(html,/Guided workflows/);
@@ -1320,7 +1433,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes the demo takeaway runtime',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v63'/);
+  assert.match(worker,/const CACHE = 'sau-v66'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);

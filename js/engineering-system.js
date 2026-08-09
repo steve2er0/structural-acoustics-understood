@@ -58,7 +58,7 @@ export const hardwareTopics = Object.freeze([
       { title: 'Wet-Tank Hydroacoustic Atlas', href: '#/tool/wet-tank-dynamics' },
       { title: 'Shell Acoustics', href: '#/tool/shell-acoustics' },
       { title: 'Dynamic Stress Environment', href: '#/tool/dynamic-stress-environment' },
-      { title: 'Modal Density Atlas', href: '#/tool/modal-density-atlas' }
+      { title: 'Modal Density & Wave-Family Atlas', href: '#/tool/modal-density' }
     ],
     chapters: ['wet-tank-dynamics-deep-dive', 'shell-acoustics-deep-dive', 'structures-waves']
   },
@@ -235,7 +235,7 @@ const explicitHandoffs = Object.freeze({
   'vrs': ['extreme-response', 'qualification-test-planner', 'dynamic-stress-environment'],
   'srs': ['pyroshock', 'qualification-test-planner', 'dynamic-stress-environment'],
   'critical-frequency': ['elastic-panel-tl', 'radiation-efficiency-atlas', 'wave-matching-atlas'],
-  'modal-density-atlas': ['sea-validity-confidence', 'launch-vibroacoustic-capstone', 'hybrid-method-selection'],
+  'modal-density': ['sea-validity-confidence', 'launch-vibroacoustic-capstone', 'hybrid-method-selection'],
   'sea-validity-confidence': ['launch-vibroacoustic-capstone', 'experimental-sea', 'model-test-correlation'],
   'model-test-correlation': ['uncertainty-sensitivity', 'credibility-scorecard', 'mission-environment-timeline'],
   'qualification-test-planner': ['mimo-test-control', 'model-test-correlation', 'credibility-scorecard'],

@@ -164,7 +164,7 @@ export const subjectWheel = [
       'equivalent-sea-source-power', 'sea-response-recovery-concentration', 'installed-fairing-sea-parameters'
     ],
     demoIds: ['sea-flow', 'sea-validity-map', 'branching-sea-network', 'sea-parameter-chain'],
-    toolIds: ['two-subsystem-sea', 'multi-subsystem-sea', 'modal-density-atlas', 'sea-validity-confidence', 'sea-parameter-workbench', 'launch-vibroacoustic-capstone'],
+    toolIds: ['two-subsystem-sea', 'multi-subsystem-sea', 'modal-density', 'sea-validity-confidence', 'sea-parameter-workbench', 'launch-vibroacoustic-capstone'],
     caseStudyIds: [
       'sea-readiness', 'honeycomb-junctions-exp-sea', 'clf-not-a-percentage',
       'acs519-sea-validity-deep-dive', 'acs519-double-panel-sea-deep-dive',

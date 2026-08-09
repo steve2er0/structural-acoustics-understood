@@ -15,7 +15,7 @@ const modules = [
     source: 'SEA_parameters_revAB introduction and Appendices A–T'
   },
   {
-    id: 'modal-density-wave-regime-atlas', number: '59', caseNumber: '62', toolId: 'modal-density-atlas', demoId: 'modal-density-regime-map',
+    id: 'modal-density-wave-regime-atlas', number: '59', caseNumber: '62', toolId: 'modal-density', demoId: 'modal-density-regime-map',
     title: 'Structural & Acoustic Modal-Density Atlas', eyebrow: 'Count the right wave family',
     summary: 'Compare one-, two-, and three-dimensional acoustic density with beam, plate, honeycomb, in-plane, circular-panel, and shell mode populations.',
     equation: 'Nband=n(f)Δf;  M=n(f)ηf',
@@ -102,7 +102,6 @@ export const seaParameterSections = modules.map(module => ({
 
 export const seaParameterToolCatalog = [
   { id: 'sea-parameter-workbench', title: 'SEA Parameter Workbench', category: 'SEA & Energy', description: 'Build a traceable geometry-to-modal-density-to-loss-to-coupling-to-power-to-response parameter chain.', complexity: 'Advanced', keywords: ['SEA parameters', 'provenance', 'launch vehicle', 'uncertainty'] },
-  { id: 'modal-density-atlas', title: 'Structural & Acoustic Modal-Density Atlas', category: 'SEA & Energy', description: 'Compare 1D/2D/3D acoustic, beam, plate, in-plane, circular, honeycomb, and cylindrical modal density.', complexity: 'Advanced', keywords: ['modal density', 'Weyl', 'honeycomb', 'cylinder'] },
   { id: 'sea-impedance-library', title: 'SEA Driving-Point Impedance Library', category: 'SEA & Energy', description: 'Calculate analytical plate, shell, rod, and high-frequency driving-point mobility and injected force power.', complexity: 'Core', keywords: ['mobility', 'impedance', 'conductance', 'point force'] },
   { id: 'clf-mechanism-library', title: 'CLF Mechanism Library', category: 'SEA & Energy', description: 'Derive reciprocal CLFs for beams, plates, point bridges, bolts, line joints, radiation, and fairing mass-law paths.', complexity: 'Advanced', keywords: ['CLF', 'reciprocity', 'junction', 'radiation coupling'] },
   { id: 'equivalent-power-injection', title: 'Equivalent SEA Power Injection', category: 'SEA & Energy', description: 'Convert diffuse acoustic, TBL, Corcos, and point-force environments into watts per analysis band.', complexity: 'Advanced', keywords: ['equivalent power', 'TBL', 'Corcos', 'diffuse field'] },
@@ -115,7 +114,7 @@ export const seaParameterToolCatalog = [
 
 export const seaParameterDemos = [
   { id: 'sea-parameter-chain', title: 'Build the SEA Parameter Chain', description: 'Move from launch-vehicle construction and environment through derived parameters, stored energy, and recovered response.', topic: 'SEA Parameters', toolId: 'sea-parameter-workbench' },
-  { id: 'modal-density-regime-map', title: 'Watch Modal Density Change Regime', description: 'Switch wave family and frequency while modes per band, overlap, and dimensional transitions move together.', topic: 'Modal Density', toolId: 'modal-density-atlas' },
+  { id: 'modal-density-regime-map', title: 'Watch Modal Density Change Regime', description: 'Switch wave family and frequency while modes per band, overlap, and dimensional transitions move together.', topic: 'Modal Density', toolId: 'modal-density' },
   { id: 'sea-driving-point-mobility', title: 'Where a Force Enters the SEA Model', description: 'Compare plate center, edge, shell, rod, and high-frequency conductance as force becomes band power.', topic: 'Mobility', toolId: 'sea-impedance-library' },
   { id: 'sea-coupling-mechanisms', title: 'Build a CLF from the Physical Junction', description: 'Change point, line, bolt, frame, radiation, and mass-law mechanisms while reciprocal directional CLFs update.', topic: 'SEA Coupling', toolId: 'clf-mechanism-library' },
   { id: 'environment-to-sea-power', title: 'Turn Pressure and Force into SEA Watts', description: 'Compare diffuse, TBL, Corcos, and point-force power accepted by the same launch-vehicle panel.', topic: 'SEA Excitation', toolId: 'equivalent-power-injection' },

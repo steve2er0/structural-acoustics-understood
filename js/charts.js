@@ -123,22 +123,24 @@ export function lineChartSvg(plot, { width = 840, height = 390 } = {}) {
   s += `<line x1="${m.left}" x2="${m.left+innerW}" y1="${m.top+innerH}" y2="${m.top+innerH}" stroke="#172027"/><line x1="${m.left}" x2="${m.left}" y1="${m.top}" y2="${m.top+innerH}" stroke="#172027"/>`;
   s += `<g clip-path="url(#${clipId})">`;
   (plot.traces ?? []).forEach((t, i) => {
-    const color = t.color || palette[i % palette.length];
+    const traceIndex = Number.isInteger(t.sourceIndex) ? t.sourceIndex : i;
+    const color = t.color || palette[traceIndex % palette.length];
     const path = pathFromTrace(t, sx, sy, xLog, yLog);
-    if (path&&!t.hideLine) s += `<path data-chart-trace="${i}"${harmonic?' data-chart-animated-path="true" vector-effect="non-scaling-stroke"':''} d="${path}" fill="none" stroke="${color}" stroke-width="${t.emphasis ? 3 : 2}" stroke-linejoin="round" stroke-linecap="round" ${t.dash ? 'stroke-dasharray="7 5"' : ''}/>`;
+    if (path&&!t.hideLine) s += `<path data-chart-trace="${traceIndex}"${harmonic?' data-chart-animated-path="true" vector-effect="non-scaling-stroke"':''} d="${path}" fill="none" stroke="${color}" stroke-width="${t.emphasis ? 3 : 2}" stroke-linejoin="round" stroke-linecap="round" ${t.dash ? 'stroke-dasharray="7 5"' : ''}/>`;
     const count=Math.min(t.x?.length??0,t.y?.length??0),step=Math.max(1,Math.ceil(count/80));
-    for(let point=0;point<count;point+=step){const x=Number(t.x[point]),y=Number(t.y[point]);if(!Number.isFinite(x)||!Number.isFinite(y)||(xLog&&x<=0)||(yLog&&y<=0))continue;const cx=sx(x).toFixed(2),cy=sy(y).toFixed(2),pointLabel=t.pointLabels?.[point]||t.name||`Trace ${i+1}`;if(t.showPoints)s+=`<circle data-chart-visible-point="${i}" cx="${cx}" cy="${cy}" r="${Number(t.pointRadius)||4.5}" fill="${color}" stroke="#fff" stroke-width="1.5" pointer-events="none"/>`;s+=`<circle data-chart-trace="${i}" cx="${cx}" cy="${cy}" r="7" fill="transparent" stroke="transparent" pointer-events="all"><title>${escapeHtml(pointLabel)} · ${escapeHtml(plot.xLabel||'x')}: ${escapeHtml(formatNumber(x))} · ${escapeHtml(plot.yLabel||'y')}: ${escapeHtml(formatNumber(y))}</title></circle>`;}
+    for(let point=0;point<count;point+=step){const x=Number(t.x[point]),y=Number(t.y[point]);if(!Number.isFinite(x)||!Number.isFinite(y)||(xLog&&x<=0)||(yLog&&y<=0))continue;const cx=sx(x).toFixed(2),cy=sy(y).toFixed(2),pointLabel=t.pointLabels?.[point]||t.name||`Trace ${i+1}`;if(t.showPoints)s+=`<circle data-chart-visible-point="${traceIndex}" cx="${cx}" cy="${cy}" r="${Number(t.pointRadius)||4.5}" fill="${color}" stroke="#fff" stroke-width="1.5" pointer-events="none"/>`;s+=`<circle data-chart-trace="${traceIndex}" cx="${cx}" cy="${cy}" r="7" fill="transparent" stroke="transparent" pointer-events="all"><title>${escapeHtml(pointLabel)} · ${escapeHtml(plot.xLabel||'x')}: ${escapeHtml(formatNumber(x))} · ${escapeHtml(plot.yLabel||'y')}: ${escapeHtml(formatNumber(y))}</title></circle>`;}
   });
   s += `</g>`;
   s += `<text x="${m.left + innerW/2}" y="${height - 12}" text-anchor="middle" font-family="ui-sans-serif,system-ui" font-size="11" fill="#5f6b70">${escapeHtml(plot.xLabel || '')}</text>`;
   s += `<text x="16" y="${m.top + innerH/2}" text-anchor="middle" transform="rotate(-90 16 ${m.top + innerH/2})" font-family="ui-sans-serif,system-ui" font-size="11" fill="#5f6b70">${escapeHtml(plot.yLabel || '')}</text>`;
   let lx = m.left + 8, ly = 42;
   (plot.traces ?? []).forEach((t, i) => {
-    const color = t.color || palette[i % palette.length];
+    const traceIndex = Number.isInteger(t.sourceIndex) ? t.sourceIndex : i;
+    const color = t.color || palette[traceIndex % palette.length];
     const label = String(t.name || `Trace ${i+1}`);
     const itemW = Math.max(90, label.length * 6.3 + 36);
     if (lx + itemW > m.left + innerW) { lx = m.left + 8; ly += 19; }
-    s += `<g data-legend-trace="${i}" role="button" tabindex="0" style="cursor:pointer"><line x1="${lx}" x2="${lx+19}" y1="${ly}" y2="${ly}" stroke="${color}" stroke-width="2.5" ${t.dash ? 'stroke-dasharray="6 4"' : ''}/><text x="${lx+25}" y="${ly+3}" font-family="ui-sans-serif,system-ui" font-size="10" fill="#344047">${escapeHtml(label)}</text><title>Toggle ${escapeHtml(label)}</title></g>`;
+    s += `<g data-legend-trace="${traceIndex}" role="button" tabindex="0" style="cursor:pointer"><line x1="${lx}" x2="${lx+19}" y1="${ly}" y2="${ly}" stroke="${color}" stroke-width="2.5" ${t.dash ? 'stroke-dasharray="6 4"' : ''}/><text x="${lx+25}" y="${ly+3}" font-family="ui-sans-serif,system-ui" font-size="10" fill="#344047">${escapeHtml(label)}</text><title>Toggle ${escapeHtml(label)}</title></g>`;
     lx += itemW;
   });
   s += `</svg>`;

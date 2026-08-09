@@ -1711,13 +1711,16 @@ export const toolCatalog = [
   },
   {
     "id": "modal-density",
-    "title": "Modal Density",
+    "title": "Modal Density & Wave-Family Atlas",
     "category": "SEA & Energy",
-    "description": "Estimate beam or plate mode count, modal density, average spacing, and band populations.",
-    "complexity": "Core",
+    "description": "Calculate mode count, density, spacing, band population, and overlap while comparing acoustic, beam, plate, honeycomb, and cylindrical wave families.",
+    "complexity": "Advanced",
     "keywords": [
       "modal density",
-      "mode count"
+      "mode count",
+      "Weyl",
+      "honeycomb",
+      "cylinder"
     ]
   },
   {

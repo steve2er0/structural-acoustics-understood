@@ -1,5 +1,6 @@
 /* Calculators for the SEA parameter handbook expansion. */
 import { createEngineeringRegistry } from './engineering-results.js';
+import { materials } from './calculators.js';
 import {
   SEA_PARAMETER_PRESETS,
   clfMechanismState,
@@ -34,6 +35,27 @@ const materialInputs = [
 ];
 
 const materialValues = values => ({ length: values.length, width: values.width, thickness: mm(values.thickness), modulus: gpa(values.modulus), density: values.density, poisson: values.poisson });
+const materialOptions = Object.entries(materials).map(([value, material]) => ({ value, label: material.label }));
+const modalDensityMaterialInputs = materialInputs.map(input => ({ ...input, default: input.key === 'modulus' ? materials.aluminum.E / 1e9 : input.key === 'density' ? materials.aluminum.rho : input.key === 'poisson' ? materials.aluminum.nu : input.default }));
+const syncModalDensityMaterial = values => {
+  const material = materials[values.material] || materials.aluminum;
+  return { ...values, modulus: material.E / 1e9, density: material.rho, poisson: material.nu };
+};
+const modalDensityTypeOptions = [
+  { value: 'acoustic-1d', label: 'Acoustic 1D pipe' }, { value: 'acoustic-2d', label: 'Acoustic 2D cavity' }, { value: 'acoustic-3d', label: 'Acoustic 3D cavity' },
+  { value: 'beam-bending', label: 'Beam transverse bending' }, { value: 'beam-torsion', label: 'Beam torsion' }, { value: 'beam-longitudinal', label: 'Beam longitudinal · supplementary' }, { value: 'grid-bending', label: 'Grid structure bending' },
+  { value: 'plate-bending', label: 'Rectangular flat panel' }, { value: 'circular-plate', label: 'Circular flat panel' }, { value: 'irregular-plate', label: 'Irregular flat panel' }, { value: 'stiffened-panel', label: 'Stiffened panel' }, { value: 'honeycomb', label: 'Flat honeycomb panel' }, { value: 'plate-inplane', label: 'Plate in-plane · supplementary' },
+  { value: 'cylinder', label: 'Unstiffened cylinder' }, { value: 'stiffened-cylinder', label: 'Stiffened cylinder' }, { value: 'hoop-frame', label: 'Hoop / frame' }
+];
+const modalDensityLabels = Object.fromEntries(modalDensityTypeOptions.map(option => [option.value, option.label]));
+const modalDensityComparisonGroups = {
+  acoustic: ['acoustic-1d', 'acoustic-2d', 'acoustic-3d'],
+  beam: ['beam-bending', 'beam-torsion', 'beam-longitudinal', 'grid-bending'],
+  panel: ['plate-bending', 'circular-plate', 'irregular-plate', 'stiffened-panel', 'honeycomb', 'plate-inplane'],
+  shell: ['cylinder', 'stiffened-cylinder', 'hoop-frame']
+};
+const modalDensityGroup = type => type.startsWith('acoustic-') ? 'acoustic' : type.startsWith('beam-') || type === 'grid-bending' ? 'beam' : type.includes('cylinder') || type === 'hoop-frame' ? 'shell' : 'panel';
+const modalDensityGroupLabel = group => group === 'acoustic' ? 'Acoustic' : group === 'beam' ? 'Beam and grid' : group === 'shell' ? 'Cylinder and frame' : 'Panel';
 
 const definitions = {
   'sea-parameter-workbench': {
@@ -76,41 +98,66 @@ const definitions = {
     }
   },
 
-  'modal-density-atlas': {
+  'modal-density': {
     category: 'SEA & Energy',
-    basis: 'One-, two-, and three-dimensional acoustic and structural modal-density relations',
-    confidence: 'Analytical asymptotic relations with stated boundary and wave-family assumptions',
+    basis: 'ESA PSS-03-204 Appendix A modal-density formulations and integrated modal population',
+    confidence: 'Source-traceable analytical relations with explicit specializations',
+    relatedLinks: [
+      { title: 'Modal Overlap & SEA Check', description: 'Use the calculated density with damping to interpret isolated, transitional, and overlapping response.', href: '#/tool/modal-overlap' },
+      { title: 'SEA Validity & Confidence', description: 'Place modal population and overlap inside a broader SEA applicability screen.', href: '#/tool/sea-validity-confidence' },
+      { title: 'Vibroacoustic Method Planner', description: 'Choose deterministic, hybrid, or statistical treatment by frequency.', href: '#/tool/hybrid-method-selection' }
+    ],
     inputs: [
-      { key: 'type', label: 'Subsystem / wave family', type: 'select', default: 'plate-bending', options: [
-        { value: 'acoustic-1d', label: 'Acoustic 1D pipe' }, { value: 'acoustic-2d', label: 'Acoustic 2D cavity' }, { value: 'acoustic-3d', label: 'Acoustic 3D cavity' },
-        { value: 'beam-bending', label: 'Beam bending' }, { value: 'beam-longitudinal', label: 'Beam longitudinal' }, { value: 'plate-bending', label: 'Rectangular plate bending' },
-        { value: 'plate-inplane', label: 'Plate in-plane' }, { value: 'circular-plate', label: 'Circular plate bending' }, { value: 'honeycomb', label: 'Honeycomb sandwich' }, { value: 'cylinder', label: 'Unstiffened cylinder' }
-      ] },
-      { key: 'boundary', label: 'Plate boundary', type: 'select', default: 'simply-supported', options: [{ value: 'generic', label: 'Asymptotic / generic' }, { value: 'simply-supported', label: 'Simply supported' }, { value: 'free', label: 'Free' }, { value: 'clamped', label: 'Fully clamped' }] },
+      { key: 'type', label: 'Subsystem / wave family', type: 'select', default: 'plate-bending', options: modalDensityTypeOptions },
       { key: 'frequency', label: 'Band center frequency', unit: 'Hz', type: 'number', default: 1000, min: 1 },
+      { key: 'band_fraction', label: 'Analysis band', type: 'select', default: '3', options: [{ value: '1', label: 'Octave' }, { value: '3', label: 'Third octave' }, { value: '6', label: 'Sixth octave' }] },
       { key: 'loss_factor', label: 'Loss factor', type: 'number', default: 0.02, min: 0.000001 },
       { key: 'height', label: 'Cavity height / depth', unit: 'm', type: 'number', default: 1.5, min: 0.001 },
       { key: 'radius', label: 'Cylinder radius', unit: 'm', type: 'number', default: 1.8, min: 0.01 },
       { key: 'sound_speed', label: 'Acoustic sound speed', unit: 'm/s', type: 'number', default: 343, min: 1 },
-      ...materialInputs,
+      { key: 'material', label: 'Material preset', type: 'select', default: 'aluminum', options: materialOptions, help: 'Preset values populate the editable elastic properties below.' },
+      ...modalDensityMaterialInputs,
+      { key: 'member_width', label: 'Beam / stiffener section width', unit: 'mm', type: 'number', default: 25, min: 0.01 },
+      { key: 'member_height', label: 'Beam / stiffener section height', unit: 'mm', type: 'number', default: 25, min: 0.01 },
+      { key: 'total_member_length', label: 'Total stringer / grid-member length', unit: 'm', type: 'number', default: 12, min: 0 },
+      { key: 'frame_count', label: 'Number of identical hoop frames', type: 'number', default: 4, min: 0 },
       { key: 'face_thickness', label: 'Honeycomb face thickness', unit: 'mm', type: 'number', default: 0.6, min: 0.01 },
       { key: 'core_thickness', label: 'Honeycomb core thickness', unit: 'mm', type: 'number', default: 24.8, min: 0.1 },
-      { key: 'core_shear', label: 'Core shear modulus', unit: 'MPa', type: 'number', default: 85, min: 0.01 }
+      { key: 'core_shear', label: 'Core shear modulus', unit: 'MPa', type: 'number', default: 85, min: 0.01 },
+      { key: 'core_density', label: 'Honeycomb core density', unit: 'kg/m³', type: 'number', default: 48, min: 0.01 }
     ],
-    theory: '<p>Modal density counts resonances per hertz for a selected wave family. Dimensionality, boundary corrections, shear dispersion, curvature, and wave type determine whether the density is constant, rises with frequency, or changes regime.</p>',
-    assumptions: ['Uniform subsystem geometry and material properties.', 'Asymptotic mode counting rather than exact low-order eigensolutions.', 'Each wave family is counted consistently and not combined without an explicit energy model.'],
-    example: 'Move an acoustic gap from 2D to 3D at its cross-gap cut-on, or compare plate bending with plate in-plane density in the same fairing bay.',
+    syncPreset: syncModalDensityMaterial,
+    theory: '<p>The selected relations are extracted from ESA PSS-03-204 Issue 1 (1996), Appendix A, Topics A.03–A.09 and A.13–A.14. Modal density n(f)=dN/df counts resonances per hertz, N(f) counts modes below a frequency, and n(f)Δf estimates the population inside the selected fractional-octave band. The cylinder relation is piecewise about ring frequency and its high-frequency branch uses the selected bandwidth factor F. Stiffened panels and cylinders sum the constituent skin, stringer, and frame densities exactly as prescribed by Topics A.07–A.08.</p><p>Topics A.10–A.12 describe curved sandwich shells through specialist numerical integrations and refer to the manual’s Ref. [10] for the full model. They are retained in the source coverage below but are not exposed as calculators until their additional material directions, curvature terms, and singularity treatment can be represented without guessing.</p>',
+    assumptions: ['Uniform geometry and material properties within every constituent.', 'Asymptotic mode counting rather than exact low-order eigensolutions.', 'Beam, stiffener, grid, and frame members use one solid rectangular section.', 'The honeycomb implementation specializes the orthotropic-core relation to identical isotropic faces and Gx=Gy.', 'Each wave family is counted consistently and constituent densities are combined only where Appendix A explicitly prescribes a sum.'],
+    example: 'Compare an unstiffened panel with the same panel plus 12 m of stringer, then compare an unstiffened cylinder with the constituent-sum stiffened cylinder near its ring frequency.',
+    references: [
+      { title: 'ESA PSS-03-204 Issue 1 (1996) — Structural Acoustics Design Manual, Appendix A', note: 'Topics A.03–A.09 and A.13–A.14 provide the implemented GENSTEP3 modal-density relations for panels, members, frames, cylinders, honeycomb construction, grids, and acoustic cavities.' },
+      { title: 'ESA PSS-03-204 Appendix A, Topics A.10–A.12', note: 'Curved and double-curved sandwich-shell relations require the specialist numerical models and definitions cited by the manual as Ref. [10]; they are documented here but intentionally not approximated as selectable cases.' }
+    ],
     compute(values) {
-      const state = modalDensityAtlasState({ ...materialValues(values), type: values.type, boundary: values.boundary, frequency: values.frequency, lossFactor: values.loss_factor, height: values.height, radius: values.radius, soundSpeed: values.sound_speed, faceThickness: mm(values.face_thickness), coreThickness: mm(values.core_thickness), coreShearModulus: Number(values.core_shear) * 1e6 });
+      const bandsPerOctave = Number(values.band_fraction) || 3;
+      const common = { ...materialValues(values), frequency: values.frequency, bandsPerOctave, lossFactor: values.loss_factor, height: values.height, radius: values.radius, soundSpeed: values.sound_speed, memberWidth: mm(values.member_width), memberHeight: mm(values.member_height), totalMemberLength: values.total_member_length, frameCount: values.frame_count, faceThickness: mm(values.face_thickness), coreThickness: mm(values.core_thickness), coreShearModulus: Number(values.core_shear) * 1e6, coreDensity: values.core_density };
+      const state = modalDensityAtlasState({ ...common, type: values.type });
+      const group = modalDensityGroup(state.type);
+      const comparisonTypes = modalDensityComparisonGroups[group];
+      const comparisonStates = comparisonTypes.map(type => type === state.type ? state : modalDensityAtlasState({ ...common, type }));
       const warnings = [];
-      if (state.modesInBand < 5) warnings.push('Fewer than five modes occupy the one-third-octave band; use exact modes or hybrid FE–SEA evidence near this frequency.');
+      if (state.modesInBand < 5) warnings.push(`Fewer than five modes occupy the selected ${bandsPerOctave===1?'octave':bandsPerOctave===6?'sixth-octave':'third-octave'} band; use exact modes or hybrid FE–SEA evidence near this frequency.`);
       if (state.transitionFrequency && Math.abs(Math.log2(state.frequency / state.transitionFrequency)) < 0.5) warnings.push('The selected band lies within half an octave of a dimensional, shear, or ring-frequency transition; bracket both adjacent models.');
+      if (state.sourceTopic === 'Supplementary wave family') warnings.push('This comparison family is retained from the earlier atlas; it is not presented as an ESA Appendix A formulation.');
+      const tables = [{ title: 'ESA Appendix A formulation used', columns: ['Source topic', 'Implemented relation', 'Model specialization'], rows: [[state.sourceTopic, state.sourceRelation, state.specialization]] }];
+      if (state.components.length) tables.push({ title: 'Constituent modal-density sum', columns: ['Constituent', 'Modal density (modes/Hz)', 'Share of total'], rows: state.components.map(([name, density]) => [name, density, density / state.modalDensity]) });
       return {
-        values: [stat('Modal density', state.modalDensity, 'modes/Hz'), stat('Average modal spacing', state.averageSpacing, 'Hz'), stat('Modes in one-third-octave band', state.modesInBand), stat('Modal overlap', state.modalOverlap), stat('Wave speed', state.waveSpeed, 'm/s'), stat('Wavelength', state.wavelength, 'm'), stat('Dimensionality', `${state.dimension}D`), stat('Transition frequency', state.transitionFrequency ?? 'Not defined', state.transitionFrequency ? 'Hz' : '')],
-        interpretation: `${state.basis} gives ${state.modalDensity.toExponential(3)} modes/Hz and ${state.modesInBand.toFixed(2)} modes in the selected band. This is a ${state.readiness}.`,
-        engineeringConsiderations: launchConsiderations('Partition fairing cavities, shells, honeycomb bays, beams, decks, and in-plane junction waves separately; one subsystem can be statistically dense in bending and sparse in extension at the same frequency.'),
+        values: [stat('Mode count below f', state.modeCountBelow, 'modes'), stat('Modal density', state.modalDensity, 'modes/Hz'), stat('Average modal spacing', state.averageSpacing, 'Hz'), stat('Modes in selected band', state.modesInBand, 'modes'), stat('Modal overlap', state.modalOverlap), stat('Band limits', `${state.bandLow.toFixed(1)}–${state.bandHigh.toFixed(1)}`, 'Hz'), stat('Wave speed', state.waveSpeed, 'm/s'), stat('Wavelength', state.wavelength, 'm'), stat('Dimensionality', `${state.dimension}D`), stat('Transition frequency', state.transitionFrequency ?? 'Not defined', state.transitionFrequency ? 'Hz' : '')],
+        interpretation: { summary: `${state.sourceTopic}: ${state.basis} gives ${state.modalDensity.toExponential(3)} modes/Hz, approximately ${state.modeCountBelow.toFixed(1)} modes below ${state.frequency.toFixed(0)} Hz, and ${state.modesInBand.toFixed(2)} modes in the selected band. This is a ${state.readiness}.`, physicalMeaning: `The first plot compares the selected ${modalDensityLabels[state.type].toLowerCase()} family with the closest structural or acoustic cases using the same nominal inputs. The second plot separates cumulative population N(f) from local band population n(f)Δf. Modal density measures average spectral crowding; it does not predict individual resonance locations or response amplitude. The formulation table records exactly which ESA appendix topic and specialization produced the curve.` },
+        engineeringConsiderations: launchConsiderations('Use the ESA relation that matches the actual subsystem construction, and retain separate constituent densities where the manual prescribes a stiffened-panel or stiffened-cylinder sum.'),
         warnings,
-        plots: [{ title: 'Modal-density atlas', xLabel: 'Frequency (Hz)', yLabel: 'Modal density (modes/Hz)', xScale: 'log', yScale: 'log', traces: [trace(state.basis, state.frequencies, state.curve, { emphasis: true })] }]
+        plots: [
+          { title: `${modalDensityGroupLabel(group)} modal-density atlas`, xLabel: 'Frequency (Hz)', yLabel: 'Modal density (modes/Hz)', xScale: 'log', yScale: 'log', traceSelector: { label: 'Modal densities to display', initial: 'emphasis' }, traces: comparisonStates.map(item => trace(modalDensityLabels[item.type], item.frequencies, item.curve, { emphasis: item.type === state.type })) },
+          { title: `${modalDensityLabels[state.type]} modal population`, xLabel: 'Frequency (Hz)', yLabel: 'Mode count', xScale: 'log', yScale: 'log', traces: [trace('Modes below frequency N(f)', state.frequencies, state.countCurve), trace('Modes in selected band n(f)Δf', state.frequencies, state.modesInBandCurve, { emphasis: true })] }
+        ],
+        tables,
+        presentation: { primaryEvidence: { type: 'plot', index: 0 }, primaryEvidenceCount: 1, primaryValueCount: 6 }
       };
     }
   },

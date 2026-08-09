@@ -323,6 +323,19 @@ function renderNotFound(title='Page not found',text='That route does not exist.'
 
 function collectForm(form){const values={},system=form.querySelector('[data-unit-system]')?.value||'SI';form.querySelectorAll('[data-key]').forEach(el=>values[el.dataset.key]=el.matches('input[type="number"],input[type="range"]')?fromDisplayNumber(el.value,el.dataset.nativeUnit,system):el.value);return values;}
 function renderTable(table,{primary=false,index=-1}={}){return `<div class="result-block${primary?' result-block-primary':''}" data-result-section="table"${index>=0?` data-table="${index}"`:''}><h3>${esc(table.title||'Results table')}</h3><div class="table-wrap"><table><thead><tr>${(table.columns||[]).map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${(table.rows||[]).map(row=>`<tr>${row.map((v,i)=>`<td>${i===0&&typeof v==='string'?esc(v):esc(formatNumber(v))}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;}
+function initialChartTraceIndices(plot){
+  const traces=plot.traces||[];
+  if(!plot.traceSelector)return traces.map((_,index)=>index);
+  if(plot.traceSelector.initial==='emphasis'){
+    const emphasized=traces.map((trace,index)=>trace.emphasis?index:-1).filter(index=>index>=0);
+    if(emphasized.length)return emphasized;
+  }
+  return traces.map((_,index)=>index);
+}
+function chartPlotForIndices(plot,indices){
+  const active=new Set(indices);
+  return {...plot,traces:(plot.traces||[]).map((trace,index)=>({...trace,sourceIndex:index})).filter(trace=>active.has(trace.sourceIndex))};
+}
 function renderResult(result,meta){
   const valueHtml=s=>`<div class="result-stat ${esc(s.tone||s.status||'')}"><small>${esc(s.label)}</small><strong>${esc(formatNumber(s.value))}</strong>${s.unit?`<span class="unit">${esc(s.unit)}</span>`:''}${s.note?`<div class="field-help">${esc(s.note)}</div>`:''}</div>`;
   const primaryValueCount=result.presentation?.primaryValueCount||Math.min(6,result.values.length);
@@ -334,7 +347,11 @@ function renderResult(result,meta){
   const assumptionCard=`<article class="commentary-card commentary-card-wide"><h3>Model assumptions</h3><ul class="commentary-list assumption-list">${assumptions}</ul>${limitations?`<h4>Model limitations</h4><ul class="commentary-list limitation-list">${limitations}</ul>`:''}</article>`;
   const alertBlock=alerts?`<section class="result-alerts" aria-label="Active result alerts"><h3>Active alerts</h3><ul>${alerts}</ul></section>`:'';
   const commentary=`<section class="engineering-commentary" data-result-section="explanation" aria-label="Engineering commentary"><article class="commentary-lead"><p class="commentary-label">Engineering interpretation</p><p>${esc(result.interpretation.summary)}</p><h3>Physical meaning</h3><p>${esc(result.interpretation.physicalMeaning)}</p></article>${alertBlock}<div class="commentary-grid">${assumptionCard}</div></section>`;
-  const renderPlot=(p,i,primary=false)=>{const svg=lineChartSvg(p);return `<div class="result-block${primary?' result-block-primary':''}" data-result-section="plot"><div class="chart-toolbar"><button data-chart-data="${i}">View data</button><button data-chart-csv="${i}">Download CSV</button><button data-chart-svg="${i}">Download SVG</button><button data-chart-png="${i}">Download PNG</button></div><div class="chart-shell site-chart-container" data-chart="${i}">${svg}</div><div class="chart-data-panel" data-chart-data-panel="${i}" hidden></div></div>`;};
+  const renderPlot=(p,i,primary=false)=>{
+    const initialIndices=initialChartTraceIndices(p),svg=lineChartSvg(chartPlotForIndices(p,initialIndices));
+    const selector=p.traceSelector&&p.traces?.length>1?`<fieldset class="chart-trace-selector" data-chart-trace-selector="${i}"><legend>${esc(p.traceSelector.label||'Curves to display')}</legend><div class="chart-trace-options">${p.traces.map((trace,index)=>`<label><input type="checkbox" data-chart-trace-option="${index}" ${initialIndices.includes(index)?'checked':''}/><span>${esc(trace.name||`Trace ${index+1}`)}</span></label>`).join('')}</div><div class="chart-trace-actions"><button type="button" class="button-quiet" data-chart-trace-all>Show all</button><button type="button" class="button-quiet" data-chart-trace-current>Current only</button></div><small>Choose one or more curves. The axes rescale to the visible modal densities.</small></fieldset>`:'';
+    return `<div class="result-block${primary?' result-block-primary':''}" data-result-section="plot">${selector}<div class="chart-toolbar"><button data-chart-data="${i}">View data</button><button data-chart-csv="${i}">Download CSV</button><button data-chart-svg="${i}">Download SVG</button><button data-chart-png="${i}">Download PNG</button></div><div class="chart-shell site-chart-container" data-chart="${i}">${svg}</div><div class="chart-data-panel" data-chart-data-panel="${i}" hidden></div></div>`;
+  };
   const renderHeatmap=(h,i,primary=false)=>`<div class="result-block${primary?' result-block-primary':''}" data-result-section="heatmap"><div class="chart-toolbar"><button data-heatmap-svg="${i}">Download SVG</button><button data-heatmap-png="${i}">Download PNG</button></div><div class="chart-shell site-chart-container" data-heatmap="${i}">${heatmapSvg(h)}</div></div>`;
   const renderSurface3d=(surface,i,primary=false)=>`<div class="result-block${primary?' result-block-primary':''}" data-result-section="surface3d"><div class="chart-toolbar"><button data-surface3d-svg="${i}">Download SVG</button><button data-surface3d-png="${i}">Download PNG</button></div><div class="chart-shell surface3d-shell site-chart-container" data-surface3d="${i}">${surface3dSvg(surface)}</div></div>`;
   const evidence=result.presentation?.primaryEvidence;
@@ -449,18 +466,27 @@ function bindHarmonicAnimation(result){
 function bindResultActions(result,meta,canonicalResult=result){
   document.querySelector('[data-action="download-csv"]')?.addEventListener('click',()=>downloadCsv(result.csv));
   (result.plots||[]).forEach((p,i)=>{
-    const svg=lineChartSvg(p);
-    const rows=(p.traces||[]).flatMap(trace=>(trace.x||[]).map((x,index)=>[trace.name||'Trace',x,trace.y?.[index]]));
-    const chartCsv={filename:`${slug(meta.title)}-${i+1}.csv`,columns:['trace',p.xLabel||'x',p.yLabel||'y'],rows};
-    document.querySelector(`[data-chart-svg="${i}"]`)?.addEventListener('click',()=>downloadSvg(`${slug(meta.title)}-${i+1}.svg`,svg));
-    document.querySelector(`[data-chart-png="${i}"]`)?.addEventListener('click',()=>svgToPng(svg,`${slug(meta.title)}-${i+1}.png`));
-    document.querySelector(`[data-chart-csv="${i}"]`)?.addEventListener('click',()=>downloadCsv(chartCsv));
+    const selector=document.querySelector(`[data-chart-trace-selector="${i}"]`),shell=document.querySelector(`[data-chart="${i}"]`),panel=document.querySelector(`[data-chart-data-panel="${i}"]`);
+    const selectedIndices=()=>selector?[...selector.querySelectorAll('[data-chart-trace-option]:checked')].map(input=>Number(input.dataset.chartTraceOption)):(p.traces||[]).map((_,index)=>index);
+    const activePlot=()=>selector?chartPlotForIndices(p,selectedIndices()):p;
+    const activeRows=()=>activePlot().traces.flatMap(trace=>(trace.x||[]).map((x,index)=>[trace.name||'Trace',x,trace.y?.[index]]));
+    const activeCsv=()=>({filename:`${slug(meta.title)}-${i+1}.csv`,columns:['trace',p.xLabel||'x',p.yLabel||'y'],rows:activeRows()});
+    const activeSvg=()=>lineChartSvg(activePlot());
+    const updateDataPanel=()=>{if(!panel)return;const csv=activeCsv();panel.innerHTML=`<div class="table-wrap"><table><thead><tr>${csv.columns.map(column=>`<th>${esc(column)}</th>`).join('')}</tr></thead><tbody>${csv.rows.map(row=>`<tr>${row.map(value=>`<td>${esc(formatNumber(value))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;panel.dataset.ready='1';};
+    const updateChart=()=>{if(shell)shell.innerHTML=activeSvg();if(panel?.dataset.ready)updateDataPanel();};
+    const keepOneSelected=changed=>{if(selectedIndices().length)return true;changed.checked=true;showToast('Keep at least one modal-density curve selected.');return false;};
+    document.querySelector(`[data-chart-svg="${i}"]`)?.addEventListener('click',()=>downloadSvg(`${slug(meta.title)}-${i+1}.svg`,activeSvg()));
+    document.querySelector(`[data-chart-png="${i}"]`)?.addEventListener('click',()=>svgToPng(activeSvg(),`${slug(meta.title)}-${i+1}.png`));
+    document.querySelector(`[data-chart-csv="${i}"]`)?.addEventListener('click',()=>downloadCsv(activeCsv()));
     document.querySelector(`[data-chart-data="${i}"]`)?.addEventListener('click',event=>{
-      const panel=document.querySelector(`[data-chart-data-panel="${i}"]`);if(!panel)return;
-      if(!panel.dataset.ready){panel.innerHTML=`<div class="table-wrap"><table><thead><tr>${chartCsv.columns.map(column=>`<th>${esc(column)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(value=>`<td>${esc(formatNumber(value))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;panel.dataset.ready='1';}
+      if(!panel)return;
+      if(!panel.dataset.ready)updateDataPanel();
       panel.hidden=!panel.hidden;event.currentTarget.textContent=panel.hidden?'View data':'Hide data';
     });
-    const shell=document.querySelector(`[data-chart="${i}"]`),toggleTrace=target=>{const legend=target.closest?.('[data-legend-trace]');if(!legend||!shell)return;const index=legend.dataset.legendTrace,hidden=legend.dataset.hidden!=='1';legend.dataset.hidden=hidden?'1':'0';legend.setAttribute('opacity',hidden?'.38':'1');shell.querySelectorAll(`[data-chart-trace="${CSS.escape(index)}"]`).forEach(node=>node.setAttribute('opacity',hidden?'0':'1'));};
+    selector?.addEventListener('change',event=>{if(!event.target.matches('[data-chart-trace-option]'))return;if(keepOneSelected(event.target))updateChart();});
+    selector?.querySelector('[data-chart-trace-all]')?.addEventListener('click',()=>{selector.querySelectorAll('[data-chart-trace-option]').forEach(input=>input.checked=true);updateChart();});
+    selector?.querySelector('[data-chart-trace-current]')?.addEventListener('click',()=>{const current=initialChartTraceIndices(p);selector.querySelectorAll('[data-chart-trace-option]').forEach(input=>input.checked=current.includes(Number(input.dataset.chartTraceOption)));updateChart();});
+    const toggleTrace=target=>{const legend=target.closest?.('[data-legend-trace]');if(!legend||!shell)return;const index=legend.dataset.legendTrace;if(selector){const input=selector.querySelector(`[data-chart-trace-option="${CSS.escape(index)}"]`);if(!input)return;input.checked=!input.checked;if(keepOneSelected(input))updateChart();return;}const hidden=legend.dataset.hidden!=='1';legend.dataset.hidden=hidden?'1':'0';legend.setAttribute('opacity',hidden?'.38':'1');shell.querySelectorAll(`[data-chart-trace="${CSS.escape(index)}"]`).forEach(node=>node.setAttribute('opacity',hidden?'0':'1'));};
     shell?.addEventListener('click',event=>toggleTrace(event.target));
     shell?.addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&event.target.closest?.('[data-legend-trace]')){event.preventDefault();toggleTrace(event.target);}});
   });
@@ -562,6 +588,13 @@ function bindWorkspace(){
 }
 function legacyRouteTarget(route){
   const first=route.segments[0]||'',id=decodeURIComponent(route.segments[1]||'');
+  if(first==='tool'&&id==='modal-density-atlas')return `/tool/modal-density${route.params.size?`?${route.params}`:''}`;
+  if(first==='tool'&&id==='modal-density'){
+    const params=new URLSearchParams(route.params);let changed=false;
+    if(params.has('structure')&&!params.has('type')){params.set('type',params.get('structure')==='beam'?'beam-bending':'plate-bending');params.delete('structure');changed=true;}
+    for(const [legacy,current] of [['E_gpa','modulus'],['rho','density'],['nu','poisson'],['thickness_mm','thickness']])if(params.has(legacy)&&!params.has(current)){params.set(current,params.get(legacy));params.delete(legacy);changed=true;}
+    if(changed)return `/tool/modal-density${params.size?`?${params}`:''}`;
+  }
   if(first==='case-notes')return `/case-studies${route.params.size?`?${route.params}`:''}`;
   if(first==='case-note')return `/case-study/${encodeURIComponent(id)}`;
   if(first==='hardware'){

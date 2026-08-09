@@ -997,43 +997,6 @@ const calculatorDefinitions = {
     }
   },
 
-  'modal-density': {
-    category:'SEA & Energy', basis:'Euler–Bernoulli beam / asymptotic Kirchhoff plate', confidence:'Asymptotic screening',
-    inputs:[
-      {key:'structure',label:'Structure type',type:'select',default:'plate',options:[{value:'plate',label:'Thin plate'},{value:'beam',label:'Uniform simply supported beam'}]},
-      {key:'E_gpa',label:'Young’s modulus',unit:'GPa',type:'number',default:68.9,min:0.001},
-      {key:'rho',label:'Density',unit:'kg/m³',type:'number',default:2700,min:0.001},
-      {key:'nu',label:'Poisson ratio',type:'number',default:0.33,min:-0.99,max:0.49},
-      {key:'length',label:'Length',unit:'m',type:'number',default:1,min:0.001},
-      {key:'width',label:'Width / beam width',unit:'m',type:'number',default:0.6,min:0.001},
-      {key:'thickness_mm',label:'Thickness / beam height',unit:'mm',type:'number',default:3,min:0.001},
-      {key:'frequency',label:'Evaluation frequency',unit:'Hz',type:'number',default:1000,min:0.001},
-      {key:'band_fraction',label:'Band type',type:'select',default:'3',options:[{value:'1',label:'Octave'},{value:'3',label:'Third octave'},{value:'6',label:'Sixth octave'}]}
-    ],
-    theory:'<p>Plate Weyl count is N(f)≈Af√(ρh/D)/2. A simply supported beam has f<sub>n</sub>=Cn², giving N≈√(f/C) and n=dN/df.</p>',
-    assumptions:['High enough frequency for smooth asymptotic counting.', 'Uniform ideal structure and one bending-wave family.'],
-    example:'Thin, large panels often reach high modal density much earlier than short stiff beams.',
-    compute(v){
-      const E=positive(v.E_gpa,'Modulus')*1e9,rho=positive(v.rho,'Density'),nu=n(v.nu),L=positive(v.length,'Length'),W=positive(v.width,'Width'),h=positive(v.thickness_mm,'Thickness')/1000,f=positive(v.frequency,'Frequency'),Nband=positive(v.band_fraction,'Band fraction');
-      let count,density,spacing,description;
-      if(v.structure==='beam'){
-        const A=W*h,I=W*h**3/12,C=Math.PI/(2*L**2)*Math.sqrt(E*I/(rho*A));
-        count=Math.sqrt(f/C);density=1/(2*Math.sqrt(C*f));spacing=1/density;description='Euler–Bernoulli beam';
-      }else{
-        const D=plateD(E,h,nu),area=L*W;density=area/2*Math.sqrt(rho*h/D);count=density*f;spacing=1/density;description='Kirchhoff plate';
-      }
-      const ratio=2**(1/(2*Nband)),flo=f/ratio,fhi=f*ratio,modesBand=density*(fhi-flo);
-      const frequencies=logspace(Math.max(0.1,f/20),f*20,100),counts=[],bandModes=[];
-      for(const frequency of frequencies){let localDensity,localCount;if(v.structure==='beam'){const A=W*h,I=W*h**3/12,C=Math.PI/(2*L**2)*Math.sqrt(E*I/(rho*A));localCount=Math.sqrt(frequency/C);localDensity=1/(2*Math.sqrt(C*frequency));}else{localDensity=density;localCount=localDensity*frequency;}const localLo=frequency/ratio,localHi=frequency*ratio;counts.push(localCount);bandModes.push(localDensity*(localHi-localLo));}
-      return{
-        summary:[stat('Mode count below f',count,'modes'),stat('Modal density',density,'modes/Hz'),stat('Average spacing',spacing,'Hz'),stat('Modes in selected band',modesBand,'modes'),stat('Band limits',`${flo.toFixed(1)}–${fhi.toFixed(1)}`,'Hz')],
-        interpretation:`The ${description} approximation predicts about ${modesBand.toFixed(1)} bending modes in the selected band around ${f} Hz.`,
-        warnings:['Boundary corrections and low-order discreteness are omitted; count exact modes when the predicted band population is small.'],
-        plots:[{title:'Modal population versus frequency',xLabel:'Frequency (Hz)',yLabel:'Mode count',xScale:'log',yScale:'log',traces:[trace('Modes below frequency',frequencies,counts),trace('Modes in selected band',frequencies,bandModes,{emphasis:true})]}]
-      };
-    }
-  },
-
   'modal-overlap': {
     category:'SEA & Energy', basis:'Modal bandwidth / spacing ratio', confidence:'Diagnostic screening',
     inputs:[
