@@ -1594,7 +1594,7 @@ export const toolCatalog = [
     "id": "beam",
     "title": "Beam Response",
     "category": "Structures",
-    "description": "Calculate section properties, static response, stress, natural frequencies, and normalized bending mode shapes for common beam boundary conditions.",
+    "description": "Calculate material-dependent static response, stress, natural frequencies, and animated 3D bending mode shapes for common beam boundary conditions.",
     "complexity": "Core",
     "keywords": [
       "beam",

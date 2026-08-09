@@ -125,9 +125,9 @@ export function lineChartSvg(plot, { width = 840, height = 390 } = {}) {
   (plot.traces ?? []).forEach((t, i) => {
     const color = t.color || palette[i % palette.length];
     const path = pathFromTrace(t, sx, sy, xLog, yLog);
-    if (path) s += `<path data-chart-trace="${i}"${harmonic?' data-chart-animated-path="true" vector-effect="non-scaling-stroke"':''} d="${path}" fill="none" stroke="${color}" stroke-width="${t.emphasis ? 3 : 2}" stroke-linejoin="round" stroke-linecap="round" ${t.dash ? 'stroke-dasharray="7 5"' : ''}/>`;
+    if (path&&!t.hideLine) s += `<path data-chart-trace="${i}"${harmonic?' data-chart-animated-path="true" vector-effect="non-scaling-stroke"':''} d="${path}" fill="none" stroke="${color}" stroke-width="${t.emphasis ? 3 : 2}" stroke-linejoin="round" stroke-linecap="round" ${t.dash ? 'stroke-dasharray="7 5"' : ''}/>`;
     const count=Math.min(t.x?.length??0,t.y?.length??0),step=Math.max(1,Math.ceil(count/80));
-    for(let point=0;point<count;point+=step){const x=Number(t.x[point]),y=Number(t.y[point]);if(!Number.isFinite(x)||!Number.isFinite(y)||(xLog&&x<=0)||(yLog&&y<=0))continue;const cx=sx(x).toFixed(2),cy=sy(y).toFixed(2);if(t.showPoints)s+=`<circle data-chart-visible-point="${i}" cx="${cx}" cy="${cy}" r="${Number(t.pointRadius)||4.5}" fill="${color}" stroke="#fff" stroke-width="1.5" pointer-events="none"/>`;s+=`<circle data-chart-trace="${i}" cx="${cx}" cy="${cy}" r="7" fill="transparent" stroke="transparent" pointer-events="all"><title>${escapeHtml(t.name||`Trace ${i+1}`)} · ${escapeHtml(plot.xLabel||'x')}: ${escapeHtml(formatNumber(x))} · ${escapeHtml(plot.yLabel||'y')}: ${escapeHtml(formatNumber(y))}</title></circle>`;}
+    for(let point=0;point<count;point+=step){const x=Number(t.x[point]),y=Number(t.y[point]);if(!Number.isFinite(x)||!Number.isFinite(y)||(xLog&&x<=0)||(yLog&&y<=0))continue;const cx=sx(x).toFixed(2),cy=sy(y).toFixed(2),pointLabel=t.pointLabels?.[point]||t.name||`Trace ${i+1}`;if(t.showPoints)s+=`<circle data-chart-visible-point="${i}" cx="${cx}" cy="${cy}" r="${Number(t.pointRadius)||4.5}" fill="${color}" stroke="#fff" stroke-width="1.5" pointer-events="none"/>`;s+=`<circle data-chart-trace="${i}" cx="${cx}" cy="${cy}" r="7" fill="transparent" stroke="transparent" pointer-events="all"><title>${escapeHtml(pointLabel)} · ${escapeHtml(plot.xLabel||'x')}: ${escapeHtml(formatNumber(x))} · ${escapeHtml(plot.yLabel||'y')}: ${escapeHtml(formatNumber(y))}</title></circle>`;}
   });
   s += `</g>`;
   s += `<text x="${m.left + innerW/2}" y="${height - 12}" text-anchor="middle" font-family="ui-sans-serif,system-ui" font-size="11" fill="#5f6b70">${escapeHtml(plot.xLabel || '')}</text>`;
@@ -176,16 +176,16 @@ const svgPolygonPoints = values => Array.from({length:Math.floor(values.length/2
 export function surface3dSvg(surface, { width = 720, height = 520 } = {}) {
   const matrix=surface.matrix||[],rows=matrix.length,columns=Math.max(0,...matrix.map(row=>row.length));
   if(rows<2||columns<2)return'';
-  const geometry=surface.geometry==='cylinder'?'cylinder':'plate',margin={left:34,right:88,top:48,bottom:54},availableW=width-margin.left-margin.right,availableH=height-margin.top-margin.bottom;
+  const geometry=surface.geometry==='cylinder'?'cylinder':surface.geometry==='beam'?'beam':'plate',isCylinder=geometry==='cylinder',isBeam=geometry==='beam',margin={left:34,right:88,top:48,bottom:54},availableW=width-margin.left-margin.right,availableH=height-margin.top-margin.bottom;
   const requestedYaw=Number(surface.viewYawDeg),requestedPitch=Number(surface.viewPitchDeg),yaw=(Number.isFinite(requestedYaw)?requestedYaw:-38)*Math.PI/180,pitch=(Number.isFinite(requestedPitch)?requestedPitch:geometry==='cylinder'?24:38)*Math.PI/180;
-  const aspect=Math.max(.35,Math.min(3,Number(surface.aspectRatio)||1)),maxPlateSpan=2;
+  const aspect=Math.max(.35,Math.min(isBeam?8:3,Number(surface.aspectRatio)||1)),maxPlateSpan=2;
   const plateWidth=aspect>=1?maxPlateSpan:maxPlateSpan*aspect,plateDepth=aspect>=1?maxPlateSpan/aspect:maxPlateSpan;
   const lengthToDiameter=Math.max(.6,Math.min(4,Number(surface.lengthToDiameter)||2));
-  const cylinderLength=2*lengthToDiameter,deformationScale=Math.max(.04,Math.min(.45,Number(surface.deformationScale)||(geometry==='cylinder'?.18:.34)));
+  const cylinderLength=2*lengthToDiameter,deformationScale=Math.max(.04,Math.min(.45,Number(surface.deformationScale)||(isCylinder?.18:isBeam?.4:.34)));
   const nodes=matrix.map((row,rowIndex)=>row.map((value,columnIndex)=>{
     const normalized=Number(value)||0;
     let base,delta;
-    if(geometry==='cylinder'){
+    if(isCylinder){
       const rawTheta=surface.xValues?.[columnIndex],theta=Number.isFinite(Number(rawTheta))?Number(rawTheta)*Math.PI/180:columnIndex/(columns-1)*2*Math.PI;
       const rawZ=surface.yValues?.[rowIndex],zNormalized=Number.isFinite(Number(rawZ))?Number(rawZ):rowIndex/(rows-1);
       base=[Math.cos(theta),Math.sin(theta),(zNormalized-.5)*cylinderLength];
@@ -212,12 +212,12 @@ export function surface3dSvg(surface, { width = 720, height = 520 } = {}) {
   cells.sort((a,b)=>a.depth-b.depth);
   const linePath=points=>points.map((point,index)=>`${index?'L':'M'}${point[0].toFixed(2)},${point[1].toFixed(2)}`).join(' ');
   const boundaryPaths=[];
-  if(geometry==='cylinder'){
+  if(isCylinder){
     boundaryPaths.push([...nodes[0].map(node=>node.screenBase),nodes[0][0].screenBase],[...nodes.at(-1).map(node=>node.screenBase),nodes.at(-1)[0].screenBase]);
   }else{
     boundaryPaths.push([nodes[0][0].screenBase,nodes[0].at(-1).screenBase,nodes.at(-1).at(-1).screenBase,nodes.at(-1)[0].screenBase,nodes[0][0].screenBase]);
   }
-  const title=surface.title||`${geometry==='cylinder'?'Cylinder':'Plate'} 3D mode shape`,magnitude=Math.max(1e-12,...matrix.flat().map(value=>Math.abs(Number(value)||0)));
+  const title=surface.title||`${isCylinder?'Cylinder':isBeam?'Beam':'Plate'} 3D mode shape`,magnitude=Math.max(1e-12,...matrix.flat().map(value=>Math.abs(Number(value)||0)));
   let svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(title)}"${surface.animation?.type==='harmonic'?' data-surface-animation="harmonic"':''}><rect width="${width}" height="${height}" fill="#fff"/>`;
   svg+=`<text x="${margin.left}" y="25" font-family="ui-sans-serif,system-ui" font-size="13" font-weight="700" fill="#172027">${escapeHtml(title)}</text>`;
   svg+=`<g data-surface-geometry="${geometry}">`;
@@ -231,7 +231,7 @@ export function surface3dSvg(surface, { width = 720, height = 520 } = {}) {
   for(let index=0;index<64;index++){const value=1-2*index/63;svg+=`<rect x="${legendX}" y="${legendY+index*legendHeight/64}" width="13" height="${legendHeight/64+1}" fill="${signedHeatColor(value,1)}"/>`;}
   svg+=`<text x="${legendX+19}" y="${legendY+8}" font-family="ui-monospace,monospace" font-size="9" fill="#667176">+1</text><text x="${legendX+19}" y="${legendY+legendHeight/2+3}" font-family="ui-monospace,monospace" font-size="9" fill="#667176">0</text><text x="${legendX+19}" y="${legendY+legendHeight}" font-family="ui-monospace,monospace" font-size="9" fill="#667176">−1</text>`;
   svg+=`<text x="${legendX-2}" y="${legendY-10}" font-family="ui-sans-serif,system-ui" font-size="9" fill="#5f6b70">Normalized</text><text x="${legendX-2}" y="${legendY+legendHeight+20}" font-family="ui-sans-serif,system-ui" font-size="9" fill="#5f6b70">${escapeHtml(surface.zLabel||'displacement')}</text>`;
-  svg+=`<text x="${margin.left}" y="${height-15}" font-family="ui-sans-serif,system-ui" font-size="10" fill="#5f6b70">3D oblique view · deformation exaggerated · signed normalized displacement</text></svg>`;
+  svg+=`<text x="${margin.left}" y="${height-15}" font-family="ui-sans-serif,system-ui" font-size="10" fill="#5f6b70">3D oblique ${geometry} view · deformation exaggerated · signed normalized displacement</text></svg>`;
   return svg;
 }
 

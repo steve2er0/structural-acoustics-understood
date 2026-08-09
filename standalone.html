@@ -4939,7 +4939,7 @@ const toolCatalog = [
     "id": "beam",
     "title": "Beam Response",
     "category": "Structures",
-    "description": "Calculate section properties, static response, stress, natural frequencies, and normalized bending mode shapes for common beam boundary conditions.",
+    "description": "Calculate material-dependent static response, stress, natural frequencies, and animated 3D bending mode shapes for common beam boundary conditions.",
     "complexity": "Core",
     "keywords": [
       "beam",
@@ -7351,6 +7351,7 @@ const commonMaterialInputs = [
   { key: 'rho', label: 'Density', unit: 'kg/m³', type: 'number', default: 2700, min: 0.001, step: 1 },
   { key: 'nu', label: 'Poisson ratio', type: 'number', default: 0.33, min: -0.99, max: 0.49, step: 0.01 },
 ];
+const beamMaterialInputs = commonMaterialInputs.filter(input => input.key !== 'nu');
 
 function syncMaterialDefaults(values) {
   const m = materials[values.material];
@@ -7834,18 +7835,18 @@ const calculatorDefinitions = {
     category:'Structures', basis:'Euler–Bernoulli uniform beam', confidence:'Exact ideal beam formulas',
     inputs:[
       {key:'boundary',label:'Boundary / load case',type:'select',default:'simply-supported',options:[{value:'simply-supported',label:'Simply supported, center point load'},{value:'cantilever',label:'Cantilever, tip point load'},{value:'fixed-fixed',label:'Fixed–fixed, center point load'}]},
+      ...beamMaterialInputs,
       {key:'length',label:'Beam length',unit:'m',type:'number',default:1,min:0.001},
       {key:'width',label:'Rectangular width',unit:'m',type:'number',default:0.05,min:0.0001},
       {key:'height',label:'Rectangular height',unit:'m',type:'number',default:0.01,min:0.0001},
-      {key:'E_gpa',label:'Young’s modulus',unit:'GPa',type:'number',default:68.9,min:0.001},
-      {key:'rho',label:'Density',unit:'kg/m³',type:'number',default:2700,min:0.001},
       {key:'load',label:'Point load',unit:'N',type:'number',default:1000}
     ],
+    syncPreset:syncMaterialDefaults,
     theory:'<p>Static response and modal frequencies use a prismatic Euler–Bernoulli beam with small deflection. The first four β values and their exact normalized bending shapes are selected by boundary condition.</p>',
     assumptions:['Uniform rectangular section.','Small deflection and linear elastic material.','Shear deformation and rotary inertia neglected.'],
     example:'A simply supported beam under a center point load has δ<sub>max</sub>=PL³/(48EI).',
     compute(v){
-      const L=positive(v.length,'Length'),b=positive(v.width,'Width'),h=positive(v.height,'Height'),E=positive(v.E_gpa,'Modulus')*1e9,rho=positive(v.rho,'Density'),P=n(v.load);
+      const material=materialFrom(v),L=positive(v.length,'Length'),b=positive(v.width,'Width'),h=positive(v.height,'Height'),E=material.E,rho=material.rho,P=n(v.load);
       const A=b*h,I=b*h**3/12,mass=rho*A*L;
       let defl,Mmax,betas,label;
       if(v.boundary==='cantilever') {defl=P*L**3/(3*E*I);Mmax=P*L;betas=[1.875104,4.694091,7.854757,10.995541];label='Cantilever';}
@@ -7864,13 +7865,15 @@ const calculatorDefinitions = {
         values[0]=0;if(v.boundary!=='cantilever')values[values.length-1]=0;
         return normalizeSeries(values);
       });
+      const spanwise=linspace(0,1,7),surfaces3d=modeShapes.map((shape,index)=>({title:`3D ${label.toLowerCase()} beam mode ${index+1} · ${freqs[index].toFixed(1)} Hz`,geometry:'beam',matrix:spanwise.map(()=>shape),animation:{type:'harmonic'},aspectRatio:L/b,deformationScale:.42,xValues:normalizedPositions,yValues:spanwise,zLabel:'transverse motion'}));
       return{
         summary:[stat('Area',A,'m²'),stat('Second moment I',I,'m⁴'),stat('Beam mass',mass,'kg'),stat('Maximum deflection',defl,'m'),stat('Maximum bending stress',stress/1e6,'MPa'),stat('First natural frequency',freqs[0],'Hz')],
-        interpretation:{summary:`The ${label.toLowerCase()} idealization predicts a first bending mode at ${freqs[0].toFixed(2)} Hz. Boundary flexibility usually lowers this value.`,physicalMeaning:'Each displayed curve is a unit-normalized transverse bending shape; its sign is arbitrary, while its nodes and curvature show where motion reverses and where bending strain concentrates. Higher modes add internal nodes and are more sensitive to local attachments and non-ideal boundaries.'},
+        interpretation:{summary:`The ${label.toLowerCase()} idealization predicts a first bending mode at ${freqs[0].toFixed(2)} Hz. Boundary flexibility usually lowers this value.`,physicalMeaning:'Each animated 3D strip is a unit-normalized transverse bending shape; its sign is arbitrary, while its nodes and curvature show where motion reverses and where bending strain concentrates. The cross-section moves together because this Euler–Bernoulli view neglects shear deformation and local section distortion. Higher modes add internal nodes and are more sensitive to attachments and non-ideal boundaries.'},
         warnings:['Check slenderness, local section behavior, stress concentrations, and actual joint stiffness before design use.'],
         tables:[{title:'Ideal bending modes',columns:['Mode','β','Frequency (Hz)'],rows:freqs.map((f,i)=>[i+1,betas[i],f])}],
-        plots:[{title:`${label} beam · first four normalized mode shapes`,xLabel:'Position along beam (m)',yLabel:'Normalized transverse displacement',animation:{type:'harmonic'},traces:modeShapes.map((shape,index)=>trace(`Mode ${index+1} · ${freqs[index].toFixed(1)} Hz`,positions,shape,{emphasis:index===0}))},{title:'First four modal frequencies',xLabel:'Mode',yLabel:'Frequency (Hz)',traces:[trace('Frequency',[1,2,3,4],freqs,{emphasis:true})]}],
-        presentation:{primaryEvidence:{type:'plot',index:0},primaryValueCount:6,animation:{type:'harmonic',defaultRateHz:.5,note:'All four beam shapes use one slowed visual phase so their nodes remain comparable; the animation does not reproduce their different natural frequencies or physical amplitudes.'}}
+        plots:[{title:'First four modal frequencies',xLabel:'Mode',yLabel:'Frequency (Hz)',traces:[trace('Frequency',[1,2,3,4],freqs,{emphasis:true})]}],
+        surfaces3d,
+        presentation:{primaryEvidence:{type:'surface3d',index:0},primaryEvidenceCount:4,primaryValueCount:6,animation:{type:'harmonic',defaultRateHz:.5,note:'The four 3D beam shapes use one slowed visual phase so their nodes remain comparable. Cross-section motion is rendered as a narrow strip; deformation is normalized and exaggerated rather than physical amplitude or real-time frequency.'}}
       };
     }
   },
@@ -7960,6 +7963,7 @@ const calculatorDefinitions = {
 
   'ring-frequency': {
     category:'Structural Acoustics', basis:'Thin isotropic cylindrical shell scale', confidence:'Screening formula',
+    relatedLinks:[{title:'Cylindrical Shell Acoustics',description:'Calculate frequency-tagged axial and circumferential shell families with material and axial-restraint controls.',href:'#/tool/shell-acoustics'},{title:'Structural Wave Speeds',description:'Compare local longitudinal, shear, and dispersive bending-wave behavior.',href:'#/tool/bending-wave'},{title:'Critical Frequency',description:'Keep the flat-plate acoustic coincidence scale distinct from shell ring frequency.',href:'#/tool/critical-frequency'}],
     inputs:[
       ...commonMaterialInputs,
       {key:'diameter_m',label:'Cylinder diameter',unit:'m',type:'number',default:0.4064,min:0.001},
@@ -7969,23 +7973,21 @@ const calculatorDefinitions = {
       {key:'circumferential_start',label:'Starting circumferential order n',type:'number',default:2,min:0,max:12,step:1,help:'Displays this order and the next three circumferential shapes.'}
     ],
     syncPreset:syncMaterialDefaults,
-    theory:'<p>The ring-frequency scale is f<sub>r</sub>=[1/(2πR)]√[E/(ρ(1−ν²))]. Thickness does not enter this thin-shell scale directly but controls bending stiffness and local modes. The displayed shape basis uses w(θ,z)=cos(nθ)sin(mπz/L).</p>',
-    assumptions:['Thin, isotropic, uniform circular cylinder.','Displayed mode-shape maps use a simply supported axial sinusoid and circumferential harmonics.','No stiffeners, cutouts, prestress, fluid loading, or detailed end constraints.'],
+    theory:'<p>The ring-frequency scale is f<sub>r</sub>=[1/(2πR)]√[E/(ρ(1−ν²))]. Thickness and axial end restraint do not enter this local curvature scale directly, although both strongly affect the discrete modes of a finite cylinder. The displayed 3D shapes are only the basis w(θ,z)=cos(nθ)sin(mπz/L).</p>',
+    assumptions:['Thin, isotropic, uniform circular cylinder.','Displayed 3D basis shapes use a simply supported axial sinusoid and circumferential harmonics.','No stiffeners, cutouts, prestress, fluid loading, or detailed end constraints.'],
     example:'For a 16 inch aluminum cylinder, the ring-frequency scale is several kilohertz and differs strongly from the plate coincidence frequency.',
     compute(v){
       const {E,rho,nu}=materialFrom(v),DIA=positive(v.diameter_m,'Diameter'),h=positive(v.thickness_mm,'Thickness')/1000,L=positive(v.length_m,'Length'),R=DIA/2,mOrder=clamp(Math.round(n(v.axial_order,1)),1,8),nStart=clamp(Math.round(n(v.circumferential_start,2)),0,12);
       const cRing=Math.sqrt(E/(rho*(1-nu*nu))),fr=cRing/(2*Math.PI*R),circ=Math.PI*DIA,surfaceMass=rho*h,slender=L/DIA;
       const Dp=plateD(E,h,nu),fc=AIR_C**2/(2*Math.PI)*Math.sqrt(rho*h/Dp);
-      const theta=linspace(0,2*Math.PI,49),thetaDegrees=theta.map(value=>deg(value)),zNormalized=linspace(0,1,25),orders=Array.from({length:4},(_,index)=>nStart+index),labelEvery=(values,suffix='')=>values.map(value=>`${value.toFixed(value>=10?0:2)}${suffix}`);
-      const heatmaps=orders.map(order=>({title:`Cylinder shape basis · m=${mOrder}, n=${order}`,matrix:normalizeMatrix(zNormalized.map(z=>theta.map(angle=>Math.sin(mOrder*Math.PI*z)*Math.cos(order*angle)))),min:-1,max:1,diverging:true,animation:{type:'harmonic'},aspectRatio:Math.min(2.4,Math.max(.8,circ/L)),xValues:thetaDegrees,yValues:zNormalized,xLabels:labelEvery(thetaDegrees,'°'),yLabels:labelEvery(zNormalized),xLabel:'Circumferential angle θ',yLabel:'Normalized axial position z/L'}));
+      const theta=linspace(0,2*Math.PI,49),thetaDegrees=theta.map(value=>deg(value)),orders=Array.from({length:4},(_,index)=>nStart+index);
       const surfaces3d=orders.map(order=>{const surfaceTheta=linspace(0,2*Math.PI,Math.max(37,order*4+1)),surfaceZ=linspace(0,1,Math.max(17,mOrder*4+1));return{title:`3D cylinder basis · m=${mOrder}, n=${order}`,geometry:'cylinder',matrix:normalizeMatrix(surfaceZ.map(z=>surfaceTheta.map(angle=>Math.sin(mOrder*Math.PI*z)*Math.cos(order*angle)))),animation:{type:'harmonic'},lengthToDiameter:slender,deformationScale:.18,xValues:surfaceTheta.map(value=>deg(value)),yValues:surfaceZ,zLabel:'radial motion'};});
       return{
         summary:[stat('Ring frequency',fr,'Hz'),stat('Ring wave speed',cRing,'m/s'),stat('Circumference',circ,'m'),stat('Surface mass',surfaceMass,'kg/m²'),stat('Plate critical frequency',fc,'Hz'),stat('Length / diameter',slender)],
-        interpretation:{summary:`The ring-frequency scale is ${fr.toFixed(1)} Hz. The flat-plate coincidence estimate is ${fc.toFixed(1)} Hz, demonstrating that the two frequencies describe different physics.`,physicalMeaning:`The animated 3D cylinders show exaggerated, normalized radial displacement for axial order m=${mOrder} and circumferential orders n=${nStart}–${nStart+3}. Order n counts waves around the circumference; shape and alternating colors identify inward and outward lobes. These are shell basis shapes, not frequency-tagged eigenmodes of the finite installed cylinder.`},
+        interpretation:{summary:`The ring-frequency scale is ${fr.toFixed(1)} Hz. The flat-plate coincidence estimate is ${fc.toFixed(1)} Hz, demonstrating that the two frequencies describe different physics.`,physicalMeaning:`Ring frequency is a local curvature/extensional scale, not a boundary-dependent natural frequency of this finite cylinder. The animated 3D cylinders show exaggerated basis shapes for axial order m=${mOrder} and circumferential orders n=${nStart}–${nStart+3}; use the Cylindrical Shell Acoustics tool when discrete, frequency-tagged shell families are needed.`},
         warnings:[h/R>0.1?'The wall is not especially thin relative to radius; a thick-shell model may be more appropriate.':'Finite length, stiffeners, attachments, and boundary conditions create discrete shell modes around this scale.','Use a shell eigenvalue model to attach frequencies to these basis shapes for the actual end constraints and installed mass.'],
         plots:[{title:`Circumferential shapes at an axial antinode · m=${mOrder}`,xLabel:'Circumferential angle (deg)',yLabel:'Normalized radial displacement',traces:orders.map((order,index)=>trace(`n = ${order}`,thetaDegrees,theta.map(angle=>Math.cos(order*angle)),{emphasis:index===0}))}],
         surfaces3d,
-        heatmaps,
         tables:[{title:'Displayed cylinder shape basis',columns:['Axial half-waves m','Circumferential order n','Circumferential lobes'],rows:orders.map(order=>[mOrder,order,order===0?1:2*order])}],
         presentation:{primaryEvidence:{type:'surface3d',index:0},primaryEvidenceCount:4,primaryValueCount:6,animation:{type:'harmonic',defaultRateHz:.5,note:'The 3D cylinder basis shapes use one slowed visual phase. Radial deformation is exaggerated and normalized to show inward and outward lobes, not actual finite-shell amplitude or frequency response.'}}
       };
@@ -8628,7 +8630,7 @@ const calculatorRegistry = calculatorDefinitions;
 
 function getCalculator(id){ return calculatorRegistry[id]; }
 
-return {materials,calculatorRegistry,getCalculator};
+return {materials,plateBoundaryPresets,plateModalFrequency,calculatorRegistry,getCalculator};
 })();
 
 const __seaCoupling=(()=>{
@@ -9479,12 +9481,15 @@ function shellAcousticsState(input = {}) {
   const soundSpeed = positive(input.soundSpeed, AIR_C);
   const axialOrder = Math.max(1, Math.round(number(input.axialOrder, 1)));
   const circumferentialOrder = Math.max(0, Math.round(number(input.circumferentialOrder, 2)));
+  const axialBoundary = input.axialBoundary === 'clamped' ? 'clamped' : 'simply-supported';
+  const clampedRoots = [4.730040745, 7.853204624, 10.99560784, 14.13716549];
+  const axialFactor = axialBoundary === 'clamped' ? clampedRoots[axialOrder - 1] || (axialOrder + 0.5) * Math.PI : axialOrder * Math.PI;
   const membraneSpeed = Math.sqrt(modulus / (density * (1 - poisson ** 2)));
   const ringFrequency = membraneSpeed / (TAU * radius);
   const bendingStiffness = modulus * thickness ** 3 / (12 * (1 - poisson ** 2));
   const surfaceMass = density * thickness;
   const criticalFrequency = soundSpeed ** 2 / TAU * Math.sqrt(surfaceMass / bendingStiffness);
-  const axialWavenumber = axialOrder * Math.PI / length;
+  const axialWavenumber = axialFactor / length;
   const circumferentialWavenumber = circumferentialOrder / radius;
   const shellWavenumber = Math.hypot(axialWavenumber, circumferentialWavenumber);
   const membraneTerm = (membraneSpeed / radius) ** 2 * (axialWavenumber / Math.max(shellWavenumber, 1e-12)) ** 4;
@@ -9501,7 +9506,7 @@ function shellAcousticsState(input = {}) {
   });
   const minimumIndex = modeCurve.indexOf(Math.min(...modeCurve));
   return {
-    radius, length, thickness, modulus, density, poisson, soundSpeed, axialOrder, circumferentialOrder,
+    radius, length, thickness, modulus, density, poisson, soundSpeed, axialOrder, circumferentialOrder, axialBoundary, axialFactor,
     membraneSpeed, ringFrequency, bendingStiffness, surfaceMass, criticalFrequency, axialWavenumber,
     circumferentialWavenumber, shellWavenumber, modeFrequency, firstAcousticCuton,
     minimumFrequencyOrder: minimumIndex,
@@ -11773,6 +11778,14 @@ const syncShellMaterial = values => {
   const material = materials[values.material] || materials.aluminum;
   return { ...values, modulus: material.E / 1e9, density: material.rho, poisson: material.nu };
 };
+const syncFeBeMaterial = values => {
+  const material = materials[values.material] || materials.aluminum;
+  return { ...values, modulus: material.E / 1e9, density: material.rho, poisson: material.nu };
+};
+const syncPanelTlMaterial = values => {
+  const material = materials[values.material] || materials.aluminum;
+  return { ...values, modulus: material.E / 1e9, panel_density: material.rho, poisson: material.nu };
+};
 
 const launchConsideration = text => [
   text,
@@ -11846,8 +11859,8 @@ const acs519CalculatorDefinitions = {
 
   'shell-acoustics': {
     category: 'Structural Acoustics',
-    basis: 'Donnell-type membrane/bending shell estimate with ring, coincidence, and duct cut-on scales',
-    confidence: 'Screening estimate for a thin uniform simply supported cylinder',
+    basis: 'Donnell-type membrane/bending shell estimate with ideal simply supported or clamped axial restraint',
+    confidence: 'Screening estimate; clamped-end frequencies use an axial admissible-function wavenumber approximation',
     inputs: [
       { key: 'material', label: 'Material preset', type: 'select', default: 'aluminum', options: materialOptions, help: 'Preset values populate the editable elastic properties below.' },
       { key: 'radius', label: 'Shell radius', unit: 'm', type: 'number', default: 1.8, min: 0.01 },
@@ -11857,23 +11870,26 @@ const acs519CalculatorDefinitions = {
       { key: 'density', label: 'Material density', unit: 'kg/m³', type: 'number', default: materials.aluminum.rho, min: 1 },
       { key: 'poisson', label: 'Poisson ratio', type: 'number', default: materials.aluminum.nu, min: -0.49, max: 0.49 },
       { key: 'sound_speed', label: 'Internal sound speed', unit: 'm/s', type: 'number', default: 343, min: 1 },
+      { key: 'axial_boundary', label: 'Axial end restraint', type: 'select', default: 'simply-supported', options: [{ value: 'simply-supported', label: 'Simply supported ends · SS' }, { value: 'clamped', label: 'Clamped ends · CC' }], help: 'Clamped ends enforce zero radial displacement and zero axial slope in the displayed basis; frequency remains a screening estimate.' },
       { key: 'axial_order', label: 'Axial order m', type: 'number', default: 1, min: 1, max: 20, step: 1 },
       { key: 'circ_order', label: 'Circumferential order n', type: 'number', default: 2, min: 0, max: 20, step: 1 }
     ],
     syncPreset: syncShellMaterial,
-    theory: '<p>Curvature couples membrane and radial bending motion. A useful screening estimate combines a curvature-controlled membrane term with local plate-bending stiffness. Ring frequency, plate-like critical frequency, and internal acoustic cut-on answer different questions.</p>',
-    assumptions: ['Thin, uniform circular cylinder with small motion.', 'Simply supported axial wavenumber estimate.', 'No rings, stringers, joints, payload attachments, pressurization, or fluid added mass.'],
-    example: 'Sweep circumferential order: unlike a flat plate, a shell can decrease in frequency before local bending causes the sequence to turn upward.',
+    theory: '<p>Curvature couples membrane and radial bending motion. The selected end restraint sets the axial wavenumber and admissible axial shape; the shell relation then combines curvature-controlled membrane behavior with local plate-bending stiffness. Ring frequency, plate-like critical frequency, and internal acoustic cut-on answer different questions.</p>',
+    assumptions: ['Thin, uniform circular cylinder with small motion.', 'Ends follow the selected ideal simply supported or clamped axial restraint.', 'No rings, stringers, joints, payload attachments, pressurization, or fluid added mass.'],
+    example: 'Compare simply supported and clamped ends, then sweep circumferential order: restraint raises axial curvature while local shell bending can still make the n-family turn upward.',
     compute(values) {
-      const shellInput = { radius: values.radius, length: values.length, thickness: mm(values.thickness), modulus: gpa(values.modulus), density: values.density, poisson: values.poisson, soundSpeed: values.sound_speed, axialOrder: values.axial_order, circumferentialOrder: values.circ_order };
+      const shellInput = { radius: values.radius, length: values.length, thickness: mm(values.thickness), modulus: gpa(values.modulus), density: values.density, poisson: values.poisson, soundSpeed: values.sound_speed, axialBoundary: values.axial_boundary, axialOrder: values.axial_order, circumferentialOrder: values.circ_order };
       const state = shellAcousticsState(shellInput);
       const thinRatio = state.thickness / state.radius;
+      const boundaryCode = state.axialBoundary === 'clamped' ? 'CC' : 'SS';
+      const axialShape = z => state.axialBoundary === 'clamped' ? Math.sin(state.axialOrder * Math.PI * z) * Math.sin(Math.PI * z) : Math.sin(state.axialOrder * Math.PI * z);
       const surfaceTheta = linspace(0, 2 * Math.PI, Math.max(37, state.circumferentialOrder * 3 + 1));
       const surfaceZ = linspace(0, 1, Math.max(17, state.axialOrder * 3 + 1));
       const selectedModeSurface = {
-        title: `3D selected shell mode · (m=${state.axialOrder}, n=${state.circumferentialOrder}) · ${state.modeFrequency.toFixed(1)} Hz`,
+        title: `3D ${boundaryCode} shell mode · (m=${state.axialOrder}, n=${state.circumferentialOrder}) · ${state.modeFrequency.toFixed(1)} Hz`,
         geometry: 'cylinder',
-        matrix: normalizeMatrix(surfaceZ.map(z => surfaceTheta.map(angle => Math.sin(state.axialOrder * Math.PI * z) * Math.cos(state.circumferentialOrder * angle)))),
+        matrix: normalizeMatrix(surfaceZ.map(z => surfaceTheta.map(angle => axialShape(z) * Math.cos(state.circumferentialOrder * angle)))),
         animation: { type: 'harmonic' },
         lengthToDiameter: state.length / (2 * state.radius),
         deformationScale: .18,
@@ -11891,11 +11907,11 @@ const acs519CalculatorDefinitions = {
       return {
         values: [stat('Estimated shell-mode frequency', state.modeFrequency, 'Hz'), stat('Ring frequency', state.ringFrequency, 'Hz'), stat('Plate-like critical frequency', state.criticalFrequency, 'Hz'), stat('First internal acoustic cut-on', state.firstAcousticCuton, 'Hz'), stat('Minimum-frequency n', state.minimumFrequencyOrder), stat('h / R', thinRatio)],
         interpretation: {
-          summary: `The selected (${state.axialOrder},${state.circumferentialOrder}) shell mode is estimated at ${state.modeFrequency.toFixed(1)} Hz and lies in the ${state.regime}. Ring frequency (${state.ringFrequency.toFixed(0)} Hz) and acoustic coincidence (${state.criticalFrequency.toFixed(0)} Hz) are separate scales.`,
-          physicalMeaning: `The animated 3D cylinder shows exaggerated, normalized radial deformation for the basis sin(mπz/L)cos(nθ). Axial order m=${state.axialOrder} counts axial half-waves; circumferential order n=${state.circumferentialOrder} counts waves around the shell, and shape plus alternating colors identify inward and outward radial lobes. The displayed frequency comes from the Donnell-type screening relation, while the shape is an ideal simply supported basis—not a physical-amplitude eigenvector of the installed shell.`
+          summary: `The selected ${boundaryCode} (${state.axialOrder},${state.circumferentialOrder}) shell mode is estimated at ${state.modeFrequency.toFixed(1)} Hz and lies in the ${state.regime}. Ring frequency (${state.ringFrequency.toFixed(0)} Hz) and acoustic coincidence (${state.criticalFrequency.toFixed(0)} Hz) are separate scales.`,
+          physicalMeaning: `The animated 3D cylinder shows exaggerated, normalized radial deformation for the selected ${boundaryCode} axial basis multiplied by cos(nθ). Axial order m=${state.axialOrder} indexes the axial family; circumferential order n=${state.circumferentialOrder} counts waves around the shell. The displayed frequency comes from the Donnell-type screening relation, while the shape is an ideal admissible basis—not a physical-amplitude eigenvector of the installed shell.`
         },
         engineeringConsiderations: launchConsideration('Launch-vehicle barrels, fairings, adapters, and tanks support axial/circumferential families; low circumferential orders can control global motion and cabin acoustics while dense local modes dominate high-frequency skin response.'),
-        warnings: [thinRatio > 0.1 ? 'h/R exceeds 0.1; thin-shell screening relations are not appropriate.' : 'Real frames, longerons, cutouts, joints, internal pressure, and payload interfaces split and shift ideal shell modes.'],
+        warnings: [thinRatio > 0.1 ? 'h/R exceeds 0.1; thin-shell screening relations are not appropriate.' : 'Real frames, longerons, cutouts, joints, internal pressure, and payload interfaces split and shift ideal shell modes.', ...(state.axialBoundary === 'clamped' ? ['CC frequencies use an axial admissible-function wavenumber approximation; confirm restraint-sensitive modes with a converged shell or finite-element eigenvalue model.'] : [])],
         surfaces3d: [selectedModeSurface],
         plots: [{ title: 'Cylindrical-shell axial family map', xLabel: 'Estimated frequency (Hz)', yLabel: 'Circumferential order n', xScale: 'log', xMax: state.ringFrequency * 1.1, yMin: 0, yMax: 16, traces: [...axialFamilyTraces, ringFrequencyTrace, selectedModeTrace] }],
         presentation: { primaryEvidence: { type: 'surface3d', index: 0 }, primaryEvidenceStack: [{ type: 'surface3d', index: 0 }, { type: 'plot', index: 0 }], primaryEvidenceCount: 1, primaryValueCount: 6, animation: { type: 'harmonic', defaultRateHz: .5, note: 'The selected 3D shell basis shape moves through one slowed visual phase. Radial deformation is exaggerated and normalized to show inward and outward lobes rather than physical modal amplitude or real-time frequency.' } }
@@ -11908,22 +11924,25 @@ const acs519CalculatorDefinitions = {
     basis: 'Wavelength-based structural FE and acoustic BE discretization planner',
     confidence: 'Screening mesh and computational-size estimate',
     inputs: [
+      { key: 'material', label: 'Panel material preset', type: 'select', default: 'aluminum', options: materialOptions, help: 'Preset values populate the editable panel properties below.' },
       { key: 'maximum_frequency', label: 'Maximum analysis frequency', unit: 'Hz', type: 'number', default: 2000, min: 1 },
       { key: 'length', label: 'Model length', unit: 'm', type: 'number', default: 4, min: 0.05 },
       { key: 'width', label: 'Model width', unit: 'm', type: 'number', default: 2, min: 0.05 },
       { key: 'depth', label: 'Acoustic depth', unit: 'm', type: 'number', default: 1.5, min: 0.05 },
       { key: 'thickness', label: 'Panel thickness', unit: 'mm', type: 'number', default: 4, min: 0.05 },
-      { key: 'modulus', label: 'Young’s modulus', unit: 'GPa', type: 'number', default: 70, min: 0.01 },
-      { key: 'density', label: 'Panel density', unit: 'kg/m³', type: 'number', default: 2700, min: 1 },
+      { key: 'modulus', label: 'Young’s modulus', unit: 'GPa', type: 'number', default: materials.aluminum.E / 1e9, min: 0.01 },
+      { key: 'density', label: 'Panel density', unit: 'kg/m³', type: 'number', default: materials.aluminum.rho, min: 1 },
+      { key: 'poisson', label: 'Poisson ratio', type: 'number', default: materials.aluminum.nu, min: -0.49, max: 0.49 },
       { key: 'sound_speed', label: 'Sound speed', unit: 'm/s', type: 'number', default: 343, min: 1 },
       { key: 'structural_epw', label: 'Structural elements / wavelength', type: 'number', default: 10, min: 4, max: 30 },
       { key: 'acoustic_epw', label: 'Acoustic elements / wavelength', type: 'number', default: 8, min: 4, max: 30 }
     ],
+    syncPreset: syncFeBeMaterial,
     theory: '<p>Structural and acoustic meshes resolve different wavelengths. Below coincidence, bending wavelengths can be shorter than acoustic wavelengths, so a shared interface mesh may be unnecessarily expensive for BEM. Exterior BEM also carries internal-resonance nonuniqueness and dense-matrix cost.</p>',
     assumptions: ['Uniform isotropic thin-panel bending controls structural wavelength.', 'Surface-area element counts neglect geometry features and mesh-quality constraints.', 'Classical dense BEM storage and direct-solve indices are relative, not wall-clock predictions.'],
     example: 'Increase maximum frequency by two: surface element count grows roughly with frequency squared, while a classical dense BEM direct-solve index grows roughly with the sixth power.',
     compute(values) {
-      const state = feBePlannerState({ maximumFrequency: values.maximum_frequency, length: values.length, width: values.width, depth: values.depth, thickness: mm(values.thickness), modulus: gpa(values.modulus), density: values.density, soundSpeed: values.sound_speed, structuralElementsPerWave: values.structural_epw, acousticElementsPerWave: values.acoustic_epw, poisson: 0.33 });
+      const state = feBePlannerState({ maximumFrequency: values.maximum_frequency, length: values.length, width: values.width, depth: values.depth, thickness: mm(values.thickness), modulus: gpa(values.modulus), density: values.density, soundSpeed: values.sound_speed, structuralElementsPerWave: values.structural_epw, acousticElementsPerWave: values.acoustic_epw, poisson: values.poisson });
       const warnings = [];
       if (state.linearDispersionBias > 3) warnings.push(`The linear-element dispersion indicator is ${state.linearDispersionBias.toFixed(1)}%; refine the structural mesh or use verified higher-order elements.`);
       if (state.uniquenessSeparation < 0.03) warnings.push('The evaluation ceiling lies near an internal pressure-release cavity frequency; an exterior direct BEM formulation needs a uniqueness treatment such as CHIEF or Burton–Miller.');
@@ -11948,20 +11967,23 @@ const acs519CalculatorDefinitions = {
     basis: 'Thin elastic-panel impedance with angle-dependent and diffuse-field transmission',
     confidence: 'Numerical infinite-panel screening model',
     inputs: [
+      { key: 'material', label: 'Panel material preset', type: 'select', default: 'aluminum', options: materialOptions, help: 'Preset values populate the editable panel properties below.' },
       { key: 'frequency', label: 'Frequency', unit: 'Hz', type: 'number', default: 1000, min: 1 },
       { key: 'thickness', label: 'Panel thickness', unit: 'mm', type: 'number', default: 3, min: 0.02 },
-      { key: 'modulus', label: 'Young’s modulus', unit: 'GPa', type: 'number', default: 70, min: 0.01 },
-      { key: 'panel_density', label: 'Panel density', unit: 'kg/m³', type: 'number', default: 2700, min: 1 },
+      { key: 'modulus', label: 'Young’s modulus', unit: 'GPa', type: 'number', default: materials.aluminum.E / 1e9, min: 0.01 },
+      { key: 'panel_density', label: 'Panel density', unit: 'kg/m³', type: 'number', default: materials.aluminum.rho, min: 1 },
+      { key: 'poisson', label: 'Poisson ratio', type: 'number', default: materials.aluminum.nu, min: -0.49, max: 0.49 },
       { key: 'loss_factor', label: 'Structural loss factor', type: 'number', default: 0.02, min: 0.0001, max: 0.5 },
       { key: 'incidence', label: 'Incidence angle', unit: 'deg', type: 'number', default: 45, min: 0, max: 85 },
       { key: 'fluid_density', label: 'Fluid density', unit: 'kg/m³', type: 'number', default: 1.204, min: 0.001 },
       { key: 'sound_speed', label: 'Sound speed', unit: 'm/s', type: 'number', default: 343, min: 1 }
     ],
+    syncPreset: syncPanelTlMaterial,
     theory: '<p>Panel transmission follows the balance of two fluid impedances and the complex structural impedance induced by the incident in-plane wavenumber. Coincidence occurs at different frequencies for different angles, so diffuse TL averages many narrow transmission dips.</p>',
     assumptions: ['Infinite, uniform, isotropic thin panel between identical fluids.', 'No finite-panel modes, seals, flanking, curvature, stiffeners, or leakage.', 'Diffuse integration is truncated at 78 degrees to avoid grazing-field singular behavior.'],
     example: 'Increase damping: TL below coincidence barely changes, while the diffuse coincidence trough becomes shallower.',
     compute(values) {
-      const state = panelTransmissionState({ frequency: values.frequency, thickness: mm(values.thickness), modulus: gpa(values.modulus), panelDensity: values.panel_density, lossFactor: values.loss_factor, incidenceDegrees: values.incidence, fluidDensity: values.fluid_density, soundSpeed: values.sound_speed, poisson: 0.33 });
+      const state = panelTransmissionState({ frequency: values.frequency, thickness: mm(values.thickness), modulus: gpa(values.modulus), panelDensity: values.panel_density, lossFactor: values.loss_factor, incidenceDegrees: values.incidence, fluidDensity: values.fluid_density, soundSpeed: values.sound_speed, poisson: values.poisson });
       return {
         values: [stat('Diffuse-field TL', state.diffuseTl, 'dB'), stat('Selected-angle TL', state.tlAngle, 'dB'), stat('Normal-incidence TL', state.tlNormal, 'dB'), stat('Critical frequency', state.criticalFrequency, 'Hz'), stat('Surface mass', state.surfaceMass, 'kg/m²'), stat('Regime', state.regime)],
         interpretation: `At ${state.frequency.toFixed(0)} Hz the panel is in the ${state.regime}. The diffuse-field result (${state.diffuseTl.toFixed(1)} dB) includes a continuum of incidence angles and should not be replaced by the normal-incidence value.`,
@@ -16416,6 +16438,7 @@ return {seaParameterPreviewSvg,mountSeaParameterDemo,seaParameterSupportedDemoId
 const __extraCalculators=(()=>{
 const {HONEYCOMB_PAPER_REFERENCE,HONEYCOMB_PANEL_PRESETS,HONEYCOMB_MODE_DATA,PAPER_LAP_TRANSMISSION,honeycombPreset,honeycombProperties,honeycombWaveState,honeycombFrequencySeries,honeycombCoincidenceFrequency,idealLineTransmission,blockingMassTransmission,pointConnectionTransmission,paperLapTransmission,pointCouplingLossFactor,lineCouplingLossFactor,junctionTransmissionState,experimentalSeaInverse,seaForwardEnergies,inhomogeneousEnergyStudy,wavenumberTransmissionStudy}=__honeycomb;
 const {reciprocalCoupling,couplingPowerState,twoSubsystemEnergyBalance,forwardClfExperiment,identifyClfExperiment,histogram,clfIdentificationUncertainty}=__seaCoupling;
+const {materials,plateBoundaryPresets,plateModalFrequency}=__calculators;
 /* Additional engineering calculators for the complete Structural Acoustics, Understood library. */
 const G0 = 9.80665;
 const AIR_RHO = 1.204;
@@ -16430,6 +16453,12 @@ const db10 = x => 10 * Math.log10(Math.max(x, 1e-300));
 const fromDb10 = x => 10 ** (x / 10);
 const stat = (label, value, unit = '', tone = '') => ({ label, value, unit, tone });
 const trace = (name, x, y, extra = {}) => ({ name, x, y, ...extra });
+const materialOptions = Object.entries(materials).map(([value, material]) => ({ value, label: material.label }));
+const plateBoundaryOptions = Object.entries(plateBoundaryPresets).map(([value, preset]) => ({ value, label: preset.label }));
+const syncPanelCavityMaterial = values => {
+  const material = materials[values.material] || materials.aluminum;
+  return { ...values, E: material.E / 1e9, rho: material.rho, nu: material.nu };
+};
 
 function honeycombPanelFromValues(v) {
   if (v.panel_preset === 'panel2') return honeycombPreset('panel2');
@@ -16720,10 +16749,11 @@ const extraCalculatorDefinitions = {
   },
 
   'panel-cavity': {
-    category:'Structural Acoustics',basis:'In-vacuo plate and rigid-cavity mode proximity',confidence:'Screening calculation',
-    inputs:[{key:'E',label:'Young’s modulus',unit:'GPa',type:'number',default:68.9,min:.001},{key:'rho',label:'Panel density',unit:'kg/m³',type:'number',default:2700,min:.001},{key:'nu',label:'Poisson ratio',type:'number',default:.33,min:-.9,max:.49},{key:'thickness',label:'Panel thickness',unit:'mm',type:'number',default:3,min:.001},{key:'a',label:'Panel length',unit:'m',type:'number',default:1,min:.001},{key:'b',label:'Panel width',unit:'m',type:'number',default:.6,min:.001},{key:'depth',label:'Cavity depth',unit:'m',type:'number',default:.5,min:.001},{key:'max_index',label:'Maximum modal index',type:'number',default:5,min:2,max:8,step:1},{key:'tolerance',label:'Frequency tolerance',unit:'%',type:'number',default:10,min:0}],
-    theory:'<p>Simply supported plate modes are compared with rigid-wall rectangular cavity modes. Small frequency detuning is necessary but not sufficient for strong coupling.</p>',assumptions:['Thin isotropic simply supported plate.','Rigid rectangular cavity; in-vacuo plate frequencies and no added fluid mass.'],example:'Changing cavity depth sweeps axial acoustic modes through fixed structural modes.',
-    compute(v){const E=positive(v.E,'Modulus')*1e9,rho=positive(v.rho,'Density'),nu=n(v.nu),h=positive(v.thickness,'Thickness')/1000,a=positive(v.a,'Length'),b=positive(v.b,'Width'),d=positive(v.depth,'Depth'),N=clamp(Math.round(n(v.max_index,5)),2,8),tol=Math.max(0,n(v.tolerance)),D=E*h**3/(12*(1-nu*nu)),mA=rho*h,sm=[],am=[];for(let m=1;m<=N;m++)for(let q=1;q<=N;q++){const f=Math.PI/(TWO_PI)*Math.sqrt(D/mA)*((m/a)**2+(q/b)**2);sm.push({id:`P(${m},${q})`,f,m,q});}for(let nx=0;nx<=N;nx++)for(let ny=0;ny<=N;ny++)for(let nz=0;nz<=N;nz++){if(nx+ny+nz===0)continue;const f=AIR_C/2*Math.sqrt((nx/a)**2+(ny/b)**2+(nz/d)**2);am.push({id:`A(${nx},${ny},${nz})`,f,nx,ny,nz});}const pairs=[];for(const s of sm)for(const aa of am){const det=100*Math.abs(s.f-aa.f)/((s.f+aa.f)/2);if(det<=tol)pairs.push([s.id,s.f,aa.id,aa.f,det]);}pairs.sort((x,y)=>x[4]-y[4]);return{summary:[stat('Plate modes',sm.length),stat('Cavity modes',am.length),stat('Pairs within tolerance',pairs.length),stat('Closest detuning',pairs.length?pairs[0][4]:NaN,'%')],interpretation:pairs.length?`${pairs[0][0]} and ${pairs[0][2]} are the closest pair at ${pairs[0][4].toFixed(2)}% detuning. Spatial overlap still controls actual coupling.`:'No pairs fall inside the selected tolerance.',warnings:['Frequency proximity alone does not establish coupling strength. Compute interface modal overlap and include fluid loading in a coupled model.'],tables:[{title:'Near-frequency mode pairs',columns:['Plate mode','Plate f (Hz)','Cavity mode','Cavity f (Hz)','Detuning (%)'],rows:pairs.slice(0,100)}]};}
+    category:'Structural Acoustics',basis:'In-vacuo ideal-edge plate and rigid-cavity mode proximity',confidence:'Exact SSSS plate frequencies or Rayleigh plate screening combined with rigid-cavity modes',
+    inputs:[{key:'material',label:'Material preset',type:'select',default:'aluminum',options:materialOptions,help:'Preset values populate the editable panel properties below.'},{key:'E',label:'Young’s modulus',unit:'GPa',type:'number',default:68.9,min:.001},{key:'rho',label:'Panel density',unit:'kg/m³',type:'number',default:2700,min:.001},{key:'nu',label:'Poisson ratio',type:'number',default:.33,min:-.9,max:.49},{key:'thickness',label:'Panel thickness',unit:'mm',type:'number',default:3,min:.001},{key:'a',label:'Panel length',unit:'m',type:'number',default:1,min:.001},{key:'b',label:'Panel width',unit:'m',type:'number',default:.6,min:.001},{key:'boundary',label:'Panel edge boundary condition',type:'select',default:'simply-supported',options:plateBoundaryOptions},{key:'depth',label:'Cavity depth',unit:'m',type:'number',default:.5,min:.001},{key:'max_index',label:'Maximum modal index',type:'number',default:5,min:2,max:8,step:1},{key:'tolerance',label:'Frequency tolerance',unit:'%',type:'number',default:10,min:0}],
+    syncPreset:syncPanelCavityMaterial,
+    theory:'<p>Plate modal families for the selected ideal restraint are compared with rigid-wall rectangular cavity modes. Small frequency detuning is necessary but not sufficient for strong coupling; interface shape overlap and fluid loading still control the coupled response.</p>',assumptions:['Thin isotropic plate with the selected ideal edge restraint.','Rigid rectangular cavity; in-vacuo plate frequencies and no added fluid mass.'],example:'Change cavity depth or plate restraint and watch structural and acoustic modal ladders move through one another.',
+    compute(v){const E=positive(v.E,'Modulus')*1e9,rho=positive(v.rho,'Density'),nu=n(v.nu),h=positive(v.thickness,'Thickness')/1000,a=positive(v.a,'Length'),b=positive(v.b,'Width'),d=positive(v.depth,'Depth'),N=clamp(Math.round(n(v.max_index,5)),2,8),tol=Math.max(0,n(v.tolerance)),D=E*h**3/(12*(1-nu*nu)),mA=rho*h,boundary=plateBoundaryPresets[v.boundary]?v.boundary:'simply-supported',boundaryCode=plateBoundaryPresets[boundary].code,sm=[],am=[];for(let m=1;m<=N;m++)for(let q=1;q<=N;q++){const f=plateModalFrequency({boundary,m,n:q,a,b,D,surfaceMass:mA,poisson:nu});sm.push({id:`P(${m},${q})`,f,m,q});}for(let nx=0;nx<=N;nx++)for(let ny=0;ny<=N;ny++)for(let nz=0;nz<=N;nz++){if(nx+ny+nz===0)continue;const f=AIR_C/2*Math.sqrt((nx/a)**2+(ny/b)**2+(nz/d)**2);am.push({id:`A(${nx},${ny},${nz})`,f,nx,ny,nz});}sm.sort((x,y)=>x.f-y.f);am.sort((x,y)=>x.f-y.f);const pairs=[];for(const s of sm)for(const aa of am){const det=100*Math.abs(s.f-aa.f)/((s.f+aa.f)/2);if(det<=tol)pairs.push([s.id,s.f,aa.id,aa.f,det]);}pairs.sort((x,y)=>x[4]-y[4]);const shownPlate=sm.slice(0,Math.min(30,sm.length)),shownCavity=am.slice(0,Math.min(30,am.length));return{summary:[stat('Plate modes',sm.length),stat('Cavity modes',am.length),stat('Pairs within tolerance',pairs.length),stat('Closest detuning',pairs.length?pairs[0][4]:NaN,'%')],interpretation:{summary:pairs.length?`${pairs[0][0]} and ${pairs[0][2]} are the closest ${boundaryCode} plate/cavity pair at ${pairs[0][4].toFixed(2)}% detuning.`:`No ${boundaryCode} plate/cavity pairs fall inside the selected tolerance.`,physicalMeaning:'The primary plot places structural and acoustic natural frequencies on one horizontal scale. Close markers identify opportunities for coupling, but frequency coincidence alone does not show whether the pressure and displacement shapes perform net work across the interface.'},warnings:['Frequency proximity alone does not establish coupling strength. Compute interface modal overlap and include fluid loading in a coupled model.',...(boundaryCode==='SSSS'?[]:[`${boundaryCode} plate frequencies use Rayleigh trial shapes and should be confirmed when boundary accuracy controls the decision.`])],plots:[{title:`${boundaryCode} plate and rigid-cavity modal proximity`,xLabel:'Frequency (Hz)',yLabel:'Mode family (1 cavity · 2 plate)',xScale:'log',yMin:.7,yMax:2.3,traces:[trace('Plate modes',shownPlate.map(mode=>mode.f),shownPlate.map(()=>2),{showPoints:true,hideLine:true,pointRadius:4,pointLabels:shownPlate.map(mode=>mode.id)}),trace('Cavity modes',shownCavity.map(mode=>mode.f),shownCavity.map(()=>1),{showPoints:true,hideLine:true,pointRadius:4,pointLabels:shownCavity.map(mode=>mode.id)})]}],tables:[{title:'Near-frequency mode pairs',columns:['Plate mode','Plate f (Hz)','Cavity mode','Cavity f (Hz)','Detuning (%)'],rows:pairs.slice(0,100)}],presentation:{primaryEvidence:{type:'plot',index:0},primaryValueCount:4}};}
   },
 
   'fsp-generator': {
@@ -16963,7 +16993,7 @@ const extraToolCatalog = [
   {id:'extreme-response',title:'Extreme Response Spectrum',category:'Random & Shock',description:'Apply duration- and bandwidth-sensitive Gaussian peak factors to an SDOF response bank.',complexity:'Advanced',keywords:['ERS','crest factor','probability']},
   {id:'fds',title:'Fatigue Damage Spectrum',category:'Random & Shock',description:'Calculate a relative narrowband Gaussian FDS from a base-acceleration PSD, oscillator Q, duration, and S–N exponent.',complexity:'Advanced',keywords:['FDS','Miner','S-N']},
   {id:'pyroshock',title:'Pyroshock Screening Analyzer',category:'Random & Shock',description:'Generate a decaying high-frequency burst, compute its maximax SRS, and compare with a 50 ips pseudo-velocity reference.',complexity:'Advanced',keywords:['pyroshock','SRS','50 ips']},
-  {id:'panel-cavity',title:'Panel–Cavity Mode Proximity',category:'Structural Acoustics',description:'Compare simply supported plate and rigid-cavity modes and rank near-frequency pairs for coupling screening.',complexity:'Core',keywords:['coupling','plate','cavity']},
+  {id:'panel-cavity',title:'Panel–Cavity Mode Proximity',category:'Structural Acoustics',description:'Compare material- and restraint-dependent plate modes with rigid-cavity modes on a shared frequency map and rank near-frequency pairs.',complexity:'Core',keywords:['coupling','plate','cavity']},
   {id:'fsp-generator',title:'Force Spatial Pattern Generator',category:'Aero / Distributed Loads',description:'Decompose a convecting exponential CSD field into leading spatial patterns and quantify truncation energy.',complexity:'Advanced',keywords:['FSP','CSD','eigenvectors']},
   {id:'vibroacoustic-scaling',title:'Vibroacoustic Environment Scaling',category:'Aero / Distributed Loads',description:'Apply explicit dynamic-pressure, level, and optional equal-damage duration factors to a spectrum.',complexity:'Core',keywords:['scaling','dynamic pressure','environment']},
   {id:'multi-subsystem-sea',title:'Three-Subsystem SEA',category:'SEA & Energy',description:'Solve a reciprocal three-subsystem steady-state energy balance with internal and coupling loss factors.',complexity:'Advanced',keywords:['SEA','CLF','power balance']},
@@ -17107,9 +17137,9 @@ function lineChartSvg(plot, { width = 840, height = 390 } = {}) {
   (plot.traces ?? []).forEach((t, i) => {
     const color = t.color || palette[i % palette.length];
     const path = pathFromTrace(t, sx, sy, xLog, yLog);
-    if (path) s += `<path data-chart-trace="${i}"${harmonic?' data-chart-animated-path="true" vector-effect="non-scaling-stroke"':''} d="${path}" fill="none" stroke="${color}" stroke-width="${t.emphasis ? 3 : 2}" stroke-linejoin="round" stroke-linecap="round" ${t.dash ? 'stroke-dasharray="7 5"' : ''}/>`;
+    if (path&&!t.hideLine) s += `<path data-chart-trace="${i}"${harmonic?' data-chart-animated-path="true" vector-effect="non-scaling-stroke"':''} d="${path}" fill="none" stroke="${color}" stroke-width="${t.emphasis ? 3 : 2}" stroke-linejoin="round" stroke-linecap="round" ${t.dash ? 'stroke-dasharray="7 5"' : ''}/>`;
     const count=Math.min(t.x?.length??0,t.y?.length??0),step=Math.max(1,Math.ceil(count/80));
-    for(let point=0;point<count;point+=step){const x=Number(t.x[point]),y=Number(t.y[point]);if(!Number.isFinite(x)||!Number.isFinite(y)||(xLog&&x<=0)||(yLog&&y<=0))continue;const cx=sx(x).toFixed(2),cy=sy(y).toFixed(2);if(t.showPoints)s+=`<circle data-chart-visible-point="${i}" cx="${cx}" cy="${cy}" r="${Number(t.pointRadius)||4.5}" fill="${color}" stroke="#fff" stroke-width="1.5" pointer-events="none"/>`;s+=`<circle data-chart-trace="${i}" cx="${cx}" cy="${cy}" r="7" fill="transparent" stroke="transparent" pointer-events="all"><title>${escapeHtml(t.name||`Trace ${i+1}`)} · ${escapeHtml(plot.xLabel||'x')}: ${escapeHtml(formatNumber(x))} · ${escapeHtml(plot.yLabel||'y')}: ${escapeHtml(formatNumber(y))}</title></circle>`;}
+    for(let point=0;point<count;point+=step){const x=Number(t.x[point]),y=Number(t.y[point]);if(!Number.isFinite(x)||!Number.isFinite(y)||(xLog&&x<=0)||(yLog&&y<=0))continue;const cx=sx(x).toFixed(2),cy=sy(y).toFixed(2),pointLabel=t.pointLabels?.[point]||t.name||`Trace ${i+1}`;if(t.showPoints)s+=`<circle data-chart-visible-point="${i}" cx="${cx}" cy="${cy}" r="${Number(t.pointRadius)||4.5}" fill="${color}" stroke="#fff" stroke-width="1.5" pointer-events="none"/>`;s+=`<circle data-chart-trace="${i}" cx="${cx}" cy="${cy}" r="7" fill="transparent" stroke="transparent" pointer-events="all"><title>${escapeHtml(pointLabel)} · ${escapeHtml(plot.xLabel||'x')}: ${escapeHtml(formatNumber(x))} · ${escapeHtml(plot.yLabel||'y')}: ${escapeHtml(formatNumber(y))}</title></circle>`;}
   });
   s += `</g>`;
   s += `<text x="${m.left + innerW/2}" y="${height - 12}" text-anchor="middle" font-family="ui-sans-serif,system-ui" font-size="11" fill="#5f6b70">${escapeHtml(plot.xLabel || '')}</text>`;
@@ -17158,16 +17188,16 @@ const svgPolygonPoints = values => Array.from({length:Math.floor(values.length/2
 function surface3dSvg(surface, { width = 720, height = 520 } = {}) {
   const matrix=surface.matrix||[],rows=matrix.length,columns=Math.max(0,...matrix.map(row=>row.length));
   if(rows<2||columns<2)return'';
-  const geometry=surface.geometry==='cylinder'?'cylinder':'plate',margin={left:34,right:88,top:48,bottom:54},availableW=width-margin.left-margin.right,availableH=height-margin.top-margin.bottom;
+  const geometry=surface.geometry==='cylinder'?'cylinder':surface.geometry==='beam'?'beam':'plate',isCylinder=geometry==='cylinder',isBeam=geometry==='beam',margin={left:34,right:88,top:48,bottom:54},availableW=width-margin.left-margin.right,availableH=height-margin.top-margin.bottom;
   const requestedYaw=Number(surface.viewYawDeg),requestedPitch=Number(surface.viewPitchDeg),yaw=(Number.isFinite(requestedYaw)?requestedYaw:-38)*Math.PI/180,pitch=(Number.isFinite(requestedPitch)?requestedPitch:geometry==='cylinder'?24:38)*Math.PI/180;
-  const aspect=Math.max(.35,Math.min(3,Number(surface.aspectRatio)||1)),maxPlateSpan=2;
+  const aspect=Math.max(.35,Math.min(isBeam?8:3,Number(surface.aspectRatio)||1)),maxPlateSpan=2;
   const plateWidth=aspect>=1?maxPlateSpan:maxPlateSpan*aspect,plateDepth=aspect>=1?maxPlateSpan/aspect:maxPlateSpan;
   const lengthToDiameter=Math.max(.6,Math.min(4,Number(surface.lengthToDiameter)||2));
-  const cylinderLength=2*lengthToDiameter,deformationScale=Math.max(.04,Math.min(.45,Number(surface.deformationScale)||(geometry==='cylinder'?.18:.34)));
+  const cylinderLength=2*lengthToDiameter,deformationScale=Math.max(.04,Math.min(.45,Number(surface.deformationScale)||(isCylinder?.18:isBeam?.4:.34)));
   const nodes=matrix.map((row,rowIndex)=>row.map((value,columnIndex)=>{
     const normalized=Number(value)||0;
     let base,delta;
-    if(geometry==='cylinder'){
+    if(isCylinder){
       const rawTheta=surface.xValues?.[columnIndex],theta=Number.isFinite(Number(rawTheta))?Number(rawTheta)*Math.PI/180:columnIndex/(columns-1)*2*Math.PI;
       const rawZ=surface.yValues?.[rowIndex],zNormalized=Number.isFinite(Number(rawZ))?Number(rawZ):rowIndex/(rows-1);
       base=[Math.cos(theta),Math.sin(theta),(zNormalized-.5)*cylinderLength];
@@ -17194,12 +17224,12 @@ function surface3dSvg(surface, { width = 720, height = 520 } = {}) {
   cells.sort((a,b)=>a.depth-b.depth);
   const linePath=points=>points.map((point,index)=>`${index?'L':'M'}${point[0].toFixed(2)},${point[1].toFixed(2)}`).join(' ');
   const boundaryPaths=[];
-  if(geometry==='cylinder'){
+  if(isCylinder){
     boundaryPaths.push([...nodes[0].map(node=>node.screenBase),nodes[0][0].screenBase],[...nodes.at(-1).map(node=>node.screenBase),nodes.at(-1)[0].screenBase]);
   }else{
     boundaryPaths.push([nodes[0][0].screenBase,nodes[0].at(-1).screenBase,nodes.at(-1).at(-1).screenBase,nodes.at(-1)[0].screenBase,nodes[0][0].screenBase]);
   }
-  const title=surface.title||`${geometry==='cylinder'?'Cylinder':'Plate'} 3D mode shape`,magnitude=Math.max(1e-12,...matrix.flat().map(value=>Math.abs(Number(value)||0)));
+  const title=surface.title||`${isCylinder?'Cylinder':isBeam?'Beam':'Plate'} 3D mode shape`,magnitude=Math.max(1e-12,...matrix.flat().map(value=>Math.abs(Number(value)||0)));
   let svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(title)}"${surface.animation?.type==='harmonic'?' data-surface-animation="harmonic"':''}><rect width="${width}" height="${height}" fill="#fff"/>`;
   svg+=`<text x="${margin.left}" y="25" font-family="ui-sans-serif,system-ui" font-size="13" font-weight="700" fill="#172027">${escapeHtml(title)}</text>`;
   svg+=`<g data-surface-geometry="${geometry}">`;
@@ -17213,7 +17243,7 @@ function surface3dSvg(surface, { width = 720, height = 520 } = {}) {
   for(let index=0;index<64;index++){const value=1-2*index/63;svg+=`<rect x="${legendX}" y="${legendY+index*legendHeight/64}" width="13" height="${legendHeight/64+1}" fill="${signedHeatColor(value,1)}"/>`;}
   svg+=`<text x="${legendX+19}" y="${legendY+8}" font-family="ui-monospace,monospace" font-size="9" fill="#667176">+1</text><text x="${legendX+19}" y="${legendY+legendHeight/2+3}" font-family="ui-monospace,monospace" font-size="9" fill="#667176">0</text><text x="${legendX+19}" y="${legendY+legendHeight}" font-family="ui-monospace,monospace" font-size="9" fill="#667176">−1</text>`;
   svg+=`<text x="${legendX-2}" y="${legendY-10}" font-family="ui-sans-serif,system-ui" font-size="9" fill="#5f6b70">Normalized</text><text x="${legendX-2}" y="${legendY+legendHeight+20}" font-family="ui-sans-serif,system-ui" font-size="9" fill="#5f6b70">${escapeHtml(surface.zLabel||'displacement')}</text>`;
-  svg+=`<text x="${margin.left}" y="${height-15}" font-family="ui-sans-serif,system-ui" font-size="10" fill="#5f6b70">3D oblique view · deformation exaggerated · signed normalized displacement</text></svg>`;
+  svg+=`<text x="${margin.left}" y="${height-15}" font-family="ui-sans-serif,system-ui" font-size="10" fill="#5f6b70">3D oblique ${geometry} view · deformation exaggerated · signed normalized displacement</text></svg>`;
   return svg;
 }
 
@@ -19587,6 +19617,7 @@ function confidenceClass(confidence = '') {
 }
 
 function relatedConcepts(profile, definition) {
+  if (Array.isArray(definition.relatedLinks) && definition.relatedLinks.length) return definition.relatedLinks;
   const href = `#/cheat-sheet?section=${encodeURIComponent(profile.section)}`;
   return [
     ...profile.concepts.map(([title, description]) => ({ title, description, href })),
@@ -20557,8 +20588,9 @@ function renderTool(route){
   const values={};for(const field of calc.inputs||[])values[field.key]=route.params.has(field.key)?route.params.get(field.key):(projectHandoff?.inputs&&Object.hasOwn(projectHandoff.inputs,field.key)?projectHandoff.inputs[field.key]:field.default);
   const refs=calc.references?.length?calc.references:relevantReferences(meta.category);
   const concepts=conceptLinksForTool(id);
+  const contextLinks=calc.relatedLinks?.length?calc.relatedLinks:(concepts.length?concepts:calculatorRelatedLinks);
   const breadcrumbs=renderBreadcrumbs([{label:'Tools',href:'#/tools'},{label:subject.label,href:`#/tools?subject=${encodeURIComponent(subject.id)}`},{label:meta.title}]);
-  const context=`<section class="site-context-grid calculator-context-grid" aria-label="Calculator context">${renderLinkCollection({label:'Related concepts',items:concepts.length?concepts:calculatorRelatedLinks,variant:'related'})}</section>`;
+  const context=`<section class="site-context-grid calculator-context-grid" aria-label="Calculator context">${renderLinkCollection({label:'Related concepts',items:contextLinks,variant:'related'})}</section>`;
   const assumptionRule=renderCallout({tone:'assumption',label:'Use rule',body:'A polished numerical result does not expand the validity of its governing model.'});
   const provenance=`<aside class="model-provenance"><p class="eyebrow">Model provenance</p><dl><div><dt>Tool depth</dt><dd>${esc(profile.level)}</dd></div><div><dt>Engineering task</dt><dd>${esc(profile.task)}</dd></div><div><dt>Primary subject</dt><dd>${esc(subject.label)}</dd></div><div><dt>Expected input</dt><dd>${esc(profile.input)}</dd></div></dl></aside>`;
   const handoffBanner=projectHandoff?renderCallout({tone:'warning',label:'Project handoff applied',body:`Matching field keys were transferred from ${projectHandoff.source}. Confirm units, statistical basis, frequency convention, and physical meaning before accepting the imported values.`}):'';

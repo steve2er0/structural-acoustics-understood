@@ -238,6 +238,7 @@ function confidenceClass(confidence = '') {
 }
 
 function relatedConcepts(profile, definition) {
+  if (Array.isArray(definition.relatedLinks) && definition.relatedLinks.length) return definition.relatedLinks;
   const href = `#/cheat-sheet?section=${encodeURIComponent(profile.section)}`;
   return [
     ...profile.concepts.map(([title, description]) => ({ title, description, href })),

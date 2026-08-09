@@ -268,8 +268,9 @@ function renderTool(route){
   const values={};for(const field of calc.inputs||[])values[field.key]=route.params.has(field.key)?route.params.get(field.key):(projectHandoff?.inputs&&Object.hasOwn(projectHandoff.inputs,field.key)?projectHandoff.inputs[field.key]:field.default);
   const refs=calc.references?.length?calc.references:relevantReferences(meta.category);
   const concepts=conceptLinksForTool(id);
+  const contextLinks=calc.relatedLinks?.length?calc.relatedLinks:(concepts.length?concepts:calculatorRelatedLinks);
   const breadcrumbs=renderBreadcrumbs([{label:'Tools',href:'#/tools'},{label:subject.label,href:`#/tools?subject=${encodeURIComponent(subject.id)}`},{label:meta.title}]);
-  const context=`<section class="site-context-grid calculator-context-grid" aria-label="Calculator context">${renderLinkCollection({label:'Related concepts',items:concepts.length?concepts:calculatorRelatedLinks,variant:'related'})}</section>`;
+  const context=`<section class="site-context-grid calculator-context-grid" aria-label="Calculator context">${renderLinkCollection({label:'Related concepts',items:contextLinks,variant:'related'})}</section>`;
   const assumptionRule=renderCallout({tone:'assumption',label:'Use rule',body:'A polished numerical result does not expand the validity of its governing model.'});
   const provenance=`<aside class="model-provenance"><p class="eyebrow">Model provenance</p><dl><div><dt>Tool depth</dt><dd>${esc(profile.level)}</dd></div><div><dt>Engineering task</dt><dd>${esc(profile.task)}</dd></div><div><dt>Primary subject</dt><dd>${esc(subject.label)}</dd></div><div><dt>Expected input</dt><dd>${esc(profile.input)}</dd></div></dl></aside>`;
   const handoffBanner=projectHandoff?renderCallout({tone:'warning',label:'Project handoff applied',body:`Matching field keys were transferred from ${projectHandoff.source}. Confirm units, statistical basis, frequency convention, and physical meaning before accepting the imported values.`}):'';

@@ -319,20 +319,31 @@ test('material presets synchronize advanced cylinder properties and shell-mode f
   assert.notEqual(frequencies.get('aluminum'),frequencies.get('cfrp'));
 });
 
-test('beam, plate, and cylinder tools expose boundary-consistent normalized mode shapes',()=>{
+test('beam, plate, and cylinder tools expose boundary-consistent animated 3D mode shapes',()=>{
   for(const boundary of ['simply-supported','cantilever','fixed-fixed']){
-    const beam=registry.beam.compute({...defaults('beam'),boundary}),shapePlot=beam.plots[0];
-    assert.match(shapePlot.title,/normalized mode shapes/i);
+    const beam=registry.beam.compute({...defaults('beam'),boundary});
+    assert.equal(beam.presentation.primaryEvidence.type,'surface3d');
+    assert.equal(beam.presentation.primaryEvidenceCount,4);
     assert.equal(beam.presentation.animation.type,'harmonic');
-    assert.equal(shapePlot.animation.type,'harmonic');
-    assert.equal(shapePlot.traces.length,4);
-    shapePlot.traces.forEach(shape=>{
-      close(Math.max(...shape.y.map(Math.abs)),1,1e-10);
-      close(shape.y[0],0,1e-10);
-      if(boundary!=='cantilever')close(shape.y.at(-1),0,1e-10);
-      assert.match(shape.name,/Mode \d · [\d.]+ Hz/);
+    assert.equal(beam.surfaces3d.length,4);
+    assert.equal(beam.plots.length,1);
+    beam.surfaces3d.forEach(shape=>{
+      assert.equal(shape.geometry,'beam');
+      assert.equal(shape.animation.type,'harmonic');
+      const values=shape.matrix.flat();
+      close(Math.max(...values.map(Math.abs)),1,1e-10);
+      assert.ok(shape.matrix.every(row=>row.every((value,index)=>Math.abs(value-shape.matrix[0][index])<1e-12)));
+      assert.ok(shape.matrix.every(row=>Math.abs(row[0])<1e-10));
+      if(boundary!=='cantilever')assert.ok(shape.matrix.every(row=>Math.abs(row.at(-1))<1e-10));
+      assert.match(shape.title,/3D .* beam mode \d · [\d.]+ Hz/i);
     });
   }
+  const beamSurfaceSvg=surface3dSvg(registry.beam.compute(defaults('beam')).surfaces3d[0]);
+  assert.match(beamSurfaceSvg,/data-surface-animation="harmonic"/);
+  assert.match(beamSurfaceSvg,/data-surface-geometry="beam"/);
+  assert.match(beamSurfaceSvg,/3D oblique beam view/);
+  assert.match(beamSurfaceSvg,/data-surface-base-points=/);
+  assert.match(beamSurfaceSvg,/data-surface-delta-points=/);
 
   const plate=registry['plate-modes'].compute(defaults('plate-modes'));
   assert.equal(plate.presentation.primaryEvidence.type,'surface3d');
@@ -371,7 +382,7 @@ test('beam, plate, and cylinder tools expose boundary-consistent normalized mode
   assert.equal(cylinder.presentation.primaryEvidence.type,'surface3d');
   assert.equal(cylinder.presentation.primaryEvidenceCount,4);
   assert.equal(cylinder.surfaces3d.length,4);
-  assert.equal(cylinder.heatmaps.length,4);
+  assert.equal(cylinder.heatmaps,undefined);
   assert.equal(cylinder.presentation.animation.type,'harmonic');
   assert.equal(cylinder.plots[0].traces.length,4);
   cylinder.surfaces3d.forEach(shape=>{
@@ -383,21 +394,12 @@ test('beam, plate, and cylinder tools expose boundary-consistent normalized mode
     assert.ok(shape.matrix.at(-1).every(value=>Math.abs(value)<1e-10));
     assert.ok(shape.matrix.every(row=>Math.abs(row[0]-row.at(-1))<1e-10));
   });
-  cylinder.heatmaps.forEach(shape=>{
-    const values=shape.matrix.flat();
-    close(Math.max(...values.map(Math.abs)),1,1e-10);
-    assert.ok(shape.matrix[0].every(value=>Math.abs(value)<1e-10));
-    assert.ok(shape.matrix.at(-1).every(value=>Math.abs(value)<1e-10));
-    assert.ok(shape.matrix.every(row=>Math.abs(row[0]-row.at(-1))<1e-10));
-    assert.equal(shape.animation.type,'harmonic');
-  });
-  assert.match(cylinder.interpretation.physicalMeaning,/basis shapes, not frequency-tagged eigenmodes/i);
+  assert.match(cylinder.interpretation.physicalMeaning,/local curvature\/extensional scale, not a boundary-dependent natural frequency/i);
+  assert.equal(cylinder.relatedConcepts[0].href,'#/tool/shell-acoustics');
+  assert.equal(registry['ring-frequency'].relatedLinks[0].href,'#/tool/shell-acoustics');
   const cylinderSurfaceSvg=surface3dSvg(cylinder.surfaces3d[0]);
   assert.match(cylinderSurfaceSvg,/data-surface-geometry="cylinder"/);
-  assert.match(cylinderSurfaceSvg,/3D oblique view/);
-  const beamSvg=lineChartSvg(registry.beam.compute(defaults('beam')).plots[0]);
-  assert.match(beamSvg,/data-chart-animation="harmonic"/);
-  assert.match(beamSvg,/data-chart-zero-y=/);
+  assert.match(cylinderSurfaceSvg,/3D oblique cylinder view/);
   assert.match(plateSvg,/data-heatmap-base-value=/);
   close(harmonicPhase(0,1),1,1e-12);
   close(harmonicPhase(.25,1),0,1e-12);
@@ -410,6 +412,7 @@ test('beam, plate, and cylinder tools expose boundary-consistent normalized mode
   assert.match(appSource,/surfaceCells\.forEach/);
   assert.match(appSource,/requestAnimationFrame\(step\)/);
   assert.match(appSource,/prefers-reduced-motion: reduce/);
+  assert.match(appSource,/calc\.relatedLinks\?\.length/);
 });
 
 test('advanced shell acoustics leads with the selected frequency-tagged animated mode shape',()=>{
@@ -423,7 +426,7 @@ test('advanced shell acoustics leads with the selected frequency-tagged animated
   assert.match(shell.interpretation.physicalMeaning,/normalized radial deformation.*basis/i);
   assert.match(shell.interpretation.physicalMeaning,/not a physical-amplitude eigenvector/i);
   const surfaceSvg=surface3dSvg(shell.surfaces3d[0]);
-  assert.match(surfaceSvg,/3D selected shell mode.*m=2, n=3.*Hz/);
+  assert.match(surfaceSvg,/3D SS shell mode.*m=2, n=3.*Hz/);
   assert.match(surfaceSvg,/data-surface-geometry="cylinder"/);
   assert.match(surfaceSvg,/data-surface-base-value=/);
   const familyPlot=shell.plots[0];
@@ -445,6 +448,71 @@ test('advanced shell acoustics leads with the selected frequency-tagged animated
   assert.deepEqual(selectedPoint.y,[3]);
   assert.equal(selectedPoint.showPoints,true);
   assert.match(lineChartSvg(familyPlot),/data-chart-visible-point=/);
+});
+
+test('shell end restraint changes the selected basis and screening frequency',()=>{
+  const calculator=registry['shell-acoustics'],base={...defaults('shell-acoustics'),axial_order:2,circ_order:3};
+  assert.deepEqual(calculator.inputs.find(input=>input.key==='axial_boundary').options.map(option=>option.value),['simply-supported','clamped']);
+  const simplySupported=calculator.compute({...base,axial_boundary:'simply-supported'}),clamped=calculator.compute({...base,axial_boundary:'clamped'});
+  assert.ok(metric(clamped,'Estimated shell-mode frequency')>metric(simplySupported,'Estimated shell-mode frequency'));
+  assert.match(simplySupported.surfaces3d[0].title,/3D SS shell mode/);
+  assert.match(clamped.surfaces3d[0].title,/3D CC shell mode/);
+  const ssRows=simplySupported.surfaces3d[0].matrix,ccRows=clamped.surfaces3d[0].matrix;
+  assert.ok(ssRows[0].every(value=>Math.abs(value)<1e-12));
+  assert.ok(ccRows[0].every(value=>Math.abs(value)<1e-12));
+  assert.ok(ccRows.at(-1).every(value=>Math.abs(value)<1e-12));
+  assert.ok(Math.max(...ccRows[1].map(Math.abs))<Math.max(...ssRows[1].map(Math.abs)));
+  assert.match(clamped.assumptions.limitations.join(' '),/admissible-function wavenumber approximation/i);
+});
+
+test('beam, FE/BE, panel TL, and panel-cavity material presets stay synchronized',()=>{
+  const cases=[
+    ['beam','E_gpa','rho'],
+    ['fe-be-planner','modulus','density'],
+    ['elastic-panel-tl','modulus','panel_density'],
+    ['panel-cavity','E','rho']
+  ];
+  for(const [id,modulusKey,densityKey] of cases){
+    const calculator=registry[id],materialInput=calculator.inputs.find(input=>input.key==='material');
+    assert.deepEqual(materialInput.options.map(option=>option.value),Object.keys(materials));
+    const steel=calculator.syncPreset({...defaults(id),material:'steel'});
+    assert.equal(steel[modulusKey],materials.steel.E/1e9);
+    assert.equal(steel[densityKey],materials.steel.rho);
+    assert.equal(steel.nu??steel.poisson,materials.steel.nu);
+  }
+  const aluminumBeam=registry.beam.compute(defaults('beam'));
+  const steelBeam=registry.beam.compute(registry.beam.syncPreset({...defaults('beam'),material:'steel'}));
+  assert.notEqual(metric(aluminumBeam,'First natural frequency'),metric(steelBeam,'First natural frequency'));
+
+  const feBe=registry['fe-be-planner'];
+  const aluminumFeBe=feBe.compute(defaults('fe-be-planner'));
+  const steelFeBe=feBe.compute(feBe.syncPreset({...defaults('fe-be-planner'),material:'steel'}));
+  assert.notEqual(metric(aluminumFeBe,'Structural element size'),metric(steelFeBe,'Structural element size'));
+
+  const panelTl=registry['elastic-panel-tl'];
+  const aluminumTl=panelTl.compute(defaults('elastic-panel-tl'));
+  const steelTl=panelTl.compute(panelTl.syncPreset({...defaults('elastic-panel-tl'),material:'steel'}));
+  assert.notEqual(metric(aluminumTl,'Critical frequency'),metric(steelTl,'Critical frequency'));
+});
+
+test('panel-cavity shares plate controls and leads with a labeled modal frequency map',()=>{
+  const calculator=registry['panel-cavity'],base=defaults('panel-cavity');
+  assert.deepEqual(calculator.inputs.find(input=>input.key==='boundary').options.map(option=>option.value),['simply-supported','clamped','clamped-x','clamped-y']);
+  const ssss=calculator.compute({...base,boundary:'simply-supported'}),cccc=calculator.compute({...base,boundary:'clamped'});
+  assert.equal(ssss.presentation.primaryEvidence.type,'plot');
+  assert.match(ssss.plots[0].title,/SSSS plate and rigid-cavity modal proximity/);
+  assert.match(cccc.plots[0].title,/CCCC plate and rigid-cavity modal proximity/);
+  assert.notEqual(ssss.plots[0].traces[0].x[0],cccc.plots[0].traces[0].x[0]);
+  assert.deepEqual(ssss.plots[0].traces.map(trace=>trace.hideLine),[true,true]);
+  assert.deepEqual(ssss.plots[0].traces.map(trace=>trace.showPoints),[true,true]);
+  assert.match(ssss.plots[0].traces[0].pointLabels[0],/^P\(/);
+  assert.match(ssss.plots[0].traces[1].pointLabels[0],/^A\(/);
+  const svg=lineChartSvg(ssss.plots[0]);
+  assert.match(svg,/data-chart-visible-point=/);
+  assert.match(svg,/<title>P\(/);
+  assert.match(svg,/<title>A\(/);
+  assert.doesNotMatch(svg,/<path /);
+  assert.match(cccc.assumptions.limitations.join(' '),/Rayleigh trial shapes/i);
 });
 
 test('every calculator result uses the shared card, plot, and table unit conversion',()=>{
@@ -1252,7 +1320,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes the demo takeaway runtime',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v62'/);
+  assert.match(worker,/const CACHE = 'sau-v63'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);

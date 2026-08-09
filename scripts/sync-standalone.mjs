@@ -77,7 +77,7 @@ const calculatorsSource = moduleSource(calculatorsModule).replace(
   'const calculatorRegistry = createEngineeringRegistry(calculatorDefinitions);',
   'const calculatorRegistry = calculatorDefinitions;'
 );
-const calculatorsBlock = `const __calculators=(()=>{\n${calculatorsSource}\nreturn {materials,calculatorRegistry,getCalculator};\n})();\n\n`;
+const calculatorsBlock = `const __calculators=(()=>{\n${calculatorsSource}\nreturn {materials,plateBoundaryPresets,plateModalFrequency,calculatorRegistry,getCalculator};\n})();\n\n`;
 const calculatorsEnd = standalone.includes('const __seaCoupling=(()=>{') ? 'const __seaCoupling=(()=>{' : 'const __honeycomb=(()=>{';
 standalone = replaceRange(standalone, 'const __calculators=(()=>{', calculatorsEnd, calculatorsBlock);
 
@@ -197,7 +197,7 @@ let extraCalculatorsSource = moduleSource(extraCalculatorsModule)
     'const extraCalculatorRegistry = createEngineeringRegistry(extraCalculatorDefinitions);',
     'const extraCalculatorRegistry = extraCalculatorDefinitions;'
   );
-const extraCalculatorsBlock = `const __extraCalculators=(()=>{\n${honeycombImportNames}\n${seaCouplingImportNames}\n${extraCalculatorsSource}\nreturn {extraCalculatorRegistry};\n})();\n\n`;
+const extraCalculatorsBlock = `const __extraCalculators=(()=>{\n${honeycombImportNames}\n${seaCouplingImportNames}\nconst {materials,plateBoundaryPresets,plateModalFrequency}=__calculators;\n${extraCalculatorsSource}\nreturn {extraCalculatorRegistry};\n})();\n\n`;
 standalone = replaceRange(standalone, extraCalculatorsStart, 'const __extraData=(()=>{', extraCalculatorsBlock);
 
 const extraDataBlock = `const __extraData=(()=>{\n${moduleSource(extraDataModule)}\nreturn {extraToolCatalog};\n})();\n\n`;

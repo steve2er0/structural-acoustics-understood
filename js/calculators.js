@@ -118,7 +118,7 @@ function trace(name, x, y, extra = {}) { return { name, x, y, ...extra }; }
 function normalizeSeries(values){const scale=Math.max(...values.map(value=>Math.abs(value)),1e-12);return values.map(value=>value/scale);}
 function normalizeMatrix(matrix){const scale=Math.max(...matrix.flat().map(value=>Math.abs(value)),1e-12);return matrix.map(row=>row.map(value=>value/scale));}
 
-const plateBoundaryPresets = {
+export const plateBoundaryPresets = {
   'simply-supported': { label: 'Simply supported · SSSS', code: 'SSSS', x: 'simply-supported', y: 'simply-supported' },
   'clamped': { label: 'Clamped · CCCC', code: 'CCCC', x: 'clamped', y: 'clamped' },
   'clamped-x': { label: 'Clamped x-edges / simply supported y-edges · CSCS', code: 'CSCS', x: 'clamped', y: 'simply-supported' },
@@ -154,7 +154,7 @@ function plateBasisIntegrals(type, order) {
   return integrals;
 }
 
-function plateModalFrequency({ boundary, m, n: orderN, a, b, D, surfaceMass, poisson }) {
+export function plateModalFrequency({ boundary, m, n: orderN, a, b, D, surfaceMass, poisson }) {
   const preset = plateBoundaryPresets[boundary] || plateBoundaryPresets['simply-supported'];
   if (preset.code === 'SSSS') return Math.PI / 2 * Math.sqrt(D / surfaceMass) * ((m / a) ** 2 + (orderN / b) ** 2);
   const x = plateBasisIntegrals(preset.x, m), y = plateBasisIntegrals(preset.y, orderN), crossScale = a ** 2 * b ** 2;
@@ -173,6 +173,7 @@ const commonMaterialInputs = [
   { key: 'rho', label: 'Density', unit: 'kg/m³', type: 'number', default: 2700, min: 0.001, step: 1 },
   { key: 'nu', label: 'Poisson ratio', type: 'number', default: 0.33, min: -0.99, max: 0.49, step: 0.01 },
 ];
+const beamMaterialInputs = commonMaterialInputs.filter(input => input.key !== 'nu');
 
 function syncMaterialDefaults(values) {
   const m = materials[values.material];
@@ -656,18 +657,18 @@ const calculatorDefinitions = {
     category:'Structures', basis:'Euler–Bernoulli uniform beam', confidence:'Exact ideal beam formulas',
     inputs:[
       {key:'boundary',label:'Boundary / load case',type:'select',default:'simply-supported',options:[{value:'simply-supported',label:'Simply supported, center point load'},{value:'cantilever',label:'Cantilever, tip point load'},{value:'fixed-fixed',label:'Fixed–fixed, center point load'}]},
+      ...beamMaterialInputs,
       {key:'length',label:'Beam length',unit:'m',type:'number',default:1,min:0.001},
       {key:'width',label:'Rectangular width',unit:'m',type:'number',default:0.05,min:0.0001},
       {key:'height',label:'Rectangular height',unit:'m',type:'number',default:0.01,min:0.0001},
-      {key:'E_gpa',label:'Young’s modulus',unit:'GPa',type:'number',default:68.9,min:0.001},
-      {key:'rho',label:'Density',unit:'kg/m³',type:'number',default:2700,min:0.001},
       {key:'load',label:'Point load',unit:'N',type:'number',default:1000}
     ],
+    syncPreset:syncMaterialDefaults,
     theory:'<p>Static response and modal frequencies use a prismatic Euler–Bernoulli beam with small deflection. The first four β values and their exact normalized bending shapes are selected by boundary condition.</p>',
     assumptions:['Uniform rectangular section.','Small deflection and linear elastic material.','Shear deformation and rotary inertia neglected.'],
     example:'A simply supported beam under a center point load has δ<sub>max</sub>=PL³/(48EI).',
     compute(v){
-      const L=positive(v.length,'Length'),b=positive(v.width,'Width'),h=positive(v.height,'Height'),E=positive(v.E_gpa,'Modulus')*1e9,rho=positive(v.rho,'Density'),P=n(v.load);
+      const material=materialFrom(v),L=positive(v.length,'Length'),b=positive(v.width,'Width'),h=positive(v.height,'Height'),E=material.E,rho=material.rho,P=n(v.load);
       const A=b*h,I=b*h**3/12,mass=rho*A*L;
       let defl,Mmax,betas,label;
       if(v.boundary==='cantilever') {defl=P*L**3/(3*E*I);Mmax=P*L;betas=[1.875104,4.694091,7.854757,10.995541];label='Cantilever';}
@@ -686,13 +687,15 @@ const calculatorDefinitions = {
         values[0]=0;if(v.boundary!=='cantilever')values[values.length-1]=0;
         return normalizeSeries(values);
       });
+      const spanwise=linspace(0,1,7),surfaces3d=modeShapes.map((shape,index)=>({title:`3D ${label.toLowerCase()} beam mode ${index+1} · ${freqs[index].toFixed(1)} Hz`,geometry:'beam',matrix:spanwise.map(()=>shape),animation:{type:'harmonic'},aspectRatio:L/b,deformationScale:.42,xValues:normalizedPositions,yValues:spanwise,zLabel:'transverse motion'}));
       return{
         summary:[stat('Area',A,'m²'),stat('Second moment I',I,'m⁴'),stat('Beam mass',mass,'kg'),stat('Maximum deflection',defl,'m'),stat('Maximum bending stress',stress/1e6,'MPa'),stat('First natural frequency',freqs[0],'Hz')],
-        interpretation:{summary:`The ${label.toLowerCase()} idealization predicts a first bending mode at ${freqs[0].toFixed(2)} Hz. Boundary flexibility usually lowers this value.`,physicalMeaning:'Each displayed curve is a unit-normalized transverse bending shape; its sign is arbitrary, while its nodes and curvature show where motion reverses and where bending strain concentrates. Higher modes add internal nodes and are more sensitive to local attachments and non-ideal boundaries.'},
+        interpretation:{summary:`The ${label.toLowerCase()} idealization predicts a first bending mode at ${freqs[0].toFixed(2)} Hz. Boundary flexibility usually lowers this value.`,physicalMeaning:'Each animated 3D strip is a unit-normalized transverse bending shape; its sign is arbitrary, while its nodes and curvature show where motion reverses and where bending strain concentrates. The cross-section moves together because this Euler–Bernoulli view neglects shear deformation and local section distortion. Higher modes add internal nodes and are more sensitive to attachments and non-ideal boundaries.'},
         warnings:['Check slenderness, local section behavior, stress concentrations, and actual joint stiffness before design use.'],
         tables:[{title:'Ideal bending modes',columns:['Mode','β','Frequency (Hz)'],rows:freqs.map((f,i)=>[i+1,betas[i],f])}],
-        plots:[{title:`${label} beam · first four normalized mode shapes`,xLabel:'Position along beam (m)',yLabel:'Normalized transverse displacement',animation:{type:'harmonic'},traces:modeShapes.map((shape,index)=>trace(`Mode ${index+1} · ${freqs[index].toFixed(1)} Hz`,positions,shape,{emphasis:index===0}))},{title:'First four modal frequencies',xLabel:'Mode',yLabel:'Frequency (Hz)',traces:[trace('Frequency',[1,2,3,4],freqs,{emphasis:true})]}],
-        presentation:{primaryEvidence:{type:'plot',index:0},primaryValueCount:6,animation:{type:'harmonic',defaultRateHz:.5,note:'All four beam shapes use one slowed visual phase so their nodes remain comparable; the animation does not reproduce their different natural frequencies or physical amplitudes.'}}
+        plots:[{title:'First four modal frequencies',xLabel:'Mode',yLabel:'Frequency (Hz)',traces:[trace('Frequency',[1,2,3,4],freqs,{emphasis:true})]}],
+        surfaces3d,
+        presentation:{primaryEvidence:{type:'surface3d',index:0},primaryEvidenceCount:4,primaryValueCount:6,animation:{type:'harmonic',defaultRateHz:.5,note:'The four 3D beam shapes use one slowed visual phase so their nodes remain comparable. Cross-section motion is rendered as a narrow strip; deformation is normalized and exaggerated rather than physical amplitude or real-time frequency.'}}
       };
     }
   },
@@ -782,6 +785,7 @@ const calculatorDefinitions = {
 
   'ring-frequency': {
     category:'Structural Acoustics', basis:'Thin isotropic cylindrical shell scale', confidence:'Screening formula',
+    relatedLinks:[{title:'Cylindrical Shell Acoustics',description:'Calculate frequency-tagged axial and circumferential shell families with material and axial-restraint controls.',href:'#/tool/shell-acoustics'},{title:'Structural Wave Speeds',description:'Compare local longitudinal, shear, and dispersive bending-wave behavior.',href:'#/tool/bending-wave'},{title:'Critical Frequency',description:'Keep the flat-plate acoustic coincidence scale distinct from shell ring frequency.',href:'#/tool/critical-frequency'}],
     inputs:[
       ...commonMaterialInputs,
       {key:'diameter_m',label:'Cylinder diameter',unit:'m',type:'number',default:0.4064,min:0.001},
@@ -791,23 +795,21 @@ const calculatorDefinitions = {
       {key:'circumferential_start',label:'Starting circumferential order n',type:'number',default:2,min:0,max:12,step:1,help:'Displays this order and the next three circumferential shapes.'}
     ],
     syncPreset:syncMaterialDefaults,
-    theory:'<p>The ring-frequency scale is f<sub>r</sub>=[1/(2πR)]√[E/(ρ(1−ν²))]. Thickness does not enter this thin-shell scale directly but controls bending stiffness and local modes. The displayed shape basis uses w(θ,z)=cos(nθ)sin(mπz/L).</p>',
-    assumptions:['Thin, isotropic, uniform circular cylinder.','Displayed mode-shape maps use a simply supported axial sinusoid and circumferential harmonics.','No stiffeners, cutouts, prestress, fluid loading, or detailed end constraints.'],
+    theory:'<p>The ring-frequency scale is f<sub>r</sub>=[1/(2πR)]√[E/(ρ(1−ν²))]. Thickness and axial end restraint do not enter this local curvature scale directly, although both strongly affect the discrete modes of a finite cylinder. The displayed 3D shapes are only the basis w(θ,z)=cos(nθ)sin(mπz/L).</p>',
+    assumptions:['Thin, isotropic, uniform circular cylinder.','Displayed 3D basis shapes use a simply supported axial sinusoid and circumferential harmonics.','No stiffeners, cutouts, prestress, fluid loading, or detailed end constraints.'],
     example:'For a 16 inch aluminum cylinder, the ring-frequency scale is several kilohertz and differs strongly from the plate coincidence frequency.',
     compute(v){
       const {E,rho,nu}=materialFrom(v),DIA=positive(v.diameter_m,'Diameter'),h=positive(v.thickness_mm,'Thickness')/1000,L=positive(v.length_m,'Length'),R=DIA/2,mOrder=clamp(Math.round(n(v.axial_order,1)),1,8),nStart=clamp(Math.round(n(v.circumferential_start,2)),0,12);
       const cRing=Math.sqrt(E/(rho*(1-nu*nu))),fr=cRing/(2*Math.PI*R),circ=Math.PI*DIA,surfaceMass=rho*h,slender=L/DIA;
       const Dp=plateD(E,h,nu),fc=AIR_C**2/(2*Math.PI)*Math.sqrt(rho*h/Dp);
-      const theta=linspace(0,2*Math.PI,49),thetaDegrees=theta.map(value=>deg(value)),zNormalized=linspace(0,1,25),orders=Array.from({length:4},(_,index)=>nStart+index),labelEvery=(values,suffix='')=>values.map(value=>`${value.toFixed(value>=10?0:2)}${suffix}`);
-      const heatmaps=orders.map(order=>({title:`Cylinder shape basis · m=${mOrder}, n=${order}`,matrix:normalizeMatrix(zNormalized.map(z=>theta.map(angle=>Math.sin(mOrder*Math.PI*z)*Math.cos(order*angle)))),min:-1,max:1,diverging:true,animation:{type:'harmonic'},aspectRatio:Math.min(2.4,Math.max(.8,circ/L)),xValues:thetaDegrees,yValues:zNormalized,xLabels:labelEvery(thetaDegrees,'°'),yLabels:labelEvery(zNormalized),xLabel:'Circumferential angle θ',yLabel:'Normalized axial position z/L'}));
+      const theta=linspace(0,2*Math.PI,49),thetaDegrees=theta.map(value=>deg(value)),orders=Array.from({length:4},(_,index)=>nStart+index);
       const surfaces3d=orders.map(order=>{const surfaceTheta=linspace(0,2*Math.PI,Math.max(37,order*4+1)),surfaceZ=linspace(0,1,Math.max(17,mOrder*4+1));return{title:`3D cylinder basis · m=${mOrder}, n=${order}`,geometry:'cylinder',matrix:normalizeMatrix(surfaceZ.map(z=>surfaceTheta.map(angle=>Math.sin(mOrder*Math.PI*z)*Math.cos(order*angle)))),animation:{type:'harmonic'},lengthToDiameter:slender,deformationScale:.18,xValues:surfaceTheta.map(value=>deg(value)),yValues:surfaceZ,zLabel:'radial motion'};});
       return{
         summary:[stat('Ring frequency',fr,'Hz'),stat('Ring wave speed',cRing,'m/s'),stat('Circumference',circ,'m'),stat('Surface mass',surfaceMass,'kg/m²'),stat('Plate critical frequency',fc,'Hz'),stat('Length / diameter',slender)],
-        interpretation:{summary:`The ring-frequency scale is ${fr.toFixed(1)} Hz. The flat-plate coincidence estimate is ${fc.toFixed(1)} Hz, demonstrating that the two frequencies describe different physics.`,physicalMeaning:`The animated 3D cylinders show exaggerated, normalized radial displacement for axial order m=${mOrder} and circumferential orders n=${nStart}–${nStart+3}. Order n counts waves around the circumference; shape and alternating colors identify inward and outward lobes. These are shell basis shapes, not frequency-tagged eigenmodes of the finite installed cylinder.`},
+        interpretation:{summary:`The ring-frequency scale is ${fr.toFixed(1)} Hz. The flat-plate coincidence estimate is ${fc.toFixed(1)} Hz, demonstrating that the two frequencies describe different physics.`,physicalMeaning:`Ring frequency is a local curvature/extensional scale, not a boundary-dependent natural frequency of this finite cylinder. The animated 3D cylinders show exaggerated basis shapes for axial order m=${mOrder} and circumferential orders n=${nStart}–${nStart+3}; use the Cylindrical Shell Acoustics tool when discrete, frequency-tagged shell families are needed.`},
         warnings:[h/R>0.1?'The wall is not especially thin relative to radius; a thick-shell model may be more appropriate.':'Finite length, stiffeners, attachments, and boundary conditions create discrete shell modes around this scale.','Use a shell eigenvalue model to attach frequencies to these basis shapes for the actual end constraints and installed mass.'],
         plots:[{title:`Circumferential shapes at an axial antinode · m=${mOrder}`,xLabel:'Circumferential angle (deg)',yLabel:'Normalized radial displacement',traces:orders.map((order,index)=>trace(`n = ${order}`,thetaDegrees,theta.map(angle=>Math.cos(order*angle)),{emphasis:index===0}))}],
         surfaces3d,
-        heatmaps,
         tables:[{title:'Displayed cylinder shape basis',columns:['Axial half-waves m','Circumferential order n','Circumferential lobes'],rows:orders.map(order=>[mOrder,order,order===0?1:2*order])}],
         presentation:{primaryEvidence:{type:'surface3d',index:0},primaryEvidenceCount:4,primaryValueCount:6,animation:{type:'harmonic',defaultRateHz:.5,note:'The 3D cylinder basis shapes use one slowed visual phase. Radial deformation is exaggerated and normalized to show inward and outward lobes, not actual finite-shell amplitude or frequency response.'}}
       };

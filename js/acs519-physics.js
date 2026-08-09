@@ -165,12 +165,15 @@ export function shellAcousticsState(input = {}) {
   const soundSpeed = positive(input.soundSpeed, AIR_C);
   const axialOrder = Math.max(1, Math.round(number(input.axialOrder, 1)));
   const circumferentialOrder = Math.max(0, Math.round(number(input.circumferentialOrder, 2)));
+  const axialBoundary = input.axialBoundary === 'clamped' ? 'clamped' : 'simply-supported';
+  const clampedRoots = [4.730040745, 7.853204624, 10.99560784, 14.13716549];
+  const axialFactor = axialBoundary === 'clamped' ? clampedRoots[axialOrder - 1] || (axialOrder + 0.5) * Math.PI : axialOrder * Math.PI;
   const membraneSpeed = Math.sqrt(modulus / (density * (1 - poisson ** 2)));
   const ringFrequency = membraneSpeed / (TAU * radius);
   const bendingStiffness = modulus * thickness ** 3 / (12 * (1 - poisson ** 2));
   const surfaceMass = density * thickness;
   const criticalFrequency = soundSpeed ** 2 / TAU * Math.sqrt(surfaceMass / bendingStiffness);
-  const axialWavenumber = axialOrder * Math.PI / length;
+  const axialWavenumber = axialFactor / length;
   const circumferentialWavenumber = circumferentialOrder / radius;
   const shellWavenumber = Math.hypot(axialWavenumber, circumferentialWavenumber);
   const membraneTerm = (membraneSpeed / radius) ** 2 * (axialWavenumber / Math.max(shellWavenumber, 1e-12)) ** 4;
@@ -187,7 +190,7 @@ export function shellAcousticsState(input = {}) {
   });
   const minimumIndex = modeCurve.indexOf(Math.min(...modeCurve));
   return {
-    radius, length, thickness, modulus, density, poisson, soundSpeed, axialOrder, circumferentialOrder,
+    radius, length, thickness, modulus, density, poisson, soundSpeed, axialOrder, circumferentialOrder, axialBoundary, axialFactor,
     membraneSpeed, ringFrequency, bendingStiffness, surfaceMass, criticalFrequency, axialWavenumber,
     circumferentialWavenumber, shellWavenumber, modeFrequency, firstAcousticCuton,
     minimumFrequencyOrder: minimumIndex,
