@@ -265,6 +265,31 @@ test('material presets synchronize dependent properties and plate modal frequenc
   assert.match(appSource,/toDisplayNumber\(synced\[field\.key\],field\.unit,system\)/);
 });
 
+test('plate boundary presets update frequencies and enforce the selected edge restraint in the mode shapes',()=>{
+  const plate=registry['plate-modes'],base=defaults('plate-modes'),boundaryInput=plate.inputs.find(input=>input.key==='boundary');
+  assert.deepEqual(boundaryInput.options.map(option=>option.value),['simply-supported','clamped','clamped-x','clamped-y']);
+  const cases=Object.fromEntries(boundaryInput.options.map(option=>[option.value,plate.compute({...base,boundary:option.value})]));
+  const fundamental=boundary=>metric(cases[boundary],'Fundamental mode');
+  assert.ok(fundamental('clamped')>fundamental('clamped-y'));
+  assert.ok(fundamental('clamped-y')>fundamental('clamped-x'));
+  assert.ok(fundamental('clamped-x')>fundamental('simply-supported'));
+  const codes={'simply-supported':'SSSS',clamped:'CCCC','clamped-x':'CSCS','clamped-y':'SCSC'};
+  for(const [boundary,result] of Object.entries(cases)){
+    assert.match(result.surfaces3d[0].title,new RegExp(`3D ${codes[boundary]} plate mode`));
+    result.surfaces3d.forEach(shape=>{
+      assert.ok(shape.matrix[0].every(value=>Math.abs(value)<1e-10));
+      assert.ok(shape.matrix.at(-1).every(value=>Math.abs(value)<1e-10));
+      assert.ok(shape.matrix.every(row=>Math.abs(row[0])<1e-10&&Math.abs(row.at(-1))<1e-10));
+    });
+  }
+  const simpleShape=cases['simply-supported'].surfaces3d[0].matrix,clampedShape=cases.clamped.surfaces3d[0].matrix;
+  const simpleNearX=Math.max(...simpleShape.map(row=>Math.abs(row[1]))),clampedNearX=Math.max(...clampedShape.map(row=>Math.abs(row[1])));
+  const simpleNearY=Math.max(...simpleShape[1].map(Math.abs)),clampedNearY=Math.max(...clampedShape[1].map(Math.abs));
+  assert.ok(clampedNearX<simpleNearX*.3);
+  assert.ok(clampedNearY<simpleNearY*.3);
+  assert.match(cases.clamped.assumptions.limitations.join(' '),/Rayleigh trial shapes/i);
+});
+
 test('material presets synchronize advanced cylinder properties and shell-mode frequencies',()=>{
   const shell=registry['shell-acoustics'],base=defaults('shell-acoustics'),frequencies=new Map();
   assert.equal(shell.inputs[0].key,'material');
@@ -1227,7 +1252,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes the demo takeaway runtime',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v61'/);
+  assert.match(worker,/const CACHE = 'sau-v62'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);

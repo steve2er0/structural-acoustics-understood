@@ -4951,7 +4951,7 @@ const toolCatalog = [
     "id": "plate-modes",
     "title": "Rectangular Plate Modes",
     "category": "Structures",
-    "description": "Calculate thin, simply supported isotropic plate modes, animate their signed 3D shapes, and identify near-degenerate pairs.",
+    "description": "Calculate thin isotropic plate modes for simply supported, clamped, or mixed ideal edge restraints; animate their signed 3D shapes and identify near-degenerate pairs.",
     "complexity": "Core",
     "keywords": [
       "plate",
@@ -7296,6 +7296,55 @@ function trace(name, x, y, extra = {}) { return { name, x, y, ...extra }; }
 function normalizeSeries(values){const scale=Math.max(...values.map(value=>Math.abs(value)),1e-12);return values.map(value=>value/scale);}
 function normalizeMatrix(matrix){const scale=Math.max(...matrix.flat().map(value=>Math.abs(value)),1e-12);return matrix.map(row=>row.map(value=>value/scale));}
 
+const plateBoundaryPresets = {
+  'simply-supported': { label: 'Simply supported · SSSS', code: 'SSSS', x: 'simply-supported', y: 'simply-supported' },
+  'clamped': { label: 'Clamped · CCCC', code: 'CCCC', x: 'clamped', y: 'clamped' },
+  'clamped-x': { label: 'Clamped x-edges / simply supported y-edges · CSCS', code: 'CSCS', x: 'clamped', y: 'simply-supported' },
+  'clamped-y': { label: 'Simply supported x-edges / clamped y-edges · SCSC', code: 'SCSC', x: 'simply-supported', y: 'clamped' }
+};
+const plateBoundaryOptions = Object.entries(plateBoundaryPresets).map(([value, preset]) => ({ value, label: preset.label }));
+const plateBasisIntegralCache = new Map();
+
+function plateAxisBasis(type, order, position) {
+  const mode = Math.max(1, Math.round(order)), u = clamp(position, 0, 1), modalWave = mode * Math.PI;
+  if (type === 'clamped') {
+    const edgeWave = Math.PI, sm = Math.sin(modalWave * u), cm = Math.cos(modalWave * u), se = Math.sin(edgeWave * u), ce = Math.cos(edgeWave * u);
+    return {
+      value: sm * se,
+      slope: modalWave * cm * se + edgeWave * sm * ce,
+      curvature: -(modalWave ** 2 + edgeWave ** 2) * sm * se + 2 * modalWave * edgeWave * cm * ce
+    };
+  }
+  return { value: Math.sin(modalWave * u), slope: modalWave * Math.cos(modalWave * u), curvature: -(modalWave ** 2) * Math.sin(modalWave * u) };
+}
+
+function plateBasisIntegrals(type, order) {
+  const key = `${type}:${order}`;
+  if (plateBasisIntegralCache.has(key)) return plateBasisIntegralCache.get(key);
+  const positions = linspace(0, 1, 401), states = positions.map(position => plateAxisBasis(type, order, position));
+  const integrals = {
+    value2: trapz(positions, states.map(state => state.value ** 2)),
+    slope2: trapz(positions, states.map(state => state.slope ** 2)),
+    curvatureValue: trapz(positions, states.map(state => state.curvature * state.value)),
+    curvature2: trapz(positions, states.map(state => state.curvature ** 2))
+  };
+  plateBasisIntegralCache.set(key, integrals);
+  return integrals;
+}
+
+function plateModalFrequency({ boundary, m, n: orderN, a, b, D, surfaceMass, poisson }) {
+  const preset = plateBoundaryPresets[boundary] || plateBoundaryPresets['simply-supported'];
+  if (preset.code === 'SSSS') return Math.PI / 2 * Math.sqrt(D / surfaceMass) * ((m / a) ** 2 + (orderN / b) ** 2);
+  const x = plateBasisIntegrals(preset.x, m), y = plateBasisIntegrals(preset.y, orderN), crossScale = a ** 2 * b ** 2;
+  const quotient = (
+    x.curvature2 * y.value2 / a ** 4 +
+    x.value2 * y.curvature2 / b ** 4 +
+    2 * poisson * x.curvatureValue * y.curvatureValue / crossScale +
+    2 * (1 - poisson) * x.slope2 * y.slope2 / crossScale
+  ) / (x.value2 * y.value2);
+  return Math.sqrt(D / surfaceMass * Math.max(quotient, 0)) / (2 * Math.PI);
+}
+
 const commonMaterialInputs = [
   { key: 'material', label: 'Material preset', type: 'select', default: 'aluminum', options: materialOptions, help: 'Preset values populate the defaults shown below.' },
   { key: 'E_gpa', label: 'Young’s modulus', unit: 'GPa', type: 'number', default: 68.9, min: 0.001, step: 0.1 },
@@ -7827,38 +7876,41 @@ const calculatorDefinitions = {
   },
 
   'plate-modes': {
-    category:'Structures', basis:'Kirchhoff thin simply supported plate', confidence:'Exact ideal boundary formula',
+    category:'Structures', basis:'Kirchhoff thin rectangular plate with ideal simply supported, clamped, or mixed edge restraints', confidence:'Exact for SSSS; Rayleigh–Ritz screening estimate for clamped and mixed presets',
     inputs:[
       ...commonMaterialInputs,
       {key:'thickness_mm',label:'Plate thickness',unit:'mm',type:'number',default:3,min:0.001},
       {key:'a',label:'Plate dimension a',unit:'m',type:'number',default:1,min:0.001},
       {key:'b',label:'Plate dimension b',unit:'m',type:'number',default:0.6,min:0.001},
+      {key:'boundary',label:'Edge boundary condition',type:'select',default:'simply-supported',options:plateBoundaryOptions,help:'SSSS is exact in this model; clamped and mixed cases use boundary-consistent Rayleigh trial shapes.'},
       {key:'max_order',label:'Maximum m,n order',type:'number',default:6,min:1,max:20,step:1}
     ],
     syncPreset:syncMaterialDefaults,
-    theory:'<p>For a simply supported isotropic plate, each mode is the exact product shape sin(mπx/a)sin(nπy/b), and its frequency depends on (m/a)²+(n/b)².</p>',
-    assumptions:['Thin, flat, homogeneous isotropic plate.','All four edges simply supported.','No added mass, stiffeners, prestress, or fluid loading.'],
-    example:'A nearly square plate produces closely spaced (1,2) and (2,1) modes.',
+    theory:'<p>The SSSS solution uses the exact product shape sin(mπx/a)sin(nπy/b). Clamped and mixed presets use admissible product trial functions that enforce zero displacement and zero slope at clamped edges, with frequency obtained from the Kirchhoff-plate Rayleigh quotient.</p>',
+    assumptions:['Thin, flat, homogeneous isotropic plate.','Edges follow the selected ideal simply supported or clamped restraint.','No added mass, stiffeners, prestress, elastic boundary compliance, or fluid loading.'],
+    example:'Compare SSSS with CCCC: added rotational restraint raises the modal frequencies and flattens the mode shape as it approaches each clamped edge.',
     compute(v){
-      const {E,rho,nu}=materialFrom(v),h=positive(v.thickness_mm,'Thickness')/1000,a=positive(v.a,'a'),b=positive(v.b,'b'),N=clamp(Math.round(n(v.max_order,6)),1,20),D=plateD(E,h,nu);
+      const {E,rho,nu}=materialFrom(v),h=positive(v.thickness_mm,'Thickness')/1000,a=positive(v.a,'a'),b=positive(v.b,'b'),N=clamp(Math.round(n(v.max_order,6)),1,20),D=plateD(E,h,nu),surfaceMass=rho*h,boundary=plateBoundaryPresets[v.boundary]?v.boundary:'simply-supported',boundaryPreset=plateBoundaryPresets[boundary];
       const modes=[];
       for(let m=1;m<=N;m++)for(let nn=1;nn<=N;nn++){
-        const f=Math.PI/2*Math.sqrt(D/(rho*h))*((m/a)**2+(nn/b)**2);
+        const f=plateModalFrequency({boundary,m,n:nn,a,b,D,surfaceMass,poisson:nu});
         modes.push([m,nn,f]);
       }
       modes.sort((x,y)=>x[2]-y[2]);
       const first=modes.slice(0,Math.min(30,modes.length));
       const shapeModes=first.slice(0,4),xNormalized=linspace(0,1,25),yNormalized=linspace(0,1,25),surfaceX=linspace(0,1,21),surfaceY=linspace(0,1,21),axisLabels=values=>values.map(value=>value.toFixed(2));
-      const heatmaps=shapeModes.map(([m,nn,frequency])=>({title:`Plate mode (${m},${nn}) · ${frequency.toFixed(1)} Hz`,matrix:normalizeMatrix(yNormalized.map(y=>xNormalized.map(x=>Math.sin(m*Math.PI*x)*Math.sin(nn*Math.PI*y)))),min:-1,max:1,diverging:true,animation:{type:'harmonic'},aspectRatio:a/b,xValues:xNormalized,yValues:yNormalized,xLabels:axisLabels(xNormalized),yLabels:axisLabels(yNormalized),xLabel:'Normalized position x/a',yLabel:'Normalized position y/b'}));
-      const surfaces3d=shapeModes.map(([m,nn,frequency])=>({title:`3D plate mode (${m},${nn}) · ${frequency.toFixed(1)} Hz`,geometry:'plate',matrix:normalizeMatrix(surfaceY.map(y=>surfaceX.map(x=>Math.sin(m*Math.PI*x)*Math.sin(nn*Math.PI*y)))),animation:{type:'harmonic'},aspectRatio:a/b,deformationScale:.34,xValues:surfaceX,yValues:surfaceY,zLabel:'transverse motion'}));
+      const modeShape=(m,nn,x,y)=>plateAxisBasis(boundaryPreset.x,m,x).value*plateAxisBasis(boundaryPreset.y,nn,y).value;
+      const heatmaps=shapeModes.map(([m,nn,frequency])=>({title:`${boundaryPreset.code} plate mode (${m},${nn}) · ${frequency.toFixed(1)} Hz`,matrix:normalizeMatrix(yNormalized.map(y=>xNormalized.map(x=>modeShape(m,nn,x,y)))),min:-1,max:1,diverging:true,animation:{type:'harmonic'},aspectRatio:a/b,xValues:xNormalized,yValues:yNormalized,xLabels:axisLabels(xNormalized),yLabels:axisLabels(yNormalized),xLabel:'Normalized position x/a',yLabel:'Normalized position y/b'}));
+      const surfaces3d=shapeModes.map(([m,nn,frequency])=>({title:`3D ${boundaryPreset.code} plate mode (${m},${nn}) · ${frequency.toFixed(1)} Hz`,geometry:'plate',matrix:normalizeMatrix(surfaceY.map(y=>surfaceX.map(x=>modeShape(m,nn,x,y)))),animation:{type:'harmonic'},aspectRatio:a/b,deformationScale:.34,xValues:surfaceX,yValues:surfaceY,zLabel:'transverse motion'}));
       const warnings=[];
       for(let i=1;i<Math.min(12,first.length);i++) if((first[i][2]-first[i-1][2])/first[i][2]<0.01){warnings.push(`Modes (${first[i-1][0]},${first[i-1][1]}) and (${first[i][0]},${first[i][1]}) are within 1%; small asymmetry may split or mix them.`);break;}
+      if(boundaryPreset.code!=='SSSS')warnings.push(`${boundaryPreset.code} frequencies use admissible Rayleigh trial shapes; use a converged plate or finite-element eigenvalue solution when boundary-restraint accuracy controls the decision.`);
       return{
-        summary:[stat('Bending stiffness D',D,'N·m'),stat('Surface mass',rho*h,'kg/m²'),stat('Fundamental mode',first[0][2],'Hz'),stat('Modes calculated',modes.length)],
-        interpretation:{summary:`The lowest ideal mode is (${first[0][0]},${first[0][1]}). The result is especially sensitive to boundary restraint and thickness because D scales with h³.`,physicalMeaning:'The animated 3D surfaces show exaggerated, normalized transverse deformation; their signed colors distinguish regions moving in opposite phase. Nodal lines remain stationary while the surface passes through the undeformed plane. The m and n indices count half-waves along dimensions a and b, and closely spaced modes can mix when small asymmetries, attachments, or boundary flexibility are introduced.'},
+        summary:[stat('Bending stiffness D',D,'N·m'),stat('Surface mass',surfaceMass,'kg/m²'),stat('Fundamental mode',first[0][2],'Hz'),stat('Modes calculated',modes.length)],
+        interpretation:{summary:`The lowest ${boundaryPreset.code} mode is (${first[0][0]},${first[0][1]}) at ${first[0][2].toFixed(2)} Hz. Boundary restraint and thickness strongly control the result because clamping suppresses edge rotation while D scales with h³.`,physicalMeaning:`The animated 3D surfaces show exaggerated, normalized transverse deformation for the selected ${boundaryPreset.code} edge idealization; signed colors distinguish regions moving in opposite phase. Nodal lines remain stationary while the surface passes through the undeformed plane. For SSSS, m and n count exact sinusoidal half-waves. For clamped directions they index boundary-consistent Rayleigh trial families with zero displacement and zero edge slope.`},
         warnings,
         tables:[{title:'Lowest plate modes',columns:['m','n','Frequency (Hz)'],rows:first}],
-        plots:[{title:'Ordered plate modes',xLabel:'Ordered mode index',yLabel:'Frequency (Hz)',traces:[trace('Modes',first.map((_,i)=>i+1),first.map(r=>r[2]))]}],
+        plots:[{title:`Ordered ${boundaryPreset.code} plate modes`,xLabel:'Ordered mode index',yLabel:'Frequency (Hz)',traces:[trace(boundaryPreset.code,first.map((_,i)=>i+1),first.map(r=>r[2]))]}],
         surfaces3d,
         heatmaps,
         presentation:{primaryEvidence:{type:'surface3d',index:0},primaryEvidenceCount:4,primaryValueCount:4,animation:{type:'harmonic',defaultRateHz:.5,note:'The four 3D plate shapes share a slowed visual phase. Deformation is exaggerated and normalized so nodes and opposite-phase regions remain easy to compare; this is not physical amplitude or real-time frequency.'}},

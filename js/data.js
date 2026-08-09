@@ -1606,7 +1606,7 @@ export const toolCatalog = [
     "id": "plate-modes",
     "title": "Rectangular Plate Modes",
     "category": "Structures",
-    "description": "Calculate thin, simply supported isotropic plate modes, animate their signed 3D shapes, and identify near-degenerate pairs.",
+    "description": "Calculate thin isotropic plate modes for simply supported, clamped, or mixed ideal edge restraints; animate their signed 3D shapes and identify near-degenerate pairs.",
     "complexity": "Core",
     "keywords": [
       "plate",
