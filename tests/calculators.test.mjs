@@ -1298,6 +1298,10 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   assert.match(html,/function solveLaunchSeaProject\(projectInput = \{\}\)/);
   assert.match(html,/function bindLaunchSeaCapstone\(root = document/);
   assert.match(html,/Launch-Vehicle SEA Capstone/);
+  assert.match(html,/first\.startsWith\('concept-'\)/);
+  assert.match(html,/#\/cheat-sheet\?section=\$\{encodeURIComponent\(selectedSection\.id\)\}&concept=/);
+  assert.doesNotMatch(html,/href="#concept-/);
+  assert.match(html,/data-scroll-target="main-content"/);
 });
 
 test('launch-vehicle SEA capstone solves a reciprocal, banded, auditable network',()=>{
@@ -1494,6 +1498,12 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
   assert.match(appSource,/first==='subject'.*renderSubjectPage/);
   assert.match(appSource,/first==='case-studies'.*renderCaseStudies/);
   assert.match(appSource,/function legacyRouteTarget/);
+  assert.match(appSource,/first\.startsWith\('concept-'\)/);
+  assert.match(appSource,/first\.startsWith\('section-'\)/);
+  assert.match(appSource,/first\.startsWith\('reference-'\)/);
+  assert.doesNotMatch(appSource,/href="#concept-/);
+  assert.match(appSource,/#\/references\?anchor=reference-method/);
+  assert.match(renderSubjectPage('acoustics',{sections:allSections,tools:allTools,demos:allDemos,caseStudies:allCaseStudies}),/#\/subject\/acoustics\?anchor=subject-learning/);
   assert.doesNotMatch(appSource,/function renderHardware/);
   assert.doesNotMatch(appSource,/function renderPathways/);
   assert.match(appSource,/site-system-subject/);
@@ -1504,7 +1514,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes the demo takeaway runtime',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v72'/);
+  assert.match(worker,/const CACHE = 'sau-v73'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);
