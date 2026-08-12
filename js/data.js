@@ -1808,14 +1808,18 @@ export const toolCatalog = [
   },
   {
     "id": "accelerometer",
-    "title": "Accelerometer Chain Check",
+    "title": "PCB Accelerometer & DAQ Range Explorer",
     "category": "Test & Signal",
-    "description": "Check sensitivity, voltage headroom, noise, low-frequency suitability, mass loading, and sample-rate margin.",
+    "description": "Select from the current PCB accelerometer catalog, compare sensitivity, frequency and temperature coverage, and screen usable range with an 8-bit or 24-bit DAQ.",
     "complexity": "Screening",
     "keywords": [
       "accelerometer",
       "sensor",
-      "DAQ"
+      "DAQ",
+      "PCB Piezotronics",
+      "dynamic range",
+      "sensitivity",
+      "temperature"
     ]
   },
   {

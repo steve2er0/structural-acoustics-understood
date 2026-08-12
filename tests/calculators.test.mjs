@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { sections as baseSections, toolCatalog, demos as baseDemos, caseNotes as baseCaseNotes } from '../js/data.js';
 import { extraToolCatalog } from '../js/extra-data.js';
 import { calculatorRegistry, materials } from '../js/calculators.js';
+import { PCB_ACCELEROMETER_CATALOG_META, pcbAccelerometers, pcbAccelerometerOptions } from '../js/pcb-accelerometers-data.js';
 import { extraCalculatorRegistry } from '../js/extra-calculators.js';
 import { acs519Sections, acs519ToolCatalog, acs519Demos, acs519CaseNotes } from '../js/acs519-data.js';
 import { acs519CalculatorRegistry } from '../js/acs519-calculators.js';
@@ -80,7 +81,7 @@ import { jointAcceptance, spatialCoherence, supportedDemoIds } from '../js/demos
 import { assertDemoTakeawayRegistry, buildDemoTakeaway, demoTakeawayRegistry } from '../js/demo-takeaways.js';
 import { assertEngineeringResult, engineeringResultToText } from '../js/engineering-results.js';
 import { axisUnitInfo, displayEngineeringResult, fromDisplayNumber, toDisplayNumber, toDisplayStep, unitConversion } from '../js/unit-system.js';
-import { heatmapSvg, harmonicPhase, lineChartSvg, signedHeatColor, surface3dSvg } from '../js/charts.js';
+import { heatmapSvg, harmonicPhase, lineChartSvg, rangeChartSvg, signedHeatColor, surface3dSvg } from '../js/charts.js';
 import {
   featuredItems,
   homepageNavigation,
@@ -146,7 +147,7 @@ const caseNotes=[...baseCaseNotes,...acs519CaseNotes,...workflowExpansionCaseNot
 const defaults=id=>Object.fromEntries(registry[id].inputs.map(f=>[f.key,f.default]));
 const metric=(result,label)=>result.values.find(x=>x.label===label)?.value;
 const close=(actual,expected,rel=1e-6)=>assert.ok(Math.abs(actual-expected)<=rel*Math.max(1,Math.abs(expected)),`${actual} ≠ ${expected}`);
-const evidenceCollection={plot:'plots',heatmap:'heatmaps',surface3d:'surfaces3d',table:'tables'};
+const evidenceCollection={plot:'plots',rangeChart:'rangeCharts',heatmap:'heatmaps',surface3d:'surfaces3d',table:'tables'};
 
 test('every catalog entry has a calculator and every default case runs',()=>{
   assert.equal(catalog.length,112);
@@ -178,7 +179,7 @@ test('every calculator returns the complete engineering response schema',()=>{
     assert.ok(result.relatedConcepts.length>=2,`${tool.id} needs related concepts`);
     assert.ok(result.relatedConcepts.every(item=>item.title&&item.description&&item.href),`${tool.id} has an incomplete related concept`);
     assert.ok(result.presentation&&Number.isInteger(result.presentation.primaryValueCount),`${tool.id} needs presentation metadata`);
-    if(result.presentation.primaryEvidence){const {type,index}=result.presentation.primaryEvidence;assert.ok(['plot','heatmap','surface3d','table'].includes(type),`${tool.id} has an invalid primary evidence type`);assert.ok(result[evidenceCollection[type]]?.[index],`${tool.id} primary evidence does not exist`);}
+    if(result.presentation.primaryEvidence){const {type,index}=result.presentation.primaryEvidence;assert.ok(['plot','rangeChart','heatmap','surface3d','table'].includes(type),`${tool.id} has an invalid primary evidence type`);assert.ok(result[evidenceCollection[type]]?.[index],`${tool.id} primary evidence does not exist`);}
     assert.ok(Array.isArray(result.presentation.primaryEvidenceStack),`${tool.id} needs a primary evidence stack`);
     result.presentation.primaryEvidenceStack.forEach(({type,index})=>assert.ok(result[evidenceCollection[type]]?.[index],`${tool.id} stacked primary evidence does not exist`));
     assert.doesNotMatch(result.interpretation.physicalMeaning,/^The reported\b/,`${tool.id} retained generic category commentary`);
@@ -188,6 +189,66 @@ test('every calculator returns the complete engineering response schema',()=>{
       assert.match(copied,new RegExp(heading),`${tool.id} copy output omits ${heading}`);
     }
   }
+});
+
+test('PCB accelerometer catalog is normalized, grouped, and source traceable',()=>{
+  const sensorField=registry.accelerometer.inputs.find(field=>field.key==='sensor_model');
+  assert.equal(sensorField.searchable.noun,'sensor choices');
+  assert.match(sensorField.searchable.placeholder,/model.*family.*sensitivity.*range/i);
+  assert.equal(PCB_ACCELEROMETER_CATALOG_META.productCount,252);
+  assert.equal(pcbAccelerometers.length,PCB_ACCELEROMETER_CATALOG_META.productCount);
+  assert.equal(new Set(pcbAccelerometers.map(sensor=>sensor.model)).size,pcbAccelerometers.length);
+  assert.equal(pcbAccelerometerOptions.length,pcbAccelerometers.length);
+  assert.ok(pcbAccelerometerOptions.every(option=>option.group&&option.label.includes(option.value)));
+  assert.ok(pcbAccelerometers.every(sensor=>sensor.productUrl.startsWith('https://www.pcb.com/')));
+  assert.ok(PCB_ACCELEROMETER_CATALOG_META.fieldCoverage.sensitivity>=200);
+  assert.ok(PCB_ACCELEROMETER_CATALOG_META.fieldCoverage.frequencyRange>=190);
+  const model=pcbAccelerometers.find(sensor=>sensor.model==='352C04');
+  assert.deepEqual({sensitivity:model.sensitivityValue,unit:model.sensitivityUnit,range:model.measurementRangeGPeak,frequency:[model.frequencyMinHz,model.frequencyMaxHz],temperature:[model.temperatureMinC,model.temperatureMaxC]},
+    {sensitivity:10,unit:'mV/g',range:500,frequency:[.5,10000],temperature:[-54,121]});
+});
+
+test('PCB accelerometer explorer exposes specification ranges and DAQ-limited dynamic range',()=>{
+  const base=defaults('accelerometer'),result=registry.accelerometer.compute(base);
+  assert.equal(metric(result,'Selected model'),'352C04');
+  assert.equal(result.rangeCharts.length,4);
+  assert.deepEqual(result.rangeCharts.map(chart=>chart.title),[
+    '352C04 frequency coverage',
+    '352C04 operating-temperature coverage',
+    '352C04 nominal sensitivity',
+    '352C04 sensor + 24-bit DAQ dynamic range'
+  ]);
+  assert.equal(result.presentation.primaryEvidenceStack.length,4);
+  const dynamic=result.rangeCharts.at(-1),daqLane=dynamic.lanes.find(lane=>lane.label==='24-bit DAQ'),usableLane=dynamic.lanes.find(lane=>lane.label==='Usable chain');
+  close(daqLane.end,1000,1e-12);
+  close(usableLane.end,500,1e-12);
+  close(metric(result,'Usable peak ceiling'),500,1e-12);
+  assert.match(rangeChartSvg(dynamic),/352C04 sensor \+ 24-bit DAQ dynamic range/);
+  assert.equal(result.tables[0].rows.find(row=>row[0]==='Model').at(-1),'https://www.pcb.com/products?m=352C04');
+
+  const eight=registry.accelerometer.compute({...base,daq_bits:'8'}),twentyFour=registry.accelerometer.compute({...base,daq_bits:'24'});
+  close(metric(eight,'DAQ acceleration per code')/metric(twentyFour,'DAQ acceleration per code'),65536,1e-12);
+  assert.ok(eight.rangeCharts.at(-1).lanes.some(lane=>lane.label==='8-bit DAQ'));
+
+  const english=displayEngineeringResult(result,'English'),temperature=english.rangeCharts.find(chart=>chart.unit==='°F');
+  assert.ok(temperature);
+  close(temperature.lanes[0].start,-65.2,1e-12);
+  close(temperature.lanes[0].end,249.8,1e-12);
+});
+
+test('PCB explorer keeps incomplete and charge-output models selectable without inventing specifications',()=>{
+  const base=defaults('accelerometer');
+  const incomplete=registry.accelerometer.compute({...base,sensor_model:'71M1-60K'});
+  assert.equal(metric(incomplete,'Nominal sensitivity'),'Not published');
+  assert.ok(incomplete.assumptions.alerts.some(alert=>/does not publish a usable sensitivity/i.test(alert)));
+  assert.ok(incomplete.assumptions.limitations.some(item=>/frequency interval was not recovered/i.test(item)));
+
+  const charge=registry.accelerometer.compute({...base,sensor_model:'357B03'});
+  assert.equal(metric(charge,'Effective DAQ sensitivity'),'Unavailable');
+  assert.ok(charge.assumptions.alerts.some(alert=>/charge-output accelerometer/i.test(alert)));
+  const conditioned=registry.accelerometer.compute({...base,sensor_model:'357B03',conditioner_gain_mv_per_pc:1});
+  close(metric(conditioned,'Effective DAQ sensitivity'),10,1e-12);
+  assert.ok(conditioned.rangeCharts.at(-1).lanes.some(lane=>lane.label==='24-bit DAQ'));
 });
 
 test('decibel summation returns +3.0103 dB for equal independent levels',()=>{
@@ -1134,10 +1195,14 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   const html=readFileSync(new URL('../standalone.html',import.meta.url),'utf8');
   const syncSource=readFileSync(new URL('../scripts/sync-standalone.mjs',import.meta.url),'utf8');
   assert.match(syncSource,/const chartsModule = await read\('js\/charts\.js'\)/);
+  assert.match(syncSource,/const pcbAccelerometersModule = await read\('js\/pcb-accelerometers-data\.js'\)/);
   assert.match(syncSource,/const chartsBlock = `const __charts=/);
   assert.match(syncSource,/surface3dSvg/);
+  assert.match(syncSource,/rangeChartSvg/);
   assert.match(html,/const __calculators=\(\(\)=>\{[\s\S]*Integrated acceleration/);
+  assert.match(html,/const __pcbAccelerometers=\(\(\)=>\{[\s\S]*"model": "352C04"/);
   assert.match(html,/const __charts=\(\(\)=>\{[\s\S]*function harmonicPhase/);
+  assert.match(html,/function rangeChartSvg\(chart/);
   assert.match(html,/function surface3dSvg\(surface/);
   assert.match(html,/data-chart-animation="harmonic"/);
   assert.match(html,/data-heatmap-base-value/);
@@ -1336,9 +1401,15 @@ test('site visual system exposes reusable components and themes every non-home r
   assert.match(appSource,/syncUnitSystem/);
   assert.match(appSource,/unitSystem\?\.addEventListener\('input',syncUnitSystem\)/);
   assert.match(appSource,/function renderInputFields/);
+  assert.match(appSource,/function bindSearchableSelects/);
+  assert.match(appSource,/data-select-search=/);
   assert.match(css,/\.commentary-card-wide \{ grid-column: 1 \/ -1; \}/);
+  assert.match(css,/\.select-search-filter \{/);
+  assert.match(css,/\.result-range-chart-grid \{[^}]*grid-template-columns: 1fr;/);
   assert.doesNotMatch(appSource,/No automatic warning/i);
   assert.match(appSource,/const resultBody=hasVisualPrimary/);
+  assert.doesNotMatch(appSource,/add-result-to-project|Add this result to the engineering project|Preserve inputs, values, interpretation/);
+  assert.doesNotMatch(css,/\.result-project-actions/);
   assert.match(appSource,/const evidenceStack=explicitEvidenceStack/);
   assert.match(appSource,/data-result-section="plot"/);
   assert.match(appSource,/data-result-section="numerical"/);
@@ -1433,13 +1504,14 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes the demo takeaway runtime',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v66'/);
+  assert.match(worker,/const CACHE = 'sau-v72'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);
   assert.match(worker,/\.\/js\/unit-system\.js/);
   assert.match(worker,/\.\/js\/site-components\.js/);
   assert.match(worker,/\.\/js\/engineering-system\.js/);
+  assert.match(worker,/\.\/js\/pcb-accelerometers-data\.js/);
   assert.match(worker,/\.\/js\/demo-takeaways\.js/);
   assert.match(worker,/\.\/js\/workflow-expansion-data\.js/);
   assert.match(worker,/\.\/js\/workflow-expansion-demos\.js/);

@@ -1,0 +1,182 @@
+{
+  "manufacturer": "PCB Piezotronics",
+  "scope": "Test & Measurement accelerometer models exposed by PCB R&D comparison tables, including PCB and Endevco models",
+  "retrievedAt": "2026-08-10T22:09:22.400Z",
+  "productCount": 252,
+  "sourceDigest": "839edbf659aa7b75e971817d02eafe5553d9f169528a42838a435ff41a7194e2",
+  "catalogUrl": "https://www.pcb.com/sensors-for-test-measurement/accelerometers",
+  "familyCounts": {
+    "General purpose · single axis": 8,
+    "General purpose · triaxial": 29,
+    "Miniature piezoelectric · single axis": 20,
+    "Miniature piezoelectric · triaxial": 7,
+    "High temperature · ICP": 18,
+    "High temperature · charge mode": 34,
+    "High sensitivity ICP": 8,
+    "Structural test": 12,
+    "Variable capacitance MEMS · PCB 3700 series": 36,
+    "Piezoresistive shock · damped": 22,
+    "Piezoresistive shock · surface mount": 17,
+    "Piezoelectric ICP shock": 17,
+    "Cryogenic ICP": 13,
+    "Low outgassing": 11
+  },
+  "fieldCoverage": {
+    "sensitivity": 207,
+    "measurementRange": 251,
+    "frequencyRange": 193,
+    "temperatureRange": 193,
+    "broadbandResolution": 168,
+    "mass": 148
+  },
+  "categories": [
+    {
+      "key": "general-single",
+      "label": "General purpose · single axis",
+      "url": "https://www.pcb.com/sensors-for-test-measurement/accelerometers/general-purpose/single-axis"
+    },
+    {
+      "key": "general-triaxial",
+      "label": "General purpose · triaxial",
+      "url": "https://www.pcb.com/sensors-for-test-measurement/accelerometers/general-purpose/triaxial"
+    },
+    {
+      "key": "miniature-single",
+      "label": "Miniature piezoelectric · single axis",
+      "url": "https://www.pcb.com/sensors-for-test-measurement/accelerometers/miniature-piezoelectric/single-axis"
+    },
+    {
+      "key": "miniature-triaxial",
+      "label": "Miniature piezoelectric · triaxial",
+      "url": "https://www.pcb.com/sensors-for-test-measurement/accelerometers/miniature-piezoelectric/triaxial"
+    },
+    {
+      "key": "high-temp-icp",
+      "label": "High temperature · ICP",
+      "url": "https://www.pcb.com/sensors-for-test-measurement/accelerometers/high-temperature/icp"
+    },
+    {
+      "key": "high-temp-charge",
+      "label": "High temperature · charge mode",
+      "url": "https://www.pcb.com/sensors-for-test-measurement/accelerometers/high-temperature/charge-mode"
+    },
+    {
+      "key": "high-sensitivity",
+      "label": "High sensitivity ICP",
+      "url": "https://www.pcb.com/sensors-for-test-measurement/accelerometers/high-sensitivity-icp"
+    },
+    {
+      "key": "structural-test",
+      "label": "Structural test",
+      "url": "https://www.pcb.com/sensors-for-test-measurement/accelerometers/structural-test"
+    },
+    {
+      "key": "vc-3700",
+      "label": "Variable capacitance MEMS · PCB 3700 series",
+      "url": "https://www.pcb.com/sensors-for-test-measurement/accelerometers/variable-capacitance-mems/3700-series"
+    },
+    {
+      "key": "pr-damped",
+      "label": "Piezoresistive shock · damped",
+      "url": "https://www.pcb.com/sensors-for-test-measurement/accelerometers/piezoresistive-shock/damped"
+    },
+    {
+      "key": "pr-smt",
+      "label": "Piezoresistive shock · surface mount",
+      "url": "https://www.pcb.com/sensors-for-test-measurement/accelerometers/piezoresistive-shock/smt-surface-mount"
+    },
+    {
+      "key": "icp-shock",
+      "label": "Piezoelectric ICP shock",
+      "url": "https://www.pcb.com/sensors-for-test-measurement/accelerometers/piezoelectric-icp-shock"
+    },
+    {
+      "key": "thermal-stability",
+      "label": "Thermal stability ICP",
+      "url": "https://www.pcb.com/sensors-for-test-measurement/accelerometers/thermal-stability-icp"
+    },
+    {
+      "key": "cryogenic-icp",
+      "label": "Cryogenic ICP",
+      "url": "https://www.pcb.com/sensors-for-test-measurement/accelerometers/cryogenic-icp"
+    },
+    {
+      "key": "cryogenic-charge",
+      "label": "Cryogenic charge mode",
+      "url": "https://www.pcb.com/sensors-for-test-measurement/accelerometers/cryogenic-charge"
+    },
+    {
+      "key": "low-outgassing",
+      "label": "Low outgassing",
+      "url": "https://www.pcb.com/sensors-for-test-measurement/accelerometers/low-outgassing-accelerometers"
+    },
+    {
+      "key": "special-purpose",
+      "label": "Special purpose",
+      "url": "https://www.pcb.com/sensors-for-test-measurement/accelerometers/special-purpose"
+    }
+  ],
+  "recordsWithIncompleteCoreFields": [
+    "71M1-60K",
+    "71M4-2K",
+    "71M4-20K",
+    "71M5-20K",
+    "71M5-60K",
+    "71M10-2K",
+    "71M10-6K",
+    "71M10-60K",
+    "72-2K",
+    "72-20K",
+    "72-60K",
+    "74-2K",
+    "74-20K",
+    "74-60K",
+    "75-2K",
+    "75-20K",
+    "75-60K",
+    "356M234",
+    "357C71",
+    "393B05",
+    "393C31",
+    "728-2K-5-120",
+    "728-2K-10-120",
+    "728-10K-5-120",
+    "728-10K-10-120",
+    "2220E",
+    "2221F",
+    "2230E",
+    "2230EM1",
+    "2262B-1000",
+    "2262B-2000",
+    "2262B-6000",
+    "6222S-20A",
+    "6222S-50A",
+    "6222S-100A",
+    "7201-10",
+    "7201-100",
+    "7221A",
+    "7240C",
+    "7262A-100-120",
+    "7262A-500-120",
+    "7262A-1000-120",
+    "7280A-2K",
+    "7280A-20K",
+    "7280A-60K",
+    "7280AM4-2K",
+    "7280AM4-20K-180",
+    "7280AM4-60K",
+    "7280AM7-2K",
+    "7280AM7-20K",
+    "7280AM7-60K",
+    "7284A-2K",
+    "7284A-20K",
+    "7284A-60K",
+    "7703A-50",
+    "7703A-100",
+    "7703A-200",
+    "7703A-1000",
+    "7704A-50",
+    "7704A-100",
+    "J351B11"
+  ]
+}

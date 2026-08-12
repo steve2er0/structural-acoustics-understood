@@ -29,6 +29,7 @@ export interface EngineeringResult {
   };
   relatedConcepts: RelatedConcept[];
   plots?: unknown[];
+  rangeCharts?: unknown[];
   heatmaps?: unknown[];
   tables?: unknown[];
   csv?: unknown;

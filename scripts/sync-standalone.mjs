@@ -18,6 +18,7 @@ const app = await read('js/app.js');
 const unitSystemModule = await read('js/unit-system.js');
 const frameworkModule = await read('js/engineering-results.js');
 const dataModule = await read('js/data.js');
+const pcbAccelerometersModule = await read('js/pcb-accelerometers-data.js');
 const calculatorsModule = await read('js/calculators.js');
 const seaCouplingModule = await read('js/sea-coupling.js');
 const honeycombModule = await read('js/honeycomb-paper.js');
@@ -68,16 +69,17 @@ const moduleSource = source => stripExports(stripImports(source));
 
 const dataBlock = 'const __data=(()=>{\n'+moduleSource(dataModule)+'\nreturn {sections,toolCatalog,demos,caseNotes,referenceGroups,glossary};\n})();\n\n'
   + 'const __acs519Data=(()=>{\n'+moduleSource(acs519DataModule)+'\nreturn {acs519Sections,acs519ToolCatalog,acs519Demos,acs519CaseNotes,acs519ReferenceGroups};\n})();\n\n';
+const pcbAccelerometersBlock = 'const __pcbAccelerometers=(()=>{\n'+moduleSource(pcbAccelerometersModule)+'\nreturn {PCB_ACCELEROMETER_CATALOG_META,pcbAccelerometers,pcbAccelerometerByModel,pcbAccelerometerOptions};\n})();\n\n';
 const workflowExpansionDataBlock = 'const __workflowExpansionData=(()=>{\n'+moduleSource(workflowExpansionDataModule)+'\nreturn {workflowExpansionSections,workflowExpansionToolCatalog,workflowExpansionDemos,workflowExpansionCaseNotes,workflowExpansionReferenceGroups};\n})();\n\n';
 const programExpansionDataBlock = 'const __programExpansionData=(()=>{\n'+moduleSource(programExpansionDataModule)+'\nreturn {programExpansionSections,programExpansionToolCatalog,programExpansionDemos,programExpansionCaseNotes,programExpansionReferenceGroups};\n})();\n\n';
 const seaParameterDataBlock = 'const __seaParameterData=(()=>{\n'+moduleSource(seaParameterDataModule)+'\nreturn {seaParameterSections,seaParameterToolCatalog,seaParameterDemos,seaParameterCaseNotes,seaParameterReferenceGroups};\n})();\n\n';
-standalone = replaceRange(standalone, 'const __data=(()=>{', 'const __calculators=(()=>{', dataBlock + workflowExpansionDataBlock + programExpansionDataBlock + seaParameterDataBlock);
+standalone = replaceRange(standalone, 'const __data=(()=>{', 'const __calculators=(()=>{', dataBlock + workflowExpansionDataBlock + programExpansionDataBlock + seaParameterDataBlock + pcbAccelerometersBlock);
 
 const calculatorsSource = moduleSource(calculatorsModule).replace(
   'const calculatorRegistry = createEngineeringRegistry(calculatorDefinitions);',
   'const calculatorRegistry = calculatorDefinitions;'
 );
-const calculatorsBlock = `const __calculators=(()=>{\n${calculatorsSource}\nreturn {materials,plateBoundaryPresets,plateModalFrequency,calculatorRegistry,getCalculator};\n})();\n\n`;
+const calculatorsBlock = `const __calculators=(()=>{\nconst {PCB_ACCELEROMETER_CATALOG_META,pcbAccelerometers,pcbAccelerometerByModel,pcbAccelerometerOptions}=__pcbAccelerometers;\n${calculatorsSource}\nreturn {materials,plateBoundaryPresets,plateModalFrequency,calculatorRegistry,getCalculator};\n})();\n\n`;
 const calculatorsEnd = standalone.includes('const __seaCoupling=(()=>{') ? 'const __seaCoupling=(()=>{' : 'const __honeycomb=(()=>{';
 standalone = replaceRange(standalone, 'const __calculators=(()=>{', calculatorsEnd, calculatorsBlock);
 
@@ -203,7 +205,7 @@ standalone = replaceRange(standalone, extraCalculatorsStart, 'const __extraData=
 const extraDataBlock = `const __extraData=(()=>{\n${moduleSource(extraDataModule)}\nreturn {extraToolCatalog};\n})();\n\n`;
 standalone = replaceRange(standalone, 'const __extraData=(()=>{', 'const __charts=(()=>{', extraDataBlock);
 
-const chartsBlock = `const __charts=(()=>{\n${moduleSource(chartsModule)}\nreturn {escapeHtml,formatNumber,lineChartSvg,signedHeatColor,harmonicPhase,surface3dSvg,heatmapSvg,downloadText,downloadCsv,downloadSvg};\n})();\n\n`;
+const chartsBlock = `const __charts=(()=>{\n${moduleSource(chartsModule)}\nreturn {escapeHtml,formatNumber,lineChartSvg,rangeChartSvg,signedHeatColor,harmonicPhase,surface3dSvg,heatmapSvg,downloadText,downloadCsv,downloadSvg};\n})();\n\n`;
 standalone = replaceRange(standalone, 'const __charts=(()=>{', 'const __demoTakeaways=(()=>{', chartsBlock);
 
 const demoHoneycombNames = [
@@ -265,7 +267,7 @@ const appPrelude = [
   'const {programExpansionCalculatorRegistry}=__programExpansionCalculators;',
   'const {seaParameterCalculatorRegistry}=__seaParameterCalculators;',
   'const {extraToolCatalog}=__extraData;',
-  'const {lineChartSvg,heatmapSvg,surface3dSvg,harmonicPhase,signedHeatColor,downloadCsv,downloadSvg,downloadText}=__charts;',
+  'const {lineChartSvg,rangeChartSvg,heatmapSvg,surface3dSvg,harmonicPhase,signedHeatColor,downloadCsv,downloadSvg,downloadText}=__charts;',
   'const {demoPreviewSvg,mountDemo}=__demosModule;',
   'const {homepageNavigation,homepageNavKey,renderHomepage,renderSubjectPage,bindHomepage,subjectWheel}=__homepage;',
   'const {renderPageShell,renderBreadcrumbs,renderSectionHeader,renderCallout,renderLinkCollection}=__siteComponents;',

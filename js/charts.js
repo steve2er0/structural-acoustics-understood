@@ -147,6 +147,35 @@ export function lineChartSvg(plot, { width = 840, height = 390 } = {}) {
   return s;
 }
 
+/** Render one or more engineering capability intervals on a shared linear or logarithmic axis. */
+export function rangeChartSvg(chart, { width = 840 } = {}) {
+  const log=chart.scale==='log',lanes=(chart.lanes||[]).filter(lane=>Number.isFinite(Number(lane.end))&&(!log||Number(lane.end)>0)),markers=(chart.markers||[]).filter(marker=>Number.isFinite(Number(marker.value))&&(!log||Number(marker.value)>0));
+  const rawValues=[...lanes.flatMap(lane=>lane.start==null?[lane.end]:[lane.start,lane.end]),...markers.map(marker=>marker.value)].map(Number).filter(value=>Number.isFinite(value)&&(!log||value>0));
+  if(!rawValues.length)return'';
+  let min=Number.isFinite(Number(chart.min))?Number(chart.min):Math.min(...rawValues),max=Number.isFinite(Number(chart.max))?Number(chart.max):Math.max(...rawValues);
+  if(log){min=Math.max(1e-30,min);if(min===max){min/=10;max*=10;}}else if(min===max){min-=Math.abs(min||1);max+=Math.abs(max||1);}
+  const height=Math.max(190,118+lanes.length*54),m={left:168,right:34,top:54,bottom:48},innerW=width-m.left-m.right,innerH=height-m.top-m.bottom,sx=scaleFn(min,max,m.left,m.left+innerW,log),ticks=log?logTicks(min,max):linearTicks(min,max,6).map(value=>({value,major:true}));
+  const laneColor={primary:palette[0],secondary:palette[1],sensor:palette[2],daq:palette[1],usable:palette[0],muted:palette[5]};
+  const labelValue=value=>`${formatNumber(value,3)}${chart.unit?` ${chart.unit}`:''}`;
+  let s=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(chart.title||'Engineering capability range')}"><title>${escapeHtml(chart.title||'Engineering capability range')}</title><desc>${escapeHtml(chart.description||'Ranges and limiting values shown on a shared engineering scale.')}</desc><rect width="${width}" height="${height}" fill="#fff"/>`;
+  s+=`<text x="${m.left}" y="22" font-family="ui-sans-serif,system-ui" font-size="13" font-weight="700" fill="#172027">${escapeHtml(chart.title||'')}</text>`;
+  for(const tick of ticks){const x=sx(tick.value);s+=`<line x1="${x}" x2="${x}" y1="${m.top-8}" y2="${m.top+innerH}" stroke="${tick.major?'#d9d4ca':'#eeeae3'}" stroke-width="${tick.major?1:.7}"/>`;if(tick.major||!log)s+=`<text x="${x}" y="${height-25}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#667176">${escapeHtml(formatNumber(tick.value,3))}</text>`;}
+  lanes.forEach((lane,index)=>{const y=m.top+26+index*54,startKnown=lane.start!=null&&Number.isFinite(Number(lane.start))&&(!log||Number(lane.start)>0),start=startKnown?Number(lane.start):min,end=Number(lane.end),x1=sx(Math.max(min,start)),x2=sx(Math.min(max,end)),color=lane.color||laneColor[lane.tone]||palette[index%palette.length],open=!startKnown;
+    s+=`<text x="${m.left-12}" y="${y-2}" text-anchor="end" font-family="ui-sans-serif,system-ui" font-size="11" font-weight="700" fill="#344047">${escapeHtml(lane.label||`Range ${index+1}`)}</text>`;
+    if(lane.note)s+=`<text x="${m.left-12}" y="${y+14}" text-anchor="end" font-family="ui-sans-serif,system-ui" font-size="9" fill="#667176">${escapeHtml(lane.note)}</text>`;
+    s+=`<line x1="${m.left}" x2="${m.left+innerW}" y1="${y}" y2="${y}" stroke="#eeeae3"/>`;
+    s+=`<rect x="${x1}" y="${y-8}" width="${Math.max(2,x2-x1)}" height="16" rx="8" fill="${color}" fill-opacity="${lane.tone==='usable' ? .92 : .72}"${open?' stroke="#667176" stroke-dasharray="5 4"':''}><title>${escapeHtml(lane.label||'Range')}: ${open?'lower limit not published':labelValue(start)} to ${labelValue(end)}</title></rect>`;
+    if(!open)s+=`<circle cx="${x1}" cy="${y}" r="4" fill="#fff" stroke="${color}" stroke-width="2"/><text x="${x1}" y="${y-13}" text-anchor="start" font-family="ui-monospace,monospace" font-size="9" fill="#344047">${escapeHtml(lane.startLabel||labelValue(start))}</text>`;
+    else s+=`<text x="${x1+5}" y="${y-13}" text-anchor="start" font-family="ui-sans-serif,system-ui" font-size="9" fill="#667176">floor not published</text>`;
+    s+=`<circle cx="${x2}" cy="${y}" r="4" fill="#fff" stroke="${color}" stroke-width="2"/><text x="${x2}" y="${y-13}" text-anchor="end" font-family="ui-monospace,monospace" font-size="9" fill="#344047">${escapeHtml(lane.endLabel||labelValue(end))}</text>`;
+  });
+  markers.forEach((marker,index)=>{const value=Number(marker.value);if(value<min||value>max)return;const laneIndex=Math.max(0,Math.min(lanes.length-1,Number(marker.lane)||0)),y=m.top+26+laneIndex*54,x=sx(value),color=marker.color||palette[(index+3)%palette.length],anchor=x>m.left+innerW*.76?'end':'start',dx=anchor==='end'?-7:7;
+    s+=`<line x1="${x}" x2="${x}" y1="${y-17}" y2="${y+17}" stroke="${color}" stroke-width="2"/><circle cx="${x}" cy="${y}" r="5" fill="${color}" stroke="#fff" stroke-width="1.5"><title>${escapeHtml(marker.label||'Marker')}: ${escapeHtml(labelValue(value))}</title></circle><text x="${x+dx}" y="${y+23}" text-anchor="${anchor}" font-family="ui-sans-serif,system-ui" font-size="9" fill="#344047">${escapeHtml(marker.label||labelValue(value))}</text>`;
+  });
+  s+=`<line x1="${m.left}" x2="${m.left+innerW}" y1="${m.top+innerH}" y2="${m.top+innerH}" stroke="#172027"/><text x="${m.left+innerW/2}" y="${height-8}" text-anchor="middle" font-family="ui-sans-serif,system-ui" font-size="11" fill="#5f6b70">${escapeHtml(chart.axisLabel||'')}</text></svg>`;
+  return s;
+}
+
 function heatColor(t) {
   t = Math.max(0, Math.min(1, t));
   const a = [244,242,236], b = [30,96,119];

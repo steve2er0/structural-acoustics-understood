@@ -1,4 +1,5 @@
 import { createEngineeringRegistry } from './engineering-results.js';
+import { PCB_ACCELEROMETER_CATALOG_META, pcbAccelerometers, pcbAccelerometerByModel, pcbAccelerometerOptions } from './pcb-accelerometers-data.js';
 
 const G0 = 9.80665;
 const AIR_RHO = 1.204;
@@ -14,6 +15,7 @@ export const materials = {
 };
 
 const materialOptions = Object.entries(materials).map(([value, m]) => ({ value, label: m.label }));
+const pcbSensorOptions = [...pcbAccelerometerOptions, { value: 'custom', label: 'Custom / non-catalog sensor', group: 'Custom' }];
 
 function n(v, fallback = 0) {
   const x = Number(v);
@@ -1190,34 +1192,140 @@ const calculatorDefinitions = {
   },
 
   accelerometer: {
-    category:'Test & Signal', basis:'Measurement-chain headroom and noise screening', confidence:'Screening estimate',
+    category:'Test & Signal', basis:'PCB catalog specifications and measurement-chain dynamic-range screening', confidence:'Catalog-backed screening estimate',
     inputs:[
-      {key:'sensitivity',label:'Sensor sensitivity',unit:'mV/g',type:'number',default:10,min:0.000001},
-      {key:'range_g',label:'Rated acceleration range',unit:'±g peak',type:'number',default:500,min:0.001},
-      {key:'expected_peak',label:'Expected peak acceleration',unit:'g',type:'number',default:250,min:0},
-      {key:'daq_range',label:'DAQ input range',unit:'±V peak',type:'number',default:10,min:0.001},
-      {key:'noise_density',label:'Sensor noise density',unit:'μg/√Hz',type:'number',default:30,min:0},
-      {key:'bandwidth',label:'Measurement bandwidth',unit:'Hz',type:'number',default:2000,min:0.001},
-      {key:'low_cutoff',label:'Sensor low-frequency cutoff',unit:'Hz',type:'number',default:0.5,min:0},
-      {key:'required_low',label:'Required minimum frequency',unit:'Hz',type:'number',default:2,min:0},
-      {key:'sensor_mass_g',label:'Sensor mass',unit:'g',type:'number',default:5,min:0},
-      {key:'local_modal_mass_g',label:'Estimated local modal mass',unit:'g',type:'number',default:500,min:0.001}
+      {key:'sensor_model',label:'PCB accelerometer model',type:'select',default:'352C04',options:pcbSensorOptions,searchable:{noun:'sensor choices',placeholder:'Search model, family, sensitivity, or range…'},group:'Sensor selection',help:`${PCB_ACCELEROMETER_CATALOG_META.productCount} current comparison-table model variants, grouped by family.`},
+      {key:'daq_bits',label:'DAQ resolution',type:'select',default:'24',options:[{value:'8',label:'8 bit'},{value:'24',label:'24 bit'}],group:'DAQ & conditioning'},
+      {key:'daq_range',label:'DAQ input range',unit:'±V peak',type:'number',default:10,min:0.001,group:'DAQ & conditioning'},
+      {key:'daq_noise_uv',label:'DAQ input noise over measurement band',unit:'μV RMS',type:'number',default:0,min:0,group:'DAQ & conditioning',help:'Enter measured or specified broadband input noise; zero uses ideal quantization noise only.'},
+      {key:'conditioner_gain_mv_per_pc',label:'Charge-converter gain',unit:'mV/pC',type:'number',default:0,min:0,group:'DAQ & conditioning',help:'Required to refer a pC/g charge sensor to the DAQ input. Leave zero for voltage-output sensors.'},
+      {key:'conditioner_noise_uv',label:'Additional conditioner noise',unit:'μV RMS',type:'number',default:0,min:0,group:'DAQ & conditioning'},
+      {key:'crest_factor',label:'Peak / RMS crest factor',type:'number',default:3,min:1,group:'DAQ & conditioning'},
+      {key:'expected_peak',label:'Expected peak acceleration',unit:'g',type:'number',default:25,min:0,group:'Test requirements'},
+      {key:'bandwidth',label:'Measurement bandwidth',unit:'Hz',type:'number',default:2000,min:0.001,group:'Test requirements'},
+      {key:'required_low',label:'Required minimum frequency',unit:'Hz',type:'number',default:2,min:0.001,group:'Test requirements'},
+      {key:'required_high',label:'Required maximum frequency',unit:'Hz',type:'number',default:2000,min:0.001,group:'Test requirements'},
+      {key:'operating_temp_c',label:'Operating temperature',unit:'°C',type:'number',default:25,group:'Test requirements'},
+      {key:'local_modal_mass_g',label:'Estimated local modal mass',unit:'g',type:'number',default:500,min:0.001,group:'Test requirements'},
+      {key:'custom_sensitivity',label:'Custom sensitivity',type:'number',default:10,min:0.000001,group:'Custom sensor'},
+      {key:'custom_sensitivity_unit',label:'Custom sensitivity unit',type:'select',default:'mV/g',options:[{value:'mV/g',label:'mV/g · voltage output'},{value:'pC/g',label:'pC/g · charge output'}],group:'Custom sensor'},
+      {key:'custom_range_g',label:'Custom rated range',unit:'±g peak',type:'number',default:500,min:0.001,group:'Custom sensor'},
+      {key:'custom_resolution_g',label:'Custom broadband resolution',unit:'g RMS',type:'number',default:0.0005,min:0,group:'Custom sensor'},
+      {key:'custom_frequency_low',label:'Custom low-frequency limit',unit:'Hz',type:'number',default:0.5,min:0.000001,group:'Custom sensor'},
+      {key:'custom_frequency_high',label:'Custom high-frequency limit',unit:'Hz',type:'number',default:10000,min:0.000001,group:'Custom sensor'},
+      {key:'custom_temp_low_c',label:'Custom minimum temperature',unit:'°C',type:'number',default:-54,group:'Custom sensor'},
+      {key:'custom_temp_high_c',label:'Custom maximum temperature',unit:'°C',type:'number',default:121,group:'Custom sensor'},
+      {key:'custom_mass_g',label:'Custom sensor mass',unit:'g',type:'number',default:5.8,min:0,group:'Custom sensor'}
     ],
-    theory:'<p>Peak output voltage is sensitivity × acceleration. White-noise RMS scales with √bandwidth. Local mass loading is judged against local modal mass, not total assembly mass.</p>',
-    assumptions:['Flat sensitivity and white noise across the entered bandwidth.', 'DAQ range is symmetric and conditioner limits are not more restrictive.'],
-    example:'A 10 mV/g sensor at 250 g produces 2.5 V peak, leaving comfortable room on a ±10 V input.',
+    theory:'<p>For a voltage-output sensor, DAQ input sensitivity is the catalog sensitivity in V/g. For a charge sensor, effective sensitivity is charge sensitivity × charge-converter gain. An ideal N-bit bipolar converter has step size ΔV=2V<sub>range</sub>/2<sup>N</sup> and RMS quantization noise ΔV/√12. The screening floor is the larger of the published sensor broadband resolution and the input-referred DAQ/conditioner floor. The usable RMS ceiling is the smaller sensor-or-DAQ peak limit divided by the entered crest factor.</p><p>The frequency and temperature bars are qualification gates, not transfer functions. A published frequency tolerance band does not replace anti-alias-filter, mounting-resonance, cable, transverse-sensitivity, or calibration review.</p>',
+    assumptions:[
+      'Catalog values are nominal published specifications for the selected model variant; the product data sheet and calibration certificate remain controlling.',
+      'DAQ range is symmetric, sensitivity is treated as the net DAQ-input sensitivity, and RMS electronic noise sources are uncorrelated.',
+      'Published broadband resolution is used directly as a screening floor and is not rescaled to a different bandwidth.',
+      'Local mass loading is judged against estimated local modal mass rather than total assembly mass.'
+    ],
+    references:[
+      {title:'PCB Piezotronics · Accelerometers',note:'Current Test & Measurement category and comparison-table inventory used for model availability.'},
+      {title:'PCB product specification pages',note:'Sensitivity, range, frequency, temperature, resolution, and mass are retained with the selected model source URL.'}
+    ],
+    example:'PCB model 352C04 has 10 mV/g nominal sensitivity and ±500 g sensor range. On a ±10 V input the voltage limit is ±1000 g, so the sensor—not the ADC input—sets the upper acceleration limit.',
     compute(v){
-      const S=positive(v.sensitivity,'Sensitivity')/1000,range=positive(v.range_g,'Sensor range'),peak=Math.max(0,n(v.expected_peak)),daq=positive(v.daq_range,'DAQ range'),noise=Math.max(0,n(v.noise_density))*1e-6,bw=positive(v.bandwidth,'Bandwidth'),low=Math.max(0,n(v.low_cutoff)),req=Math.max(0,n(v.required_low)),ms=Math.max(0,n(v.sensor_mass_g)),mm=positive(v.local_modal_mass_g,'Local modal mass');
-      const volts=S*peak,daqUse=100*volts/daq,sensorUse=100*peak/range,noiseRms=noise*Math.sqrt(bw),loading=100*ms/mm;
-      const warnings=[];
-      if(daqUse>80)warnings.push('DAQ voltage headroom is below 20%; include uncertainty, bias, and unexpected peaks.');
-      if(sensorUse>80)warnings.push('Expected acceleration uses more than 80% of sensor range.');
-      if(low>req)warnings.push('The sensor low-frequency cutoff is above the required minimum frequency.');
-      if(loading>5)warnings.push('Sensor mass exceeds 5% of estimated local modal mass and may shift the response.');
+      const selectedModel=String(v.sensor_model||'352C04'),catalogSensor=pcbAccelerometerByModel.get(selectedModel),isCustom=selectedModel==='custom'||!catalogSensor;
+      const sensor=isCustom?{
+        model:'Custom',family:'User entered',description:'User-entered accelerometer specification',outputType:v.custom_sensitivity_unit==='pC/g'?'Charge':'Voltage output',axes:1,
+        sensitivityValue:positive(v.custom_sensitivity,'Custom sensitivity'),sensitivityUnit:String(v.custom_sensitivity_unit||'mV/g'),sensitivityTolerance:'User entered',
+        measurementRangeGPeak:positive(v.custom_range_g,'Custom sensor range'),broadbandResolutionGRms:Math.max(0,n(v.custom_resolution_g)),resolutionBasis:'User entered broadband resolution',
+        frequencyMinHz:positive(v.custom_frequency_low,'Custom low-frequency limit'),frequencyMaxHz:positive(v.custom_frequency_high,'Custom high-frequency limit'),frequencyTolerance:'User entered',frequencyBasis:'User entered frequency range',
+        temperatureMinC:n(v.custom_temp_low_c),temperatureMaxC:n(v.custom_temp_high_c),temperatureBasis:'User entered operating range',massGrams:Math.max(0,n(v.custom_mass_g)),productUrl:'',sourceStatus:'User entered; not from PCB catalog'
+      }:catalogSensor;
+      const bits=[8,24].includes(Math.round(n(v.daq_bits)))?Math.round(n(v.daq_bits)):24,daq=positive(v.daq_range,'DAQ range'),daqNoise=Math.max(0,n(v.daq_noise_uv))*1e-6,conditionerNoise=Math.max(0,n(v.conditioner_noise_uv))*1e-6,chargeGain=Math.max(0,n(v.conditioner_gain_mv_per_pc)),crest=positive(v.crest_factor,'Crest factor');
+      const peak=Math.max(0,n(v.expected_peak)),bw=positive(v.bandwidth,'Bandwidth'),requiredLow=positive(v.required_low,'Required minimum frequency'),requiredHigh=positive(v.required_high,'Required maximum frequency'),operatingTemp=n(v.operating_temp_c),localModalMass=positive(v.local_modal_mass_g,'Local modal mass');
+      if(requiredHigh<=requiredLow)throw new Error('Required maximum frequency must be greater than the required minimum frequency.');
+      const sensitivityNative=Number(sensor.sensitivityValue),hasSensitivity=Number.isFinite(sensitivityNative)&&sensitivityNative>0,sensitivityUnit=String(sensor.sensitivityUnit||'');
+      const effectiveMvPerG=hasSensitivity?(sensitivityUnit==='mV/g'?sensitivityNative:sensitivityUnit==='pC/g'&&chargeGain>0?sensitivityNative*chargeGain:null):null,effectiveVPerG=effectiveMvPerG==null?null:effectiveMvPerG/1000;
+      const adcStepV=2*daq/(2**bits),quantizationNoiseV=adcStepV/Math.sqrt(12),electronicNoiseV=Math.hypot(quantizationNoiseV,daqNoise,conditionerNoise),daqFloorG=effectiveVPerG?electronicNoiseV/effectiveVPerG:null,daqClipG=effectiveVPerG?daq/effectiveVPerG:null;
+      const sensorRange=sensor.measurementRangeGPeak!=null&&Number.isFinite(Number(sensor.measurementRangeGPeak))?Number(sensor.measurementRangeGPeak):null,sensorFloor=sensor.broadbandResolutionGRms!=null&&Number.isFinite(Number(sensor.broadbandResolutionGRms))&&Number(sensor.broadbandResolutionGRms)>0?Number(sensor.broadbandResolutionGRms):null;
+      const ceilingCandidates=[sensorRange,daqClipG].filter(value=>Number.isFinite(value)&&value>0),systemCeilingPeak=ceilingCandidates.length?Math.min(...ceilingCandidates):null,floorCandidates=[sensorFloor,daqFloorG].filter(value=>Number.isFinite(value)&&value>0),systemFloor=floorCandidates.length?Math.max(...floorCandidates):null,systemCeilingRms=systemCeilingPeak==null?null:systemCeilingPeak/crest,dynamicRangeDb=systemFloor&&systemCeilingRms>systemFloor?20*Math.log10(systemCeilingRms/systemFloor):null;
+      const outputV=effectiveVPerG==null?null:effectiveVPerG*peak,daqUse=outputV==null?null:100*outputV/daq,sensorUse=sensorRange==null?null:100*peak/sensorRange,systemUse=systemCeilingPeak==null?null:100*peak/systemCeilingPeak,massLoading=sensor.massGrams!=null&&Number.isFinite(Number(sensor.massGrams))?100*Number(sensor.massGrams)/localModalMass:null;
+      const frequencyLow=sensor.frequencyMinHz!=null&&Number.isFinite(Number(sensor.frequencyMinHz))&&Number(sensor.frequencyMinHz)>0?Number(sensor.frequencyMinHz):null,frequencyHigh=sensor.frequencyMaxHz!=null&&Number.isFinite(Number(sensor.frequencyMaxHz))&&Number(sensor.frequencyMaxHz)>0?Number(sensor.frequencyMaxHz):null,tempLow=sensor.temperatureMinC!=null&&Number.isFinite(Number(sensor.temperatureMinC))?Number(sensor.temperatureMinC):null,tempHigh=sensor.temperatureMaxC!=null&&Number.isFinite(Number(sensor.temperatureMaxC))?Number(sensor.temperatureMaxC):null;
+      const alerts=[],limitations=[];
+      if(!hasSensitivity)alerts.push(`PCB does not publish a usable sensitivity for ${sensor.model} on the parsed product page, so DAQ-referred acceleration limits cannot be calculated.`);
+      if(sensitivityUnit==='pC/g'&&!chargeGain)alerts.push(`${sensor.model} is a charge-output accelerometer; enter the charge-converter gain before using the DAQ dynamic-range result.`);
+      if(daqUse!=null&&daqUse>80)alerts.push('DAQ voltage headroom is below 20%; include DC bias, tolerance, conditioner limits, and unexpected peaks.');
+      if(sensorUse!=null&&sensorUse>80)alerts.push('Expected acceleration uses more than 80% of the published sensor range.');
+      if(frequencyLow!=null&&frequencyLow>requiredLow)alerts.push(`The published low-frequency limit of ${frequencyLow} Hz is above the ${requiredLow} Hz requirement.`);
+      if(frequencyHigh!=null&&frequencyHigh<requiredHigh)alerts.push(`The published high-frequency limit of ${frequencyHigh} Hz is below the ${requiredHigh} Hz requirement.`);
+      if(frequencyHigh==null)limitations.push(`A complete published frequency interval was not recovered for ${sensor.model}; verify the product data sheet manually.`);
+      if(tempLow!=null&&operatingTemp<tempLow||tempHigh!=null&&operatingTemp>tempHigh)alerts.push(`The entered ${operatingTemp} °C operating temperature is outside the published range.`);
+      if(tempLow==null||tempHigh==null)limitations.push(`A complete published operating-temperature interval was not recovered for ${sensor.model}; verify the product data sheet manually.`);
+      if(massLoading!=null&&massLoading>5)alerts.push('Sensor mass exceeds 5% of estimated local modal mass and may shift the response.');
+      if(sensorFloor==null)limitations.push(`PCB does not publish a parsed broadband-resolution value for ${sensor.model}; any DAQ-based dynamic range is an upper bound until sensor noise is supplied.`);
+      if(bits===24&&daqNoise===0&&conditionerNoise===0)limitations.push('The 24-bit lower limit uses ideal quantization noise only. Enter measured DAQ and conditioner noise or ENOB-equivalent broadband noise for a realistic floor.');
+      limitations.push('Catalog frequency bands are nominal tolerance intervals, not anti-alias passbands; mounting resonance, filters, cable behavior, transverse response, and calibration remain separate checks.');
+      if(!isCustom)limitations.push(`Catalog snapshot ${PCB_ACCELEROMETER_CATALOG_META.retrievedAt.slice(0,10)}; verify availability and the current revision of the linked PCB product specification before procurement or test release.`);
+
+      const sensitivityPeers=pcbAccelerometers.filter(item=>item.sensitivityUnit===sensitivityUnit&&Number(item.sensitivityValue)>0).map(item=>Number(item.sensitivityValue)),rangeCharts=[];
+      if(frequencyHigh!=null){
+        const smallest=Math.min(frequencyLow||requiredLow,requiredLow),largest=Math.max(frequencyHigh,requiredHigh);
+        rangeCharts.push({title:`${sensor.model} frequency coverage`,description:'Published sensor tolerance interval compared with the requested measurement band.',scale:'log',min:Math.max(1e-4,smallest/2),max:largest*2,unit:'Hz',axisLabel:'Frequency (Hz)',lanes:[{label:'Sensor',start:frequencyLow,end:frequencyHigh,tone:'sensor',note:sensor.frequencyTolerance||'published interval'},{label:'Requirement',start:requiredLow,end:requiredHigh,tone:'primary',note:'entered measurement band'}]});
+      }
+      if(tempHigh!=null){
+        const values=[tempLow,operatingTemp,tempHigh].filter(Number.isFinite),padding=Math.max(10,(Math.max(...values)-Math.min(...values))*.12);
+        rangeCharts.push({title:`${sensor.model} operating-temperature coverage`,description:'Published operating-temperature interval with the entered test temperature.',scale:'linear',min:Math.min(...values)-padding,max:Math.max(...values)+padding,unit:'°C',axisLabel:'Temperature (°C)',lanes:[{label:'Sensor',start:tempLow,end:tempHigh,tone:'sensor',note:'published operating range'}],markers:[{value:operatingTemp,label:'Test condition',lane:0}]});
+      }
+      if(hasSensitivity){
+        const peerMin=Math.min(sensitivityNative,...sensitivityPeers),peerMax=Math.max(sensitivityNative,...sensitivityPeers);
+        rangeCharts.push({title:`${sensor.model} nominal sensitivity`,description:`Selected nominal sensitivity relative to catalog models published in ${sensitivityUnit}.`,scale:'log',min:peerMin/2,max:peerMax*2,unit:sensitivityUnit,axisLabel:`Nominal sensitivity (${sensitivityUnit})`,lanes:[{label:'Catalog span',start:peerMin,end:peerMax,tone:'secondary',note:`${sensitivityPeers.length} models in ${sensitivityUnit}`}],markers:[{value:sensitivityNative,label:`${sensor.model}: ${sensitivityNative} ${sensitivityUnit}`,lane:0,color:'#1e6077'}]});
+      }
+      if(sensorRange!=null||daqClipG!=null){
+        const lanes=[];
+        if(sensorRange!=null)lanes.push({label:'Sensor',start:sensorFloor,end:sensorRange,tone:'sensor',note:sensorFloor==null?'noise floor not published':'published resolution to rated peak'});
+        if(daqClipG!=null)lanes.push({label:`${bits}-bit DAQ`,start:daqFloorG,end:daqClipG,tone:'daq',note:'input-referred quantization + entered noise'});
+        if(systemCeilingPeak!=null&&daqClipG!=null)lanes.push({label:'Usable chain',start:systemFloor,end:systemCeilingPeak,tone:'usable',note:sensorFloor==null?'floor is an upper-bound estimate':'limiting sensor + DAQ envelope'});
+        const positiveValues=lanes.flatMap(lane=>[lane.start,lane.end]).filter(value=>Number.isFinite(value)&&value>0),rangeMin=positiveValues.length?Math.min(...positiveValues)/5:systemCeilingPeak/1e6,rangeMax=Math.max(...positiveValues,peak,1)*2,markerLane=Math.max(0,lanes.length-1);
+        rangeCharts.push({title:`${sensor.model} sensor + ${bits}-bit DAQ dynamic range`,description:'Acceleration-referred lower floors and upper clipping/rated limits. The entered event is shown against the combined chain.',scale:'log',min:Math.max(1e-12,rangeMin),max:rangeMax,unit:'g',axisLabel:'Acceleration amplitude (g)',lanes,markers:peak>0?[{value:peak,label:`Expected peak ${peak} g`,lane:markerLane,color:'#8f423a'}]:[]});
+      }
+      const rangeText=(lo,hi,unit)=>lo==null&&hi==null?'Not published':lo==null?`to ${hi} ${unit}`:hi==null?`${lo} ${unit} and above`:`${lo} to ${hi} ${unit}`;
+      const specRows=[
+        ['Model',sensor.model,'',sensor.family,sensor.productUrl||'User entered'],
+        ['Description',sensor.description||'—','','PCB listing',sensor.productUrl||'User entered'],
+        ['Output / axes',`${sensor.outputType||'—'} · ${sensor.axes||'—'} axis`,'','PCB product specification',sensor.productUrl||'User entered'],
+        ['Nominal sensitivity',hasSensitivity?sensitivityNative:'Not published',sensitivityUnit,sensor.sensitivityTolerance||'nominal',sensor.productUrl||'User entered'],
+        ['Measurement range',sensorRange??'Not published','±g peak','published rated range',sensor.productUrl||'User entered'],
+        ['Broadband resolution',sensorFloor??'Not published','g RMS',sensor.resolutionBasis||'not recovered',sensor.productUrl||'User entered'],
+        ['Frequency range',rangeText(frequencyLow,frequencyHigh,'Hz'),'Hz',sensor.frequencyBasis||'not recovered',sensor.productUrl||'User entered'],
+        ['Temperature range',rangeText(tempLow,tempHigh,'°C'),'°C',sensor.temperatureBasis||'not recovered',sensor.productUrl||'User entered'],
+        ['Mass',sensor.massGrams!=null&&Number.isFinite(Number(sensor.massGrams))?Number(sensor.massGrams):'Not published','g','catalog product specification',sensor.productUrl||'User entered']
+      ];
+      const dynamicLabel=sensorFloor==null&&dynamicRangeDb!=null?'Dynamic range upper bound':'Usable dynamic range';
       return{
-        summary:[stat('Peak sensor output',volts,'V'),stat('DAQ range used',daqUse,'%',daqUse>80?'warn':''),stat('Sensor range used',sensorUse,'%',sensorUse>80?'warn':''),stat('Integrated noise',noiseRms,'g RMS'),stat('Local mass loading',loading,'%',loading>5?'warn':''),stat('Low-frequency margin',req-low,'Hz',req-low<0?'danger':'')],
-        interpretation:`The chain produces ${volts.toFixed(3)} V peak at the expected event and an ideal white-noise floor of ${(noiseRms*1e6).toFixed(1)} μg RMS over ${bw} Hz.`,
-        warnings
+        values:[
+          stat('Selected model',sensor.model,'',!hasSensitivity?'warn':''),
+          stat('Nominal sensitivity',hasSensitivity?sensitivityNative:'Not published',sensitivityUnit),
+          stat('Published frequency range',rangeText(frequencyLow,frequencyHigh,'Hz')),
+          stat('Published temperature range',rangeText(tempLow,tempHigh,'°C')),
+          stat('Sensor rated range',sensorRange??'Not published','±g peak'),
+          stat('Usable peak ceiling',systemCeilingPeak??'Unavailable','g peak',systemUse!=null&&systemUse>80?'warn':''),
+          stat('Effective DAQ sensitivity',effectiveMvPerG??'Unavailable','mV/g'),
+          stat('DAQ acceleration per code',effectiveVPerG?adcStepV/effectiveVPerG:'Unavailable','g/code'),
+          stat('Input-referred electronic floor',daqFloorG??'Unavailable','g RMS'),
+          stat(dynamicLabel,dynamicRangeDb??'Unavailable','dB'),
+          stat('Expected sensor output',outputV??'Unavailable','V peak'),
+          stat('Combined range used',systemUse??'Unavailable','%',systemUse!=null&&systemUse>80?'warn':''),
+          stat('Local mass loading',massLoading??'Unavailable','%',massLoading!=null&&massLoading>5?'warn':''),
+          stat('Measurement bandwidth',bw,'Hz')
+        ],
+        interpretation:{
+          summary:systemCeilingPeak!=null?`${sensor.model} is limited to about ${systemCeilingPeak.toPrecision(4)} g peak by the ${sensorRange!=null&&sensorRange<=Number(daqClipG??Infinity)?'sensor rating':'DAQ input range'} for the entered chain. ${dynamicRangeDb!=null?`The ${sensorFloor==null?'upper-bound ':''}usable RMS dynamic range is ${dynamicRangeDb.toFixed(1)} dB.`:'A usable lower-to-upper dynamic range cannot yet be established from the available specifications.'}`:`${sensor.model} remains selectable, but its published sensitivity is incomplete, so the DAQ-referred acceleration range is unavailable until that value is supplied.`,
+          physicalMeaning:`Sensitivity converts motion to volts; the smallest usable motion is controlled by the larger sensor or electronics floor, while the largest is controlled by the first sensor or DAQ limit reached. Bit depth changes ideal code size, but a nominal 24-bit converter only improves the physical floor when analog noise and effective number of bits support it.`,
+          engineeringConsiderations:['Confirm the exact product revision and axis-specific calibration before selecting hardware.','Use measured DAQ/conditioner input noise or ENOB over the intended bandwidth rather than nominal bit depth for final range claims.','Review mounting, cable, ICP or bridge excitation, charge conversion, bias voltage, anti-alias filtering, and environmental qualification as one measurement chain.']
+        },
+        alerts,
+        limitations,
+        rangeCharts,
+        tables:[{title:'Selected catalog specification and provenance',columns:['Field','Value','Unit','Basis','Source'],rows:specRows}],
+        csv:{filename:`pcb-accelerometer-${String(sensor.model).replace(/[^a-z0-9-]+/gi,'-').toLowerCase()}.csv`,columns:['field','value','unit','basis','source'],rows:specRows},
+        presentation:{primaryEvidenceStack:rangeCharts.map((_,index)=>({type:'rangeChart',index})),primaryValueCount:6}
       };
     }
   },
