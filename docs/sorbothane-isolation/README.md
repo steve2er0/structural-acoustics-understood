@@ -150,6 +150,8 @@ Complex phase is retained. dB results use `20 log10(|T|)` because they are ampli
 
 The design explorer evaluates every visible point on a two-variable grid. It does not hide the sampled candidates behind an optimizer. Sweep axes include durometer, annular dimensions, compression, mass, CG height, both mount spacings, and stack count. Each ranked candidate reports all six modes, target-frequency transmissibility, resonance-band peak, compression, preload, engagement, catalog compliance, and a transparent score used only for ranking.
 
+Applying a catalog recommendation preserves the completed catalog screen and highlights the selected part number and stack count. The current-design banner can then center and run the 7 × 7 sweep around that applied configuration. The applied design is outlined in the heatmap and retained in the ranked table even when it falls outside the first twelve candidates by score.
+
 The optional uncertainty calculation is a seeded Monte Carlo screen. It varies dynamic modulus, loss factor, mass, three CG coordinates, and nominal compression. Mode and target-frequency intervals are the 5th and 95th percentiles. Independent Txx, Tyy, and Tzz transmissibility bands use the same samples at the selected response point. This is a sensitivity envelope, not a material allowables distribution or qualification confidence statement.
 
 ## Validation cases

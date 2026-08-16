@@ -816,6 +816,14 @@ function setDesignVariable(config, variable, displayValue) {
   }
 }
 
+function getDesignVariable(config, variable) {
+  const definition = DESIGN_VARIABLES[variable];
+  if (!definition) return NaN;
+  let value = config;
+  for (const key of definition.path) value = value[key];
+  return value / definition.scale;
+}
+
 export function runDesignGrid(configInput, settings = {}) {
   const config = normalizeSorbothaneConfig(configInput);
   const xVariable = settings.xVariable ?? 'thickness';
@@ -824,6 +832,7 @@ export function runDesignGrid(configInput, settings = {}) {
   const yRange = settings.yRange ?? [0.9, 1.8];
   const gridSize = clamp(Math.round(settings.gridSize ?? 7), 3, 11);
   const output = settings.output ?? 't1200';
+  const reference = { xValue: getDesignVariable(config, xVariable), yValue: getDesignVariable(config, yVariable) };
   const xValues = Array.from({ length: gridSize }, (_, index) => xRange[0] + index * (xRange[1] - xRange[0]) / (gridSize - 1));
   const yValues = Array.from({ length: gridSize }, (_, index) => yRange[0] + index * (yRange[1] - yRange[0]) / (gridSize - 1));
   const candidates = [];
@@ -842,12 +851,16 @@ export function runDesignGrid(configInput, settings = {}) {
         verticalMode: analysis.modes.find(mode => mode.dominantIndex === 2)?.frequencyHz ?? analysis.modes[2].frequencyHz
       };
       const score = analysis.toneResults.reduce((sum, result) => sum + result.db, 0) + Math.max(analysis.peak.db - config.analysis.resonanceLimitDb, 0) * 4 + (analysis.preload.allEngaged ? 0 : 100) + (analysis.preload.catalogCompliant ? 0 : 40);
-      candidates.push({ xValue, yValue, value: outputValues[output], score, pass: analysis.passes, analysis, config: candidateConfig });
+      const isReference = Math.abs(xValue - reference.xValue) < 1e-8 && Math.abs(yValue - reference.yValue) < 1e-8;
+      candidates.push({ xValue, yValue, value: outputValues[output], score, pass: analysis.passes, isReference, analysis, config: candidateConfig });
       return outputValues[output];
     } catch { return NaN; }
   }));
   candidates.sort((left, right) => left.score - right.score);
-  return { xVariable, yVariable, xValues, yValues, output, values, candidates: candidates.slice(0, 12) };
+  const rankedCandidates = candidates.slice(0, 12);
+  const referenceCandidate = candidates.find(candidate => candidate.isReference);
+  if (referenceCandidate && !rankedCandidates.includes(referenceCandidate)) rankedCandidates[rankedCandidates.length - 1] = referenceCandidate;
+  return { xVariable, yVariable, xValues, yValues, output, values, reference, candidates: rankedCandidates };
 }
 
 function catalogCandidateConfig(baseConfig, item, stackCount) {

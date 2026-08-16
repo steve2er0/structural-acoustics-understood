@@ -932,16 +932,30 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
 .sorbo-catalog-recommendation > div:nth-child(2) strong { color: #7ce7bd; font-size: 2.1rem; font-weight: 380; line-height: 1; }
 .sorbo-catalog-recommendation > div:nth-child(2) span { color: #d2e9df; font-size: .6rem; }
 .sorbo-catalog-recommendation > div:nth-child(2) small { color: #6e9384; font-size: .49rem; }
+.sorbo-catalog-recommendation.is-selected-design { border-color: rgba(87, 199, 255, .72); border-left-color: var(--sorbo-cyan); box-shadow: 0 0 0 1px rgba(87, 199, 255, .14), 0 14px 32px rgba(0, 9, 19, .2); background: rgba(43, 125, 173, .16); }
+.sorbo-catalog-recommendation.is-selected-design button:disabled,
+.sorbo-use-candidate:disabled { color: #ccecff; cursor: default; opacity: 1; border-color: rgba(87, 199, 255, .45); background: rgba(57, 139, 190, .18); }
+.sorbo-workbench tr.is-selected-design td,
+.sorbo-workbench tr.is-current-design td { background: rgba(87, 199, 255, .095); box-shadow: inset 0 1px rgba(87, 199, 255, .22), inset 0 -1px rgba(87, 199, 255, .22); }
+.sorbo-selected-tag { display: block; width: max-content; margin-top: .25rem; padding: .16rem .28rem; color: #bfe9ff; border: 1px solid rgba(87, 199, 255, .35); font: 650 .4rem var(--mono); letter-spacing: .04em; text-transform: uppercase; }
 .sorbo-use-candidate { white-space: nowrap; }
 .sorbo-catalog-empty { min-height: 190px; border: 1px dashed var(--sorbo-line); }
 .inline-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: .3rem; }
 .sorbo-empty { min-height: 280px; display: grid; place-content: center; justify-items: center; text-align: center; color: #70899f; }
 .sorbo-empty strong { color: #bdd0df; font-size: 1rem; }
 .sorbo-empty p { max-width: 500px; font-size: .65rem; }
+.sorbo-current-design { display: grid; grid-template-columns: minmax(250px, 1fr) minmax(220px, .75fr) auto; align-items: center; gap: 1rem; margin-bottom: .75rem; padding: .9rem 1rem; border: 1px solid rgba(87, 199, 255, .3); border-left: 3px solid var(--sorbo-cyan); background: rgba(43, 125, 173, .1); }
+.sorbo-current-design h3 { margin: .15rem 0 .25rem; color: #e8f5ff; font-size: 1.25rem; font-weight: 480; }
+.sorbo-current-design span,
+.sorbo-current-design small { display: block; color: #7897ad; font-size: .53rem; line-height: 1.45; }
+.sorbo-current-design strong { color: #cde7f7; font-size: .65rem; font-weight: 580; }
+.sorbo-current-design button { min-height: 42px; white-space: nowrap; }
 .sorbo-explorer-result { display: grid; grid-template-columns: minmax(0, .8fr) minmax(480px, 1.2fr); gap: 1rem; margin-top: 1rem; }
 .sorbo-heatmap { width: 100%; min-height: 390px; border: 1px solid var(--sorbo-line); background: rgba(4, 19, 32, .8); }
 .sorbo-heatmap text { fill: rgba(244, 249, 253, .82); font: 530 8px var(--mono); text-anchor: middle; pointer-events: none; }
 .sorbo-heatmap .axis-tick { fill: #829aaf; font-size: 9px; }
+.sorbo-heatmap rect.is-current-design { stroke: #fff; stroke-width: 3; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 5px rgba(87, 199, 255, .85)); }
+.sorbo-heatmap .current-design-label { fill: #fff; font-size: 7px; font-weight: 800; letter-spacing: .06em; }
 .sorbo-assumption-list,
 .sorbo-warning-list { display: grid; gap: .65rem; padding-left: 1.2rem; color: #9db1c2; font-size: .65rem; line-height: 1.55; }
 .sorbo-warning-list { color: #e5a8a3; }
@@ -989,6 +1003,8 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
   .sorbo-reference-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .sorbo-catalog-recommendation { grid-template-columns: 1fr auto; }
   .sorbo-catalog-recommendation > button { grid-column: 1 / -1; }
+  .sorbo-current-design { grid-template-columns: 1fr auto; }
+  .sorbo-current-design > div:nth-child(2) { grid-column: 1 / -1; }
 }
 
 @media (max-width: 650px) {
@@ -1019,6 +1035,9 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
   .sorbo-uncertainty-tones { grid-template-columns: 1fr; }
   .sorbo-response-location,
   .sorbo-response-options { grid-template-columns: 1fr; }
+  .sorbo-current-design { grid-template-columns: 1fr; }
+  .sorbo-current-design > div:nth-child(2),
+  .sorbo-current-design > button { grid-column: auto; }
 }
 
 @media print {

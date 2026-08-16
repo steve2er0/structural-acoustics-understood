@@ -18,7 +18,7 @@ import {
   sorbothaneDynamicProperties,
   staticPreloadState
 } from '../js/sorbothane-analysis.js';
-import { engineeringReport, renderSorbothaneIsolationWorkbench, responseCsv, sorbothaneExplorerVariableDefaults } from '../js/sorbothane-isolation.js';
+import { engineeringReport, renderSorbothaneIsolationWorkbench, responseCsv, sorbothaneExplorerSettingsAroundDesign, sorbothaneExplorerVariableDefaults } from '../js/sorbothane-isolation.js';
 import { SORBOTHANE_CATALOG, SORBOTHANE_MATERIAL } from '../js/sorbothane-data.js';
 
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -220,6 +220,8 @@ test('workbench preserves trailing-zero requirement frequencies in rendered labe
   assert.match(html, /Mount plane relative to CG/);
   assert.match(html, /Durometer \(Shore 00\)/);
   assert.match(html, /data-sorbo-catalog-progress/);
+  assert.match(html, /data-sorbo-action="load-current-into-explorer"/);
+  assert.match(html, /Current analysis design/);
   assert.match(html, /Add tone criterion/);
   assert.match(html, /data-catalog-criterion="verticalMinHz"/);
   assert.match(html, /data-catalog-criterion="xTranslationMinHz"/);
@@ -285,6 +287,26 @@ test('design explorer gives each variable a physically meaningful default range'
   assert.deepEqual([ranges.mountSpacing.min, ranges.mountSpacing.max], [6, 9.5]);
   assert.deepEqual([ranges.mountSpacingY.min, ranges.mountSpacingY.max], [4.75, 7.5]);
   assert.notDeepEqual([ranges.durometer.min, ranges.durometer.max], [ranges.thickness.min, ranges.thickness.max]);
+});
+
+test('design explorer centers a seven-by-seven study on the applied design', () => {
+  const config = baseline();
+  config.isolator.productNumber = 'custom-ring';
+  const settings = sorbothaneExplorerSettingsAroundDesign(config, { xVariable: 'thickness', yVariable: 'od', output: 't1200' });
+  close((settings.xMin + settings.xMax) / 2, 0.25, 1e-12);
+  close((settings.yMin + settings.yMax) / 2, 1.25, 1e-12);
+  const grid = runDesignGrid(config, {
+    xVariable: settings.xVariable,
+    yVariable: settings.yVariable,
+    xRange: [settings.xMin, settings.xMax],
+    yRange: [settings.yMin, settings.yMax],
+    output: settings.output,
+    gridSize: 7
+  });
+  close(grid.xValues[3], 0.25, 1e-12);
+  close(grid.yValues[3], 1.25, 1e-12);
+  assert.deepEqual(grid.reference, { xValue: 0.25, yValue: 1.25 });
+  assert.equal(grid.candidates.filter(candidate => candidate.isReference).length, 1);
 });
 
 test('catalog screening filters nominal geometry and selects the minimum passing stack count per part', () => {
