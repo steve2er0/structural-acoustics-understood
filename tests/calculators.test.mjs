@@ -1197,10 +1197,14 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   const syncSource=readFileSync(new URL('../scripts/sync-standalone.mjs',import.meta.url),'utf8');
   assert.match(syncSource,/const chartsModule = await read\('js\/charts\.js'\)/);
   assert.match(syncSource,/const pcbAccelerometersModule = await read\('js\/pcb-accelerometers-data\.js'\)/);
+  assert.match(syncSource,/const parkerLordIsolatorsModule = await read\('js\/parker-lord-isolators\.js'\)/);
   assert.match(syncSource,/const chartsBlock = `const __charts=/);
   assert.match(syncSource,/surface3dSvg/);
   assert.match(syncSource,/rangeChartSvg/);
   assert.match(html,/const __calculators=\(\(\)=>\{[\s\S]*Integrated acceleration/);
+  assert.match(html,/AM-009-14/);
+  assert.match(html,/function screenParkerLordCatalogAsync/);
+  assert.match(html,/Parker LORD Aerospace & Defense Isolator Catalog/);
   assert.match(html,/const __pcbAccelerometers=\(\(\)=>\{[\s\S]*"model": "352C04"/);
   assert.match(html,/const __charts=\(\(\)=>\{[\s\S]*function harmonicPhase/);
   assert.match(html,/function rangeChartSvg\(chart/);
@@ -1518,7 +1522,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes current interactive runtimes',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v90'/);
+  assert.match(worker,/const CACHE = 'sau-v98'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);
@@ -1528,6 +1532,7 @@ test('offline cache includes current interactive runtimes',()=>{
   assert.match(worker,/\.\/js\/pcb-accelerometers-data\.js/);
   assert.match(worker,/\.\/js\/demo-takeaways\.js/);
   assert.match(worker,/\.\/js\/sorbothane-data\.js/);
+  assert.match(worker,/\.\/js\/parker-lord-isolators\.js/);
   assert.match(worker,/\.\/js\/sorbothane-analysis\.js/);
   assert.match(worker,/\.\/js\/sorbothane-isolation\.js/);
   assert.match(worker,/\.\/js\/workflow-expansion-data\.js/);

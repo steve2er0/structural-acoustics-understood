@@ -800,6 +800,9 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
 .sorbo-response-options button.active { color: #fff; border-color: var(--sorbo-cyan); box-shadow: inset 0 -2px var(--sorbo-cyan); background: rgba(57, 139, 190, .18); }
 .sorbo-response-options b { overflow: hidden; font: 620 .56rem var(--mono); text-overflow: ellipsis; white-space: nowrap; }
 .sorbo-response-options span { color: #6f899f; font-size: .49rem; line-height: 1.35; }
+.sorbo-model-select,
+.sorbo-model-options { grid-column: 1 / -1; }
+.sorbo-model-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .sorbo-caption { margin: .8rem 0 0; color: #708aa1; font-size: .58rem; line-height: 1.6; }
 .sorbo-decision-card dl,
 .sorbo-detail-list { display: grid; gap: 0; margin: 1.1rem 0 0; }

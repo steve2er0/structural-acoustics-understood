@@ -1,4 +1,5 @@
 import { SORBOTHANE_CATALOG, SORBOTHANE_MATERIAL, sorbothaneCatalogItem } from './sorbothane-data.js';
+import { PARKER_LORD_AM_CATALOG, parkerLordCatalogItem } from './parker-lord-isolators.js';
 
 const INCH = 0.0254;
 const LB = 0.45359237;
@@ -35,6 +36,7 @@ export const DEFAULT_SORBOTHANE_CONFIG = {
     stackBottom: 1
   },
   isolator: {
+    kind: 'sorbothane-element',
     productNumber: 'custom-ring',
     geometry: 'ring',
     odM: 1.25 * INCH,
@@ -50,7 +52,9 @@ export const DEFAULT_SORBOTHANE_CONFIG = {
     userModulusMPa: 2.0,
     userTanDelta: 0.65,
     modulusScale: 1,
-    lossScale: 1
+    lossScale: 1,
+    mountsPerPoint: 1,
+    lordLossFactor: 0.30
   },
   environment: { accelerationG: [0, 0, 0] },
   analysis: {
@@ -97,12 +101,17 @@ export function normalizeSorbothaneConfig(input = {}) {
   config.mounts.spacingM = [...(source.mounts?.spacingM ?? config.mounts.spacingM)].map((value, index) => Math.max(finite(value, config.mounts.spacingM[index]), 1e-5));
   config.mounts.stackTop = Math.max(1, Math.round(finite(config.mounts.stackTop, 1)));
   config.mounts.stackBottom = Math.max(1, Math.round(finite(config.mounts.stackBottom, 1)));
+  if (!['sorbothane-element', 'parker-lord-am'].includes(config.isolator.kind)) config.isolator.kind = 'sorbothane-element';
   config.isolator.odM = Math.max(finite(config.isolator.odM, DEFAULT_SORBOTHANE_CONFIG.isolator.odM), 1e-5);
   config.isolator.idM = clamp(finite(config.isolator.idM, DEFAULT_SORBOTHANE_CONFIG.isolator.idM), 0, config.isolator.odM * 0.99);
   config.isolator.thicknessM = Math.max(finite(config.isolator.thicknessM, DEFAULT_SORBOTHANE_CONFIG.isolator.thicknessM), 1e-5);
   config.isolator.durometer = clamp(finite(config.isolator.durometer, 50), 30, 70);
   config.isolator.compressionPct = clamp(finite(config.isolator.compressionPct, 15), 1, 30);
   config.isolator.poisson = clamp(finite(config.isolator.poisson, 0.49), 0, 0.4995);
+  config.isolator.modulusScale = clamp(finite(config.isolator.modulusScale, 1), 0.05, 20);
+  config.isolator.lossScale = clamp(finite(config.isolator.lossScale, 1), 0.05, 20);
+  config.isolator.mountsPerPoint = clamp(Math.round(finite(config.isolator.mountsPerPoint, 1)), 1, 2);
+  config.isolator.lordLossFactor = clamp(finite(config.isolator.lordLossFactor, 0.30), 0.01, 1);
   config.environment.accelerationG = [...(source.environment?.accelerationG ?? config.environment.accelerationG)].map((value, index) => finite(value, config.environment.accelerationG[index]));
   config.analysis.frequencyPoints = clamp(Math.round(finite(config.analysis.frequencyPoints, 181)), 41, 501);
   if (!['cg', 'corner-positive', 'corner-negative'].includes(config.analysis.responsePoint)) config.analysis.responsePoint = 'cg';
@@ -110,6 +119,10 @@ export function normalizeSorbothaneConfig(input = {}) {
   config.analysis.lateralModeMinimumHz = [0, 1].map(index => Math.max(finite(lateralModeMinimumHz[index], config.analysis.lateralModeMinimumHz[index]), 0.1));
   config.analysis.tones = (source.analysis?.tones ?? config.analysis.tones).map(tone => ({ frequencyHz: Math.max(finite(tone.frequencyHz, 600), 0.1), maximumDb: finite(tone.maximumDb, -10) }));
   return config;
+}
+
+export function isParkerLordConfig(configInput) {
+  return configInput?.isolator?.kind === 'parker-lord-am';
 }
 
 function bracket(values, target) {
@@ -210,8 +223,40 @@ export function sorbothaneDynamicProperties(configInput, frequencyHz) {
   };
 }
 
+export function isolatorDynamicProperties(configInput, frequencyHz) {
+  const config = normalizeSorbothaneConfig(configInput);
+  if (!isParkerLordConfig(config)) return sorbothaneDynamicProperties(config, frequencyHz);
+  const item = parkerLordCatalogItem(config.isolator.productNumber);
+  const tanDelta = config.isolator.lordLossFactor * config.isolator.lossScale;
+  return {
+    frequencyHz,
+    storageModulusPa: config.isolator.modulusScale,
+    storageModulusPsi: null,
+    lossModulusPa: config.isolator.modulusScale * tanDelta,
+    tanDelta,
+    provenance: item.lossFactorProvenance,
+    supported: true,
+    model: 'catalog-dynamic-spring-rate',
+    productNumber: item.productNumber
+  };
+}
+
 export function isolatorGeometry(configInput) {
   const config = normalizeSorbothaneConfig(configInput);
+  if (isParkerLordConfig(config)) {
+    const item = parkerLordCatalogItem(config.isolator.productNumber);
+    return {
+      geometry: 'complete-mount',
+      loadedAreaM2: null,
+      loadedAreaIn2: null,
+      freeBulgeAreaM2: null,
+      effectiveAreaM2: null,
+      shapeFactor: NaN,
+      shapeCorrection: 1,
+      envelopeIn: { ...item.envelopeIn },
+      equation: 'Published complete-mount dynamic spring rates; no bulk-pad shape-factor correction.'
+    };
+  }
   const { odM, idM, thicknessM, geometry } = config.isolator;
   const loadedAreaM2 = Math.PI * (odM ** 2 - (geometry === 'disc' ? 0 : idM ** 2)) / 4;
   const freeBulgeAreaM2 = geometry === 'disc'
@@ -293,6 +338,51 @@ function leastNormVerticalLoads(positions, targets) {
 
 export function staticPreloadState(configInput) {
   const config = normalizeSorbothaneConfig(configInput);
+  if (isParkerLordConfig(config)) {
+    const positions = mountPositions(config);
+    const [ax, ay, az] = config.environment.accelerationG;
+    const forceX = config.component.massKg * ax * G0;
+    const forceY = config.component.massKg * ay * G0;
+    const forceZ = config.component.massKg * (1 + az) * G0;
+    const averagePlaneOffset = positions.reduce((sum, position) => sum + position[2], 0) / positions.length;
+    const payloadContributionsN = leastNormVerticalLoads(positions, [forceZ, averagePlaneOffset * forceY, averagePlaneOffset * forceX]);
+    const item = parkerLordCatalogItem(config.isolator.productNumber);
+    const capacityN = item.ratedLoadLb * LBF * config.isolator.mountsPerPoint;
+    const lateralXPerPointN = forceX / positions.length;
+    const lateralYPerPointN = forceY / positions.length;
+    const mounts = positions.map((position, index) => {
+      const payloadN = payloadContributionsN[index];
+      const resultantLoadN = Math.hypot(payloadN, lateralXPerPointN, lateralYPerPointN);
+      const flags = resultantLoadN > capacityN * (1 + 1e-9) ? ['outside catalog rated load'] : [];
+      return {
+        index: index + 1,
+        positionM: position,
+        payloadN,
+        upperLoadN: payloadN,
+        lowerLoadN: payloadN,
+        lateralLoadN: Math.hypot(lateralXPerPointN, lateralYPerPointN),
+        resultantLoadN,
+        ratedLoadN: capacityN,
+        flags
+      };
+    });
+    return {
+      compressionPct: NaN,
+      freeThicknessM: item.envelopeIn.height * INCH * config.isolator.mountsPerPoint,
+      compressedThicknessM: null,
+      preloadN: 0,
+      preloadProvenance: 'complete bonded mount; no captured-pad preload calculation',
+      payloadContributionsN,
+      mounts,
+      allEngaged: true,
+      catalogCompliant: mounts.every(mount => mount.resultantLoadN <= capacityN * (1 + 1e-9)),
+      compressionCompliant: true,
+      recommendedCompressionPct: null,
+      ratedLoadN: [0, capacityN],
+      capacityPerPointN: capacityN,
+      mountsPerPoint: config.isolator.mountsPerPoint
+    };
+  }
   const geometry = isolatorGeometry(config);
   let compressionPct = config.isolator.compressionPct;
   let preloadN;
@@ -380,6 +470,27 @@ function mountKinematics(position) {
 
 export function mountDynamicStiffness(configInput, frequencyHz) {
   const config = normalizeSorbothaneConfig(configInput);
+  if (isParkerLordConfig(config)) {
+    const item = parkerLordCatalogItem(config.isolator.productNumber);
+    const material = isolatorDynamicProperties(config, frequencyHz);
+    const parallelFactor = config.isolator.mountsPerPoint * config.isolator.modulusScale;
+    const axialNPerM = item.dynamicAxialSpringRateLbPerIn * LBF / INCH * parallelFactor;
+    const radialNPerM = item.dynamicRadialSpringRateLbPerIn * LBF / INCH * parallelFactor;
+    return {
+      kxNPerM: radialNPerM,
+      kyNPerM: radialNPerM,
+      kzNPerM: axialNPerM,
+      singleCompressionNPerM: item.dynamicAxialSpringRateLbPerIn * LBF / INCH,
+      singleShearNPerM: item.dynamicRadialSpringRateLbPerIn * LBF / INCH,
+      material,
+      geometry: isolatorGeometry(config),
+      seriesFactor: parallelFactor,
+      mountItem: item,
+      sandwichRule: config.isolator.mountsPerPoint === 2
+        ? 'Two complete AM mounts are installed back-to-back at each support point; catalog capacity and spring rate are doubled.'
+        : 'One complete AM mount is installed at each of the four support points.'
+    };
+  }
   const geometry = isolatorGeometry(config);
   const material = sorbothaneDynamicProperties(config, frequencyHz);
   const singleCompression = material.storageModulusPa * geometry.shapeCorrection * geometry.loadedAreaM2 / config.isolator.thicknessM;
@@ -507,7 +618,7 @@ export function solveRigidBodyModes(configInput) {
     const next = modal.map((mode, index) => {
       let frequency = Math.sqrt(mode.eigenvalue) / TAU;
       for (let inner = 0; inner < 12; inner += 1) {
-        const property = sorbothaneDynamicProperties(config, Math.max(frequency, 1));
+        const property = isolatorDynamicProperties(config, Math.max(frequency, 1));
         const candidate = Math.sqrt(mode.eigenvalue * property.storageModulusPa / referenceModulus) / TAU;
         if (Math.abs(candidate - frequency) < 0.01) { frequency = candidate; break; }
         frequency = 0.55 * frequency + 0.45 * candidate;
@@ -519,7 +630,7 @@ export function solveRigidBodyModes(configInput) {
   }
   const modes = modal.map((mode, index) => {
     const classification = classifyMode(mode.vector, config);
-    const property = sorbothaneDynamicProperties(config, frequencies[index]);
+    const property = isolatorDynamicProperties(config, frequencies[index]);
     const lengthScale = Math.sqrt(config.component.dimensionsM[0] * config.component.dimensionsM[1]);
     const maximum = Math.max(...mode.vector.map((value, dof) => Math.abs(value) * (dof < 3 ? 1 : lengthScale))) || 1;
     const normalizedVector = mode.vector.map((value, dof) => value * (dof < 3 ? 1 : lengthScale) / maximum);
@@ -764,12 +875,21 @@ export function analyzeSorbothaneIsolation(configInput, options = {}) {
   const peak = peakResults.reduce((largest, result) => result.db > largest.db ? result : largest, peakResults[0]);
   const uncertainty = options.skipUncertainty || !directionalResponses ? null : uncertaintyEnvelope(config, directionalResponses);
   const warnings = [];
-  if (config.analysis.frequencyMaxHz > SORBOTHANE_MATERIAL.digitizedCurveMaxHz) warnings.push(`Material data above ${SORBOTHANE_MATERIAL.digitizedCurveMaxHz} Hz are extrapolated using the selected ${config.isolator.extrapolation} policy.`);
-  if (!preload.allEngaged) warnings.push('At least one opposing isolator unloads under the specified quasi-static acceleration. The linear sandwich model is invalid after loss of contact.');
-  if (!preload.catalogCompliant) warnings.push('At least one element load lies outside the manufacturer catalog rating.');
-  if (preload.compressionPct < 10 || preload.compressionPct > 20) warnings.push('Nominal compression lies outside the manufacturer 10-20% preferred static-deflection range for shape factors from 0.3 to 1.0.');
-  if (isolatorGeometry(config).shapeFactor > 1.2) warnings.push('Shape factor exceeds 1.2; the manufacturer guide states no accepted shock methodology above this value and geometry correction uncertainty increases.');
-  if (config.isolator.temperatureC < -29 || config.isolator.temperatureC > 72) warnings.push('Temperature is outside the broad manufacturer operating range; the current model does not shift modulus with temperature.');
+  if (isParkerLordConfig(config)) {
+    const item = parkerLordCatalogItem(config.isolator.productNumber);
+    warnings.push('Parker LORD catalog dynamic spring rates are treated as frequency-independent complex stiffness for preliminary screening; qualification should use current application-specific data.');
+    warnings.push('Rated-load natural frequency and spring rate are catalog typical values. Confirm part availability, current drawing, load direction, environment, and installation with Parker LORD.');
+    if (item.lossFactorProvenance === 'engineering-assumption') warnings.push(`${item.elastomer} loss factor is an editable engineering assumption because the catalog table does not publish a damping value.`);
+    else warnings.push(`${item.elastomer} loss factor is an editable estimate digitized from the catalog's typical transmissibility curve, not a tabulated specification.`);
+    if (!preload.catalogCompliant) warnings.push('At least one support-point resultant load exceeds the catalog rated load for the selected single/back-to-back arrangement.');
+  } else {
+    if (config.analysis.frequencyMaxHz > SORBOTHANE_MATERIAL.digitizedCurveMaxHz) warnings.push(`Material data above ${SORBOTHANE_MATERIAL.digitizedCurveMaxHz} Hz are extrapolated using the selected ${config.isolator.extrapolation} policy.`);
+    if (!preload.allEngaged) warnings.push('At least one opposing isolator unloads under the specified quasi-static acceleration. The linear sandwich model is invalid after loss of contact.');
+    if (!preload.catalogCompliant) warnings.push('At least one element load lies outside the manufacturer catalog rating.');
+    if (preload.compressionPct < 10 || preload.compressionPct > 20) warnings.push('Nominal compression lies outside the manufacturer 10-20% preferred static-deflection range for shape factors from 0.3 to 1.0.');
+    if (isolatorGeometry(config).shapeFactor > 1.2) warnings.push('Shape factor exceeds 1.2; the manufacturer guide states no accepted shock methodology above this value and geometry correction uncertainty increases.');
+    if (config.isolator.temperatureC < -29 || config.isolator.temperatureC > 72) warnings.push('Temperature is outside the broad manufacturer operating range; the current model does not shift modulus with temperature.');
+  }
   return {
     config,
     geometry: isolatorGeometry(config),
@@ -801,7 +921,10 @@ const DESIGN_VARIABLES = {
   cgHeight: { path: ['component', 'cgM', 2], scale: INCH },
   mountSpacing: { path: ['mounts', 'spacingM', 0], scale: INCH },
   mountSpacingY: { path: ['mounts', 'spacingM', 1], scale: INCH },
-  stackCount: { path: ['mounts', 'stackTop'], scale: 1 }
+  stackCount: { path: ['mounts', 'stackTop'], scale: 1 },
+  stiffnessScale: { path: ['isolator', 'modulusScale'], scale: 1 },
+  lossFactor: { path: ['isolator', 'lordLossFactor'], scale: 1 },
+  mountsPerPoint: { path: ['isolator', 'mountsPerPoint'], scale: 1 }
 };
 
 function setDesignVariable(config, variable, displayValue) {
@@ -814,6 +937,7 @@ function setDesignVariable(config, variable, displayValue) {
     target[definition.path.at(-1)] = Math.max(1, Math.round(displayValue));
     config.mounts.stackBottom = target[definition.path.at(-1)];
   }
+  if (variable === 'mountsPerPoint') target[definition.path.at(-1)] = clamp(Math.round(displayValue), 1, 2);
 }
 
 function getDesignVariable(config, variable) {
@@ -841,7 +965,7 @@ export function runDesignGrid(configInput, settings = {}) {
     candidateConfig.uncertainty.enabled = false;
     setDesignVariable(candidateConfig, xVariable, xValue);
     setDesignVariable(candidateConfig, yVariable, yValue);
-    if (candidateConfig.isolator.idM >= candidateConfig.isolator.odM) return NaN;
+    if (!isParkerLordConfig(candidateConfig) && candidateConfig.isolator.idM >= candidateConfig.isolator.odM) return NaN;
     try {
       const analysis = analyzeSorbothaneIsolation(candidateConfig, { skipResponse: true, skipUncertainty: true });
       const outputValues = {
@@ -865,6 +989,7 @@ export function runDesignGrid(configInput, settings = {}) {
 
 function catalogCandidateConfig(baseConfig, item, stackCount) {
   const config = clone(baseConfig);
+  config.isolator.kind = 'sorbothane-element';
   config.isolator.productNumber = item.productNumber;
   config.isolator.geometry = item.geometry;
   config.isolator.odM = item.odIn * INCH;
@@ -985,6 +1110,7 @@ function finalizeCatalogScreen(context, evaluated, exclusions) {
   recommendations.sort((left, right) => left.score - right.score || left.stackCount - right.stackCount);
   nearMisses.sort((left, right) => left.score - right.score || left.stackCount - right.stackCount);
   return {
+    library: 'sorbothane',
     settings: { geometry: context.geometry, odRange: context.odRange, idRange: context.idRange, thicknessRange: context.thicknessRange, stackRange: [context.stackMin, context.stackMax] },
     criteria: context.criteria,
     catalogPartCount: context.catalog.length,
@@ -1039,5 +1165,148 @@ export async function screenSorbothaneCatalogAsync(configInput, settings = {}, o
   return finalizeCatalogScreen(context, evaluated, exclusions);
 }
 
+function lordCatalogCandidateConfig(baseConfig, item, mountsPerPoint) {
+  const config = clone(baseConfig);
+  config.isolator.kind = 'parker-lord-am';
+  config.isolator.productNumber = item.productNumber;
+  config.isolator.mountsPerPoint = mountsPerPoint;
+  config.isolator.lordLossFactor = item.lossFactorDefault;
+  config.isolator.modulusScale = 1;
+  config.isolator.lossScale = 1;
+  config.uncertainty.enabled = false;
+  return config;
+}
+
+function createParkerLordScreenContext(configInput, settings = {}) {
+  const config = normalizeSorbothaneConfig(configInput);
+  const criteria = normalizeCatalogCriteria(config, settings.criteria);
+  config.analysis.lateralModeMinimumHz = [...criteria.lateralModeMinimumHz];
+  config.analysis.modeAcceptBandHz = [...criteria.verticalModeRangeHz];
+  config.analysis.resonanceBandHz = [...criteria.resonanceBandHz];
+  config.analysis.resonanceLimitDb = criteria.resonanceMaximumDb;
+  config.analysis.tones = criteria.tones.map(tone => ({ ...tone }));
+  const family = settings.family === 'all' || /^AM-00[1-9]$/.test(settings.family ?? '') ? settings.family : 'all';
+  const elastomer = ['all', 'BTR', 'BTR II', 'MEA'].includes(settings.elastomer) ? settings.elastomer : 'all';
+  const ratedLoadRange = sortedCatalogRange(settings.ratedLoadRange, [0, 25]);
+  const mountRange = sortedCatalogRange(settings.mountsPerPointRange, [1, 2]).map(value => clamp(Math.round(value), 1, 2));
+  const mountMin = Math.min(...mountRange);
+  const mountMax = Math.max(...mountRange);
+  const eligibleParts = PARKER_LORD_AM_CATALOG.filter(item => (
+    (family === 'all' || item.family === family)
+    && (elastomer === 'all' || item.elastomer === elastomer)
+    && item.ratedLoadLb >= ratedLoadRange[0]
+    && item.ratedLoadLb <= ratedLoadRange[1]
+  ));
+  const combinations = eligibleParts.flatMap(item => Array.from({ length: mountMax - mountMin + 1 }, (_, index) => ({ item, mountsPerPoint: mountMin + index })));
+  return { config, criteria, family, elastomer, ratedLoadRange, mountMin, mountMax, eligibleParts, combinations };
+}
+
+function preScreenParkerLordCombination(context, combination, exclusions) {
+  const candidateConfig = lordCatalogCandidateConfig(context.config, combination.item, combination.mountsPerPoint);
+  const preload = staticPreloadState(candidateConfig);
+  const modes = solveRigidBodyModes(candidateConfig).modes;
+  const lateralModes = lateralTranslationModeResults(modes, candidateConfig);
+  const verticalMode = modeWithMostParticipation(modes, 2);
+  const xTranslationPass = lateralModes[0].pass;
+  const yTranslationPass = lateralModes[1].pass;
+  const verticalModePass = verticalMode.frequencyHz >= context.criteria.verticalModeRangeHz[0] && verticalMode.frequencyHz <= context.criteria.verticalModeRangeHz[1];
+  if (!preload.catalogCompliant) exclusions.ratedLoad += 1;
+  if (!xTranslationPass) exclusions.xTranslation += 1;
+  if (!yTranslationPass) exclusions.yTranslation += 1;
+  if (!verticalModePass) exclusions.verticalMode += 1;
+  if (!preload.catalogCompliant || !xTranslationPass || !yTranslationPass || !verticalModePass) return null;
+  return { ...combination, candidateConfig };
+}
+
+function evaluateParkerLordCombination(context, candidate, exclusions) {
+  const analysis = analyzeSorbothaneIsolation(candidate.candidateConfig, { skipResponse: true, skipUncertainty: true });
+  const loadsLbf = analysis.preload.mounts.map(mount => mount.resultantLoadN / LBF);
+  const pass = analysis.passes;
+  if (!pass) exclusions.dynamic += 1;
+  return {
+    item: candidate.item,
+    mountsPerPoint: candidate.mountsPerPoint,
+    stackCount: candidate.mountsPerPoint,
+    totalMountCount: candidate.mountsPerPoint * context.config.mounts.count,
+    totalElementCount: candidate.mountsPerPoint * context.config.mounts.count,
+    installedLoadRangeLb: [Math.min(...loadsLbf), Math.max(...loadsLbf)],
+    score: catalogPerformanceScore(analysis),
+    pass,
+    analysis,
+    config: candidate.candidateConfig
+  };
+}
+
+function finalizeParkerLordScreen(context, evaluated, exclusions) {
+  const byPart = new Map();
+  for (const candidate of evaluated) {
+    if (!byPart.has(candidate.item.productNumber)) byPart.set(candidate.item.productNumber, []);
+    byPart.get(candidate.item.productNumber).push(candidate);
+  }
+  const recommendations = [];
+  const nearMisses = [];
+  for (const candidates of byPart.values()) {
+    const passing = candidates.filter(candidate => candidate.pass).sort((left, right) => left.mountsPerPoint - right.mountsPerPoint || left.score - right.score);
+    if (passing.length) recommendations.push(passing[0]);
+    else nearMisses.push(...candidates);
+  }
+  recommendations.sort((left, right) => left.score - right.score || left.mountsPerPoint - right.mountsPerPoint);
+  nearMisses.sort((left, right) => left.score - right.score || left.mountsPerPoint - right.mountsPerPoint);
+  return {
+    library: 'parker-lord-am',
+    settings: { family: context.family, elastomer: context.elastomer, ratedLoadRange: context.ratedLoadRange, mountsPerPointRange: [context.mountMin, context.mountMax] },
+    criteria: context.criteria,
+    catalogPartCount: PARKER_LORD_AM_CATALOG.length,
+    eligiblePartCount: context.eligibleParts.length,
+    combinationCount: context.combinations.length,
+    dynamicallyEvaluatedCount: evaluated.length,
+    passingPartCount: recommendations.length,
+    exclusions,
+    recommendations: recommendations.slice(0, 16),
+    nearMisses: nearMisses.slice(0, 8)
+  };
+}
+
+export function screenParkerLordCatalog(configInput, settings = {}) {
+  const context = createParkerLordScreenContext(configInput, settings);
+  const exclusions = { compression: 0, engagement: 0, ratedLoad: 0, xTranslation: 0, yTranslation: 0, verticalMode: 0, dynamic: 0 };
+  const preliminary = context.combinations.map(combination => preScreenParkerLordCombination(context, combination, exclusions)).filter(Boolean);
+  const evaluated = preliminary.map(candidate => evaluateParkerLordCombination(context, candidate, exclusions));
+  return finalizeParkerLordScreen(context, evaluated, exclusions);
+}
+
+export async function screenParkerLordCatalogAsync(configInput, settings = {}, options = {}) {
+  const context = createParkerLordScreenContext(configInput, settings);
+  const exclusions = { compression: 0, engagement: 0, ratedLoad: 0, xTranslation: 0, yTranslation: 0, verticalMode: 0, dynamic: 0 };
+  const preliminary = [];
+  const evaluated = [];
+  const batchSize = clamp(Math.round(catalogNumberOr(options.batchSize, 4)), 1, 24);
+  const yieldControl = options.yieldControl ?? (() => new Promise(resolve => setTimeout(resolve, 0)));
+  const cancelled = () => Boolean(options.shouldCancel?.());
+  options.onProgress?.({ stage: 'pre-screen', completed: 0, total: context.combinations.length, percent: 0 });
+  await yieldControl();
+  for (let start = 0; start < context.combinations.length; start += batchSize) {
+    if (cancelled()) return null;
+    const end = Math.min(start + batchSize, context.combinations.length);
+    for (let index = start; index < end; index += 1) {
+      const candidate = preScreenParkerLordCombination(context, context.combinations[index], exclusions);
+      if (candidate) preliminary.push(candidate);
+    }
+    options.onProgress?.({ stage: 'pre-screen', completed: end, total: context.combinations.length, percent: context.combinations.length ? end / context.combinations.length * 50 : 50 });
+    await yieldControl();
+  }
+  options.onProgress?.({ stage: 'dynamic', completed: 0, total: preliminary.length, percent: 50 });
+  await yieldControl();
+  for (let start = 0; start < preliminary.length; start += batchSize) {
+    if (cancelled()) return null;
+    const end = Math.min(start + batchSize, preliminary.length);
+    for (let index = start; index < end; index += 1) evaluated.push(evaluateParkerLordCombination(context, preliminary[index], exclusions));
+    options.onProgress?.({ stage: 'dynamic', completed: end, total: preliminary.length, percent: 50 + (preliminary.length ? end / preliminary.length * 50 : 50) });
+    await yieldControl();
+  }
+  options.onProgress?.({ stage: 'complete', completed: evaluated.length, total: evaluated.length, percent: 100 });
+  return finalizeParkerLordScreen(context, evaluated, exclusions);
+}
+
 export const SORBOTHANE_UNITS = { INCH, LB, LBF, PSI, G0 };
-export { SORBOTHANE_CATALOG };
+export { PARKER_LORD_AM_CATALOG, SORBOTHANE_CATALOG };

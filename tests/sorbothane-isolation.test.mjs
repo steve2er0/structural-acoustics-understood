@@ -12,6 +12,8 @@ import {
   rigidBodyMassMatrix,
   rigidBodyResponseAtFrequency,
   runDesignGrid,
+  screenParkerLordCatalog,
+  screenParkerLordCatalogAsync,
   screenSorbothaneCatalog,
   screenSorbothaneCatalogAsync,
   solveRigidBodyModes,
@@ -20,6 +22,7 @@ import {
 } from '../js/sorbothane-analysis.js';
 import { engineeringReport, renderSorbothaneIsolationWorkbench, responseCsv, sorbothaneExplorerSettingsAroundDesign, sorbothaneExplorerVariableDefaults } from '../js/sorbothane-isolation.js';
 import { SORBOTHANE_CATALOG, SORBOTHANE_MATERIAL } from '../js/sorbothane-data.js';
+import { PARKER_LORD_AM_CATALOG, PARKER_LORD_AM_FAMILIES, parkerLordCatalogItem } from '../js/parker-lord-isolators.js';
 
 const clone = value => JSON.parse(JSON.stringify(value));
 const baseline = () => {
@@ -27,9 +30,24 @@ const baseline = () => {
   config.uncertainty.enabled = false;
   return config;
 };
+const lordBaseline = (productNumber = 'AM-001-2') => {
+  const config = baseline();
+  const item = parkerLordCatalogItem(productNumber);
+  config.isolator.kind = 'parker-lord-am';
+  config.isolator.productNumber = item.productNumber;
+  config.isolator.lordLossFactor = item.lossFactorDefault;
+  config.isolator.mountsPerPoint = 1;
+  return config;
+};
 const close = (actual, expected, relativeTolerance = 1e-9) => {
   const scale = Math.max(Math.abs(actual), Math.abs(expected), 1);
   assert.ok(Math.abs(actual - expected) <= relativeTolerance * scale, `${actual} is not within ${relativeTolerance} relative tolerance of ${expected}`);
+};
+const tabPanelHtml = (html, id, nextId) => {
+  const start = html.indexOf(`data-sorbo-panel="${id}"`);
+  const end = html.indexOf(`data-sorbo-panel="${nextId}"`, start + 1);
+  assert.ok(start >= 0 && end > start, `${id} panel boundaries were not found`);
+  return html.slice(start, end);
 };
 
 test('baseline vertical bounce mode is calculated in the intended 140-150 Hz region', () => {
@@ -210,8 +228,82 @@ test('catalog includes current washer, ring, disc, and custom records', () => {
   assert.ok(SORBOTHANE_CATALOG.some(item => item.productNumber === 'custom-ring' && item.provenance === 'engineering-assumption'));
 });
 
+test('Parker LORD AM catalog contains all nine families and 126 source-traceable part records', () => {
+  assert.equal(PARKER_LORD_AM_FAMILIES.length, 9);
+  assert.equal(PARKER_LORD_AM_CATALOG.length, 126);
+  assert.equal(new Set(PARKER_LORD_AM_CATALOG.map(item => item.productNumber)).size, 126);
+  assert.deepEqual(new Set(PARKER_LORD_AM_CATALOG.map(item => item.elastomer)), new Set(['BTR', 'BTR II', 'MEA']));
+  const item = parkerLordCatalogItem('AM-001-2');
+  assert.deepEqual({ rated: item.ratedLoadLb, fn: item.nominalNaturalFrequencyHz, axial: item.dynamicAxialSpringRateLbPerIn, radial: item.dynamicRadialSpringRateLbPerIn }, { rated: 3, fn: 17, axial: 89, radial: 74 });
+  assert.match(item.source.url, /parker\.com/);
+});
+
+test('Parker LORD complete-mount stiffness uses published axial and radial rates directly', () => {
+  const config = lordBaseline();
+  const mount = mountDynamicStiffness(config, 100);
+  close(mount.kzNPerM, 89 * SORBOTHANE_UNITS.LBF / SORBOTHANE_UNITS.INCH, 1e-12);
+  close(mount.kxNPerM, 74 * SORBOTHANE_UNITS.LBF / SORBOTHANE_UNITS.INCH, 1e-12);
+  close(mount.kyNPerM, mount.kxNPerM, 1e-12);
+  assert.equal(mount.material.model, 'catalog-dynamic-spring-rate');
+  assert.match(mount.sandwichRule, /complete AM mount/);
+});
+
+test('Parker LORD AM rated-load frequency closes and back-to-back installation doubles rate and capacity', () => {
+  const config = lordBaseline();
+  config.component.massKg = 12 * SORBOTHANE_UNITS.LB;
+  const single = analyzeSorbothaneIsolation(config, { skipResponse: true, skipUncertainty: true });
+  const vertical = single.modes.find(mode => mode.dominantIndex === 2);
+  close(vertical.frequencyHz, 17, 0.005);
+  assert.equal(single.preload.catalogCompliant, true);
+  close(single.preload.capacityPerPointN, 3 * SORBOTHANE_UNITS.LBF, 1e-12);
+  const pairedConfig = clone(config);
+  pairedConfig.isolator.mountsPerPoint = 2;
+  const paired = mountDynamicStiffness(pairedConfig, 100);
+  close(paired.kzNPerM, 2 * mountDynamicStiffness(config, 100).kzNPerM, 1e-12);
+  close(staticPreloadState(pairedConfig).capacityPerPointN, 6 * SORBOTHANE_UNITS.LBF, 1e-12);
+});
+
+test('Parker LORD catalog screening evaluates every eligible part and single/back-to-back arrangement', async () => {
+  const config = lordBaseline('AM-006-1');
+  const criteria = { lateralModeMinimumHz: [1, 1], verticalModeRangeHz: [1, 100], resonanceBandHz: [1, 100], resonanceMaximumDb: 100, tones: [] };
+  const sync = screenParkerLordCatalog(config, { family: 'AM-006', mountsPerPointRange: [1, 2], criteria });
+  assert.equal(sync.library, 'parker-lord-am');
+  assert.equal(sync.eligiblePartCount, 14);
+  assert.equal(sync.combinationCount, 28);
+  assert.ok(sync.recommendations.length > 0);
+  assert.ok(sync.recommendations.every(candidate => candidate.item.family === 'AM-006'));
+  const progress = [];
+  const asyncScreen = await screenParkerLordCatalogAsync(config, { family: 'AM-006', mountsPerPointRange: [1, 2], criteria }, { batchSize: 5, yieldControl: async () => {}, onProgress: update => progress.push(update) });
+  assert.equal(asyncScreen.combinationCount, 28);
+  assert.equal(progress.at(-1).percent, 100);
+  assert.ok(progress.every((update, index) => index === 0 || update.percent >= progress[index - 1].percent));
+});
+
+test('Parker LORD workbench exposes complete-mount data, library screening, and meaningful explorer variables', () => {
+  const config = lordBaseline('AM-006-1');
+  const html = renderSorbothaneIsolationWorkbench(config, {}, { library: 'parker-lord-am' });
+  const isolatorHtml = tabPanelHtml(html, 'sorbothane', 'explorer');
+  const explorerHtml = tabPanelHtml(html, 'explorer', 'assumptions');
+  assert.match(html, /Parker LORD AM mounts/);
+  assert.match(html, /data-sorbo-model-choice="parker-lord-am" class="active"/);
+  assert.match(html, /126 records/);
+  assert.match(html, /Axial dynamic rate/);
+  assert.match(html, /Radial dynamic rate/);
+  assert.match(html, /Resultant load versus rated capacity/);
+  assert.match(html, /Open official Parker LORD catalog/);
+  assert.match(isolatorHtml, /Reference footprint/);
+  assert.match(isolatorHtml, /Single complete mount · 1 of 4 points/);
+  assert.doesNotMatch(explorerHtml, /Current Parker LORD mount and arrangement drawings/);
+  assert.match(html, /Dynamic spring-rate scale/);
+  assert.match(html, /Loss factor η/);
+  assert.doesNotMatch(html, /data-explorer="xVariable">[^<]*<option value="durometer"/);
+  assert.doesNotMatch(html, /Element thickness<small>/);
+});
+
 test('workbench preserves trailing-zero requirement frequencies in rendered labels', () => {
   const html = renderSorbothaneIsolationWorkbench(DEFAULT_SORBOTHANE_CONFIG);
+  const isolatorHtml = tabPanelHtml(html, 'sorbothane', 'explorer');
+  const explorerHtml = tabPanelHtml(html, 'explorer', 'assumptions');
   assert.match(html, />600 Hz · Txx</);
   assert.match(html, />1200 Hz · Txx</);
   assert.match(html, />1400 Hz · Txx</);
@@ -222,15 +314,16 @@ test('workbench preserves trailing-zero requirement frequencies in rendered labe
   assert.match(html, /data-sorbo-catalog-progress/);
   assert.match(html, /data-sorbo-action="load-current-into-explorer"/);
   assert.match(html, /Current analysis design/);
-  assert.match(html, /aria-label="Dimensioned 2D drawing of current Sorbothane element"/);
-  assert.match(html, /aria-label="Captured mount stack configuration"/);
-  assert.match(html, /Selected part geometry/);
-  assert.match(html, /Captured stack · 1 of 4 mounts/);
-  assert.match(html, /UPPER STACK · 1/);
-  assert.match(html, /LOWER STACK · 1/);
-  assert.match(html, /element in series/);
-  assert.match(html, /act in parallel dynamically/);
-  assert.match(html, /No rigid short circuit modeled/);
+  assert.match(isolatorHtml, /aria-label="Dimensioned 2D drawing of current Sorbothane element"/);
+  assert.match(isolatorHtml, /aria-label="Captured mount stack configuration"/);
+  assert.match(isolatorHtml, /Selected part geometry/);
+  assert.match(isolatorHtml, /Captured stack · 1 of 4 mounts/);
+  assert.match(isolatorHtml, /UPPER STACK · 1/);
+  assert.match(isolatorHtml, /LOWER STACK · 1/);
+  assert.match(isolatorHtml, /element in series/);
+  assert.match(isolatorHtml, /act in parallel dynamically/);
+  assert.match(isolatorHtml, /No rigid short circuit modeled/);
+  assert.doesNotMatch(explorerHtml, /Current isolator and stack drawings/);
   assert.match(html, /Add tone criterion/);
   assert.match(html, /data-catalog-criterion="verticalMinHz"/);
   assert.match(html, /data-catalog-criterion="xTranslationMinHz"/);

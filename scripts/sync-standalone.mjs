@@ -20,6 +20,7 @@ const frameworkModule = await read('js/engineering-results.js');
 const dataModule = await read('js/data.js');
 const pcbAccelerometersModule = await read('js/pcb-accelerometers-data.js');
 const sorbothaneDataModule = await read('js/sorbothane-data.js');
+const parkerLordIsolatorsModule = await read('js/parker-lord-isolators.js');
 const sorbothaneAnalysisModule = await read('js/sorbothane-analysis.js');
 const sorbothaneIsolationModule = await read('js/sorbothane-isolation.js');
 const calculatorsModule = await read('js/calculators.js');
@@ -74,21 +75,22 @@ const dataBlock = 'const __data=(()=>{\n'+moduleSource(dataModule)+'\nreturn {se
   + 'const __acs519Data=(()=>{\n'+moduleSource(acs519DataModule)+'\nreturn {acs519Sections,acs519ToolCatalog,acs519Demos,acs519CaseNotes,acs519ReferenceGroups};\n})();\n\n';
 const pcbAccelerometersBlock = 'const __pcbAccelerometers=(()=>{\n'+moduleSource(pcbAccelerometersModule)+'\nreturn {PCB_ACCELEROMETER_CATALOG_META,pcbAccelerometers,pcbAccelerometerByModel,pcbAccelerometerOptions};\n})();\n\n';
 const sorbothaneDataBlock = 'const __sorbothaneData=(()=>{\n'+moduleSource(sorbothaneDataModule)+'\nreturn {SORBOTHANE_DATA_VERSION,SORBOTHANE_REFERENCES,SORBOTHANE_MATERIAL,SORBOTHANE_CATALOG,sorbothaneCatalogItem};\n})();\n\n';
+const parkerLordIsolatorsBlock = 'const __parkerLordIsolators=(()=>{\n'+moduleSource(parkerLordIsolatorsModule)+'\nreturn {PARKER_LORD_SOURCE,PARKER_LORD_AM_FAMILIES,PARKER_LORD_AM_CATALOG,parkerLordCatalogItem,parkerLordLossFactorForProduct};\n})();\n\n';
 const sorbothaneAnalysisExports = [
-  'DEFAULT_SORBOTHANE_CONFIG', 'normalizeSorbothaneConfig', 'sorbothaneDynamicProperties',
+  'DEFAULT_SORBOTHANE_CONFIG', 'normalizeSorbothaneConfig', 'isParkerLordConfig', 'sorbothaneDynamicProperties', 'isolatorDynamicProperties',
   'isolatorGeometry', 'staticPreloadState', 'rigidBodyMassMatrix', 'mountDynamicStiffness',
   'assembleRigidBodyStiffness', 'solveRigidBodyModes', 'rigidBodyResponseAtFrequency',
   'frequencyResponse', 'uncertaintyEnvelope', 'analyzeSorbothaneIsolation', 'runDesignGrid',
-  'screenSorbothaneCatalog', 'screenSorbothaneCatalogAsync',
+  'screenSorbothaneCatalog', 'screenSorbothaneCatalogAsync', 'screenParkerLordCatalog', 'screenParkerLordCatalogAsync',
   'SORBOTHANE_UNITS', 'SORBOTHANE_CATALOG'
 ];
 const sorbothaneAnalysisImports = sorbothaneAnalysisExports.filter(name => name !== 'SORBOTHANE_CATALOG');
-const sorbothaneAnalysisBlock = `const __sorbothaneAnalysis=(()=>{\nconst {SORBOTHANE_CATALOG,SORBOTHANE_MATERIAL,sorbothaneCatalogItem}=__sorbothaneData;\n${moduleSource(sorbothaneAnalysisModule)}\nreturn {${sorbothaneAnalysisExports.join(',')}};\n})();\n\n`;
-const sorbothaneIsolationBlock = `const __sorbothaneIsolation=(()=>{\nconst {SORBOTHANE_CATALOG,SORBOTHANE_DATA_VERSION,SORBOTHANE_MATERIAL,SORBOTHANE_REFERENCES,sorbothaneCatalogItem}=__sorbothaneData;\nconst {${sorbothaneAnalysisImports.join(',')}}=__sorbothaneAnalysis;\n${moduleSource(sorbothaneIsolationModule)}\nreturn {renderSorbothaneIsolationWorkbench,bindSorbothaneIsolationWorkbench,sorbothaneIsolationCalculator,sorbothaneIsolationWorkbench};\n})();\n\n`;
+const sorbothaneAnalysisBlock = `const __sorbothaneAnalysis=(()=>{\nconst {SORBOTHANE_CATALOG,SORBOTHANE_MATERIAL,sorbothaneCatalogItem}=__sorbothaneData;\nconst {PARKER_LORD_AM_CATALOG,parkerLordCatalogItem}=__parkerLordIsolators;\n${moduleSource(sorbothaneAnalysisModule)}\nreturn {${sorbothaneAnalysisExports.join(',')}};\n})();\n\n`;
 const workflowExpansionDataBlock = 'const __workflowExpansionData=(()=>{\n'+moduleSource(workflowExpansionDataModule)+'\nreturn {workflowExpansionSections,workflowExpansionToolCatalog,workflowExpansionDemos,workflowExpansionCaseNotes,workflowExpansionReferenceGroups};\n})();\n\n';
 const programExpansionDataBlock = 'const __programExpansionData=(()=>{\n'+moduleSource(programExpansionDataModule)+'\nreturn {programExpansionSections,programExpansionToolCatalog,programExpansionDemos,programExpansionCaseNotes,programExpansionReferenceGroups};\n})();\n\n';
 const seaParameterDataBlock = 'const __seaParameterData=(()=>{\n'+moduleSource(seaParameterDataModule)+'\nreturn {seaParameterSections,seaParameterToolCatalog,seaParameterDemos,seaParameterCaseNotes,seaParameterReferenceGroups};\n})();\n\n';
-standalone = replaceRange(standalone, 'const __data=(()=>{', 'const __calculators=(()=>{', dataBlock + workflowExpansionDataBlock + programExpansionDataBlock + seaParameterDataBlock + pcbAccelerometersBlock + sorbothaneDataBlock + sorbothaneAnalysisBlock + sorbothaneIsolationBlock);
+const sorbothaneIsolationBlock = `const __sorbothaneIsolation=(()=>{\nconst {SORBOTHANE_CATALOG,SORBOTHANE_DATA_VERSION,SORBOTHANE_MATERIAL,SORBOTHANE_REFERENCES,sorbothaneCatalogItem}=__sorbothaneData;\nconst {PARKER_LORD_AM_CATALOG,PARKER_LORD_AM_FAMILIES,PARKER_LORD_SOURCE,parkerLordCatalogItem}=__parkerLordIsolators;\nconst {${sorbothaneAnalysisImports.join(',')}}=__sorbothaneAnalysis;\n${moduleSource(sorbothaneIsolationModule)}\nreturn {renderSorbothaneIsolationWorkbench,bindSorbothaneIsolationWorkbench,sorbothaneIsolationCalculator,sorbothaneIsolationWorkbench};\n})();\n\n`;
+standalone = replaceRange(standalone, 'const __data=(()=>{', 'const __calculators=(()=>{', dataBlock + workflowExpansionDataBlock + programExpansionDataBlock + seaParameterDataBlock + pcbAccelerometersBlock + sorbothaneDataBlock + parkerLordIsolatorsBlock + sorbothaneAnalysisBlock + sorbothaneIsolationBlock);
 
 const calculatorsSource = moduleSource(calculatorsModule).replace(
   'const calculatorRegistry = createEngineeringRegistry(calculatorDefinitions);',
