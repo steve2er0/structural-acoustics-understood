@@ -961,6 +961,41 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
 .sorbo-current-design small { display: block; color: #7897ad; font-size: .53rem; line-height: 1.45; }
 .sorbo-current-design strong { color: #cde7f7; font-size: .65rem; font-weight: 580; }
 .sorbo-current-design button { min-height: 42px; white-space: nowrap; }
+.sorbo-design-drawings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin: 0 0 .85rem; }
+.sorbo-design-drawing { min-width: 0; margin: 0; overflow: hidden; border: 1px solid rgba(130, 178, 215, .17); border-radius: 3px; background: rgba(3, 17, 30, .66); }
+.sorbo-design-drawing > header { display: flex; align-items: start; justify-content: space-between; gap: .7rem; padding: .75rem .85rem .55rem; border-bottom: 1px solid rgba(130, 178, 215, .11); }
+.sorbo-design-drawing > header .eyebrow { margin: 0 0 .14rem; color: #6689a3; font-size: .43rem; }
+.sorbo-design-drawing > header h3 { margin: 0; color: #deebf5; font-size: .68rem; font-weight: 590; }
+.sorbo-design-drawing > header > span { flex: 0 0 auto; padding: .2rem .32rem; color: #a7dfff; border: 1px solid rgba(87, 199, 255, .24); background: rgba(43, 125, 173, .1); font: 600 .44rem var(--mono); }
+.sorbo-design-drawing svg { display: block; width: 100%; aspect-ratio: 560 / 290; background: linear-gradient(145deg, rgba(8, 31, 50, .84), rgba(3, 16, 28, .96)); }
+.sorbo-design-drawing figcaption { min-height: 60px; margin: 0; padding: .65rem .85rem .75rem; color: #7891a6; border-top: 1px solid rgba(130, 178, 215, .11); font-size: .5rem; line-height: 1.55; }
+.sorbo-drawing-element { fill: rgba(238, 177, 75, .44); stroke: #f1bc63; stroke-width: 1.3; vector-effect: non-scaling-stroke; }
+.sorbo-drawing-element.upper,
+.sorbo-drawing-element.lower { fill: rgba(238, 177, 75, .56); }
+.sorbo-drawing-bore { fill: #061929; stroke: #f1bc63; stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+.sorbo-drawing-capture { fill: rgba(121, 151, 174, .24); stroke: #7997ad; stroke-width: 1.1; vector-effect: non-scaling-stroke; }
+.sorbo-drawing-component { fill: rgba(87, 199, 255, .18); stroke: #57c7ff; stroke-width: 1.3; vector-effect: non-scaling-stroke; }
+.sorbo-drawing-center { fill: #f1bc63; }
+.sorbo-drawing-centerline { stroke: rgba(126, 158, 183, .52); stroke-width: .8; stroke-dasharray: 7 5; vector-effect: non-scaling-stroke; }
+.sorbo-drawing-extension { stroke: rgba(126, 158, 183, .6); stroke-width: .8; vector-effect: non-scaling-stroke; }
+.sorbo-drawing-dimension,
+.sorbo-drawing-tick,
+.sorbo-drawing-leader { stroke: #8eabc0; stroke-width: .9; vector-effect: non-scaling-stroke; }
+.sorbo-drawing-dim-label,
+.sorbo-drawing-view-label,
+.sorbo-drawing-stack-label,
+.sorbo-drawing-stack-detail,
+.sorbo-drawing-hardware-label,
+.sorbo-drawing-component-label,
+.sorbo-drawing-note { fill: #8da6b9; font: 560 8px var(--mono); }
+.sorbo-drawing-view-label { fill: #6d8da5; font-size: 7px; font-weight: 680; letter-spacing: .09em; text-anchor: middle; }
+.sorbo-drawing-dim-label { fill: #bcd1e0; font-size: 8px; text-anchor: middle; }
+.sorbo-drawing-vertical-label { writing-mode: vertical-rl; text-orientation: mixed; }
+.sorbo-drawing-stack-label { fill: #e2c58e; font-size: 7.5px; font-weight: 680; letter-spacing: .025em; }
+.sorbo-drawing-stack-detail { fill: #7f9bb0; font-size: 6.8px; }
+.sorbo-drawing-hardware-label { fill: #7895aa; font-size: 7px; }
+.sorbo-drawing-component-label { fill: #c4e9fb; font-size: 7px; font-weight: 680; text-anchor: middle; letter-spacing: .04em; }
+.sorbo-drawing-note { fill: #718da3; font-size: 7px; }
 .sorbo-explorer-result { display: grid; grid-template-columns: minmax(0, .8fr) minmax(480px, 1.2fr); gap: 1rem; margin-top: 1rem; }
 .sorbo-heatmap { width: 100%; min-height: 390px; border: 1px solid var(--sorbo-line); background: rgba(4, 19, 32, .8); }
 .sorbo-heatmap text { fill: rgba(244, 249, 253, .82); font: 530 8px var(--mono); text-anchor: middle; pointer-events: none; }
@@ -1012,6 +1047,7 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
   .sorbo-lower-grid,
   .sorbo-matrix-grid { grid-template-columns: 1fr; }
   .sorbo-reference-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sorbo-design-drawings { grid-template-columns: 1fr; }
   .sorbo-catalog-recommendation { grid-template-columns: 1fr auto; }
   .sorbo-catalog-recommendation > button { grid-column: 1 / -1; }
   .sorbo-current-design { grid-template-columns: 1fr auto; }
@@ -16113,14 +16149,83 @@ function currentDesignPanel(config, settings) {
   return `<aside class="sorbo-current-design"><div><p class="eyebrow">Current analysis design</p><h3>${esc(item.productNumber)}</h3><span>${config.isolator.durometer} Shore 00 · ${fmt(config.isolator.odM / INCH, 3)} OD × ${fmt(config.isolator.idM / INCH, 3)} ID × ${fmt(config.isolator.thicknessM / INCH, 3)} in thick · ${esc(stack)}</span></div><div><strong>Explore around this design</strong><small>The selected part becomes the reference point for ${esc(xLabel)} versus ${esc(yLabel)}.</small></div><button type="button" class="button-secondary" data-sorbo-action="load-current-into-explorer">Load into 7 × 7 matrix</button></aside>`;
 }
 
-function explorerPanel(configInput = DEFAULT_SORBOTHANE_CONFIG, settingsInput = {}, catalogSettingsInput = {}) {
+function elementSectionSvg(x, y, width, height, boreRatio, className = '') {
+  const safeBoreRatio = clamp(boreRatio, 0, .82);
+  if (safeBoreRatio <= .01) return `<rect class="sorbo-drawing-element ${className}" x="${fmt(x, 2)}" y="${fmt(y, 2)}" width="${fmt(width, 2)}" height="${fmt(height, 2)}" rx="2"/>`;
+  const boreWidth = width * safeBoreRatio;
+  const lobeWidth = (width - boreWidth) / 2;
+  return `<rect class="sorbo-drawing-element ${className}" x="${fmt(x, 2)}" y="${fmt(y, 2)}" width="${fmt(lobeWidth, 2)}" height="${fmt(height, 2)}" rx="2"/><rect class="sorbo-drawing-element ${className}" x="${fmt(x + lobeWidth + boreWidth, 2)}" y="${fmt(y, 2)}" width="${fmt(lobeWidth, 2)}" height="${fmt(height, 2)}" rx="2"/>`;
+}
+
+function isolatorElementDrawing(config) {
+  const item = sorbothaneCatalogItem(config.isolator.productNumber);
+  const odIn = config.isolator.odM / INCH;
+  const idIn = config.isolator.idM / INCH;
+  const thicknessIn = config.isolator.thicknessM / INCH;
+  const boreRatio = odIn > 0 ? idIn / odIn : 0;
+  const innerRadius = 66 * clamp(boreRatio, 0, .82);
+  const geometry = item.geometry[0].toUpperCase() + item.geometry.slice(1);
+  const planBore = innerRadius > 1 ? `<circle class="sorbo-drawing-bore" cx="140" cy="130" r="${fmt(innerRadius, 2)}"/><line class="sorbo-drawing-dimension" x1="${fmt(140 - innerRadius, 2)}" y1="130" x2="${fmt(140 + innerRadius, 2)}" y2="130"/><line class="sorbo-drawing-tick" x1="${fmt(140 - innerRadius, 2)}" y1="124" x2="${fmt(140 - innerRadius, 2)}" y2="136"/><line class="sorbo-drawing-tick" x1="${fmt(140 + innerRadius, 2)}" y1="124" x2="${fmt(140 + innerRadius, 2)}" y2="136"/><text class="sorbo-drawing-dim-label" x="140" y="116">ID ${fmt(idIn, 3)} in</text>` : '<circle class="sorbo-drawing-center" cx="140" cy="130" r="2.5"/>';
+  const section = elementSectionSvg(338, 111, 148, 38, boreRatio);
+  return `<figure class="sorbo-design-drawing"><header><div><p class="eyebrow">Selected part geometry</p><h3>${esc(item.productNumber)} · ${esc(geometry)}</h3></div><span>${config.isolator.durometer} Shore 00</span></header><svg viewBox="0 0 560 270" role="img" aria-label="Dimensioned 2D drawing of current Sorbothane element">
+    <text class="sorbo-drawing-view-label" x="140" y="28">PLAN</text><text class="sorbo-drawing-view-label" x="412" y="28">SECTION</text>
+    <line class="sorbo-drawing-centerline" x1="48" y1="130" x2="232" y2="130"/><line class="sorbo-drawing-centerline" x1="140" y1="38" x2="140" y2="222"/>
+    <circle class="sorbo-drawing-element" cx="140" cy="130" r="66"/>${planBore}
+    <line class="sorbo-drawing-extension" x1="74" y1="199" x2="74" y2="229"/><line class="sorbo-drawing-extension" x1="206" y1="199" x2="206" y2="229"/><line class="sorbo-drawing-dimension" x1="74" y1="218" x2="206" y2="218"/><line class="sorbo-drawing-tick" x1="74" y1="212" x2="74" y2="224"/><line class="sorbo-drawing-tick" x1="206" y1="212" x2="206" y2="224"/><text class="sorbo-drawing-dim-label" x="140" y="243">OD ${fmt(odIn, 3)} in</text>
+    <line class="sorbo-drawing-centerline" x1="316" y1="130" x2="508" y2="130"/>${section}
+    <line class="sorbo-drawing-extension" x1="486" y1="111" x2="526" y2="111"/><line class="sorbo-drawing-extension" x1="486" y1="149" x2="526" y2="149"/><line class="sorbo-drawing-dimension" x1="516" y1="111" x2="516" y2="149"/><line class="sorbo-drawing-tick" x1="510" y1="111" x2="522" y2="111"/><line class="sorbo-drawing-tick" x1="510" y1="149" x2="522" y2="149"/><text class="sorbo-drawing-dim-label sorbo-drawing-vertical-label" x="538" y="130">t ${fmt(thicknessIn, 3)} in</text>
+    <text class="sorbo-drawing-note" x="412" y="184">${idIn > 0 ? `Through-bore · Ø ${fmt(idIn, 3)} in` : 'Solid disc · no center bore'}</text><text class="sorbo-drawing-note" x="412" y="204">Nominal dimensions · not to scale</text>
+  </svg><figcaption>${esc(geometry)} element shown in plan and section. The dimensions follow the active catalog record and update with the selected design.</figcaption></figure>`;
+}
+
+function stackElementsSvg(countInput, top, bottom, boreRatio, className) {
+  const count = Math.max(1, Math.round(countInput));
+  const gap = 3;
+  const availableHeight = bottom - top;
+  const elementHeight = Math.min(15, (availableHeight - gap * (count - 1)) / count);
+  const stackHeight = elementHeight * count + gap * (count - 1);
+  const startY = top + (availableHeight - stackHeight) / 2;
+  return Array.from({ length: count }, (_, index) => elementSectionSvg(214, startY + index * (elementHeight + gap), 124, elementHeight, boreRatio, className)).join('');
+}
+
+function isolatorStackDrawing(config, analysis) {
+  const topCount = Math.max(1, Math.round(config.mounts.stackTop));
+  const bottomCount = Math.max(1, Math.round(config.mounts.stackBottom));
+  const odIn = config.isolator.odM / INCH;
+  const idIn = config.isolator.idM / INCH;
+  const boreRatio = odIn > 0 ? idIn / odIn : 0;
+  const compressionPct = analysis?.preload?.compressionPct ?? config.isolator.compressionPct;
+  const installedElementIn = config.isolator.thicknessM * (1 - compressionPct / 100) / INCH;
+  const topInstalledIn = installedElementIn * topCount;
+  const bottomInstalledIn = installedElementIn * bottomCount;
+  const topPlural = topCount === 1 ? 'element' : 'elements';
+  const bottomPlural = bottomCount === 1 ? 'element' : 'elements';
+  return `<figure class="sorbo-design-drawing"><header><div><p class="eyebrow">Installed mount section</p><h3>Captured stack · 1 of 4 mounts</h3></div><span>${fmt(compressionPct, 1)}% compression</span></header><svg viewBox="0 0 560 300" role="img" aria-label="Captured mount stack configuration">
+    <line class="sorbo-drawing-centerline" x1="276" y1="18" x2="276" y2="282"/><text class="sorbo-drawing-view-label" x="276" y="18">ONE MOUNT LOCATION · SECTION</text>
+    <rect class="sorbo-drawing-capture" x="182" y="32" width="188" height="13" rx="2"/><text class="sorbo-drawing-hardware-label" x="386" y="42">Upper capture plate</text>
+    ${stackElementsSvg(topCount, 54, 121, boreRatio, 'upper')}
+    <rect class="sorbo-drawing-component" x="154" y="132" width="244" height="30" rx="2"/><text class="sorbo-drawing-component-label" x="276" y="151">ISOLATED COMPONENT PLATE</text>
+    ${stackElementsSvg(bottomCount, 173, 240, boreRatio, 'lower')}
+    <rect class="sorbo-drawing-capture" x="182" y="253" width="188" height="13" rx="2"/><text class="sorbo-drawing-hardware-label" x="386" y="264">Lower capture / base</text>
+    <line class="sorbo-drawing-leader" x1="214" y1="87" x2="144" y2="87"/><text class="sorbo-drawing-stack-label" x="136" y="82" text-anchor="end">UPPER STACK · ${topCount}</text><text class="sorbo-drawing-stack-detail" x="136" y="98" text-anchor="end">${topPlural} in series · ${fmt(topInstalledIn, 3)} in</text>
+    <line class="sorbo-drawing-leader" x1="214" y1="207" x2="144" y2="207"/><text class="sorbo-drawing-stack-label" x="136" y="202" text-anchor="end">LOWER STACK · ${bottomCount}</text><text class="sorbo-drawing-stack-detail" x="136" y="218" text-anchor="end">${bottomPlural} in series · ${fmt(bottomInstalledIn, 3)} in</text>
+    <text class="sorbo-drawing-note" x="386" y="92">Upper + lower stacks</text><text class="sorbo-drawing-note" x="386" y="108">act in parallel dynamically</text><text class="sorbo-drawing-note" x="386" y="202">Each element: ${fmt(installedElementIn, 3)} in installed</text><text class="sorbo-drawing-note" x="386" y="218">Dashed line: mount axis only</text><text class="sorbo-drawing-note" x="386" y="234">No rigid short circuit modeled</text>
+  </svg><figcaption>At each of the four mount posts, ${topCount} upper ${topPlural} and ${bottomCount} lower ${bottomPlural} capture the isolated plate. Elements within each physical stack act in series; the opposing stacks act in parallel for small incremental motion.</figcaption></figure>`;
+}
+
+function currentDesignDrawings(config, analysis) {
+  return `<section class="sorbo-design-drawings" aria-label="Current isolator and stack drawings">${isolatorElementDrawing(config)}${isolatorStackDrawing(config, analysis)}</section>`;
+}
+
+function explorerPanel(configInput = DEFAULT_SORBOTHANE_CONFIG, settingsInput = {}, catalogSettingsInput = {}, analysisInput = null) {
   const config = normalizeSorbothaneConfig(configInput);
+  const analysis = analysisInput ?? analyzeSorbothaneIsolation(config);
   const ranges = sorbothaneExplorerVariableDefaults(config);
   const settings = normalizeExplorerSettings(config, settingsInput);
   const catalogSettings = normalizeCatalogScreenSettings(config, catalogSettingsInput);
   const options = selected => EXPLORER_VARIABLE_CHOICES.map(([value, label]) => `<option value="${value}"${value === selected ? ' selected' : ''}>${label}</option>`).join('');
   const outputOptions = [['t1200', 'Worst X/Y/Z T @ 1200 Hz (dB)'], ['t600', 'Worst X/Y/Z T @ 600 Hz (dB)'], ['peak', 'Worst X/Y/Z peak (dB)'], ['verticalMode', 'Vertical mode (Hz)']];
-  return `<section class="sorbo-tab-panel" data-sorbo-panel="explorer"><section class="sorbo-card"><header><div><p class="eyebrow">Catalog sizing</p><h2>Recommend a part number and stack count</h2></div><span>${SORBOTHANE_CATALOG.length - 1} manufacturer records</span></header><p class="sorbo-catalog-intro">Filter the catalog by nominal geometry. Every eligible part is checked at each allowed stack count using the current mass, CG, acceleration, compression basis, material model, and active criteria below.</p><div class="sorbo-criteria-strip"><span>Installed upper/lower load within catalog rating</span><span>10–20% recommended compression</span><span>No element unloading</span><span data-catalog-lateral-criterion>X / Y translation ≥ ${fmt(catalogSettings.xTranslationMinHz, 0)} / ${fmt(catalogSettings.yTranslationMinHz, 0)} Hz</span><span data-catalog-vertical-criterion>Vertical mode in ${fmt(catalogSettings.verticalMinHz, 0)}–${fmt(catalogSettings.verticalMaxHz, 0)} Hz</span><span data-catalog-criterion-count>${catalogToneCriteriaSummary(catalogSettings)}</span></div>${catalogCriteriaControls(config, catalogSettings)}${catalogScreenControls(config, catalogSettings)}${catalogProgressPanel()}<div data-sorbo-catalog-result><div class="sorbo-empty"><strong>Screen the manufacturer catalog.</strong><p>Stacked elements act in series: each element carries the same installed stack load, while additional elements reduce mount stiffness.</p></div></div></section><section class="sorbo-card"><header><div><p class="eyebrow">Transparent parametric sweep</p><h2>Isolation map and ranked candidates</h2></div><span>No opaque optimizer</span></header>${currentDesignPanel(config, settings)}<div class="sorbo-explorer-controls"><label><span>X variable</span><select data-explorer="xVariable">${options(settings.xVariable)}</select></label><label><span>X min / max</span><span class="inline-inputs"><input data-explorer="xMin" aria-label="X minimum" type="number" value="${fmt(settings.xMin, 6)}" step="${ranges[settings.xVariable].step}"/><input data-explorer="xMax" aria-label="X maximum" type="number" value="${fmt(settings.xMax, 6)}" step="${ranges[settings.xVariable].step}"/></span><small class="sorbo-explorer-range-note" data-explorer-range-note="x">${esc(ranges[settings.xVariable].note)}</small></label><label><span>Y variable</span><select data-explorer="yVariable">${options(settings.yVariable)}</select></label><label><span>Y min / max</span><span class="inline-inputs"><input data-explorer="yMin" aria-label="Y minimum" type="number" value="${fmt(settings.yMin, 6)}" step="${ranges[settings.yVariable].step}"/><input data-explorer="yMax" aria-label="Y maximum" type="number" value="${fmt(settings.yMax, 6)}" step="${ranges[settings.yVariable].step}"/></span><small class="sorbo-explorer-range-note" data-explorer-range-note="y">${esc(ranges[settings.yVariable].note)}</small></label><label><span>Color output</span><select data-explorer="output">${outputOptions.map(([value, label]) => `<option value="${value}"${value === settings.output ? ' selected' : ''}>${label}</option>`).join('')}</select></label><button type="button" class="button" data-sorbo-action="run-explorer">Run 7 × 7 sweep</button></div><div data-sorbo-explorer-result><div class="sorbo-empty"><strong>Choose two variables.</strong><p>The app evaluates every visible grid point, applies the same mechanics and requirements, and ranks inspectable candidates.</p></div></div></section></section>`;
+  return `<section class="sorbo-tab-panel" data-sorbo-panel="explorer"><section class="sorbo-card"><header><div><p class="eyebrow">Catalog sizing</p><h2>Recommend a part number and stack count</h2></div><span>${SORBOTHANE_CATALOG.length - 1} manufacturer records</span></header><p class="sorbo-catalog-intro">Filter the catalog by nominal geometry. Every eligible part is checked at each allowed stack count using the current mass, CG, acceleration, compression basis, material model, and active criteria below.</p><div class="sorbo-criteria-strip"><span>Installed upper/lower load within catalog rating</span><span>10–20% recommended compression</span><span>No element unloading</span><span data-catalog-lateral-criterion>X / Y translation ≥ ${fmt(catalogSettings.xTranslationMinHz, 0)} / ${fmt(catalogSettings.yTranslationMinHz, 0)} Hz</span><span data-catalog-vertical-criterion>Vertical mode in ${fmt(catalogSettings.verticalMinHz, 0)}–${fmt(catalogSettings.verticalMaxHz, 0)} Hz</span><span data-catalog-criterion-count>${catalogToneCriteriaSummary(catalogSettings)}</span></div>${catalogCriteriaControls(config, catalogSettings)}${catalogScreenControls(config, catalogSettings)}${catalogProgressPanel()}<div data-sorbo-catalog-result><div class="sorbo-empty"><strong>Screen the manufacturer catalog.</strong><p>Stacked elements act in series: each element carries the same installed stack load, while additional elements reduce mount stiffness.</p></div></div></section><section class="sorbo-card"><header><div><p class="eyebrow">Transparent parametric sweep</p><h2>Isolation map and ranked candidates</h2></div><span>No opaque optimizer</span></header>${currentDesignPanel(config, settings)}${currentDesignDrawings(config, analysis)}<div class="sorbo-explorer-controls"><label><span>X variable</span><select data-explorer="xVariable">${options(settings.xVariable)}</select></label><label><span>X min / max</span><span class="inline-inputs"><input data-explorer="xMin" aria-label="X minimum" type="number" value="${fmt(settings.xMin, 6)}" step="${ranges[settings.xVariable].step}"/><input data-explorer="xMax" aria-label="X maximum" type="number" value="${fmt(settings.xMax, 6)}" step="${ranges[settings.xVariable].step}"/></span><small class="sorbo-explorer-range-note" data-explorer-range-note="x">${esc(ranges[settings.xVariable].note)}</small></label><label><span>Y variable</span><select data-explorer="yVariable">${options(settings.yVariable)}</select></label><label><span>Y min / max</span><span class="inline-inputs"><input data-explorer="yMin" aria-label="Y minimum" type="number" value="${fmt(settings.yMin, 6)}" step="${ranges[settings.yVariable].step}"/><input data-explorer="yMax" aria-label="Y maximum" type="number" value="${fmt(settings.yMax, 6)}" step="${ranges[settings.yVariable].step}"/></span><small class="sorbo-explorer-range-note" data-explorer-range-note="y">${esc(ranges[settings.yVariable].note)}</small></label><label><span>Color output</span><select data-explorer="output">${outputOptions.map(([value, label]) => `<option value="${value}"${value === settings.output ? ' selected' : ''}>${label}</option>`).join('')}</select></label><button type="button" class="button" data-sorbo-action="run-explorer">Run 7 × 7 sweep</button></div><div data-sorbo-explorer-result><div class="sorbo-empty"><strong>Choose two variables.</strong><p>The app evaluates every visible grid point, applies the same mechanics and requirements, and ranks inspectable candidates.</p></div></div></section></section>`;
 }
 
 function heatmapSvg(grid) {
@@ -16179,7 +16284,7 @@ function renderSorbothaneIsolationWorkbench(configInput = null, explorerSettings
   return `<div class="page-shell sorbo-workbench" data-sorbothane-workbench><nav class="breadcrumbs site-breadcrumbs" aria-label="Breadcrumb"><a href="#/tools">Tools</a><span aria-hidden="true">›</span><span>Dynamics</span><span aria-hidden="true">›</span><span aria-current="page">Sorbothane 6-DOF Isolation Designer</span></nav>
     <section class="sorbo-hero"><div><p class="eyebrow">Aerospace component isolation · Engineering workbench</p><h1>Place the resonance deliberately.<br><span>See what gets through.</span></h1><p>Design a four-point captured Sorbothane system with traceable viscoelastic properties, full rigid-body coupling, complex frequency response, static engagement checks, and inspectable trade studies.</p></div><aside><strong data-sorbo-hero-mode>${fmt(analysis.modes.find(mode => mode.dominantIndex === 2)?.frequencyHz ?? analysis.modes[2].frequencyHz, 1)} Hz</strong><span>vertical bounce</span><b data-sorbo-hero-status class="${analysis.passes ? 'pass-text' : 'fail-text'}">${analysis.passes ? 'DEFINED REQUIREMENTS PASS' : 'DESIGN REVIEW REQUIRED'}</b><small>Manufacturer curves end at 300 Hz; 600-2000 Hz uses the selected visible assumption.</small></aside></section>
     ${exportControls()}
-    <section class="sorbo-shell">${inputSidebar(config)}<main class="sorbo-main"><nav class="sorbo-tabs" role="tablist">${[['overview', 'Overview'], ['modes', 'Modes'], ['transmissibility', 'Transmissibility'], ['sorbothane', 'Sorbothane'], ['explorer', 'Design Explorer'], ['assumptions', 'Assumptions / Validation']].map(([id, label], index) => `<button type="button" role="tab" data-sorbo-tab="${id}" class="${index === 0 ? 'active' : ''}">${label}</button>`).join('')}</nav><div data-sorbo-panels>${overviewPanel(config, analysis)}${modesPanel(config, analysis)}${transmissibilityPanel(analysis)}${sorbothanePanel(config, analysis)}${explorerPanel(config, explorerSettingsInput, catalogSettingsInput)}${assumptionsPanel(config, analysis)}</div></main></section>
+    <section class="sorbo-shell">${inputSidebar(config)}<main class="sorbo-main"><nav class="sorbo-tabs" role="tablist">${[['overview', 'Overview'], ['modes', 'Modes'], ['transmissibility', 'Transmissibility'], ['sorbothane', 'Sorbothane'], ['explorer', 'Design Explorer'], ['assumptions', 'Assumptions / Validation']].map(([id, label], index) => `<button type="button" role="tab" data-sorbo-tab="${id}" class="${index === 0 ? 'active' : ''}">${label}</button>`).join('')}</nav><div data-sorbo-panels>${overviewPanel(config, analysis)}${modesPanel(config, analysis)}${transmissibilityPanel(analysis)}${sorbothanePanel(config, analysis)}${explorerPanel(config, explorerSettingsInput, catalogSettingsInput, analysis)}${assumptionsPanel(config, analysis)}</div></main></section>
     <div class="sorbo-live" aria-live="polite" data-sorbo-live></div></div>`;
 }
 
@@ -16348,7 +16453,7 @@ function bindSorbothaneIsolationWorkbench(root = document) {
     explorerGrid = null;
     analysis = analyzeSorbothaneIsolation(config);
     const panels = shell.querySelector('[data-sorbo-panels]');
-    panels.innerHTML = `${overviewPanel(config, analysis)}${modesPanel(config, analysis)}${transmissibilityPanel(analysis)}${sorbothanePanel(config, analysis)}${explorerPanel(config, explorerSettings, catalogSettings)}${assumptionsPanel(config, analysis)}`;
+    panels.innerHTML = `${overviewPanel(config, analysis)}${modesPanel(config, analysis)}${transmissibilityPanel(analysis)}${sorbothanePanel(config, analysis)}${explorerPanel(config, explorerSettings, catalogSettings, analysis)}${assumptionsPanel(config, analysis)}`;
     showTab(activeTab);
     bindPanelControls();
     updateVisibility();

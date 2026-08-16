@@ -222,6 +222,15 @@ test('workbench preserves trailing-zero requirement frequencies in rendered labe
   assert.match(html, /data-sorbo-catalog-progress/);
   assert.match(html, /data-sorbo-action="load-current-into-explorer"/);
   assert.match(html, /Current analysis design/);
+  assert.match(html, /aria-label="Dimensioned 2D drawing of current Sorbothane element"/);
+  assert.match(html, /aria-label="Captured mount stack configuration"/);
+  assert.match(html, /Selected part geometry/);
+  assert.match(html, /Captured stack · 1 of 4 mounts/);
+  assert.match(html, /UPPER STACK · 1/);
+  assert.match(html, /LOWER STACK · 1/);
+  assert.match(html, /element in series/);
+  assert.match(html, /act in parallel dynamically/);
+  assert.match(html, /No rigid short circuit modeled/);
   assert.match(html, /Add tone criterion/);
   assert.match(html, /data-catalog-criterion="verticalMinHz"/);
   assert.match(html, /data-catalog-criterion="xTranslationMinHz"/);
@@ -254,6 +263,25 @@ test('workbench preserves trailing-zero requirement frequencies in rendered labe
   const noToneHtml = renderSorbothaneIsolationWorkbench(DEFAULT_SORBOTHANE_CONFIG, {}, { toneCriteria: [] });
   assert.match(noToneHtml, /No discrete-frequency attenuation criteria are active/);
   assert.match(noToneHtml, />0 tone criteria plus resonance limit</);
+});
+
+test('selected design drawings follow catalog geometry and asymmetric stack counts', () => {
+  const config = baseline();
+  const item = SORBOTHANE_CATALOG.find(candidate => candidate.geometry === 'disc' && candidate.productNumber !== 'custom-ring');
+  assert.ok(item, 'disc catalog item was not found');
+  config.isolator.productNumber = item.productNumber;
+  config.isolator.odM = item.odIn * SORBOTHANE_UNITS.INCH;
+  config.isolator.idM = item.idIn * SORBOTHANE_UNITS.INCH;
+  config.isolator.thicknessM = item.thicknessIn * SORBOTHANE_UNITS.INCH;
+  config.isolator.durometer = item.durometer;
+  config.mounts.stackTop = 2;
+  config.mounts.stackBottom = 3;
+  const html = renderSorbothaneIsolationWorkbench(config);
+  assert.match(html, new RegExp(`${item.productNumber} · Disc`));
+  assert.match(html, /Solid disc · no center bore/);
+  assert.match(html, /UPPER STACK · 2/);
+  assert.match(html, /LOWER STACK · 3/);
+  assert.match(html, /2 upper elements and 3 lower elements capture the isolated plate/);
 });
 
 test('design explorer supports durometer and both mount-spacing axes', () => {
