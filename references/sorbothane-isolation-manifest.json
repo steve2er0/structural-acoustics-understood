@@ -1,0 +1,97 @@
+{
+  "title": "Sorbothane 6-DOF isolation research manifest",
+  "research_date": "2026-08-16",
+  "data_version": "2026-08-16",
+  "sources": [
+    {
+      "id": "sorbothane-edg-2018",
+      "title": "Sorbothane Engineering Design Guide",
+      "organization": "Sorbothane, Inc.",
+      "revision": "2018",
+      "url": "https://www.sorbothane.com/wp-content/uploads/Sorbothane-EDG.pdf",
+      "local_file": "Sorbothane-Engineering-Design-Guide.pdf",
+      "used_for": ["shape factor", "shape correction", "dynamic modulus curves", "tan delta curve", "static deflection guidance", "design limitations"]
+    },
+    {
+      "id": "sorbothane-ds101-2021",
+      "title": "Data Sheet 101 - Material Properties of Sorbothane",
+      "organization": "Sorbothane, Inc.",
+      "revision": "Effective 2021-08-17",
+      "url": "https://www.sorbothane.com/wp-content/uploads/101-sorbothane-material-properties.pdf",
+      "local_file": "Sorbothane-Data-Sheet-101.pdf",
+      "used_for": ["static compressive stress", "dynamic Young modulus at 5, 15, 30, and 50 Hz", "tan delta", "bulk modulus", "density", "temperature range"]
+    },
+    {
+      "id": "sorbothane-spg-2025",
+      "title": "Sorbothane Standard Products Guide",
+      "organization": "Sorbothane, Inc.",
+      "revision": "Revised 2025-06",
+      "url": "https://www.sorbothane.com/wp-content/uploads/Sorbothane-SPG.pdf",
+      "local_file": "Sorbothane-Standard-Products-Guide-2025.pdf",
+      "used_for": ["washer geometry and load ratings", "isolation ring geometry and load ratings", "isolation disc geometry and load ratings", "10-20 percent deflection guidance", "floating-bolt installation warning"]
+    },
+    {
+      "id": "sorbothane-ds102-2015",
+      "title": "Data Sheet 102 - Performance Curves",
+      "organization": "Sorbothane, Inc.",
+      "revision": "2015",
+      "url": "https://www.sorbothane.com/wp-content/uploads/102-Sorbothane-performance-curves.pdf",
+      "local_file": "Sorbothane-Data-Sheet-102.pdf",
+      "used_for": ["qualitative hysteresis and vibration performance context"]
+    },
+    {
+      "id": "sorbothane-ds105-2015",
+      "title": "Data Sheet 105 - Shock and Vibration FAQs",
+      "organization": "Sorbothane, Inc.",
+      "revision": "2015",
+      "url": "https://www.sorbothane.com/wp-content/uploads/105-Sorbothane-FAQs.pdf",
+      "local_file": "Sorbothane-Data-Sheet-105.pdf",
+      "used_for": ["manufacturer terminology for viscoelasticity", "tan delta", "loss factor", "damping", "isolation", "durometer"]
+    },
+    {
+      "id": "nasa-20040020088",
+      "title": "Passive Isolators for Use on the International Space Station",
+      "organization": "NASA Marshall Space Flight Center and AIAA",
+      "revision": "AIAA 2004-0787",
+      "url": "https://ntrs.nasa.gov/citations/20040020088",
+      "local_file": "NASA-20040020088-Passive-Isolators-ISS.pdf",
+      "used_for": ["aerospace passive-isolator test context", "Sorbothane 30 and 50 test evidence", "limitations near strong forces and structural resonances"]
+    },
+    {
+      "id": "nasa-19770012197",
+      "title": "HEAO-B Attitude Control and Structural Dynamics Assessment",
+      "organization": "NASA",
+      "revision": "1977",
+      "url": "https://ntrs.nasa.gov/api/citations/19770012197/downloads/19770012197.pdf",
+      "local_file": "NASA-19770012197-HEAO-B-Elastomeric-Isolator-Assessment.pdf",
+      "used_for": ["aerospace warning against a single frequency-independent elastomer stiffness"]
+    }
+  ],
+  "runtime_data": {
+    "file": "../js/sorbothane-data.js",
+    "catalog_records_including_custom": 133,
+    "material_table": {
+      "durometers_shore_00": [30, 50, 70],
+      "compression_percent": [10, 15, 20],
+      "frequency_hz": [5, 15, 30, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300],
+      "properties": ["dynamic storage modulus", "tan delta", "static compressive stress"],
+      "published_table_region_hz": [5, 50],
+      "digitized_figure_region_hz": [75, 300],
+      "extrapolation_region_hz": [300, 2000]
+    }
+  },
+  "provenance_categories": {
+    "manufacturer-published": "Direct transcription from a manufacturer table or catalog record.",
+    "manufacturer-digitized": "Engineering digitization from a manufacturer curve; verify against the source figure for controlled work.",
+    "manufacturer-interpolated": "Calculated interpolation between manufacturer-supported points.",
+    "engineering-assumption": "User-selected or documented modeling assumption.",
+    "engineering-extrapolation": "Explicit extension beyond the 300 Hz manufacturer curve limit.",
+    "calculated": "Derived from geometry, load equilibrium, matrix assembly, eigenanalysis, or complex frequency response."
+  },
+  "limitations": [
+    "The manufacturer dynamic-property figures end at 300 Hz. Predictions at 600, 1200, 1400, and 2000 Hz require an explicit extrapolation choice.",
+    "The archived NASA test paper is application evidence, not a property database for the modeled geometry.",
+    "Product availability and catalog ratings are subject to change; verify the current manufacturer product page before procurement.",
+    "Temperature dependence, aging, vacuum, contamination, amplitude dependence, mounting-plate flexibility, and capture-hardware contact are not characterized by the Version 1 model."
+  ]
+}

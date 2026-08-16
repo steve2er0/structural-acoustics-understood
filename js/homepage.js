@@ -51,7 +51,7 @@ export const subjectWheel = [
     summary: 'Build intuition from SDOF response through coupled modes, loss mechanisms, isolation, and level-dependent joints.',
     chapterIds: ['sdof', 'damping-isolation', 'modal-dynamics', 'loss-factors-deep-dive', 'nonlinear-dynamics-joints'],
     demoIds: ['sdof-motion', 'damping-transmissibility', 'two-mode', 'nonlinear-joint-behavior'],
-    toolIds: ['sdof', 'damping', 'isolation', 'two-dof', 'modal-density', 'nonlinear-joint'],
+    toolIds: ['sdof', 'damping', 'isolation', 'sorbothane-isolation', 'two-dof', 'modal-density', 'nonlinear-joint'],
     caseStudyIds: ['accel-displacement', 'acs519-loss-factors-deep-dive', 'workflow-nonlinear-dynamics-joints', 'pump-line-tuned-absorber']
   },
   {

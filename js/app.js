@@ -17,6 +17,7 @@ import { homepageNavigation, homepageNavKey, renderHomepage, renderSubjectPage, 
 import { renderPageShell, renderBreadcrumbs, renderSectionHeader, renderCallout, renderLinkCollection } from './site-components.js';
 import { renderLaunchSeaCapstone, bindLaunchSeaCapstone } from './launch-sea-capstone.js';
 import { engineeringWorkbenchRegistry } from './engineering-workbenches.js';
+import { sorbothaneIsolationCalculator, sorbothaneIsolationWorkbench } from './sorbothane-isolation.js';
 import { displayEngineeringResult, fromDisplayNumber, toDisplayNumber, toDisplayStep, toDisplayUnit, unitConversion } from './unit-system.js';
 import {
   addEngineeringArtifact,
@@ -33,7 +34,7 @@ import {
 } from './engineering-system.js';
 
 const sections = [...baseSections, ...acs519Sections, ...workflowExpansionSections, ...programExpansionSections, ...seaParameterSections];
-const calculatorRegistry = { ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry };
+const calculatorRegistry = { ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator };
 const toolCatalog = [...baseToolCatalog, ...extraToolCatalog, ...acs519ToolCatalog, ...workflowExpansionToolCatalog, ...programExpansionToolCatalog, ...seaParameterToolCatalog];
 const demos = [...baseDemos, ...acs519Demos, ...workflowExpansionDemos, ...programExpansionDemos, ...seaParameterDemos];
 const caseNotes = [...baseCaseNotes, ...acs519CaseNotes, ...workflowExpansionCaseNotes, ...programExpansionCaseNotes, ...seaParameterCaseNotes];
@@ -53,6 +54,7 @@ const DESIGN_PROOF_TOOL_ID = 'critical-frequency';
 const LAUNCH_SEA_CAPSTONE_ID = 'launch-vibroacoustic-capstone';
 const workbenchRegistry = {
   [LAUNCH_SEA_CAPSTONE_ID]: { render: () => renderLaunchSeaCapstone(), bind: root => bindLaunchSeaCapstone(root) },
+  'sorbothane-isolation': sorbothaneIsolationWorkbench,
   ...engineeringWorkbenchRegistry
 };
 const chapterRelatedLinks = [

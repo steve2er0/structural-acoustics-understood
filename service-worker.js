@@ -1,4 +1,4 @@
-const CACHE = 'sau-v73';
+const CACHE = 'sau-v78';
 const CORE = [
   './', './index.html', './styles.css', './manifest.webmanifest', './assets/favicon.svg',
   './js/app.js', './js/unit-system.js', './js/homepage.js', './js/site-components.js', './js/engineering-system.js', './js/data.js', './js/calculators.js', './js/pcb-accelerometers-data.js', './js/extra-calculators.js',
@@ -11,7 +11,8 @@ const CORE = [
   './js/program-expansion-data.js', './js/program-expansion-demos.js',
   './js/sea-parameters-physics.js', './js/sea-parameters-calculators.js',
   './js/sea-parameters-data.js', './js/sea-parameters-demos.js',
-  './js/launch-sea-capstone.js', './js/workbench-runtime.js', './js/engineering-workbenches.js'
+  './js/launch-sea-capstone.js', './js/workbench-runtime.js', './js/engineering-workbenches.js',
+  './js/sorbothane-data.js', './js/sorbothane-analysis.js', './js/sorbothane-isolation.js'
 ];
 
 self.addEventListener('install', event => {

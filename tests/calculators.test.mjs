@@ -6,6 +6,7 @@ import { extraToolCatalog } from '../js/extra-data.js';
 import { calculatorRegistry, materials } from '../js/calculators.js';
 import { PCB_ACCELEROMETER_CATALOG_META, pcbAccelerometers, pcbAccelerometerOptions } from '../js/pcb-accelerometers-data.js';
 import { extraCalculatorRegistry } from '../js/extra-calculators.js';
+import { sorbothaneIsolationCalculator } from '../js/sorbothane-isolation.js';
 import { acs519Sections, acs519ToolCatalog, acs519Demos, acs519CaseNotes } from '../js/acs519-data.js';
 import { acs519CalculatorRegistry } from '../js/acs519-calculators.js';
 import { workflowExpansionSections, workflowExpansionToolCatalog, workflowExpansionDemos, workflowExpansionCaseNotes } from '../js/workflow-expansion-data.js';
@@ -141,7 +142,7 @@ import {
 
 const sections=[...baseSections,...acs519Sections,...workflowExpansionSections,...programExpansionSections,...seaParameterSections];
 const catalog=[...toolCatalog,...extraToolCatalog,...acs519ToolCatalog,...workflowExpansionToolCatalog,...programExpansionToolCatalog,...seaParameterToolCatalog];
-const registry={...calculatorRegistry,...extraCalculatorRegistry,...acs519CalculatorRegistry,...workflowExpansionCalculatorRegistry,...programExpansionCalculatorRegistry,...seaParameterCalculatorRegistry};
+const registry={...calculatorRegistry,...extraCalculatorRegistry,...acs519CalculatorRegistry,...workflowExpansionCalculatorRegistry,...programExpansionCalculatorRegistry,...seaParameterCalculatorRegistry,'sorbothane-isolation':sorbothaneIsolationCalculator};
 const demos=[...baseDemos,...acs519Demos,...workflowExpansionDemos,...programExpansionDemos,...seaParameterDemos];
 const caseNotes=[...baseCaseNotes,...acs519CaseNotes,...workflowExpansionCaseNotes,...programExpansionCaseNotes,...seaParameterCaseNotes];
 const defaults=id=>Object.fromEntries(registry[id].inputs.map(f=>[f.key,f.default]));
@@ -150,7 +151,7 @@ const close=(actual,expected,rel=1e-6)=>assert.ok(Math.abs(actual-expected)<=rel
 const evidenceCollection={plot:'plots',rangeChart:'rangeCharts',heatmap:'heatmaps',surface3d:'surfaces3d',table:'tables'};
 
 test('every catalog entry has a calculator and every default case runs',()=>{
-  assert.equal(catalog.length,112);
+  assert.equal(catalog.length,113);
   assert.deepEqual(catalog.filter(t=>!registry[t.id]),[]);
   assert.deepEqual(Object.keys(registry).filter(id=>!catalog.some(t=>t.id===id)),[]);
   for(const tool of catalog){
@@ -1487,7 +1488,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
   assert.match(html,/#\/demos/);
   assert.match(html,/#\/tools/);
   assert.match(html,/#\/case-studies/);
-  assert.match(html,/112 tools/);
+  assert.match(html,/113 tools/);
   assert.match(html,/66 case studies/);
   assert.doesNotMatch(html,/#\/hardware/);
   assert.doesNotMatch(html,/Guided workflows/);
@@ -1504,6 +1505,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
   assert.doesNotMatch(appSource,/href="#concept-/);
   assert.match(appSource,/#\/references\?anchor=reference-method/);
   assert.match(renderSubjectPage('acoustics',{sections:allSections,tools:allTools,demos:allDemos,caseStudies:allCaseStudies}),/#\/subject\/acoustics\?anchor=subject-learning/);
+  assert.match(renderSubjectPage('dynamics',{sections:allSections,tools:allTools,demos:allDemos,caseStudies:allCaseStudies}),/#\/tool\/sorbothane-isolation/);
   assert.doesNotMatch(appSource,/function renderHardware/);
   assert.doesNotMatch(appSource,/function renderPathways/);
   assert.match(appSource,/site-system-subject/);
@@ -1512,9 +1514,9 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
   assert.match(renderSubjectPage('missing-subject'),/That subject is not on the wheel/);
 });
 
-test('offline cache includes the demo takeaway runtime',()=>{
+test('offline cache includes current interactive runtimes',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v73'/);
+  assert.match(worker,/const CACHE = 'sau-v78'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);
@@ -1523,6 +1525,9 @@ test('offline cache includes the demo takeaway runtime',()=>{
   assert.match(worker,/\.\/js\/engineering-system\.js/);
   assert.match(worker,/\.\/js\/pcb-accelerometers-data\.js/);
   assert.match(worker,/\.\/js\/demo-takeaways\.js/);
+  assert.match(worker,/\.\/js\/sorbothane-data\.js/);
+  assert.match(worker,/\.\/js\/sorbothane-analysis\.js/);
+  assert.match(worker,/\.\/js\/sorbothane-isolation\.js/);
   assert.match(worker,/\.\/js\/workflow-expansion-data\.js/);
   assert.match(worker,/\.\/js\/workflow-expansion-demos\.js/);
   assert.match(worker,/\.\/js\/program-expansion-physics\.js/);
