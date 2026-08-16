@@ -79,6 +79,7 @@ const sorbothaneAnalysisExports = [
   'isolatorGeometry', 'staticPreloadState', 'rigidBodyMassMatrix', 'mountDynamicStiffness',
   'assembleRigidBodyStiffness', 'solveRigidBodyModes', 'rigidBodyResponseAtFrequency',
   'frequencyResponse', 'uncertaintyEnvelope', 'analyzeSorbothaneIsolation', 'runDesignGrid',
+  'screenSorbothaneCatalog', 'screenSorbothaneCatalogAsync',
   'SORBOTHANE_UNITS', 'SORBOTHANE_CATALOG'
 ];
 const sorbothaneAnalysisImports = sorbothaneAnalysisExports.filter(name => name !== 'SORBOTHANE_CATALOG');

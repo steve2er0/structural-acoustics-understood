@@ -1294,6 +1294,8 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   assert.match(html,/const __launchSeaCapstone=\(\(\)=>\{/);
   assert.match(html,/const __workbenchRuntime=\(\(\)=>\{/);
   assert.match(html,/const __engineeringWorkbenches=\(\(\)=>\{/);
+  assert.match(html,/return \{[^}]*screenSorbothaneCatalog,screenSorbothaneCatalogAsync[^}]*\};\n\}\)\(\);\n\nconst __sorbothaneIsolation=/);
+  assert.match(html,/const \{[^}]*screenSorbothaneCatalog,screenSorbothaneCatalogAsync[^}]*\}=__sorbothaneAnalysis;/);
   assert.match(html,/Double-Window SEA Designer/);
   assert.match(html,/Wave Matching &amp; Radiation Canvas|Wave Matching & Radiation Canvas/);
   assert.match(html,/function solveLaunchSeaProject\(projectInput = \{\}\)/);
@@ -1516,7 +1518,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes current interactive runtimes',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v78'/);
+  assert.match(worker,/const CACHE = 'sau-v86'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);

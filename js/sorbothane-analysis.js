@@ -62,6 +62,7 @@ export const DEFAULT_SORBOTHANE_CONFIG = {
     frequencyPoints: 181,
     modeAvoidBandHz: [10, 100],
     modeAcceptBandHz: [100, 200],
+    lateralModeMinimumHz: [50, 50],
     resonanceBandHz: [100, 200],
     resonanceLimitDb: 6,
     tones: [
@@ -104,6 +105,8 @@ export function normalizeSorbothaneConfig(input = {}) {
   config.isolator.poisson = clamp(finite(config.isolator.poisson, 0.49), 0, 0.4995);
   config.environment.accelerationG = [...(source.environment?.accelerationG ?? config.environment.accelerationG)].map((value, index) => finite(value, config.environment.accelerationG[index]));
   config.analysis.frequencyPoints = clamp(Math.round(finite(config.analysis.frequencyPoints, 181)), 41, 501);
+  const lateralModeMinimumHz = source.analysis?.lateralModeMinimumHz ?? config.analysis.lateralModeMinimumHz;
+  config.analysis.lateralModeMinimumHz = [0, 1].map(index => Math.max(finite(lateralModeMinimumHz[index], config.analysis.lateralModeMinimumHz[index]), 0.1));
   config.analysis.tones = (source.analysis?.tones ?? config.analysis.tones).map(tone => ({ frequencyHz: Math.max(finite(tone.frequencyHz, 600), 0.1), maximumDb: finite(tone.maximumDb, -10) }));
   return config;
 }
@@ -313,6 +316,7 @@ export function staticPreloadState(configInput) {
   const payloadContributionsN = leastNormVerticalLoads(positions, [forceZ, averagePlaneOffset * forceY, averagePlaneOffset * forceX]);
   const catalog = sorbothaneCatalogItem(config.isolator.productNumber);
   const ratedN = catalog.ratedLoadLb?.map(value => value * LBF) ?? null;
+  const recommendedCompressionPct = catalog.recommendedCompressionPct ?? [10, 20];
   const mounts = positions.map((position, index) => {
     const payloadN = payloadContributionsN[index];
     const lowerLoadN = preloadN + payloadN / 2;
@@ -334,6 +338,8 @@ export function staticPreloadState(configInput) {
     mounts,
     allEngaged: mounts.every(mount => mount.upperLoadN > 0 && mount.lowerLoadN > 0),
     catalogCompliant: !ratedN || mounts.every(mount => mount.flags.every(flag => flag !== 'outside catalog rated load')),
+    compressionCompliant: compressionPct >= recommendedCompressionPct[0] && compressionPct <= recommendedCompressionPct[1],
+    recommendedCompressionPct,
     ratedLoadN: ratedN
   };
 }
@@ -529,6 +535,42 @@ export function solveRigidBodyModes(configInput) {
   return { modes, massMatrix: mass.matrix, inertiaKgM2: mass.inertiaKgM2 };
 }
 
+function modeWithMostParticipation(modes, dofIndex) {
+  return modes.reduce((best, mode) => mode.participation[dofIndex] > best.participation[dofIndex] ? mode : best, modes[0]);
+}
+
+function lateralTranslationModeResults(modes, config) {
+  return ['X', 'Y'].map((axis, dofIndex) => {
+    const mode = modeWithMostParticipation(modes, dofIndex);
+    const minimumHz = config.analysis.lateralModeMinimumHz[dofIndex];
+    return {
+      axis,
+      dofIndex,
+      modeNumber: mode.number,
+      modeLabel: mode.dominant,
+      frequencyHz: mode.frequencyHz,
+      participationPct: mode.participation[dofIndex],
+      minimumHz,
+      pass: mode.frequencyHz >= minimumHz
+    };
+  });
+}
+
+function verticalTranslationModeResult(modes, config) {
+  const mode = modeWithMostParticipation(modes, 2);
+  const rangeHz = [...config.analysis.modeAcceptBandHz];
+  return {
+    axis: 'Z',
+    dofIndex: 2,
+    modeNumber: mode.number,
+    modeLabel: mode.dominant,
+    frequencyHz: mode.frequencyHz,
+    participationPct: mode.participation[2],
+    rangeHz,
+    pass: mode.frequencyHz >= rangeHz[0] && mode.frequencyHz <= rangeHz[1]
+  };
+}
+
 const complex = (re = 0, im = 0) => ({ re, im });
 const cAdd = (a, b) => complex(a.re + b.re, a.im + b.im);
 const cSub = (a, b) => complex(a.re - b.re, a.im - b.im);
@@ -603,11 +645,13 @@ function logspace(minimum, maximum, count) {
   return Array.from({ length: count }, (_, index) => 10 ** (start + index * (end - start) / (count - 1)));
 }
 
-export function frequencyResponse(configInput) {
+export function frequencyResponse(configInput, axis = null) {
   const config = normalizeSorbothaneConfig(configInput);
+  const excitationAxis = axis ?? config.analysis.excitationAxis;
   const frequencies = logspace(config.analysis.frequencyMinHz, config.analysis.frequencyMaxHz, config.analysis.frequencyPoints);
-  const responses = frequencies.map(frequency => rigidBodyResponseAtFrequency(config, frequency));
+  const responses = frequencies.map(frequency => rigidBodyResponseAtFrequency(config, frequency, excitationAxis));
   return {
+    axis: excitationAxis,
     frequencies,
     magnitude: Array.from({ length: 6 }, (_, dof) => responses.map(response => response.magnitude[dof])),
     db: Array.from({ length: 6 }, (_, dof) => responses.map(response => response.db[dof])),
@@ -616,12 +660,13 @@ export function frequencyResponse(configInput) {
   };
 }
 
-function peakVerticalResponse(config, minimumHz, maximumHz) {
+function peakDirectResponse(config, minimumHz, maximumHz, axis) {
+  const axisIndex = { x: 0, y: 1, z: 2 }[axis] ?? 2;
   const frequencies = logspace(minimumHz, maximumHz, 121);
-  let peak = { frequencyHz: minimumHz, magnitude: 0, db: -Infinity };
+  let peak = { axis: axis.toUpperCase(), frequencyHz: minimumHz, magnitude: 0, db: -Infinity };
   for (const frequency of frequencies) {
-    const response = rigidBodyResponseAtFrequency(config, frequency, 'z');
-    if (response.magnitude[2] > peak.magnitude) peak = { frequencyHz: frequency, magnitude: response.magnitude[2], db: response.db[2] };
+    const response = rigidBodyResponseAtFrequency(config, frequency, axis);
+    if (response.magnitude[axisIndex] > peak.magnitude) peak = { axis: axis.toUpperCase(), frequencyHz: frequency, magnitude: response.magnitude[axisIndex], db: response.db[axisIndex] };
   }
   return peak;
 }
@@ -666,10 +711,10 @@ export function uncertaintyEnvelope(configInput, nominalResponse = null) {
     sample.isolator.compressionPct = clamp(sample.isolator.compressionPct + normalRandom(random) * config.uncertainty.compressionPct / 2, 5, 25);
     const modes = solveRigidBodyModes(sample).modes;
     const tones = config.analysis.tones.map(tone => rigidBodyResponseAtFrequency(sample, tone.frequencyHz, 'z').db[2]);
-    const response = nominalResponse ? frequencyResponse({ ...sample, analysis: { ...sample.analysis, frequencyPoints: nominalResponse.frequencies.length } }) : null;
+    const response = nominalResponse ? frequencyResponse({ ...sample, analysis: { ...sample.analysis, frequencyPoints: nominalResponse.frequencies.length } }, 'z') : null;
     samples.push({ modes, tones, response });
   }
-  const nominal = nominalResponse ?? frequencyResponse(config);
+  const nominal = nominalResponse ?? frequencyResponse(config, 'z');
   const lowerDb = nominal.frequencies.map((_, frequencyIndex) => percentile(samples.map(sample => sample.response?.db[2][frequencyIndex] ?? nominal.db[2][frequencyIndex]), 0.05));
   const upperDb = nominal.frequencies.map((_, frequencyIndex) => percentile(samples.map(sample => sample.response?.db[2][frequencyIndex] ?? nominal.db[2][frequencyIndex]), 0.95));
   return {
@@ -678,25 +723,36 @@ export function uncertaintyEnvelope(configInput, nominalResponse = null) {
     toneRangesDb: config.analysis.tones.map((_, tone) => [percentile(samples.map(sample => sample.tones[tone]), 0.05), percentile(samples.map(sample => sample.tones[tone]), 0.95)]),
     lowerDb,
     upperDb,
-    method: `Seeded ${count}-sample Monte Carlo; displayed ranges are 5th-95th percentiles.`
+    method: `Seeded ${count}-sample Monte Carlo; displayed ranges are 5th-95th percentiles. The plotted response band applies to direct Z-to-Z transmissibility.`
   };
 }
 
 export function analyzeSorbothaneIsolation(configInput, options = {}) {
   const config = normalizeSorbothaneConfig(configInput);
   const modes = solveRigidBodyModes(config);
+  const lateralModeResults = lateralTranslationModeResults(modes.modes, config);
+  const verticalModeResult = verticalTranslationModeResult(modes.modes, config);
   const preload = staticPreloadState(config);
-  const response = options.skipResponse ? null : frequencyResponse(config);
+  const directionalResponses = options.skipResponse ? null : Object.fromEntries(['x', 'y', 'z'].map(axis => [axis, frequencyResponse(config, axis)]));
+  const response = directionalResponses?.[config.analysis.excitationAxis] ?? null;
   const toneResults = config.analysis.tones.map(tone => {
-    const result = rigidBodyResponseAtFrequency(config, tone.frequencyHz, 'z');
-    return { ...tone, db: result.db[2], magnitude: result.magnitude[2], phaseDeg: result.phaseDeg[2], pass: result.db[2] <= tone.maximumDb, provenance: result.property.provenance };
+    const axisResults = ['x', 'y', 'z'].map((axis, axisIndex) => {
+      const result = rigidBodyResponseAtFrequency(config, tone.frequencyHz, axis);
+      return { axis: axis.toUpperCase(), db: result.db[axisIndex], magnitude: result.magnitude[axisIndex], phaseDeg: result.phaseDeg[axisIndex], pass: result.db[axisIndex] <= tone.maximumDb, provenance: result.property.provenance };
+    });
+    const worst = axisResults.reduce((largest, result) => result.db > largest.db ? result : largest, axisResults[0]);
+    return { ...tone, axisResults, worstAxis: worst.axis, db: worst.db, magnitude: worst.magnitude, phaseDeg: worst.phaseDeg, pass: axisResults.every(result => result.pass), provenance: worst.provenance };
   });
-  const peak = peakVerticalResponse(config, ...config.analysis.resonanceBandHz);
-  const closestMode = modes.modes.reduce((best, mode) => Math.abs(mode.frequencyHz - peak.frequencyHz) < Math.abs(best.frequencyHz - peak.frequencyHz) ? mode : best, modes.modes[0]);
-  peak.modeNumber = closestMode.number;
-  peak.modeLabel = closestMode.dominant;
-  peak.pass = peak.db <= config.analysis.resonanceLimitDb;
-  const uncertainty = options.skipUncertainty || !response ? null : uncertaintyEnvelope(config, response);
+  const peakResults = ['x', 'y', 'z'].map(axis => {
+    const result = peakDirectResponse(config, ...config.analysis.resonanceBandHz, axis);
+    const closestMode = modes.modes.reduce((best, mode) => Math.abs(mode.frequencyHz - result.frequencyHz) < Math.abs(best.frequencyHz - result.frequencyHz) ? mode : best, modes.modes[0]);
+    result.modeNumber = closestMode.number;
+    result.modeLabel = closestMode.dominant;
+    result.pass = result.db <= config.analysis.resonanceLimitDb;
+    return result;
+  });
+  const peak = peakResults.reduce((largest, result) => result.db > largest.db ? result : largest, peakResults[0]);
+  const uncertainty = options.skipUncertainty || !directionalResponses ? null : uncertaintyEnvelope(config, directionalResponses.z);
   const warnings = [];
   if (config.analysis.frequencyMaxHz > SORBOTHANE_MATERIAL.digitizedCurveMaxHz) warnings.push(`Material data above ${SORBOTHANE_MATERIAL.digitizedCurveMaxHz} Hz are extrapolated using the selected ${config.isolator.extrapolation} policy.`);
   if (!preload.allEngaged) warnings.push('At least one opposing isolator unloads under the specified quasi-static acceleration. The linear sandwich model is invalid after loss of contact.');
@@ -709,15 +765,19 @@ export function analyzeSorbothaneIsolation(configInput, options = {}) {
     geometry: isolatorGeometry(config),
     preload,
     modes: modes.modes,
+    lateralModeResults,
+    verticalModeResult,
     massMatrix: modes.massMatrix,
     inertiaKgM2: modes.inertiaKgM2,
     stiffnessAt100Hz: assembleRigidBodyStiffness(config, 100).matrix,
     response,
+    directionalResponses,
     toneResults,
     peak,
+    peakResults,
     uncertainty,
     warnings,
-    passes: toneResults.every(result => result.pass) && peak.pass && preload.allEngaged && preload.catalogCompliant
+    passes: lateralModeResults.every(result => result.pass) && verticalModeResult.pass && toneResults.every(result => result.pass) && peak.pass && preload.allEngaged && preload.catalogCompliant && preload.compressionCompliant
   };
 }
 
@@ -778,6 +838,182 @@ export function runDesignGrid(configInput, settings = {}) {
   }));
   candidates.sort((left, right) => left.score - right.score);
   return { xVariable, yVariable, xValues, yValues, output, values, candidates: candidates.slice(0, 12) };
+}
+
+function catalogCandidateConfig(baseConfig, item, stackCount) {
+  const config = clone(baseConfig);
+  config.isolator.productNumber = item.productNumber;
+  config.isolator.geometry = item.geometry;
+  config.isolator.odM = item.odIn * INCH;
+  config.isolator.idM = item.idIn * INCH;
+  config.isolator.thicknessM = item.thicknessIn * INCH;
+  config.isolator.durometer = item.durometer;
+  config.mounts.stackTop = stackCount;
+  config.mounts.stackBottom = stackCount;
+  config.uncertainty.enabled = false;
+  return config;
+}
+
+function catalogPerformanceScore(analysis) {
+  const tonePenalty = analysis.toneResults.reduce((sum, result) => sum + Math.max(result.db - result.maximumDb, 0) * 12, 0);
+  const peakPenalty = Math.max(analysis.peak.db - analysis.config.analysis.resonanceLimitDb, 0) * 8;
+  return tonePenalty + peakPenalty + analysis.toneResults.reduce((sum, result) => sum + result.db, 0) + analysis.peak.db;
+}
+
+const catalogNumberOr = (value, fallback) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+
+function sortedCatalogRange(input, fallback) {
+  const values = Array.isArray(input) ? input : fallback;
+  const first = catalogNumberOr(values[0], fallback[0]);
+  const second = catalogNumberOr(values[1], fallback[1]);
+  return first <= second ? [first, second] : [second, first];
+}
+
+function normalizeCatalogCriteria(config, input = {}) {
+  const tonesInput = Array.isArray(input.tones) ? input.tones : config.analysis.tones;
+  const tones = tonesInput.slice(0, 8).map((tone, index) => ({
+    frequencyHz: Math.max(0.1, catalogNumberOr(tone?.frequencyHz, config.analysis.tones[index]?.frequencyHz ?? 600)),
+    maximumDb: catalogNumberOr(tone?.maximumDb, config.analysis.tones[index]?.maximumDb ?? -10)
+  }));
+  return {
+    lateralModeMinimumHz: [0, 1].map(index => Math.max(0.1, catalogNumberOr(input.lateralModeMinimumHz?.[index], config.analysis.lateralModeMinimumHz[index]))),
+    verticalModeRangeHz: sortedCatalogRange(input.verticalModeRangeHz, config.analysis.modeAcceptBandHz),
+    resonanceBandHz: sortedCatalogRange(input.resonanceBandHz, config.analysis.resonanceBandHz),
+    resonanceMaximumDb: catalogNumberOr(input.resonanceMaximumDb, config.analysis.resonanceLimitDb),
+    tones
+  };
+}
+
+function createCatalogScreenContext(configInput, settings = {}) {
+  const config = normalizeSorbothaneConfig(configInput);
+  const criteria = normalizeCatalogCriteria(config, settings.criteria);
+  config.analysis.lateralModeMinimumHz = [...criteria.lateralModeMinimumHz];
+  config.analysis.modeAcceptBandHz = [...criteria.verticalModeRangeHz];
+  config.analysis.resonanceBandHz = [...criteria.resonanceBandHz];
+  config.analysis.resonanceLimitDb = criteria.resonanceMaximumDb;
+  config.analysis.tones = criteria.tones.map(tone => ({ ...tone }));
+  const geometry = ['all', 'washer', 'ring', 'disc'].includes(settings.geometry) ? settings.geometry : 'all';
+  const odRange = sortedCatalogRange(settings.odRange, [0.5, 5]);
+  const idRange = sortedCatalogRange(settings.idRange, [0, 3.1]);
+  const thicknessRange = sortedCatalogRange(settings.thicknessRange, [0.125, 1]);
+  const stackRange = sortedCatalogRange(settings.stackRange, [1, 8]).map(value => clamp(Math.round(value), 1, 8));
+  const stackMin = Math.min(...stackRange);
+  const stackMax = Math.max(...stackRange);
+  const catalog = SORBOTHANE_CATALOG.filter(item => item.productNumber !== 'custom-ring');
+  const eligibleParts = catalog.filter(item => (
+    (geometry === 'all' || item.geometry === geometry)
+    && item.odIn >= odRange[0] && item.odIn <= odRange[1]
+    && item.idIn >= idRange[0] && item.idIn <= idRange[1]
+    && item.thicknessIn >= thicknessRange[0] && item.thicknessIn <= thicknessRange[1]
+  ));
+  const combinations = eligibleParts.flatMap(item => Array.from({ length: stackMax - stackMin + 1 }, (_, index) => ({ item, stackCount: stackMin + index })));
+  return { config, criteria, geometry, odRange, idRange, thicknessRange, stackMin, stackMax, catalog, eligibleParts, combinations };
+}
+
+function preScreenCatalogCombination(context, combination, exclusions) {
+  const candidateConfig = catalogCandidateConfig(context.config, combination.item, combination.stackCount);
+  const preload = staticPreloadState(candidateConfig);
+  const modes = solveRigidBodyModes(candidateConfig).modes;
+  const lateralModes = lateralTranslationModeResults(modes, candidateConfig);
+  const verticalMode = modeWithMostParticipation(modes, 2);
+  const xTranslationPass = lateralModes[0].pass;
+  const yTranslationPass = lateralModes[1].pass;
+  const verticalModePass = verticalMode.frequencyHz >= context.criteria.verticalModeRangeHz[0] && verticalMode.frequencyHz <= context.criteria.verticalModeRangeHz[1];
+  if (!preload.compressionCompliant) exclusions.compression += 1;
+  if (!preload.allEngaged) exclusions.engagement += 1;
+  if (!preload.catalogCompliant) exclusions.ratedLoad += 1;
+  if (!xTranslationPass) exclusions.xTranslation += 1;
+  if (!yTranslationPass) exclusions.yTranslation += 1;
+  if (!verticalModePass) exclusions.verticalMode += 1;
+  if (!preload.compressionCompliant || !preload.allEngaged || !preload.catalogCompliant || !xTranslationPass || !yTranslationPass || !verticalModePass) return null;
+  return { ...combination, candidateConfig };
+}
+
+function evaluateCatalogCombination(context, candidate, exclusions) {
+  const analysis = analyzeSorbothaneIsolation(candidate.candidateConfig, { skipResponse: true, skipUncertainty: true });
+  const loadsLbf = analysis.preload.mounts.flatMap(mount => [mount.upperLoadN / LBF, mount.lowerLoadN / LBF]);
+  const pass = analysis.passes;
+  if (!pass) exclusions.dynamic += 1;
+  return {
+    item: candidate.item,
+    stackCount: candidate.stackCount,
+    totalElementCount: candidate.stackCount * context.config.mounts.count * 2,
+    installedLoadRangeLb: [Math.min(...loadsLbf), Math.max(...loadsLbf)],
+    score: catalogPerformanceScore(analysis),
+    pass,
+    analysis,
+    config: candidate.candidateConfig
+  };
+}
+
+function finalizeCatalogScreen(context, evaluated, exclusions) {
+  const byPart = new Map();
+  for (const candidate of evaluated) {
+    if (!byPart.has(candidate.item.productNumber)) byPart.set(candidate.item.productNumber, []);
+    byPart.get(candidate.item.productNumber).push(candidate);
+  }
+  const recommendations = [];
+  const nearMisses = [];
+  for (const candidates of byPart.values()) {
+    const passing = candidates.filter(candidate => candidate.pass).sort((left, right) => left.stackCount - right.stackCount || left.score - right.score);
+    if (passing.length) recommendations.push(passing[0]);
+    else nearMisses.push(...candidates);
+  }
+  recommendations.sort((left, right) => left.score - right.score || left.stackCount - right.stackCount);
+  nearMisses.sort((left, right) => left.score - right.score || left.stackCount - right.stackCount);
+  return {
+    settings: { geometry: context.geometry, odRange: context.odRange, idRange: context.idRange, thicknessRange: context.thicknessRange, stackRange: [context.stackMin, context.stackMax] },
+    criteria: context.criteria,
+    catalogPartCount: context.catalog.length,
+    eligiblePartCount: context.eligibleParts.length,
+    combinationCount: context.combinations.length,
+    dynamicallyEvaluatedCount: evaluated.length,
+    passingPartCount: recommendations.length,
+    exclusions,
+    recommendations: recommendations.slice(0, 16),
+    nearMisses: nearMisses.slice(0, 8)
+  };
+}
+
+export function screenSorbothaneCatalog(configInput, settings = {}) {
+  const context = createCatalogScreenContext(configInput, settings);
+  const exclusions = { compression: 0, engagement: 0, ratedLoad: 0, xTranslation: 0, yTranslation: 0, verticalMode: 0, dynamic: 0 };
+  const preliminary = context.combinations.map(combination => preScreenCatalogCombination(context, combination, exclusions)).filter(Boolean);
+  const evaluated = preliminary.map(candidate => evaluateCatalogCombination(context, candidate, exclusions));
+  return finalizeCatalogScreen(context, evaluated, exclusions);
+}
+
+export async function screenSorbothaneCatalogAsync(configInput, settings = {}, options = {}) {
+  const context = createCatalogScreenContext(configInput, settings);
+  const exclusions = { compression: 0, engagement: 0, ratedLoad: 0, xTranslation: 0, yTranslation: 0, verticalMode: 0, dynamic: 0 };
+  const preliminary = [];
+  const evaluated = [];
+  const batchSize = clamp(Math.round(catalogNumberOr(options.batchSize, 4)), 1, 24);
+  const yieldControl = options.yieldControl ?? (() => new Promise(resolve => setTimeout(resolve, 0)));
+  const cancelled = () => Boolean(options.shouldCancel?.());
+  options.onProgress?.({ stage: 'pre-screen', completed: 0, total: context.combinations.length, percent: 0 });
+  await yieldControl();
+  for (let start = 0; start < context.combinations.length; start += batchSize) {
+    if (cancelled()) return null;
+    const end = Math.min(start + batchSize, context.combinations.length);
+    for (let index = start; index < end; index += 1) {
+      const candidate = preScreenCatalogCombination(context, context.combinations[index], exclusions);
+      if (candidate) preliminary.push(candidate);
+    }
+    options.onProgress?.({ stage: 'pre-screen', completed: end, total: context.combinations.length, percent: context.combinations.length ? end / context.combinations.length * 50 : 50 });
+    await yieldControl();
+  }
+  options.onProgress?.({ stage: 'dynamic', completed: 0, total: preliminary.length, percent: 50 });
+  await yieldControl();
+  for (let start = 0; start < preliminary.length; start += batchSize) {
+    if (cancelled()) return null;
+    const end = Math.min(start + batchSize, preliminary.length);
+    for (let index = start; index < end; index += 1) evaluated.push(evaluateCatalogCombination(context, preliminary[index], exclusions));
+    options.onProgress?.({ stage: 'dynamic', completed: end, total: preliminary.length, percent: 50 + (preliminary.length ? end / preliminary.length * 50 : 50) });
+    await yieldControl();
+  }
+  options.onProgress?.({ stage: 'complete', completed: evaluated.length, total: evaluated.length, percent: 100 });
+  return finalizeCatalogScreen(context, evaluated, exclusions);
 }
 
 export const SORBOTHANE_UNITS = { INCH, LB, LBF, PSI, G0 };

@@ -736,11 +736,17 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
 .sorbo-field select,
 .sorbo-unit-switch select,
 .sorbo-explorer-controls input,
-.sorbo-explorer-controls select { width: 100%; min-width: 0; min-height: 38px; padding: .42rem .5rem; color: #e6f0fa; border: 1px solid rgba(130, 178, 215, .22); border-radius: 3px; outline: 0; background: rgba(10, 34, 56, .95); }
+.sorbo-explorer-controls select,
+.sorbo-catalog-controls input,
+.sorbo-catalog-controls select,
+.sorbo-catalog-criteria input { width: 100%; min-width: 0; min-height: 38px; padding: .42rem .5rem; color: #e6f0fa; border: 1px solid rgba(130, 178, 215, .22); border-radius: 3px; outline: 0; background: rgba(10, 34, 56, .95); }
 .sorbo-field input:focus,
 .sorbo-field select:focus,
 .sorbo-explorer-controls input:focus,
-.sorbo-explorer-controls select:focus { border-color: var(--sorbo-cyan); box-shadow: 0 0 0 2px rgba(87, 199, 255, .1); }
+.sorbo-explorer-controls select:focus,
+.sorbo-catalog-controls input:focus,
+.sorbo-catalog-controls select:focus,
+.sorbo-catalog-criteria input:focus { border-color: var(--sorbo-cyan); box-shadow: 0 0 0 2px rgba(87, 199, 255, .1); }
 .sorbo-field em { grid-column: 1 / -1; color: #607a92; font-size: .48rem; font-style: normal; line-height: 1.45; }
 .sorbo-product-field { grid-column: 1 / -1; }
 .sorbo-product-field input { min-height: 34px; }
@@ -863,6 +869,53 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
 .sorbo-material-legend text { font-size: 8px; }
 .sorbo-explorer-controls { display: grid; grid-template-columns: repeat(6, minmax(110px, 1fr)); align-items: end; gap: .7rem; padding: 1rem; border: 1px solid var(--sorbo-line); background: rgba(4, 20, 35, .72); }
 .sorbo-explorer-controls label { display: grid; gap: .3rem; color: #748da4; font-size: .53rem; }
+.sorbo-explorer-range-note { min-height: 3.8em; color: #5f7e97; font-size: .47rem; font-weight: 450; line-height: 1.3; }
+.sorbo-catalog-intro { max-width: 920px; margin: .7rem 0 1rem; color: #90a6b9; font-size: .65rem; line-height: 1.6; }
+.sorbo-criteria-strip { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .75rem; }
+.sorbo-criteria-strip span { padding: .35rem .5rem; color: #89b8d2; border: 1px solid rgba(87, 199, 255, .18); background: rgba(46, 126, 172, .09); font: 540 .47rem var(--mono); }
+.sorbo-catalog-criteria { margin-bottom: .75rem; padding: 1rem; border: 1px solid rgba(87, 199, 255, .2); background: rgba(8, 28, 46, .74); }
+.sorbo-catalog-criteria > header { display: flex; align-items: end; justify-content: space-between; gap: 1rem; padding-bottom: .8rem; border-bottom: 1px solid var(--sorbo-line); }
+.sorbo-catalog-criteria > header h3 { margin: .15rem 0 0; color: #deebf5; font-size: 1rem; font-weight: 480; }
+.sorbo-catalog-criteria > header > span { color: #6f8ba2; font: 520 .48rem var(--mono); }
+.sorbo-catalog-builtins { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .65rem; margin-top: .8rem; }
+.sorbo-catalog-builtins > label,
+.sorbo-tone-criterion label,
+.sorbo-add-criterion label { min-width: 0; display: grid; gap: .3rem; color: #7b94aa; font-size: .53rem; }
+.sorbo-catalog-builtins small,
+.sorbo-tone-criterion small,
+.sorbo-add-criterion small { color: #5d7890; font: 500 .46rem var(--mono); }
+.sorbo-tone-criteria { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; margin-top: .8rem; }
+.sorbo-tone-criterion { min-width: 0; display: grid; grid-template-columns: auto minmax(90px, 1fr) minmax(90px, 1fr) auto; align-items: end; gap: .5rem; padding: .65rem; border: 1px solid rgba(130, 178, 215, .13); background: rgba(3, 17, 30, .5); }
+.sorbo-tone-criterion > span { align-self: center; color: var(--sorbo-cyan); font: 650 .52rem var(--mono); }
+.sorbo-tone-criterion > button { align-self: end; min-height: 38px; }
+.sorbo-no-tone-criteria { grid-column: 1 / -1; margin: 0; padding: .8rem; color: #728da4; border: 1px dashed rgba(130, 178, 215, .18); font-size: .55rem; line-height: 1.5; }
+.sorbo-add-criterion { display: grid; grid-template-columns: minmax(130px, .7fr) minmax(160px, .7fr) auto minmax(130px, 1fr); align-items: end; gap: .65rem; margin-top: .8rem; padding-top: .8rem; border-top: 1px solid var(--sorbo-line); }
+.sorbo-add-criterion > button { min-height: 38px; }
+.sorbo-add-criterion > span { align-self: center; color: #7f9bb1; font-size: .5rem; }
+.sorbo-catalog-controls { display: grid; grid-template-columns: repeat(6, minmax(120px, 1fr)); align-items: end; gap: .7rem; padding: 1rem; border: 1px solid var(--sorbo-line); background: rgba(4, 20, 35, .72); }
+.sorbo-catalog-controls label { display: grid; gap: .3rem; color: #748da4; font-size: .53rem; }
+.sorbo-catalog-progress { display: grid; gap: .55rem; margin-top: .75rem; padding: .8rem 1rem; border: 1px solid rgba(87, 199, 255, .23); background: rgba(30, 96, 134, .1); }
+.sorbo-catalog-progress > div { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.sorbo-catalog-progress strong { color: #c9e4f4; font-size: .6rem; font-weight: 570; }
+.sorbo-catalog-progress span { color: var(--sorbo-cyan); font: 650 .58rem var(--mono); }
+.sorbo-catalog-progress progress { width: 100%; height: 10px; overflow: hidden; accent-color: var(--sorbo-cyan); border: 0; border-radius: 2px; background: rgba(3, 16, 28, .9); }
+.sorbo-catalog-progress progress::-webkit-progress-bar { background: rgba(3, 16, 28, .9); }
+.sorbo-catalog-progress progress::-webkit-progress-value { background: linear-gradient(90deg, #3d91c6, var(--sorbo-cyan)); }
+.sorbo-catalog-progress progress::-moz-progress-bar { background: linear-gradient(90deg, #3d91c6, var(--sorbo-cyan)); }
+.sorbo-catalog-progress small { color: #6f8ba3; font: 500 .48rem var(--mono); }
+.sorbo-catalog-running { min-height: 190px; }
+.sorbo-catalog-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .55rem; margin: 1rem 0; }
+.sorbo-catalog-summary span { display: grid; gap: .18rem; padding: .75rem; color: #708aa1; border: 1px solid var(--sorbo-line); background: rgba(4, 19, 32, .68); font-size: .52rem; }
+.sorbo-catalog-summary b { color: #e1edf6; font-size: 1.1rem; font-weight: 430; }
+.sorbo-catalog-recommendation { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(180px, .45fr) auto; align-items: center; gap: 1rem; margin: 1rem 0 1.2rem; padding: 1rem; border: 1px solid rgba(83, 213, 178, .3); border-left: 3px solid var(--sorbo-teal); background: rgba(30, 108, 83, .1); }
+.sorbo-catalog-recommendation h3 { margin: .2rem 0; color: #e8f6ef; font-size: 1.45rem; }
+.sorbo-catalog-recommendation p { margin: 0; color: #86a99c; font-size: .59rem; }
+.sorbo-catalog-recommendation > div:nth-child(2) { display: grid; }
+.sorbo-catalog-recommendation > div:nth-child(2) strong { color: #7ce7bd; font-size: 2.1rem; font-weight: 380; line-height: 1; }
+.sorbo-catalog-recommendation > div:nth-child(2) span { color: #d2e9df; font-size: .6rem; }
+.sorbo-catalog-recommendation > div:nth-child(2) small { color: #6e9384; font-size: .49rem; }
+.sorbo-use-candidate { white-space: nowrap; }
+.sorbo-catalog-empty { min-height: 190px; border: 1px dashed var(--sorbo-line); }
 .inline-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: .3rem; }
 .sorbo-empty { min-height: 280px; display: grid; place-content: center; justify-items: center; text-align: center; color: #70899f; }
 .sorbo-empty strong { color: #bdd0df; font-size: 1rem; }
@@ -898,7 +951,10 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
   .sorbo-mode-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .sorbo-mode-layout { grid-template-columns: 1fr; }
   .sorbo-mode-viewer { position: relative; top: auto; }
-  .sorbo-explorer-controls { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .sorbo-explorer-controls,
+  .sorbo-catalog-controls { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .sorbo-catalog-builtins { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sorbo-tone-criteria { grid-template-columns: 1fr; }
   .sorbo-explorer-result { grid-template-columns: 1fr; }
   .sorbo-validation-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
@@ -913,6 +969,8 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
   .sorbo-lower-grid,
   .sorbo-matrix-grid { grid-template-columns: 1fr; }
   .sorbo-reference-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sorbo-catalog-recommendation { grid-template-columns: 1fr auto; }
+  .sorbo-catalog-recommendation > button { grid-column: 1 / -1; }
 }
 
 @media (max-width: 650px) {
@@ -930,9 +988,16 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
   .sorbo-scene { min-height: 230px; }
   .sorbo-mode-selector { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .sorbo-explorer-controls,
+  .sorbo-catalog-controls,
+  .sorbo-catalog-builtins,
+  .sorbo-tone-criteria,
+  .sorbo-catalog-summary,
   .sorbo-validation-grid,
   .sorbo-reference-grid { grid-template-columns: 1fr; }
   .sorbo-equations p { grid-template-columns: 1fr; gap: .25rem; }
+  .sorbo-tone-criterion,
+  .sorbo-add-criterion { grid-template-columns: 1fr; }
+  .sorbo-tone-criterion > span { align-self: auto; }
   .sorbo-uncertainty-tones { grid-template-columns: 1fr; }
 }
 

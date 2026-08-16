@@ -6,6 +6,7 @@ import {
   normalizeSorbothaneConfig,
   rigidBodyResponseAtFrequency,
   runDesignGrid,
+  screenSorbothaneCatalogAsync,
   sorbothaneDynamicProperties
 } from './sorbothane-analysis.js';
 
@@ -17,6 +18,7 @@ const fmt = (value, digits = 2) => {
   const fixed = Number(value).toFixed(digits);
   return digits === 0 ? fixed : fixed.replace(/\.?0+$/, '');
 };
+const fmtSignedDb = (value, digits = 1) => `${Number(value) >= 0 ? '+' : ''}${fmt(value, digits)} dB`;
 const deepClone = value => JSON.parse(JSON.stringify(value));
 const pathGet = (object, path) => path.split('.').reduce((value, key) => value?.[/^\d+$/.test(key) ? +key : key], object);
 const pathSet = (object, path, value) => {
@@ -94,7 +96,6 @@ function productOptions(selected) {
 }
 
 function inputSidebar(config) {
-  const [tone600, tone1200, tone1400] = config.analysis.tones;
   return `<aside class="sorbo-sidebar" aria-label="Isolation system inputs">
     <header><p class="eyebrow">Design inputs</p><h2>Four-point captured isolation</h2><label class="sorbo-unit-switch"><span>Display units</span><select data-sorbo-units><option${config.units === 'English' ? ' selected' : ''}>English</option><option${config.units === 'SI' ? ' selected' : ''}>SI</option></select></label></header>
     ${group('Component', [
@@ -122,7 +123,7 @@ function inputSidebar(config) {
     ].join(''))}
     ${group('Sorbothane element', [
       `<label class="sorbo-field sorbo-product-field"><span>Catalog product<small>${SORBOTHANE_CATALOG.length - 1} records</small></span><input type="search" data-sorbo-product-search placeholder="Filter product number or geometry…"/><select data-sorbo-field="isolator.productNumber" data-sorbo-product>${productOptions(config.isolator.productNumber)}</select></label>`,
-      select(config, 'isolator.geometry', 'Geometry', [['ring', 'Annular ring / washer'], ['disc', 'Solid disc']]),
+      select(config, 'isolator.geometry', 'Geometry', [['washer', 'Catalog washer'], ['ring', 'Annular isolation ring'], ['disc', 'Solid disc']]),
       input(config, 'isolator.odM', 'Outer diameter', { quantity: 'length', min: 0.01, step: 0.01 }),
       input(config, 'isolator.idM', 'Inner diameter', { quantity: 'length', min: 0, step: 0.01 }),
       input(config, 'isolator.thicknessM', 'Element thickness', { quantity: 'length', min: 0.01, step: 0.01 }),
@@ -152,14 +153,14 @@ function inputSidebar(config) {
       select(config, 'analysis.excitationAxis', 'Base excitation', [['x', 'X translation'], ['y', 'Y translation'], ['z', 'Z translation']]),
       select(config, 'analysis.responsePoint', 'Response point', [['cg', 'Center of gravity'], ['corner-positive', '+X/+Y top corner'], ['corner-negative', '-X/-Y top corner']]),
       select(config, 'analysis.magnitudeScale', 'Plot scale', [['db', 'Amplitude dB'], ['linear', 'Linear magnitude']]),
-      input(config, 'analysis.modeAvoidBandHz.0', 'Avoid band start', { unit: 'Hz', min: 1, step: 1 }),
-      input(config, 'analysis.modeAvoidBandHz.1', 'Avoid band end', { unit: 'Hz', min: 1, step: 1 }),
-      input(config, 'analysis.modeAcceptBandHz.0', 'Accepted band start', { unit: 'Hz', min: 1, step: 1 }),
-      input(config, 'analysis.modeAcceptBandHz.1', 'Accepted band end', { unit: 'Hz', min: 1, step: 1 }),
-      input(config, 'analysis.resonanceLimitDb', 'Max 100-200 Hz amplification', { unit: 'dB', step: 0.5 }),
-      input(config, 'analysis.tones.0.maximumDb', `${fmt(tone600.frequencyHz, 0)} Hz maximum`, { unit: 'dB', step: 0.5 }),
-      input(config, 'analysis.tones.1.maximumDb', `${fmt(tone1200.frequencyHz, 0)} Hz maximum`, { unit: 'dB', step: 0.5 }),
-      input(config, 'analysis.tones.2.maximumDb', `${fmt(tone1400.frequencyHz, 0)} Hz maximum`, { unit: 'dB', step: 0.5 })
+      input(config, 'analysis.lateralModeMinimumHz.0', 'X translation mode minimum', { unit: 'Hz', min: 0.1, step: 1 }),
+      input(config, 'analysis.lateralModeMinimumHz.1', 'Y translation mode minimum', { unit: 'Hz', min: 0.1, step: 1 }),
+      input(config, 'analysis.modeAcceptBandHz.0', 'Z translation mode minimum', { unit: 'Hz', min: 1, step: 1 }),
+      input(config, 'analysis.modeAcceptBandHz.1', 'Z translation mode maximum', { unit: 'Hz', min: 1, step: 1 }),
+      input(config, 'analysis.resonanceBandHz.0', 'Resonance search band start', { unit: 'Hz', min: 1, step: 1 }),
+      input(config, 'analysis.resonanceBandHz.1', 'Resonance search band end', { unit: 'Hz', min: 1, step: 1 }),
+      input(config, 'analysis.resonanceLimitDb', 'Max resonance amplification', { unit: 'dB', step: 0.5 }),
+      ...config.analysis.tones.map((tone, index) => input(config, `analysis.tones.${index}.maximumDb`, `${fmt(tone.frequencyHz, 0)} Hz maximum`, { unit: 'dB', step: 0.5 }))
     ].join(''))}
     ${group('Uncertainty', [
       select(config, 'uncertainty.enabled', 'Envelope', [[true, 'Enabled'], [false, 'Disabled']]),
@@ -238,36 +239,44 @@ function sceneSvg(config, analysis, modeIndex = null, phase = 0, camera = { yaw:
   </svg>`;
 }
 
-function modeStatus(mode, config) {
-  const [avoidStart, avoidEnd] = config.analysis.modeAvoidBandHz;
-  const [acceptStart, acceptEnd] = config.analysis.modeAcceptBandHz;
-  if (mode.frequencyHz >= avoidStart && mode.frequencyHz <= avoidEnd) return { className: 'is-review', label: 'AVOID BAND' };
-  if (mode.frequencyHz >= acceptStart && mode.frequencyHz <= acceptEnd) return { className: 'is-pass', label: 'ACCEPTED BAND' };
-  return { className: 'is-neutral', label: 'OUTSIDE DEFINED BANDS' };
+function modeStatus(mode, analysis) {
+  const checks = analysis.lateralModeResults
+    .filter(result => result.modeNumber === mode.number)
+    .map(result => ({ axis: result.axis, pass: result.pass }));
+  if (analysis.verticalModeResult.modeNumber === mode.number) checks.push({ axis: 'Z', pass: analysis.verticalModeResult.pass });
+  if (!checks.length) return { className: 'is-neutral', label: 'UNCONSTRAINED MODE' };
+  const axes = checks.map(check => check.axis).join('/');
+  const pass = checks.every(check => check.pass);
+  return { className: pass ? 'is-pass' : 'is-review', label: `${axes} LIMIT ${pass ? 'PASS' : 'FAIL'}` };
 }
 
 function modeCards(analysis) {
   return analysis.modes.map(mode => {
-    const status = modeStatus(mode, analysis.config);
+    const status = modeStatus(mode, analysis);
     return `<button type="button" class="sorbo-mode-card ${status.className}" data-sorbo-mode="${mode.number - 1}"><span>Mode ${mode.number}<b>${status.label}</b></span><strong>${fmt(mode.frequencyHz, 1)} <small>Hz</small></strong><p>${esc(mode.dominant)}</p><em>Secondary: ${esc(mode.secondary)} · η ${fmt(mode.lossFactor, 2)}</em></button>`;
   }).join('');
 }
 
 function requirementTable(analysis) {
-  const rows = analysis.toneResults.map(result => `<tr><td>${fmt(result.frequencyHz, 0)} Hz</td><td>${fmt(result.db, 1)} dB</td><td>≤ ${fmt(result.maximumDb, 1)} dB</td><td><span class="sorbo-status ${result.pass ? 'pass' : 'fail'}">${result.pass ? 'PASS' : 'FAIL'}</span></td><td>${esc(result.provenance.replaceAll('-', ' '))}</td></tr>`).join('');
-  return `<div class="table-wrap"><table class="sorbo-requirements"><thead><tr><th>Target</th><th>Vertical T</th><th>Requirement</th><th>Status</th><th>Material basis</th></tr></thead><tbody>${rows}<tr><td>${fmt(analysis.config.analysis.resonanceBandHz[0], 0)}-${fmt(analysis.config.analysis.resonanceBandHz[1], 0)} Hz peak</td><td>+${fmt(analysis.peak.db, 1)} dB @ ${fmt(analysis.peak.frequencyHz, 1)} Hz</td><td>≤ +${fmt(analysis.config.analysis.resonanceLimitDb, 1)} dB</td><td><span class="sorbo-status ${analysis.peak.pass ? 'pass' : 'fail'}">${analysis.peak.pass ? 'PASS' : 'FAIL'}</span></td><td>Mode ${analysis.peak.modeNumber} · ${esc(analysis.peak.modeLabel)}</td></tr></tbody></table></div>`;
+  const lateralRows = analysis.lateralModeResults.map(result => `<tr><td>${result.axis} translation-dominated mode</td><td>Mode ${result.modeNumber} · ${fmt(result.frequencyHz, 1)} Hz</td><td>≥ ${fmt(result.minimumHz, 1)} Hz</td><td><span class="sorbo-status ${result.pass ? 'pass' : 'fail'}">${result.pass ? 'PASS' : 'FAIL'}</span></td><td>${fmt(result.participationPct, 1)}% ${result.axis} participation</td></tr>`).join('');
+  const vertical = analysis.verticalModeResult;
+  const verticalRow = `<tr><td>Z translation-dominated mode</td><td>Mode ${vertical.modeNumber} · ${fmt(vertical.frequencyHz, 1)} Hz</td><td>${fmt(vertical.rangeHz[0], 1)}–${fmt(vertical.rangeHz[1], 1)} Hz</td><td><span class="sorbo-status ${vertical.pass ? 'pass' : 'fail'}">${vertical.pass ? 'PASS' : 'FAIL'}</span></td><td>${fmt(vertical.participationPct, 1)}% Z participation</td></tr>`;
+  const toneRows = analysis.toneResults.flatMap(result => result.axisResults.map(axisResult => `<tr><td>${fmt(result.frequencyHz, 0)} Hz · T${axisResult.axis.toLowerCase()}${axisResult.axis.toLowerCase()}</td><td>${fmtSignedDb(axisResult.db)}</td><td>≤ ${fmtSignedDb(result.maximumDb)}</td><td><span class="sorbo-status ${axisResult.pass ? 'pass' : 'fail'}">${axisResult.pass ? 'PASS' : 'FAIL'}</span></td><td>${axisResult.axis} base → ${axisResult.axis} response · ${esc(axisResult.provenance.replaceAll('-', ' '))}</td></tr>`)).join('');
+  const peakRows = analysis.peakResults.map(result => `<tr><td>${fmt(analysis.config.analysis.resonanceBandHz[0], 0)}-${fmt(analysis.config.analysis.resonanceBandHz[1], 0)} Hz · T${result.axis.toLowerCase()}${result.axis.toLowerCase()} peak</td><td>${fmtSignedDb(result.db)} @ ${fmt(result.frequencyHz, 1)} Hz</td><td>≤ ${fmtSignedDb(analysis.config.analysis.resonanceLimitDb)}</td><td><span class="sorbo-status ${result.pass ? 'pass' : 'fail'}">${result.pass ? 'PASS' : 'FAIL'}</span></td><td>Mode ${result.modeNumber} · ${esc(result.modeLabel)}</td></tr>`).join('');
+  return `<div class="table-wrap"><table class="sorbo-requirements"><thead><tr><th>Target</th><th>Calculated response</th><th>Requirement</th><th>Status</th><th>Basis</th></tr></thead><tbody>${lateralRows}${verticalRow}${toneRows}${peakRows}</tbody></table></div>`;
 }
 
 function commentary(analysis) {
-  const vertical = analysis.modes.find(mode => mode.dominantIndex === 2) ?? analysis.modes[2];
+  const vertical = analysis.verticalModeResult;
   const paragraphs = [];
-  const accepted = vertical.frequencyHz >= analysis.config.analysis.modeAcceptBandHz[0] && vertical.frequencyHz <= analysis.config.analysis.modeAcceptBandHz[1];
-  paragraphs.push(`The dominant vertical bounce mode is ${fmt(vertical.frequencyHz, 1)} Hz and is ${accepted ? 'inside' : 'outside'} the defined ${fmt(analysis.config.analysis.modeAcceptBandHz[0], 0)}-${fmt(analysis.config.analysis.modeAcceptBandHz[1], 0)} Hz acceptable resonance region.`);
+  paragraphs.push(`The mode with the greatest Z translation participation is Mode ${vertical.modeNumber} at ${fmt(vertical.frequencyHz, 1)} Hz and is ${vertical.pass ? 'inside' : 'outside'} the defined ${fmt(vertical.rangeHz[0], 0)}-${fmt(vertical.rangeHz[1], 0)} Hz acceptable region.`);
+  for (const result of analysis.lateralModeResults) paragraphs.push(`The mode with the greatest ${result.axis} translation participation is Mode ${result.modeNumber} at ${fmt(result.frequencyHz, 1)} Hz (${fmt(result.participationPct, 1)}% ${result.axis}); it ${result.pass ? 'passes' : 'fails'} the ${fmt(result.minimumHz, 1)} Hz minimum.`);
   for (const result of analysis.toneResults) {
     const margin = result.maximumDb - result.db;
-    paragraphs.push(`At ${fmt(result.frequencyHz, 0)} Hz, predicted vertical transmissibility is ${fmt(result.db, 1)} dB: ${result.pass ? `PASS with ${fmt(margin, 1)} dB margin` : `FAIL by ${fmt(-margin, 1)} dB`}.`);
+    const values = result.axisResults.map(axisResult => `T${axisResult.axis.toLowerCase()}${axisResult.axis.toLowerCase()} ${fmtSignedDb(axisResult.db)}`).join(', ');
+    paragraphs.push(`At ${fmt(result.frequencyHz, 0)} Hz, direct translational transmissibility is ${values}. The worst direction is ${result.worstAxis}: ${result.pass ? `PASS with ${fmt(margin, 1)} dB margin` : `FAIL by ${fmt(-margin, 1)} dB`}.`);
   }
-  paragraphs.push(`The largest vertical amplification in the resonance band is +${fmt(analysis.peak.db, 1)} dB at ${fmt(analysis.peak.frequencyHz, 1)} Hz, associated most closely with Mode ${analysis.peak.modeNumber} (${analysis.peak.modeLabel}).`);
+  paragraphs.push(`The largest direct-axis amplification in the resonance band is ${fmtSignedDb(analysis.peak.db)} in ${analysis.peak.axis} at ${fmt(analysis.peak.frequencyHz, 1)} Hz, associated most closely with Mode ${analysis.peak.modeNumber} (${analysis.peak.modeLabel}).`);
   if (analysis.warnings.some(warning => warning.includes('extrapolated'))) paragraphs.push('The high-frequency attenuation result depends on an explicit extrapolation beyond the 300 Hz manufacturer curve limit. Treat it as a screening prediction and validate the captured hardware with a component-level shaker test.');
   if (Math.abs(analysis.config.component.cgM[2] - analysis.config.mounts.planeZM) > 0.03) paragraphs.push('The CG is materially above the mount plane, so lateral translation and rocking couple. Increasing mount spacing primarily raises roll/pitch stiffness; lowering the CG reduces lateral-rocking coupling.');
   return paragraphs.map(text => `<p>${esc(text)}</p>`).join('');
@@ -277,8 +286,9 @@ function chartPath(xs, ys, xMap, yMap) {
   return ys.map((value, index) => `${index ? 'L' : 'M'}${xMap(xs[index]).toFixed(2)},${yMap(value).toFixed(2)}`).join('');
 }
 
-function transmissibilitySvg(analysis) {
-  const response = analysis.response;
+function transmissibilitySvg(analysis, view = 'direct') {
+  const direct = view === 'direct';
+  const response = direct ? analysis.directionalResponses?.x : analysis.response;
   if (!response) return '';
   const width = 960;
   const height = 470;
@@ -289,7 +299,9 @@ function transmissibilitySvg(analysis) {
   const xMax = Math.log10(response.frequencies.at(-1));
   const radius = Math.hypot(analysis.config.component.dimensionsM[0], analysis.config.component.dimensionsM[1]) / 2;
   const useDb = analysis.config.analysis.magnitudeScale === 'db';
-  const series = Array.from({ length: 6 }, (_, dof) => response.magnitude[dof].map(value => value * (dof < 3 ? 1 : radius)));
+  const series = direct
+    ? ['x', 'y', 'z'].map((axis, dof) => analysis.directionalResponses[axis].magnitude[dof])
+    : Array.from({ length: 6 }, (_, dof) => response.magnitude[dof].map(value => value * (dof < 3 ? 1 : radius)));
   const displaySeries = useDb ? series.map(values => values.map(value => 20 * Math.log10(Math.max(value, 1e-10)))) : series;
   const all = displaySeries.flat().filter(Number.isFinite);
   const yMin = useDb ? Math.floor(Math.max(-80, Math.min(...all, -30)) / 10) * 10 : 0;
@@ -300,24 +312,28 @@ function transmissibilitySvg(analysis) {
   const yStep = useDb ? 10 : yMax / 5;
   const yTicks = Array.from({ length: 6 }, (_, index) => yMin + index * (yMax - yMin) / 5);
   const colors = ['#58b9ff', '#f6b94a', '#64d7a1', '#b49cff', '#ff82b3', '#ff795f'];
-  const names = ['Tx', 'Ty', 'Tz', 'Rx·r', 'Ry·r', 'Rz·r'];
-  const paths = displaySeries.map((values, index) => `<path class="sorbo-trace trace-${index}" d="${chartPath(response.frequencies, values, xMap, yMap)}" style="--trace:${colors[index]}"/><g class="sorbo-legend-item" transform="translate(${margin.left + index * 94},${height - 14})"><line x2="20"/><text x="27" y="4">${names[index]}</text></g>`).join('');
+  const names = direct ? ['Txx', 'Tyy', 'Tzz'] : ['Tx', 'Ty', 'Tz', 'Rx·r', 'Ry·r', 'Rz·r'];
+  const legendSpacing = direct ? 128 : 94;
+  const paths = displaySeries.map((values, index) => `<path class="sorbo-trace trace-${index}" d="${chartPath(response.frequencies, values, xMap, yMap)}" style="--trace:${colors[index]}"/><g class="sorbo-legend-item" transform="translate(${margin.left + index * legendSpacing},${height - 14})"><line x2="20"/><text x="27" y="4">${names[index]}</text></g>`).join('');
   const supportedX = xMap(SORBOTHANE_MATERIAL.digitizedCurveMaxHz);
   const markers = [...analysis.modes.map(mode => ({ frequency: mode.frequencyHz, label: `M${mode.number}` })), ...analysis.config.analysis.tones.map(tone => ({ frequency: tone.frequencyHz, label: `${fmt(tone.frequencyHz, 0)}` }))].filter(marker => marker.frequency >= response.frequencies[0] && marker.frequency <= response.frequencies.at(-1)).map((marker, index) => `<g class="sorbo-frequency-marker"><line x1="${xMap(marker.frequency)}" x2="${xMap(marker.frequency)}" y1="${margin.top}" y2="${height - margin.bottom}"/><text x="${xMap(marker.frequency) + 3}" y="${margin.top + 12 + (index % 3) * 12}">${marker.label}</text></g>`).join('');
   let uncertainty = '';
-  if (useDb && analysis.uncertainty) {
+  if (direct && useDb && analysis.uncertainty) {
     const upper = analysis.uncertainty.upperDb.map((value, index) => [xMap(response.frequencies[index]), yMap(value)]);
     const lower = analysis.uncertainty.lowerDb.map((value, index) => [xMap(response.frequencies[index]), yMap(value)]).reverse();
     uncertainty = `<polygon class="sorbo-uncertainty-band" points="${[...upper, ...lower].map(point => point.join(',')).join(' ')}"/>`;
   }
-  return `<svg class="sorbo-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Six degree of freedom base-to-component transmissibility from ${fmt(response.frequencies[0], 0)} to ${fmt(response.frequencies.at(-1), 0)} hertz">
+  const ariaLabel = direct
+    ? `Direct X-to-X, Y-to-Y, and Z-to-Z base-to-component transmissibility from ${fmt(response.frequencies[0], 0)} to ${fmt(response.frequencies.at(-1), 0)} hertz`
+    : `Six degree of freedom response for ${analysis.config.analysis.excitationAxis.toUpperCase()} base excitation from ${fmt(response.frequencies[0], 0)} to ${fmt(response.frequencies.at(-1), 0)} hertz`;
+  return `<svg class="sorbo-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${ariaLabel}">
     <rect class="sorbo-extrapolated-region" x="${supportedX}" y="${margin.top}" width="${width - margin.right - supportedX}" height="${plotHeight}"/>
     ${xTicks.map(value => `<g class="sorbo-grid"><line x1="${xMap(value)}" x2="${xMap(value)}" y1="${margin.top}" y2="${height - margin.bottom}"/><text x="${xMap(value)}" y="${height - margin.bottom + 21}">${value}</text></g>`).join('')}
     ${yTicks.map(value => `<g class="sorbo-grid"><line x1="${margin.left}" x2="${width - margin.right}" y1="${yMap(value)}" y2="${yMap(value)}"/><text x="${margin.left - 10}" y="${yMap(value) + 4}" text-anchor="end">${fmt(value, useDb ? 0 : 2)}</text></g>`).join('')}
     ${uncertainty}${markers}${paths}
     <line class="sorbo-support-limit" x1="${supportedX}" x2="${supportedX}" y1="${margin.top}" y2="${height - margin.bottom}"/><text class="sorbo-support-label" x="${supportedX + 6}" y="${height - margin.bottom - 8}">300 Hz manufacturer curve limit</text>
     <text class="sorbo-axis-label" x="${margin.left + plotWidth / 2}" y="${height - 24}" text-anchor="middle">Frequency (Hz, logarithmic)</text><text class="sorbo-axis-label" transform="translate(18 ${margin.top + plotHeight / 2}) rotate(-90)" text-anchor="middle">${useDb ? 'Amplitude transmissibility (dB)' : 'Linear amplitude ratio'}</text>
-    <rect class="sorbo-chart-hit" x="${margin.left}" y="${margin.top}" width="${plotWidth}" height="${plotHeight}" data-sorbo-chart-hit/><g class="sorbo-chart-tooltip" data-sorbo-tooltip hidden><line data-tip-line/><rect width="196" height="120" rx="10"/><text data-tip-text x="10" y="20"/></g>
+    <rect class="sorbo-chart-hit" x="${margin.left}" y="${margin.top}" width="${plotWidth}" height="${plotHeight}" data-sorbo-chart-hit="${view}"/><g class="sorbo-chart-tooltip" data-sorbo-tooltip="${view}" hidden><line data-tip-line/><rect width="214" height="${direct ? 76 : 120}" rx="10"/><text data-tip-text x="10" y="20"/></g>
   </svg>`;
 }
 
@@ -353,16 +369,16 @@ function uncertaintySummary(analysis) {
   if (!analysis.uncertainty) return '<p>Uncertainty envelope disabled.</p>';
   const verticalIndex = analysis.modes.findIndex(mode => mode.dominantIndex === 2);
   const range = analysis.uncertainty.modeRangesHz[Math.max(verticalIndex, 0)];
-  return `<p><strong>Vertical-mode 5-95% range:</strong> ${fmt(range[0], 1)}-${fmt(range[1], 1)} Hz</p><div class="sorbo-uncertainty-tones">${analysis.toneResults.map((tone, index) => `<span><b>${fmt(tone.frequencyHz, 0)} Hz</b>${fmt(analysis.uncertainty.toneRangesDb[index][0], 1)} to ${fmt(analysis.uncertainty.toneRangesDb[index][1], 1)} dB</span>`).join('')}</div><small>${esc(analysis.uncertainty.method)}</small>`;
+  return `<p><strong>Vertical-mode 5-95% range:</strong> ${fmt(range[0], 1)}-${fmt(range[1], 1)} Hz</p><div class="sorbo-uncertainty-tones">${analysis.toneResults.map((tone, index) => `<span><b>${fmt(tone.frequencyHz, 0)} Hz · Tzz</b>${fmt(analysis.uncertainty.toneRangesDb[index][0], 1)} to ${fmt(analysis.uncertainty.toneRangesDb[index][1], 1)} dB</span>`).join('')}</div><small>${esc(analysis.uncertainty.method)}</small>`;
 }
 
 function overviewPanel(config, analysis) {
   const catalog = sorbothaneCatalogItem(config.isolator.productNumber);
   return `<section class="sorbo-tab-panel is-active" data-sorbo-panel="overview">
     <div class="sorbo-overview-grid"><section class="sorbo-card sorbo-geometry-card"><header><div><p class="eyebrow">Hardware geometry</p><h2>Component on four captured mounts</h2></div><span>Drag to rotate</span></header><div data-sorbo-overview-scene>${sceneSvg(config, analysis)}</div><p class="sorbo-caption">Coordinate origin: component footprint center on the isolated plate. +Z is upward. CG and mount offsets are rendered from the same coordinates.</p></section>
-    <section class="sorbo-card sorbo-decision-card"><p class="eyebrow">Current decision</p><h2 class="${analysis.passes ? 'pass-text' : 'fail-text'}">${analysis.passes ? 'All defined criteria pass' : 'Design review required'}</h2><dl><div><dt>Isolator</dt><dd>${esc(catalog.productNumber)}</dd></div><div><dt>Shape factor</dt><dd>${fmt(analysis.geometry.shapeFactor, 3)}</dd></div><div><dt>Preload / element</dt><dd>${fmt(analysis.preload.preloadN / LBF, 2)} lbf</dd></div><div><dt>Opposing elements</dt><dd>${analysis.preload.allEngaged ? 'Engaged' : 'UNLOADED'}</dd></div><div><dt>Catalog loads</dt><dd>${analysis.preload.catalogCompliant ? 'Within / not applicable' : 'Outside rating'}</dd></div></dl></section></div>
+    <section class="sorbo-card sorbo-decision-card"><p class="eyebrow">Current decision</p><h2 class="${analysis.passes ? 'pass-text' : 'fail-text'}">${analysis.passes ? 'All defined criteria pass' : 'Design review required'}</h2><dl><div><dt>Isolator</dt><dd>${esc(catalog.productNumber)}</dd></div><div><dt>Shape factor</dt><dd>${fmt(analysis.geometry.shapeFactor, 3)}</dd></div><div><dt>Nominal precompression force</dt><dd>${fmt(analysis.preload.preloadN / LBF, 2)} lbf / element</dd></div><div><dt>Installed element loads</dt><dd>${analysis.preload.mounts.flatMap(mount => [mount.upperLoadN, mount.lowerLoadN]).map(value => value / LBF).reduce((range, value) => [Math.min(range[0], value), Math.max(range[1], value)], [Infinity, -Infinity]).map(value => fmt(value, 2)).join('–')} lbf</dd></div><div><dt>Opposing elements</dt><dd>${analysis.preload.allEngaged ? 'Engaged' : 'UNLOADED'}</dd></div><div><dt>Catalog load rating</dt><dd>${analysis.preload.catalogCompliant ? 'Within / not applicable' : 'Outside rating'}</dd></div><div><dt>Compression recommendation</dt><dd>${analysis.preload.compressionCompliant ? 'Within 10–20%' : 'Outside 10–20%'}</dd></div></dl></section></div>
     <section class="sorbo-mode-dashboard"><header><div><p class="eyebrow">Calculated eigenproblem</p><h2>Six rigid-body modes</h2></div><p>Modes are classified by normalized translational and characteristic-length rotational participation; coupling is retained.</p></header><div class="sorbo-mode-cards">${modeCards(analysis)}</div></section>
-    <section class="sorbo-card"><header><div><p class="eyebrow">Pass / fail</p><h2>Isolation and resonance requirements</h2></div><span>Vertical base excitation at CG</span></header>${requirementTable(analysis)}</section>
+    <section class="sorbo-card"><header><div><p class="eyebrow">Pass / fail</p><h2>Isolation and resonance requirements</h2></div><span>Direct X / Y / Z base excitation</span></header>${requirementTable(analysis)}</section>
     <div class="sorbo-lower-grid"><section class="sorbo-card sorbo-commentary"><p class="eyebrow">Engineering interpretation</p><h2>What the design is doing physically</h2>${commentary(analysis)}</section><section class="sorbo-card"><p class="eyebrow">Sensitivity envelope</p><h2>Input uncertainty propagated</h2>${uncertaintySummary(analysis)}</section></div>
     ${analysis.warnings.length ? `<aside class="sorbo-warning-stack"><strong>Active engineering warnings</strong><ul>${analysis.warnings.map(warning => `<li>${esc(warning)}</li>`).join('')}</ul></aside>` : ''}
   </section>`;
@@ -374,7 +390,9 @@ function modesPanel(config, analysis) {
 }
 
 function transmissibilityPanel(analysis) {
-  return `<section class="sorbo-tab-panel" data-sorbo-panel="transmissibility"><section class="sorbo-card"><header><div><p class="eyebrow">Complex base response</p><h2>10-2000 Hz transmissibility</h2></div><span>${analysis.config.analysis.excitationAxis.toUpperCase()} base excitation · ${analysis.config.analysis.responsePoint.replaceAll('-', ' ')}</span></header>${transmissibilitySvg(analysis)}<div class="sorbo-plot-notes"><span><b>Solid support region</b> Manufacturer table / digitized data through 300 Hz</span><span><b>Shaded region</b> Selected extrapolation policy</span><span><b>Rx·r, Ry·r, Rz·r</b> Rotation multiplied by characteristic radius</span></div></section>${requirementTable(analysis)}</section>`;
+  const selectedAxis = analysis.config.analysis.excitationAxis.toUpperCase();
+  const responsePoint = analysis.config.analysis.responsePoint.replaceAll('-', ' ');
+  return `<section class="sorbo-tab-panel" data-sorbo-panel="transmissibility"><section class="sorbo-card"><header><div><p class="eyebrow">All translational directions</p><h2>Direct-axis transmissibility · Txx, Tyy, Tzz</h2></div><span>X, Y, and Z base inputs · ${responsePoint}</span></header><p class="sorbo-caption">Each curve uses a separate unit base excitation in the named direction and reports component acceleration in that same direction. This is the direct translational comparison used by the tone and resonance criteria.</p>${transmissibilitySvg(analysis, 'direct')}<div class="sorbo-plot-notes"><span><b>Txx</b> X response from X base input</span><span><b>Tyy</b> Y response from Y base input</span><span><b>Tzz</b> Z response from Z base input</span><span><b>Uncertainty band</b> Applies to Tzz</span></div></section><section class="sorbo-card"><header><div><p class="eyebrow">Coupled response detail</p><h2>${selectedAxis}-base six-DOF response</h2></div><span>Selected in Response &amp; requirements · ${responsePoint}</span></header><p class="sorbo-caption">Use the base-excitation selector to inspect cross-axis translation and rocking generated by one input direction.</p>${transmissibilitySvg(analysis, 'coupled')}<div class="sorbo-plot-notes"><span><b>Solid support region</b> Manufacturer table / digitized data through 300 Hz</span><span><b>Shaded region</b> Selected extrapolation policy</span><span><b>Rx·r, Ry·r, Rz·r</b> Rotation multiplied by characteristic radius</span></div></section>${requirementTable(analysis)}</section>`;
 }
 
 function sorbothanePanel(config, analysis) {
@@ -385,9 +403,183 @@ function sorbothanePanel(config, analysis) {
   </section>`;
 }
 
-function explorerPanel() {
-  const choices = [['durometer', 'Durometer (Shore 00)'], ['thickness', 'Thickness (in)'], ['od', 'Outer diameter (in)'], ['id', 'Inner diameter (in)'], ['compression', 'Compression (%)'], ['mass', 'Mass (lbm)'], ['cgHeight', 'CG height (in)'], ['mountSpacing', 'X mount spacing (in)'], ['mountSpacingY', 'Y mount spacing (in)'], ['stackCount', 'Stack count / side']];
-  return `<section class="sorbo-tab-panel" data-sorbo-panel="explorer"><section class="sorbo-card"><header><div><p class="eyebrow">Transparent parametric sweep</p><h2>Isolation map and ranked candidates</h2></div><span>No opaque optimizer</span></header><div class="sorbo-explorer-controls"><label><span>X variable</span><select data-explorer="xVariable">${choices.map(([value, label]) => `<option value="${value}"${value === 'thickness' ? ' selected' : ''}>${label}</option>`).join('')}</select></label><label><span>X min / max</span><span class="inline-inputs"><input data-explorer="xMin" type="number" value="0.15" step="0.05"/><input data-explorer="xMax" type="number" value="0.5" step="0.05"/></span></label><label><span>Y variable</span><select data-explorer="yVariable">${choices.map(([value, label]) => `<option value="${value}"${value === 'od' ? ' selected' : ''}>${label}</option>`).join('')}</select></label><label><span>Y min / max</span><span class="inline-inputs"><input data-explorer="yMin" type="number" value="0.9" step="0.1"/><input data-explorer="yMax" type="number" value="1.8" step="0.1"/></span></label><label><span>Color output</span><select data-explorer="output"><option value="t1200">T @ 1200 Hz (dB)</option><option value="t600">T @ 600 Hz (dB)</option><option value="peak">Peak 100-200 Hz (dB)</option><option value="verticalMode">Vertical mode (Hz)</option></select></label><button type="button" class="button" data-sorbo-action="run-explorer">Run 7 × 7 sweep</button></div><div data-sorbo-explorer-result><div class="sorbo-empty"><strong>Choose two variables.</strong><p>The app evaluates every visible grid point, applies the same mechanics and requirements, and ranks inspectable candidates.</p></div></div></section></section>`;
+const EXPLORER_VARIABLE_CHOICES = [
+  ['durometer', 'Durometer (Shore 00)'],
+  ['thickness', 'Thickness (in)'],
+  ['od', 'Outer diameter (in)'],
+  ['id', 'Inner diameter (in)'],
+  ['compression', 'Compression (%)'],
+  ['mass', 'Mass (lbm)'],
+  ['cgHeight', 'CG height (in)'],
+  ['mountSpacing', 'X mount spacing (in)'],
+  ['mountSpacingY', 'Y mount spacing (in)'],
+  ['stackCount', 'Stack count / side']
+];
+
+const explorerRound = (value, step) => Number((Math.round(value / step) * step).toFixed(6));
+
+export function sorbothaneExplorerVariableDefaults(configInput = DEFAULT_SORBOTHANE_CONFIG) {
+  const config = normalizeSorbothaneConfig(configInput);
+  const thicknessIn = config.isolator.thicknessM / INCH;
+  const odIn = config.isolator.odM / INCH;
+  const idIn = config.isolator.idM / INCH;
+  const massLbm = config.component.massKg / LB;
+  const cgHeightIn = config.component.cgM[2] / INCH;
+  const massStep = massLbm >= 4 ? 0.5 : massLbm >= 1 ? 0.1 : 0.01;
+  const thicknessMin = Math.max(0.025, explorerRound(thicknessIn * 0.5, 0.025));
+  const odMin = Math.max(idIn + 0.05, explorerRound(odIn * 0.7, 0.025));
+  const idMax = Math.max(0.025, Math.min(odIn - 0.05, explorerRound(Math.max(idIn * 1.25, odIn * 0.5), 0.025)));
+  const massMin = Math.max(massStep, explorerRound(massLbm * 0.75, massStep));
+  const cgMin = Math.max(0, explorerRound(cgHeightIn - 1, 0.25));
+
+  return {
+    durometer: { min: 30, max: 70, step: 10, note: 'Standard grades are 30, 50, and 70 Shore 00; intermediate grid points use material-property interpolation.' },
+    thickness: { min: thicknessMin, max: Math.max(thicknessMin + 0.025, explorerRound(thicknessIn * 2, 0.025)), step: 0.025, note: 'Defaults span 0.5× to 2× the current element thickness.' },
+    od: { min: odMin, max: Math.max(odMin + 0.05, explorerRound(odIn * 1.4, 0.025)), step: 0.025, note: 'Defaults span 0.7× to 1.4× the current OD and keep the lower bound above the current ID.' },
+    id: { min: Math.max(0, explorerRound(idIn * 0.5, 0.025)), max: idMax, step: 0.025, note: 'The upper bound stays below the current OD; any ID ≥ swept OD is rejected.' },
+    compression: { min: 10, max: 20, step: 1, note: 'Manufacturer-preferred screening range: 10–20% compression.' },
+    mass: { min: massMin, max: Math.max(massMin + massStep, explorerRound(massLbm * 1.25, massStep)), step: massStep, note: 'Defaults span ±25% around the current component mass.' },
+    cgHeight: { min: cgMin, max: Math.max(cgMin + 0.25, explorerRound(cgHeightIn + 1, 0.25)), step: 0.25, note: 'Defaults span ±1 in around the current CG height, bounded at the base plane.' },
+    mountSpacing: { min: explorerRound(config.component.dimensionsM[0] / INCH * 0.6, 0.25), max: explorerRound(config.component.dimensionsM[0] / INCH * 0.95, 0.25), step: 0.25, note: 'Defaults span 60–95% of the current component X length.' },
+    mountSpacingY: { min: explorerRound(config.component.dimensionsM[1] / INCH * 0.6, 0.25), max: explorerRound(config.component.dimensionsM[1] / INCH * 0.95, 0.25), step: 0.25, note: 'Defaults span 60–95% of the current component Y width.' },
+    stackCount: { min: 1, max: 3, step: 1, note: 'Whole elements only; the same count is applied above and below each mount.' }
+  };
+}
+
+function defaultExplorerSettings(config) {
+  const ranges = sorbothaneExplorerVariableDefaults(config);
+  return { xVariable: 'thickness', xMin: ranges.thickness.min, xMax: ranges.thickness.max, yVariable: 'od', yMin: ranges.od.min, yMax: ranges.od.max, output: 't1200' };
+}
+
+function normalizeExplorerSettings(config, input = {}) {
+  const defaults = sorbothaneExplorerVariableDefaults(config);
+  const baseline = defaultExplorerSettings(config);
+  const xVariable = defaults[input.xVariable] ? input.xVariable : baseline.xVariable;
+  const yVariable = defaults[input.yVariable] ? input.yVariable : baseline.yVariable;
+  const numberOr = (value, fallback) => value !== '' && value != null && Number.isFinite(Number(value)) ? Number(value) : fallback;
+  const outputs = ['t1200', 't600', 'peak', 'verticalMode'];
+  return {
+    xVariable,
+    xMin: numberOr(input.xMin, defaults[xVariable].min),
+    xMax: numberOr(input.xMax, defaults[xVariable].max),
+    yVariable,
+    yMin: numberOr(input.yMin, defaults[yVariable].min),
+    yMax: numberOr(input.yMax, defaults[yVariable].max),
+    output: outputs.includes(input.output) ? input.output : baseline.output
+  };
+}
+
+function defaultCatalogScreenSettings(configInput = DEFAULT_SORBOTHANE_CONFIG) {
+  const config = normalizeSorbothaneConfig(configInput);
+  return {
+    geometry: 'all', odMin: 0.5, odMax: 5, idMin: 0, idMax: 3.1, thicknessMin: 0.125, thicknessMax: 1, stackMin: 1, stackMax: 8,
+    xTranslationMinHz: config.analysis.lateralModeMinimumHz[0], yTranslationMinHz: config.analysis.lateralModeMinimumHz[1],
+    verticalMinHz: config.analysis.modeAcceptBandHz[0], verticalMaxHz: config.analysis.modeAcceptBandHz[1],
+    resonanceMinHz: config.analysis.resonanceBandHz[0], resonanceMaxHz: config.analysis.resonanceBandHz[1], resonanceMaximumDb: config.analysis.resonanceLimitDb,
+    toneCriteria: config.analysis.tones.map(tone => ({ frequencyHz: tone.frequencyHz, maximumDb: tone.maximumDb }))
+  };
+}
+
+function normalizeCatalogScreenSettings(configInput, input = {}) {
+  const defaults = defaultCatalogScreenSettings(configInput);
+  const numberOr = (value, fallback) => value !== '' && value != null && Number.isFinite(Number(value)) ? Number(value) : fallback;
+  const inputTones = Array.isArray(input.toneCriteria) ? input.toneCriteria : defaults.toneCriteria;
+  const normalized = {
+    geometry: ['all', 'washer', 'ring', 'disc'].includes(input.geometry) ? input.geometry : defaults.geometry,
+    odMin: numberOr(input.odMin, defaults.odMin),
+    odMax: numberOr(input.odMax, defaults.odMax),
+    idMin: numberOr(input.idMin, defaults.idMin),
+    idMax: numberOr(input.idMax, defaults.idMax),
+    thicknessMin: numberOr(input.thicknessMin, defaults.thicknessMin),
+    thicknessMax: numberOr(input.thicknessMax, defaults.thicknessMax),
+    stackMin: clamp(Math.round(numberOr(input.stackMin, defaults.stackMin)), 1, 8),
+    stackMax: clamp(Math.round(numberOr(input.stackMax, defaults.stackMax)), 1, 8),
+    xTranslationMinHz: Math.max(0.1, numberOr(input.xTranslationMinHz, defaults.xTranslationMinHz)),
+    yTranslationMinHz: Math.max(0.1, numberOr(input.yTranslationMinHz, defaults.yTranslationMinHz)),
+    verticalMinHz: Math.max(0.1, numberOr(input.verticalMinHz, defaults.verticalMinHz)),
+    verticalMaxHz: Math.max(0.1, numberOr(input.verticalMaxHz, defaults.verticalMaxHz)),
+    resonanceMinHz: Math.max(0.1, numberOr(input.resonanceMinHz, defaults.resonanceMinHz)),
+    resonanceMaxHz: Math.max(0.1, numberOr(input.resonanceMaxHz, defaults.resonanceMaxHz)),
+    resonanceMaximumDb: numberOr(input.resonanceMaximumDb, defaults.resonanceMaximumDb),
+    toneCriteria: inputTones.slice(0, 8).map((tone, index) => ({
+      frequencyHz: Math.max(0.1, numberOr(tone?.frequencyHz, defaults.toneCriteria[index]?.frequencyHz ?? 600)),
+      maximumDb: numberOr(tone?.maximumDb, defaults.toneCriteria[index]?.maximumDb ?? -10)
+    }))
+  };
+  for (const prefix of ['od', 'id', 'thickness', 'stack', 'vertical', 'resonance']) {
+    const suffix = prefix === 'vertical' || prefix === 'resonance' ? 'Hz' : '';
+    const minimum = `${prefix}Min${suffix}`;
+    const maximum = `${prefix}Max${suffix}`;
+    if (normalized[minimum] > normalized[maximum]) [normalized[minimum], normalized[maximum]] = [normalized[maximum], normalized[minimum]];
+  }
+  return normalized;
+}
+
+function catalogScreenControls(config, settingsInput = {}) {
+  const settings = normalizeCatalogScreenSettings(config, settingsInput);
+  const range = (label, prefix, step) => `<label><span>${label}</span><span class="inline-inputs"><input data-catalog-screen="${prefix}Min" aria-label="${label} minimum" type="number" value="${fmt(settings[`${prefix}Min`], 4)}" min="0" step="${step}"/><input data-catalog-screen="${prefix}Max" aria-label="${label} maximum" type="number" value="${fmt(settings[`${prefix}Max`], 4)}" min="0" step="${step}"/></span></label>`;
+  return `<div class="sorbo-catalog-controls"><label><span>Catalog geometry</span><select data-catalog-screen="geometry"><option value="all"${settings.geometry === 'all' ? ' selected' : ''}>All standard products</option><option value="washer"${settings.geometry === 'washer' ? ' selected' : ''}>Washers</option><option value="ring"${settings.geometry === 'ring' ? ' selected' : ''}>Isolation rings</option><option value="disc"${settings.geometry === 'disc' ? ' selected' : ''}>Discs</option></select></label>${range('OD min / max (in)', 'od', 0.025)}${range('ID min / max (in)', 'id', 0.025)}${range('Thickness min / max (in)', 'thickness', 0.025)}${range('Elements / side min / max', 'stack', 1)}<button type="button" class="button" data-sorbo-action="screen-catalog">Screen full catalog</button></div>`;
+}
+
+function catalogToneCriteriaRows(settings) {
+  if (!settings.toneCriteria.length) return '<p class="sorbo-no-tone-criteria">No discrete-frequency attenuation criteria are active. Add one below if the design has a tone requirement.</p>';
+  return settings.toneCriteria.map((tone, index) => `<article class="sorbo-tone-criterion"><span>T${index + 1}</span><label>Frequency <small>Hz</small><input type="number" min="0.1" max="2000" step="1" value="${fmt(tone.frequencyHz, 3)}" data-catalog-tone-index="${index}" data-catalog-tone-field="frequencyHz" aria-label="Tone ${index + 1} frequency"/></label><label>Maximum <small>dB</small><input type="number" step="0.5" value="${fmt(tone.maximumDb, 3)}" data-catalog-tone-index="${index}" data-catalog-tone-field="maximumDb" aria-label="Tone ${index + 1} maximum dB"/></label><button type="button" class="button-quiet" data-sorbo-action="remove-catalog-tone" data-catalog-tone-index="${index}" aria-label="Remove tone ${index + 1} criterion">Remove</button></article>`).join('');
+}
+
+function catalogToneCriteriaSummary(settings) {
+  const count = settings.toneCriteria.length;
+  return `${count} tone ${count === 1 ? 'criterion' : 'criteria'} plus resonance limit`;
+}
+
+function catalogCriteriaControls(config, settingsInput = {}) {
+  const settings = normalizeCatalogScreenSettings(config, settingsInput);
+  const toneRows = catalogToneCriteriaRows(settings);
+  return `<section class="sorbo-catalog-criteria"><header><div><p class="eyebrow">Active screening criteria</p><h3>Edit or add requirements</h3></div><span>Applied when you use a design</span></header><p class="sorbo-caption">Tone and resonance limits apply independently to direct Txx, Tyy, and Tzz; screening uses the worst direction.</p><div class="sorbo-catalog-builtins"><label><span>X / Y translation minimum <small>Hz</small></span><span class="inline-inputs"><input data-catalog-criterion="xTranslationMinHz" aria-label="X translation mode minimum" type="number" min="0.1" step="1" value="${fmt(settings.xTranslationMinHz, 3)}"/><input data-catalog-criterion="yTranslationMinHz" aria-label="Y translation mode minimum" type="number" min="0.1" step="1" value="${fmt(settings.yTranslationMinHz, 3)}"/></span></label><label><span>Vertical mode min / max <small>Hz</small></span><span class="inline-inputs"><input data-catalog-criterion="verticalMinHz" aria-label="Vertical mode minimum" type="number" min="0.1" step="1" value="${fmt(settings.verticalMinHz, 3)}"/><input data-catalog-criterion="verticalMaxHz" aria-label="Vertical mode maximum" type="number" min="0.1" step="1" value="${fmt(settings.verticalMaxHz, 3)}"/></span></label><label><span>Resonance search band min / max <small>Hz</small></span><span class="inline-inputs"><input data-catalog-criterion="resonanceMinHz" aria-label="Resonance band minimum" type="number" min="0.1" step="1" value="${fmt(settings.resonanceMinHz, 3)}"/><input data-catalog-criterion="resonanceMaxHz" aria-label="Resonance band maximum" type="number" min="0.1" step="1" value="${fmt(settings.resonanceMaxHz, 3)}"/></span></label><label><span>Maximum resonance peak <small>dB</small></span><input data-catalog-criterion="resonanceMaximumDb" aria-label="Maximum resonance peak" type="number" step="0.5" value="${fmt(settings.resonanceMaximumDb, 3)}"/></label></div><div class="sorbo-tone-criteria" data-sorbo-tone-criteria>${toneRows}</div><div class="sorbo-add-criterion"><label><span>New tone frequency <small>Hz</small></span><input data-catalog-new-tone="frequencyHz" aria-label="New tone frequency" type="number" min="0.1" max="2000" step="1" placeholder="800"/></label><label><span>Maximum transmissibility <small>dB</small></span><input data-catalog-new-tone="maximumDb" aria-label="New tone maximum dB" type="number" step="0.5" placeholder="-15"/></label><button type="button" class="button-quiet" data-sorbo-action="add-catalog-tone">Add tone criterion</button><span data-catalog-criterion-message aria-live="polite"></span></div></section>`;
+}
+
+function catalogProgressPanel() {
+  return `<div class="sorbo-catalog-progress" data-sorbo-catalog-progress hidden><div><strong data-catalog-progress-label>Preparing catalog screen…</strong><span data-catalog-progress-percent>0%</span></div><progress data-catalog-progress-bar max="100" value="0">0%</progress><small data-catalog-progress-detail>The interface remains available while combinations are evaluated.</small></div>`;
+}
+
+function catalogCandidateFailure(candidate) {
+  const lateralFailures = candidate.analysis.lateralModeResults.filter(result => !result.pass).map(result => `${result.axis} translation mode`);
+  const failures = candidate.analysis.toneResults.flatMap(result => result.axisResults.filter(axisResult => !axisResult.pass).map(axisResult => `${fmt(result.frequencyHz, 0)} Hz T${axisResult.axis.toLowerCase()}${axisResult.axis.toLowerCase()}`));
+  failures.unshift(...lateralFailures);
+  failures.push(...candidate.analysis.peakResults.filter(result => !result.pass).map(result => `${result.axis} resonance peak`));
+  return failures.join(', ') || 'dynamic requirement';
+}
+
+function catalogCandidateTable(candidates, criteria, includeStatus = false) {
+  const toneHeaders = criteria.tones.map(tone => `<th>Worst T @ ${fmt(tone.frequencyHz, 0)}</th>`).join('');
+  return `<div class="table-wrap"><table><thead><tr><th>Rank</th><th>Part number</th><th>Geometry</th><th>OD / ID / t</th><th>Durometer</th><th>Elements / side</th><th>Total qty</th><th>Rated / element</th><th>Installed load / element</th><th>Nominal preload</th><th>X mode</th><th>Y mode</th><th>Z mode</th>${toneHeaders}<th>Worst peak</th>${includeStatus ? '<th>Review</th>' : ''}<th></th></tr></thead><tbody>${candidates.map((candidate, index) => {
+    const item = candidate.item;
+    const tones = candidate.analysis.toneResults;
+    const lateral = candidate.analysis.lateralModeResults;
+    const vertical = candidate.analysis.verticalModeResult;
+    return `<tr><td>${index + 1}</td><td><strong>${esc(item.productNumber)}</strong></td><td>${esc(item.geometry)}</td><td>${fmt(item.odIn, 3)} / ${fmt(item.idIn, 3)} / ${fmt(item.thicknessIn, 3)} in</td><td>${item.durometer} Shore 00</td><td>${candidate.stackCount}</td><td>${candidate.totalElementCount}</td><td>${item.ratedLoadLb.map(value => fmt(value, 2)).join('–')} lbf</td><td>${candidate.installedLoadRangeLb.map(value => fmt(value, 2)).join('–')} lbf</td><td>${fmt(candidate.analysis.preload.preloadN / LBF, 2)} lbf</td><td>${fmt(lateral[0].frequencyHz, 1)} Hz</td><td>${fmt(lateral[1].frequencyHz, 1)} Hz</td><td>${fmt(vertical.frequencyHz, 1)} Hz</td>${tones.map(result => `<td>${fmt(result.db, 1)} dB · ${result.worstAxis}</td>`).join('')}<td>${fmt(candidate.analysis.peak.db, 1)} dB · ${candidate.analysis.peak.axis}</td>${includeStatus ? `<td><span class="sorbo-status fail">${esc(catalogCandidateFailure(candidate))}</span></td>` : ''}<td><button type="button" class="button-quiet sorbo-use-candidate" data-sorbo-catalog-use="${esc(item.productNumber)}" data-sorbo-catalog-stack="${candidate.stackCount}">Use design</button></td></tr>`;
+  }).join('')}</tbody></table></div>`;
+}
+
+function catalogScreenResult(screen) {
+  const summary = `<div class="sorbo-catalog-summary"><span><b>${screen.catalogPartCount}</b> catalog parts</span><span><b>${screen.eligiblePartCount}</b> within geometry</span><span><b>${screen.combinationCount}</b> part/stack combinations</span><span><b>${screen.passingPartCount}</b> passing part numbers</span></div>`;
+  const exclusion = `<p class="sorbo-caption">Pre-screen exclusions by combination: ${screen.exclusions.compression} compression, ${screen.exclusions.engagement} unloading, ${screen.exclusions.ratedLoad} rated load, ${screen.exclusions.xTranslation} X-mode minimum, ${screen.exclusions.yTranslation} Y-mode minimum, ${screen.exclusions.verticalMode} vertical-mode placement. Counts can overlap. ${screen.dynamicallyEvaluatedCount} combinations reached the all-direction tone and resonance evaluation.</p>`;
+  if (!screen.recommendations.length) {
+    const near = screen.nearMisses.length ? `<h3>Closest dynamically evaluated combinations</h3>${catalogCandidateTable(screen.nearMisses, screen.criteria, true)}` : '';
+    return `${summary}<div class="sorbo-empty sorbo-catalog-empty"><strong>No catalog configuration passes every active criterion.</strong><p>Widen the geometry or stack limits, or review the X/Y translation minima, vertical-mode band, compression, tone limits, and resonance limit.</p></div>${near}${exclusion}`;
+  }
+  const winner = screen.recommendations[0];
+  const item = winner.item;
+  return `${summary}<article class="sorbo-catalog-recommendation"><div><p class="eyebrow">Recommended catalog configuration</p><h3>${esc(item.productNumber)}</h3><p>${esc(item.geometry)} · ${item.durometer} Shore 00 · ${fmt(item.odIn, 3)} OD × ${fmt(item.idIn, 3)} ID × ${fmt(item.thicknessIn, 3)} in thick</p></div><div><strong>${winner.stackCount}</strong><span>element${winner.stackCount === 1 ? '' : 's'} per side at each mount</span><small>${winner.totalElementCount} elements total for four captured mounts</small></div><button type="button" class="button" data-sorbo-catalog-use="${esc(item.productNumber)}" data-sorbo-catalog-stack="${winner.stackCount}">Use recommended design</button></article><h3>Passing part-number recommendations</h3><p class="sorbo-caption">For each part, the table keeps the smallest stack count that passes. Parts are then ranked by tone attenuation and resonance margin.</p>${catalogCandidateTable(screen.recommendations, screen.criteria)}${exclusion}`;
+}
+
+function explorerPanel(configInput = DEFAULT_SORBOTHANE_CONFIG, settingsInput = {}, catalogSettingsInput = {}) {
+  const config = normalizeSorbothaneConfig(configInput);
+  const ranges = sorbothaneExplorerVariableDefaults(config);
+  const settings = normalizeExplorerSettings(config, settingsInput);
+  const catalogSettings = normalizeCatalogScreenSettings(config, catalogSettingsInput);
+  const options = selected => EXPLORER_VARIABLE_CHOICES.map(([value, label]) => `<option value="${value}"${value === selected ? ' selected' : ''}>${label}</option>`).join('');
+  const outputOptions = [['t1200', 'Worst X/Y/Z T @ 1200 Hz (dB)'], ['t600', 'Worst X/Y/Z T @ 600 Hz (dB)'], ['peak', 'Worst X/Y/Z peak (dB)'], ['verticalMode', 'Vertical mode (Hz)']];
+  return `<section class="sorbo-tab-panel" data-sorbo-panel="explorer"><section class="sorbo-card"><header><div><p class="eyebrow">Catalog sizing</p><h2>Recommend a part number and stack count</h2></div><span>${SORBOTHANE_CATALOG.length - 1} manufacturer records</span></header><p class="sorbo-catalog-intro">Filter the catalog by nominal geometry. Every eligible part is checked at each allowed stack count using the current mass, CG, acceleration, compression basis, material model, and active criteria below.</p><div class="sorbo-criteria-strip"><span>Installed upper/lower load within catalog rating</span><span>10–20% recommended compression</span><span>No element unloading</span><span data-catalog-lateral-criterion>X / Y translation ≥ ${fmt(catalogSettings.xTranslationMinHz, 0)} / ${fmt(catalogSettings.yTranslationMinHz, 0)} Hz</span><span data-catalog-vertical-criterion>Vertical mode in ${fmt(catalogSettings.verticalMinHz, 0)}–${fmt(catalogSettings.verticalMaxHz, 0)} Hz</span><span data-catalog-criterion-count>${catalogToneCriteriaSummary(catalogSettings)}</span></div>${catalogCriteriaControls(config, catalogSettings)}${catalogScreenControls(config, catalogSettings)}${catalogProgressPanel()}<div data-sorbo-catalog-result><div class="sorbo-empty"><strong>Screen the manufacturer catalog.</strong><p>Stacked elements act in series: each element carries the same installed stack load, while additional elements reduce mount stiffness.</p></div></div></section><section class="sorbo-card"><header><div><p class="eyebrow">Transparent parametric sweep</p><h2>Isolation map and ranked candidates</h2></div><span>No opaque optimizer</span></header><div class="sorbo-explorer-controls"><label><span>X variable</span><select data-explorer="xVariable">${options(settings.xVariable)}</select></label><label><span>X min / max</span><span class="inline-inputs"><input data-explorer="xMin" aria-label="X minimum" type="number" value="${fmt(settings.xMin, 6)}" step="${ranges[settings.xVariable].step}"/><input data-explorer="xMax" aria-label="X maximum" type="number" value="${fmt(settings.xMax, 6)}" step="${ranges[settings.xVariable].step}"/></span><small class="sorbo-explorer-range-note" data-explorer-range-note="x">${esc(ranges[settings.xVariable].note)}</small></label><label><span>Y variable</span><select data-explorer="yVariable">${options(settings.yVariable)}</select></label><label><span>Y min / max</span><span class="inline-inputs"><input data-explorer="yMin" aria-label="Y minimum" type="number" value="${fmt(settings.yMin, 6)}" step="${ranges[settings.yVariable].step}"/><input data-explorer="yMax" aria-label="Y maximum" type="number" value="${fmt(settings.yMax, 6)}" step="${ranges[settings.yVariable].step}"/></span><small class="sorbo-explorer-range-note" data-explorer-range-note="y">${esc(ranges[settings.yVariable].note)}</small></label><label><span>Color output</span><select data-explorer="output">${outputOptions.map(([value, label]) => `<option value="${value}"${value === settings.output ? ' selected' : ''}>${label}</option>`).join('')}</select></label><button type="button" class="button" data-sorbo-action="run-explorer">Run 7 × 7 sweep</button></div><div data-sorbo-explorer-result><div class="sorbo-empty"><strong>Choose two variables.</strong><p>The app evaluates every visible grid point, applies the same mechanics and requirements, and ranks inspectable candidates.</p></div></div></section></section>`;
 }
 
 function heatmapSvg(grid) {
@@ -409,7 +601,8 @@ function heatmapSvg(grid) {
 }
 
 function explorerResult(grid) {
-  return `<div class="sorbo-explorer-result"><section><h3>${esc(grid.output)} isolation map</h3>${heatmapSvg(grid)}</section><section><h3>Ranked candidates</h3><div class="table-wrap"><table><thead><tr><th>Rank</th><th>${esc(grid.xVariable)}</th><th>${esc(grid.yVariable)}</th><th>Six modes (Hz)</th><th>Map value</th><th>T600</th><th>T1200</th><th>T1400</th><th>Peak</th><th>Compression</th><th>Preload / element</th><th>Compliance</th></tr></thead><tbody>${grid.candidates.map((candidate, index) => `<tr><td>${index + 1}</td><td>${fmt(candidate.xValue, 3)}</td><td>${fmt(candidate.yValue, 3)}</td><td>${candidate.analysis.modes.map(mode => fmt(mode.frequencyHz, 1)).join(' · ')}</td><td>${fmt(candidate.value, 2)}</td>${candidate.analysis.toneResults.map(result => `<td>${fmt(result.db, 1)} dB</td>`).join('')}<td>${fmt(candidate.analysis.peak.db, 1)} dB</td><td>${fmt(candidate.analysis.preload.compressionPct, 1)}%</td><td>${fmt(candidate.analysis.preload.preloadN / LBF, 2)} lbf</td><td><span class="sorbo-status ${candidate.pass ? 'pass' : 'fail'}">${candidate.pass ? 'PASS' : 'REVIEW'}</span><small>${candidate.analysis.preload.allEngaged ? 'engaged' : 'unloaded'} · ${candidate.analysis.preload.catalogCompliant ? 'catalog OK/N/A' : 'outside rating'}</small></td></tr>`).join('')}</tbody></table></div></section></div>`;
+  const toneHeaders = (grid.candidates[0]?.analysis.toneResults ?? []).map(result => `<th>Worst T${fmt(result.frequencyHz, 0)}</th>`).join('');
+  return `<div class="sorbo-explorer-result"><section><h3>${esc(grid.output)} isolation map</h3>${heatmapSvg(grid)}</section><section><h3>Ranked candidates</h3><div class="table-wrap"><table><thead><tr><th>Rank</th><th>${esc(grid.xVariable)}</th><th>${esc(grid.yVariable)}</th><th>Six modes (Hz)</th><th>Map value</th>${toneHeaders}<th>Worst peak</th><th>Compression</th><th>Nominal precompression</th><th>Compliance</th></tr></thead><tbody>${grid.candidates.map((candidate, index) => `<tr><td>${index + 1}</td><td>${fmt(candidate.xValue, 3)}</td><td>${fmt(candidate.yValue, 3)}</td><td>${candidate.analysis.modes.map(mode => fmt(mode.frequencyHz, 1)).join(' · ')}</td><td>${fmt(candidate.value, 2)}</td>${candidate.analysis.toneResults.map(result => `<td>${fmt(result.db, 1)} dB · ${result.worstAxis}</td>`).join('')}<td>${fmt(candidate.analysis.peak.db, 1)} dB · ${candidate.analysis.peak.axis}</td><td>${fmt(candidate.analysis.preload.compressionPct, 1)}%</td><td>${fmt(candidate.analysis.preload.preloadN / LBF, 2)} lbf / element</td><td><span class="sorbo-status ${candidate.pass ? 'pass' : 'fail'}">${candidate.pass ? 'PASS' : 'REVIEW'}</span><small>${candidate.analysis.preload.allEngaged ? 'engaged' : 'unloaded'} · ${candidate.analysis.preload.catalogCompliant ? 'catalog OK/N/A' : 'outside rating'} · ${candidate.analysis.preload.compressionCompliant ? 'compression OK' : 'compression outside'}</small></td></tr>`).join('')}</tbody></table></div></section></div>`;
 }
 
 function assumptionsPanel(config, analysis) {
@@ -436,13 +629,13 @@ function exportControls() {
   return `<div class="sorbo-export-bar"><span>Browser-local · no data uploaded</span><button type="button" class="button-quiet" data-sorbo-action="export-json">Configuration JSON</button><button type="button" class="button-quiet" data-sorbo-action="export-csv">Response CSV</button><button type="button" class="button-quiet" data-sorbo-action="export-report">Engineering summary</button><button type="button" class="button-quiet" data-sorbo-action="add-project">Add to project</button></div>`;
 }
 
-export function renderSorbothaneIsolationWorkbench(configInput = null) {
+export function renderSorbothaneIsolationWorkbench(configInput = null, explorerSettingsInput = {}, catalogSettingsInput = {}) {
   const config = normalizeSorbothaneConfig(configInput ?? DEFAULT_SORBOTHANE_CONFIG);
   const analysis = analyzeSorbothaneIsolation(config);
   return `<div class="page-shell sorbo-workbench" data-sorbothane-workbench><nav class="breadcrumbs site-breadcrumbs" aria-label="Breadcrumb"><a href="#/tools">Tools</a><span aria-hidden="true">›</span><span>Dynamics</span><span aria-hidden="true">›</span><span aria-current="page">Sorbothane 6-DOF Isolation Designer</span></nav>
     <section class="sorbo-hero"><div><p class="eyebrow">Aerospace component isolation · Engineering workbench</p><h1>Place the resonance deliberately.<br><span>See what gets through.</span></h1><p>Design a four-point captured Sorbothane system with traceable viscoelastic properties, full rigid-body coupling, complex frequency response, static engagement checks, and inspectable trade studies.</p></div><aside><strong data-sorbo-hero-mode>${fmt(analysis.modes.find(mode => mode.dominantIndex === 2)?.frequencyHz ?? analysis.modes[2].frequencyHz, 1)} Hz</strong><span>vertical bounce</span><b data-sorbo-hero-status class="${analysis.passes ? 'pass-text' : 'fail-text'}">${analysis.passes ? 'DEFINED REQUIREMENTS PASS' : 'DESIGN REVIEW REQUIRED'}</b><small>Manufacturer curves end at 300 Hz; 600-2000 Hz uses the selected visible assumption.</small></aside></section>
     ${exportControls()}
-    <section class="sorbo-shell">${inputSidebar(config)}<main class="sorbo-main"><nav class="sorbo-tabs" role="tablist">${[['overview', 'Overview'], ['modes', 'Modes'], ['transmissibility', 'Transmissibility'], ['sorbothane', 'Sorbothane'], ['explorer', 'Design Explorer'], ['assumptions', 'Assumptions / Validation']].map(([id, label], index) => `<button type="button" role="tab" data-sorbo-tab="${id}" class="${index === 0 ? 'active' : ''}">${label}</button>`).join('')}</nav><div data-sorbo-panels>${overviewPanel(config, analysis)}${modesPanel(config, analysis)}${transmissibilityPanel(analysis)}${sorbothanePanel(config, analysis)}${explorerPanel()}${assumptionsPanel(config, analysis)}</div></main></section>
+    <section class="sorbo-shell">${inputSidebar(config)}<main class="sorbo-main"><nav class="sorbo-tabs" role="tablist">${[['overview', 'Overview'], ['modes', 'Modes'], ['transmissibility', 'Transmissibility'], ['sorbothane', 'Sorbothane'], ['explorer', 'Design Explorer'], ['assumptions', 'Assumptions / Validation']].map(([id, label], index) => `<button type="button" role="tab" data-sorbo-tab="${id}" class="${index === 0 ? 'active' : ''}">${label}</button>`).join('')}</nav><div data-sorbo-panels>${overviewPanel(config, analysis)}${modesPanel(config, analysis)}${transmissibilityPanel(analysis)}${sorbothanePanel(config, analysis)}${explorerPanel(config, explorerSettingsInput, catalogSettingsInput)}${assumptionsPanel(config, analysis)}</div></main></section>
     <div class="sorbo-live" aria-live="polite" data-sorbo-live></div></div>`;
 }
 
@@ -455,12 +648,15 @@ function download(name, text, type = 'text/plain;charset=utf-8') {
 }
 
 export function responseCsv(analysis) {
-  const header = ['frequency_hz', 'Tx_mag', 'Tx_db', 'Tx_phase_deg', 'Ty_mag', 'Ty_db', 'Ty_phase_deg', 'Tz_mag', 'Tz_db', 'Tz_phase_deg', 'Rx_rad_per_m', 'Rx_db', 'Rx_phase_deg', 'Ry_rad_per_m', 'Ry_db', 'Ry_phase_deg', 'Rz_rad_per_m', 'Rz_db', 'Rz_phase_deg', 'material_region'];
-  const rows = analysis.response.frequencies.map((frequency, index) => {
-    const values = [frequency];
-    for (let dof = 0; dof < 6; dof += 1) values.push(analysis.response.magnitude[dof][index], analysis.response.db[dof][index], analysis.response.phaseDeg[dof][index]);
-    values.push(analysis.response.supported[index] ? 'manufacturer-supported-or-digitized' : 'engineering-extrapolation');
-    return values.join(',');
+  const header = ['base_excitation_axis', 'frequency_hz', 'Tx_mag', 'Tx_db', 'Tx_phase_deg', 'Ty_mag', 'Ty_db', 'Ty_phase_deg', 'Tz_mag', 'Tz_db', 'Tz_phase_deg', 'Rx_rad_per_m', 'Rx_db', 'Rx_phase_deg', 'Ry_rad_per_m', 'Ry_db', 'Ry_phase_deg', 'Rz_rad_per_m', 'Rz_db', 'Rz_phase_deg', 'material_region'];
+  const rows = ['x', 'y', 'z'].flatMap(axis => {
+    const response = analysis.directionalResponses[axis];
+    return response.frequencies.map((frequency, index) => {
+      const values = [axis.toUpperCase(), frequency];
+      for (let dof = 0; dof < 6; dof += 1) values.push(response.magnitude[dof][index], response.db[dof][index], response.phaseDeg[dof][index]);
+      values.push(response.supported[index] ? 'manufacturer-supported-or-digitized' : 'engineering-extrapolation');
+      return values.join(',');
+    });
   });
   return [header.join(','), ...rows].join('\n');
 }
@@ -490,10 +686,12 @@ ${analysis.modes.map(mode => `| ${mode.number} | ${fmt(mode.frequencyHz, 3)} Hz 
 
 ## Requirements
 
-| Target | Predicted vertical T | Requirement | Status |
+| Target | Calculated response | Requirement | Status |
 |---|---:|---:|---|
-${analysis.toneResults.map(result => `| ${fmt(result.frequencyHz, 0)} Hz | ${fmt(result.db, 2)} dB | ≤ ${fmt(result.maximumDb, 2)} dB | ${result.pass ? 'PASS' : 'FAIL'} |`).join('\n')}
-| ${fmt(config.analysis.resonanceBandHz[0], 0)}-${fmt(config.analysis.resonanceBandHz[1], 0)} Hz peak | +${fmt(analysis.peak.db, 2)} dB @ ${fmt(analysis.peak.frequencyHz, 2)} Hz | ≤ +${fmt(config.analysis.resonanceLimitDb, 2)} dB | ${analysis.peak.pass ? 'PASS' : 'FAIL'} |
+${analysis.lateralModeResults.map(result => `| ${result.axis} translation-dominated mode | Mode ${result.modeNumber} · ${fmt(result.frequencyHz, 2)} Hz | ≥ ${fmt(result.minimumHz, 2)} Hz | ${result.pass ? 'PASS' : 'FAIL'} |`).join('\n')}
+| Z translation-dominated mode | Mode ${analysis.verticalModeResult.modeNumber} · ${fmt(analysis.verticalModeResult.frequencyHz, 2)} Hz | ${fmt(analysis.verticalModeResult.rangeHz[0], 2)}–${fmt(analysis.verticalModeResult.rangeHz[1], 2)} Hz | ${analysis.verticalModeResult.pass ? 'PASS' : 'FAIL'} |
+${analysis.toneResults.flatMap(result => result.axisResults.map(axisResult => `| ${fmt(result.frequencyHz, 0)} Hz · T${axisResult.axis.toLowerCase()}${axisResult.axis.toLowerCase()} | ${fmtSignedDb(axisResult.db, 2)} | ≤ ${fmtSignedDb(result.maximumDb, 2)} | ${axisResult.pass ? 'PASS' : 'FAIL'} |`)).join('\n')}
+${analysis.peakResults.map(result => `| ${fmt(config.analysis.resonanceBandHz[0], 0)}-${fmt(config.analysis.resonanceBandHz[1], 0)} Hz · T${result.axis.toLowerCase()}${result.axis.toLowerCase()} peak | ${fmtSignedDb(result.db, 2)} @ ${fmt(result.frequencyHz, 2)} Hz | ≤ ${fmtSignedDb(config.analysis.resonanceLimitDb, 2)} | ${result.pass ? 'PASS' : 'FAIL'} |`).join('\n')}
 
 ## Interpretation
 
@@ -514,31 +712,42 @@ ${SORBOTHANE_REFERENCES.map(reference => `- ${reference.title} (${reference.revi
 }
 
 function bindChartTooltip(root, analysis) {
-  const hit = root.querySelector('[data-sorbo-chart-hit]');
-  const tooltip = root.querySelector('[data-sorbo-tooltip]');
-  if (!hit || !tooltip) return;
-  const line = tooltip.querySelector('[data-tip-line]');
-  const text = tooltip.querySelector('[data-tip-text]');
-  hit.addEventListener('pointermove', event => {
-    const svg = hit.closest('svg');
-    const rect = svg.getBoundingClientRect();
-    const viewX = (event.clientX - rect.left) / rect.width * 960;
-    const fraction = clamp((viewX - 68) / (960 - 68 - 22), 0, 1);
-    const frequency = 10 ** (Math.log10(analysis.response.frequencies[0]) + fraction * (Math.log10(analysis.response.frequencies.at(-1)) - Math.log10(analysis.response.frequencies[0])));
-    let index = 0;
-    for (let candidate = 1; candidate < analysis.response.frequencies.length; candidate += 1) if (Math.abs(Math.log(analysis.response.frequencies[candidate] / frequency)) < Math.abs(Math.log(analysis.response.frequencies[index] / frequency))) index = candidate;
-    const x = 68 + index / (analysis.response.frequencies.length - 1) * (960 - 68 - 22);
-    const boxX = x > 730 ? x - 205 : x + 9;
-    tooltip.hidden = false;
-    tooltip.setAttribute('transform', `translate(${boxX} 42)`);
-    line.setAttribute('x1', x - boxX);
-    line.setAttribute('x2', x - boxX);
-    line.setAttribute('y1', -14);
-    line.setAttribute('y2', 378);
-    const labels = ['Tx', 'Ty', 'Tz', 'Rx', 'Ry', 'Rz'];
-    text.innerHTML = `<tspan x="10" dy="0">${fmt(analysis.response.frequencies[index], 1)} Hz</tspan>${labels.map((label, dof) => `<tspan x="10" dy="16">${label}: ${fmt(analysis.response.db[dof][index], 1)} dB · ${fmt(analysis.response.phaseDeg[dof][index], 0)}°</tspan>`).join('')}`;
+  root.querySelectorAll('[data-sorbo-chart-hit]').forEach(hit => {
+    const view = hit.dataset.sorboChartHit;
+    const tooltip = hit.closest('svg')?.querySelector(`[data-sorbo-tooltip="${view}"]`);
+    if (!tooltip) return;
+    const line = tooltip.querySelector('[data-tip-line]');
+    const text = tooltip.querySelector('[data-tip-text]');
+    const response = view === 'direct' ? analysis.directionalResponses.x : analysis.response;
+    hit.addEventListener('pointermove', event => {
+      const svg = hit.closest('svg');
+      const rect = svg.getBoundingClientRect();
+      const viewX = (event.clientX - rect.left) / rect.width * 960;
+      const fraction = clamp((viewX - 68) / (960 - 68 - 22), 0, 1);
+      const frequency = 10 ** (Math.log10(response.frequencies[0]) + fraction * (Math.log10(response.frequencies.at(-1)) - Math.log10(response.frequencies[0])));
+      let index = 0;
+      for (let candidate = 1; candidate < response.frequencies.length; candidate += 1) if (Math.abs(Math.log(response.frequencies[candidate] / frequency)) < Math.abs(Math.log(response.frequencies[index] / frequency))) index = candidate;
+      const x = 68 + index / (response.frequencies.length - 1) * (960 - 68 - 22);
+      const boxX = x > 710 ? x - 223 : x + 9;
+      tooltip.hidden = false;
+      tooltip.setAttribute('transform', `translate(${boxX} 42)`);
+      line.setAttribute('x1', x - boxX);
+      line.setAttribute('x2', x - boxX);
+      line.setAttribute('y1', -14);
+      line.setAttribute('y2', 378);
+      if (view === 'direct') {
+        const rows = ['x', 'y', 'z'].map((axis, dof) => {
+          const axisResponse = analysis.directionalResponses[axis];
+          return `<tspan x="10" dy="16">T${axis}${axis}: ${fmt(axisResponse.db[dof][index], 1)} dB · ${fmt(axisResponse.phaseDeg[dof][index], 0)}°</tspan>`;
+        }).join('');
+        text.innerHTML = `<tspan x="10" dy="0">${fmt(response.frequencies[index], 1)} Hz</tspan>${rows}`;
+      } else {
+        const labels = ['Tx', 'Ty', 'Tz', 'Rx', 'Ry', 'Rz'];
+        text.innerHTML = `<tspan x="10" dy="0">${fmt(response.frequencies[index], 1)} Hz · ${response.axis.toUpperCase()} base</tspan>${labels.map((label, dof) => `<tspan x="10" dy="16">${label}: ${fmt(response.db[dof][index], 1)} dB · ${fmt(response.phaseDeg[dof][index], 0)}°</tspan>`).join('')}`;
+      }
+    });
+    hit.addEventListener('pointerleave', () => { tooltip.hidden = true; });
   });
-  hit.addEventListener('pointerleave', () => { tooltip.hidden = true; });
 }
 
 export function bindSorbothaneIsolationWorkbench(root = document) {
@@ -548,6 +757,9 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
   try { config = normalizeSorbothaneConfig(JSON.parse(localStorage.getItem('sau-sorbothane-isolation-v1') || 'null') ?? DEFAULT_SORBOTHANE_CONFIG); }
   catch { config = normalizeSorbothaneConfig(DEFAULT_SORBOTHANE_CONFIG); }
   let analysis = analyzeSorbothaneIsolation(config);
+  let explorerSettings = defaultExplorerSettings(config);
+  let catalogSettings = defaultCatalogScreenSettings(config);
+  let catalogRunToken = 0;
   let activeTab = 'overview';
   let selectedMode = 0;
   let playing = true;
@@ -583,9 +795,10 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
     if (relativePlane) relativePlane.value = fmt(unitDefinitions.length[config.units].fromSI(config.mounts.planeZM - config.component.cgM[2]), 4);
   };
   const redrawAnalysis = () => {
+    catalogRunToken += 1;
     analysis = analyzeSorbothaneIsolation(config);
     const panels = shell.querySelector('[data-sorbo-panels]');
-    panels.innerHTML = `${overviewPanel(config, analysis)}${modesPanel(config, analysis)}${transmissibilityPanel(analysis)}${sorbothanePanel(config, analysis)}${explorerPanel()}${assumptionsPanel(config, analysis)}`;
+    panels.innerHTML = `${overviewPanel(config, analysis)}${modesPanel(config, analysis)}${transmissibilityPanel(analysis)}${sorbothanePanel(config, analysis)}${explorerPanel(config, explorerSettings, catalogSettings)}${assumptionsPanel(config, analysis)}`;
     showTab(activeTab);
     bindPanelControls();
     updateVisibility();
@@ -601,6 +814,21 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
     const live = shell.querySelector('[data-sorbo-live]');
     if (live) live.textContent = `Analysis updated. Vertical mode ${fmt(analysis.modes.find(mode => mode.dominantIndex === 2)?.frequencyHz, 1)} hertz.`;
   };
+  const rerenderWorkbench = () => {
+    catalogRunToken += 1;
+    analysis = analyzeSorbothaneIsolation(config);
+    const replacement = document.createElement('div');
+    replacement.innerHTML = renderSorbothaneIsolationWorkbench(config, explorerSettings, catalogSettings);
+    const next = replacement.firstElementChild;
+    shell.replaceWith(next);
+    shell = next;
+    bindInputs();
+    bindPanelControls();
+    showTab(activeTab);
+    updateVisibility();
+    syncSidebarControls();
+    save();
+  };
   const applyCatalog = productNumber => {
     const item = sorbothaneCatalogItem(productNumber);
     config.isolator.productNumber = item.productNumber;
@@ -614,9 +842,10 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
   };
   const bindInputs = () => {
     shell.querySelector('[data-sorbo-units]')?.addEventListener('change', event => {
+      catalogRunToken += 1;
       config.units = event.target.value;
       const replacement = document.createElement('div');
-      replacement.innerHTML = renderSorbothaneIsolationWorkbench(config);
+      replacement.innerHTML = renderSorbothaneIsolationWorkbench(config, explorerSettings, catalogSettings);
       const next = replacement.firstElementChild;
       shell.replaceWith(next);
       shell = next;
@@ -655,9 +884,12 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
     shell.querySelector('[data-sorbo-action="analyze"]')?.addEventListener('click', redrawAnalysis);
     shell.querySelector('[data-sorbo-action="reset"]')?.addEventListener('click', () => {
       config = normalizeSorbothaneConfig(DEFAULT_SORBOTHANE_CONFIG);
+      explorerSettings = defaultExplorerSettings(config);
+      catalogSettings = defaultCatalogScreenSettings(config);
+      catalogRunToken += 1;
       localStorage.removeItem('sau-sorbothane-isolation-v1');
       const replacement = document.createElement('div');
-      replacement.innerHTML = renderSorbothaneIsolationWorkbench(config);
+      replacement.innerHTML = renderSorbothaneIsolationWorkbench(config, explorerSettings, catalogSettings);
       const next = replacement.firstElementChild;
       shell.replaceWith(next);
       shell = next;
@@ -669,7 +901,7 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
     shell.querySelector('[data-sorbo-action="export-json"]')?.addEventListener('click', () => download('sorbothane-isolation-configuration.json', JSON.stringify(config, null, 2), 'application/json;charset=utf-8'));
     shell.querySelector('[data-sorbo-action="export-csv"]')?.addEventListener('click', () => download('sorbothane-isolation-response.csv', responseCsv(analysis), 'text/csv;charset=utf-8'));
     shell.querySelector('[data-sorbo-action="export-report"]')?.addEventListener('click', () => download('sorbothane-isolation-engineering-summary.md', engineeringReport(analysis), 'text/markdown;charset=utf-8'));
-    shell.querySelector('[data-sorbo-action="add-project"]')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('sau:add-artifact', { detail: { type: 'Isolation design', title: 'Sorbothane 6-DOF isolation configuration', route: location.hash, takeaway: analysis.passes ? 'Defined isolation and resonance requirements pass.' : 'The configuration requires engineering review.', validity: 'Rigid-body linear viscoelastic screening model; high-frequency properties extrapolated above 300 Hz.', warnings: analysis.warnings, inputs: config, outputs: { modes: analysis.modes, tones: analysis.toneResults, peak: analysis.peak } } })));
+    shell.querySelector('[data-sorbo-action="add-project"]')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('sau:add-artifact', { detail: { type: 'Isolation design', title: 'Sorbothane 6-DOF isolation configuration', route: location.hash, takeaway: analysis.passes ? 'Defined isolation and resonance requirements pass.' : 'The configuration requires engineering review.', validity: 'Rigid-body linear viscoelastic screening model; high-frequency properties extrapolated above 300 Hz.', warnings: analysis.warnings, inputs: config, outputs: { modes: analysis.modes, lateralModeResults: analysis.lateralModeResults, verticalModeResult: analysis.verticalModeResult, tones: analysis.toneResults, peak: analysis.peak, peakResults: analysis.peakResults } } })));
   };
   const updateModeScene = () => {
     const mount = shell.querySelector('[data-sorbo-mode-scene]');
@@ -703,12 +935,237 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
     shell.querySelector('[data-sorbo-speed]')?.addEventListener('input', event => { speed = +event.target.value; });
     shell.querySelectorAll('[data-sorbo-camera]').forEach(control => control.addEventListener('input', event => { camera[event.target.dataset.sorboCamera] = +event.target.value; }));
     shell.querySelector('[data-sorbo-action="reset-camera"]')?.addEventListener('click', () => { camera = { yaw: -32, pitch: 24 }; const yaw = shell.querySelector('[data-sorbo-camera="yaw"]'); const pitch = shell.querySelector('[data-sorbo-camera="pitch"]'); if (yaw) yaw.value = -32; if (pitch) pitch.value = 24; });
+    const catalogResult = shell.querySelector('[data-sorbo-catalog-result]');
+    const cancelCatalogScreen = () => {
+      catalogRunToken += 1;
+      const button = shell.querySelector('[data-sorbo-action="screen-catalog"]');
+      const progress = shell.querySelector('[data-sorbo-catalog-progress]');
+      if (button) {
+        button.disabled = false;
+        button.textContent = 'Screen full catalog';
+      }
+      if (progress) progress.hidden = true;
+    };
+    const clearCatalogResult = (title = 'Catalog limits or criteria updated.') => {
+      cancelCatalogScreen();
+      if (catalogResult) catalogResult.innerHTML = `<div class="sorbo-empty"><strong>${esc(title)}</strong><p>Run the catalog screen to evaluate the revised requirements.</p></div>`;
+    };
+    const updateModeCriteriaStrip = () => {
+      const lateral = shell.querySelector('[data-catalog-lateral-criterion]');
+      const vertical = shell.querySelector('[data-catalog-vertical-criterion]');
+      if (lateral) lateral.textContent = `X / Y translation ≥ ${fmt(catalogSettings.xTranslationMinHz, 0)} / ${fmt(catalogSettings.yTranslationMinHz, 0)} Hz`;
+      if (vertical) vertical.textContent = `Vertical mode in ${fmt(catalogSettings.verticalMinHz, 0)}–${fmt(catalogSettings.verticalMaxHz, 0)} Hz`;
+    };
+    shell.querySelectorAll('[data-catalog-screen]').forEach(control => control.addEventListener('change', event => {
+      const key = event.target.dataset.catalogScreen;
+      catalogSettings[key] = key === 'geometry' ? event.target.value : Number(event.target.value);
+      clearCatalogResult();
+    }));
+    shell.querySelectorAll('[data-catalog-criterion]').forEach(control => control.addEventListener('change', event => {
+      catalogSettings[event.target.dataset.catalogCriterion] = Number(event.target.value);
+      updateModeCriteriaStrip();
+      clearCatalogResult('Active criteria updated.');
+    }));
+    const criteriaEditor = shell.querySelector('.sorbo-catalog-criteria');
+    const renderToneCriteria = () => {
+      const rows = criteriaEditor?.querySelector('[data-sorbo-tone-criteria]');
+      const count = shell.querySelector('[data-catalog-criterion-count]');
+      if (rows) rows.innerHTML = catalogToneCriteriaRows(catalogSettings);
+      if (count) count.textContent = catalogToneCriteriaSummary(catalogSettings);
+    };
+    criteriaEditor?.addEventListener('change', event => {
+      const index = Number(event.target.dataset.catalogToneIndex);
+      const field = event.target.dataset.catalogToneField;
+      if (!Number.isInteger(index) || !field || !catalogSettings.toneCriteria[index]) return;
+      catalogSettings.toneCriteria[index][field] = Number(event.target.value);
+      clearCatalogResult('Active criteria updated.');
+    });
+    criteriaEditor?.addEventListener('click', event => {
+      const remove = event.target.closest('[data-sorbo-action="remove-catalog-tone"]');
+      if (remove) {
+        const index = Number(remove.dataset.catalogToneIndex);
+        if (Number.isInteger(index) && catalogSettings.toneCriteria[index]) {
+          catalogSettings.toneCriteria.splice(index, 1);
+          renderToneCriteria();
+          clearCatalogResult('Tone criterion removed.');
+        }
+        return;
+      }
+      const add = event.target.closest('[data-sorbo-action="add-catalog-tone"]');
+      if (!add) return;
+      const frequencyControl = criteriaEditor.querySelector('[data-catalog-new-tone="frequencyHz"]');
+      const maximumControl = criteriaEditor.querySelector('[data-catalog-new-tone="maximumDb"]');
+      const message = criteriaEditor.querySelector('[data-catalog-criterion-message]');
+      const frequencyHz = Number(frequencyControl?.value);
+      const maximumDb = Number(maximumControl?.value);
+      if (catalogSettings.toneCriteria.length >= 8) {
+        if (message) message.textContent = 'A maximum of eight tone criteria can be screened.';
+        return;
+      }
+      if (!Number.isFinite(frequencyHz) || frequencyHz <= 0 || frequencyHz > 2000 || !Number.isFinite(maximumDb)) {
+        if (message) message.textContent = 'Enter a frequency from 0 to 2000 Hz and a finite dB limit.';
+        return;
+      }
+      catalogSettings.toneCriteria.push({ frequencyHz, maximumDb });
+      renderToneCriteria();
+      if (frequencyControl) frequencyControl.value = '';
+      if (maximumControl) maximumControl.value = '';
+      if (message) message.textContent = `${fmt(frequencyHz, 0)} Hz criterion added.`;
+      clearCatalogResult('Tone criterion added.');
+    });
+    catalogResult?.addEventListener('click', event => {
+      const control = event.target.closest('[data-sorbo-catalog-use]');
+      if (!control) return;
+      applyCatalog(control.dataset.sorboCatalogUse);
+      const stackCount = clamp(Math.round(Number(control.dataset.sorboCatalogStack)), 1, 8);
+      config.mounts.stackTop = stackCount;
+      config.mounts.stackBottom = stackCount;
+      config.analysis.lateralModeMinimumHz = [catalogSettings.xTranslationMinHz, catalogSettings.yTranslationMinHz];
+      config.analysis.modeAcceptBandHz = [catalogSettings.verticalMinHz, catalogSettings.verticalMaxHz];
+      config.analysis.resonanceBandHz = [catalogSettings.resonanceMinHz, catalogSettings.resonanceMaxHz];
+      config.analysis.resonanceLimitDb = catalogSettings.resonanceMaximumDb;
+      config.analysis.tones = catalogSettings.toneCriteria.map(tone => ({ ...tone }));
+      rerenderWorkbench();
+      const live = shell.querySelector('[data-sorbo-live]');
+      if (live) live.textContent = `${config.isolator.productNumber} applied with ${stackCount} elements per side at each mount and ${config.analysis.tones.length} tone criteria.`;
+    });
+    shell.querySelector('[data-sorbo-action="screen-catalog"]')?.addEventListener('click', async event => {
+      const get = key => shell.querySelector(`[data-catalog-screen="${key}"]`)?.value;
+      const criterion = key => shell.querySelector(`[data-catalog-criterion="${key}"]`)?.value;
+      catalogSettings = normalizeCatalogScreenSettings(config, {
+        ...catalogSettings,
+        geometry: get('geometry'), odMin: get('odMin'), odMax: get('odMax'), idMin: get('idMin'), idMax: get('idMax'),
+        thicknessMin: get('thicknessMin'), thicknessMax: get('thicknessMax'), stackMin: get('stackMin'), stackMax: get('stackMax'),
+        xTranslationMinHz: criterion('xTranslationMinHz'), yTranslationMinHz: criterion('yTranslationMinHz'),
+        verticalMinHz: criterion('verticalMinHz'), verticalMaxHz: criterion('verticalMaxHz'),
+        resonanceMinHz: criterion('resonanceMinHz'), resonanceMaxHz: criterion('resonanceMaxHz'), resonanceMaximumDb: criterion('resonanceMaximumDb')
+      });
+      for (const key of ['geometry', 'odMin', 'odMax', 'idMin', 'idMax', 'thicknessMin', 'thicknessMax', 'stackMin', 'stackMax']) {
+        const control = shell.querySelector(`[data-catalog-screen="${key}"]`);
+        if (control) control.value = catalogSettings[key];
+      }
+      for (const key of ['xTranslationMinHz', 'yTranslationMinHz', 'verticalMinHz', 'verticalMaxHz', 'resonanceMinHz', 'resonanceMaxHz', 'resonanceMaximumDb']) {
+        const control = shell.querySelector(`[data-catalog-criterion="${key}"]`);
+        if (control) control.value = catalogSettings[key];
+      }
+      updateModeCriteriaStrip();
+      renderToneCriteria();
+      const button = event.currentTarget;
+      const progressPanel = shell.querySelector('[data-sorbo-catalog-progress]');
+      const progressBar = progressPanel?.querySelector('[data-catalog-progress-bar]');
+      const progressLabel = progressPanel?.querySelector('[data-catalog-progress-label]');
+      const progressPercent = progressPanel?.querySelector('[data-catalog-progress-percent]');
+      const progressDetail = progressPanel?.querySelector('[data-catalog-progress-detail]');
+      const runToken = ++catalogRunToken;
+      button.disabled = true;
+      button.textContent = 'Screening catalog · 0%';
+      if (progressPanel) progressPanel.hidden = false;
+      if (catalogResult) catalogResult.innerHTML = '<div class="sorbo-empty sorbo-catalog-running"><strong>Catalog evaluation is running.</strong><p>Geometry and load checks run first; frequency-response checks follow only for viable combinations.</p></div>';
+      const stageLabel = stage => ({
+        'pre-screen': 'Checking geometry, installed load, and mode placement',
+        dynamic: 'Evaluating tone and resonance requirements',
+        complete: 'Catalog screen complete'
+      }[stage] ?? 'Screening catalog');
+      try {
+        const screen = await screenSorbothaneCatalogAsync(config, {
+          geometry: catalogSettings.geometry,
+          odRange: [catalogSettings.odMin, catalogSettings.odMax],
+          idRange: [catalogSettings.idMin, catalogSettings.idMax],
+          thicknessRange: [catalogSettings.thicknessMin, catalogSettings.thicknessMax],
+          stackRange: [catalogSettings.stackMin, catalogSettings.stackMax],
+          criteria: {
+            lateralModeMinimumHz: [catalogSettings.xTranslationMinHz, catalogSettings.yTranslationMinHz],
+            verticalModeRangeHz: [catalogSettings.verticalMinHz, catalogSettings.verticalMaxHz],
+            resonanceBandHz: [catalogSettings.resonanceMinHz, catalogSettings.resonanceMaxHz],
+            resonanceMaximumDb: catalogSettings.resonanceMaximumDb,
+            tones: catalogSettings.toneCriteria
+          }
+        }, {
+          batchSize: 6,
+          shouldCancel: () => runToken !== catalogRunToken,
+          yieldControl: () => new Promise(resolve => requestAnimationFrame(resolve)),
+          onProgress: progress => {
+            if (runToken !== catalogRunToken) return;
+            const percent = clamp(Math.round(progress.percent), 0, 100);
+            if (progressBar) {
+              progressBar.value = percent;
+              progressBar.textContent = `${percent}%`;
+            }
+            if (progressLabel) progressLabel.textContent = stageLabel(progress.stage);
+            if (progressPercent) progressPercent.textContent = `${percent}%`;
+            if (progressDetail) progressDetail.textContent = `${progress.completed} of ${progress.total} combinations in this stage`;
+            button.textContent = `Screening catalog · ${percent}%`;
+          }
+        });
+        if (!screen || runToken !== catalogRunToken) return;
+        if (catalogResult) catalogResult.innerHTML = catalogScreenResult(screen);
+        button.disabled = false;
+        button.textContent = 'Screen full catalog';
+      } catch (error) {
+        if (runToken !== catalogRunToken) return;
+        if (catalogResult) catalogResult.innerHTML = `<div class="sorbo-empty sorbo-catalog-empty"><strong>The catalog screen stopped.</strong><p>${esc(error?.message ?? 'Unexpected screening error.')}</p></div>`;
+        button.disabled = false;
+        button.textContent = 'Screen full catalog';
+        if (progressLabel) progressLabel.textContent = 'Catalog screen stopped';
+      }
+    });
+    const clearExplorerResult = (title = 'Ranges updated.') => {
+      const result = shell.querySelector('[data-sorbo-explorer-result]');
+      if (result) result.innerHTML = `<div class="sorbo-empty"><strong>${esc(title)}</strong><p>Run the sweep to evaluate the new design space.</p></div>`;
+    };
+    const applyExplorerVariableDefaults = axis => {
+      const variable = shell.querySelector(`[data-explorer="${axis}Variable"]`)?.value;
+      const range = sorbothaneExplorerVariableDefaults(config)[variable];
+      if (!range) return;
+      explorerSettings[`${axis}Variable`] = variable;
+      explorerSettings[`${axis}Min`] = range.min;
+      explorerSettings[`${axis}Max`] = range.max;
+      for (const bound of ['Min', 'Max']) {
+        const control = shell.querySelector(`[data-explorer="${axis}${bound}"]`);
+        if (control) {
+          control.value = fmt(range[bound.toLowerCase()], 6);
+          control.step = range.step;
+        }
+      }
+      const note = shell.querySelector(`[data-explorer-range-note="${axis}"]`);
+      if (note) note.textContent = range.note;
+      clearExplorerResult();
+    };
+    for (const axis of ['x', 'y']) {
+      shell.querySelector(`[data-explorer="${axis}Variable"]`)?.addEventListener('change', () => applyExplorerVariableDefaults(axis));
+      for (const bound of ['Min', 'Max']) shell.querySelector(`[data-explorer="${axis}${bound}"]`)?.addEventListener('change', event => {
+        explorerSettings[`${axis}${bound}`] = Number(event.target.value);
+        clearExplorerResult('Range edited.');
+      });
+    }
+    shell.querySelector('[data-explorer="output"]')?.addEventListener('change', event => {
+      explorerSettings.output = event.target.value;
+      clearExplorerResult('Output changed.');
+    });
     shell.querySelector('[data-sorbo-action="run-explorer"]')?.addEventListener('click', event => {
       const get = key => shell.querySelector(`[data-explorer="${key}"]`)?.value;
+      explorerSettings = normalizeExplorerSettings(config, {
+        xVariable: get('xVariable'), xMin: get('xMin'), xMax: get('xMax'),
+        yVariable: get('yVariable'), yMin: get('yMin'), yMax: get('yMax'), output: get('output')
+      });
+      const ranges = sorbothaneExplorerVariableDefaults(config);
+      for (const axis of ['x', 'y']) {
+        const minimumKey = `${axis}Min`;
+        const maximumKey = `${axis}Max`;
+        if (!(explorerSettings[minimumKey] < explorerSettings[maximumKey])) {
+          const variable = explorerSettings[`${axis}Variable`];
+          explorerSettings[minimumKey] = ranges[variable].min;
+          explorerSettings[maximumKey] = ranges[variable].max;
+          const minimum = shell.querySelector(`[data-explorer="${minimumKey}"]`);
+          const maximum = shell.querySelector(`[data-explorer="${maximumKey}"]`);
+          if (minimum) minimum.value = fmt(explorerSettings[minimumKey], 6);
+          if (maximum) maximum.value = fmt(explorerSettings[maximumKey], 6);
+        }
+      }
       event.target.disabled = true;
       event.target.textContent = 'Evaluating 49 designs…';
       requestAnimationFrame(() => {
-        const grid = runDesignGrid(config, { xVariable: get('xVariable'), yVariable: get('yVariable'), xRange: [+get('xMin'), +get('xMax')], yRange: [+get('yMin'), +get('yMax')], output: get('output'), gridSize: 7 });
+        const grid = runDesignGrid(config, { xVariable: explorerSettings.xVariable, yVariable: explorerSettings.yVariable, xRange: [explorerSettings.xMin, explorerSettings.xMax], yRange: [explorerSettings.yMin, explorerSettings.yMax], output: explorerSettings.output, gridSize: 7 });
         shell.querySelector('[data-sorbo-explorer-result]').innerHTML = explorerResult(grid);
         event.target.disabled = false;
         event.target.textContent = 'Run 7 × 7 sweep';
@@ -726,7 +1183,7 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
   };
 
   const replacement = document.createElement('div');
-  replacement.innerHTML = renderSorbothaneIsolationWorkbench(config);
+  replacement.innerHTML = renderSorbothaneIsolationWorkbench(config, explorerSettings, catalogSettings);
   const next = replacement.firstElementChild;
   shell.replaceWith(next);
   shell = next;
@@ -763,13 +1220,13 @@ export const sorbothaneIsolationCalculator = {
     return {
       values: [
         { label: 'Vertical mode', value: vertical.frequencyHz, unit: 'Hz' },
-        { label: 'T @ 600 Hz', value: analysis.toneResults[0].db, unit: 'dB' },
-        { label: 'T @ 1200 Hz', value: analysis.toneResults[1].db, unit: 'dB' },
+        { label: 'Worst X/Y/Z T @ 600 Hz', value: analysis.toneResults[0].db, unit: 'dB' },
+        { label: 'Worst X/Y/Z T @ 1200 Hz', value: analysis.toneResults[1].db, unit: 'dB' },
         { label: 'Shape factor', value: analysis.geometry.shapeFactor },
         { label: 'Preload per element', value: analysis.preload.preloadN / LBF, unit: 'lbf' }
       ],
       interpretation: {
-        summary: `The vertical rigid-body mode is ${fmt(vertical.frequencyHz, 1)} Hz. Open the guided workbench for all six coupled modes, static engagement, frequency response, uncertainty, and source provenance.`,
+        summary: `The vertical rigid-body mode is ${fmt(vertical.frequencyHz, 1)} Hz. The tone results use the worst direct X, Y, or Z transmissibility. Open the guided workbench for all six coupled modes, static engagement, directional frequency response, uncertainty, and source provenance.`,
         physicalMeaning: 'The captured upper and lower elements add incremental stiffness, while stacked elements on one side act in series.',
         engineeringConsiderations: ['Manufacturer dynamic-property curves end at 300 Hz; high-frequency attenuation requires an explicit extrapolation and shaker-test validation.']
       },
