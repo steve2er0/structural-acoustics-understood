@@ -142,13 +142,15 @@ At an arbitrary component point `p` relative to the CG,
 upoint = uCG + θ × p
 ```
 
+The transmissibility panel starts at the CG and offers two opposite top-corner measurement locations (`+X/+Y` and `-X/-Y`). The corner offsets follow the entered component dimensions and CG location. The selected point applies consistently to the plotted Txx/Tyy/Tzz responses, tone limits, and resonance-band checks.
+
 Complex phase is retained. dB results use `20 log10(|T|)` because they are amplitude ratios. Rotation traces are reported internally in rad/m of base displacement. For a common dimensionless plot, the app multiplies rotation by the component characteristic radius and labels those traces `Rx·r`, `Ry·r`, and `Rz·r`.
 
 ## Design explorer and uncertainty
 
 The design explorer evaluates every visible point on a two-variable grid. It does not hide the sampled candidates behind an optimizer. Sweep axes include durometer, annular dimensions, compression, mass, CG height, both mount spacings, and stack count. Each ranked candidate reports all six modes, target-frequency transmissibility, resonance-band peak, compression, preload, engagement, catalog compliance, and a transparent score used only for ranking.
 
-The optional uncertainty calculation is a seeded Monte Carlo screen. It varies dynamic modulus, loss factor, mass, three CG coordinates, and nominal compression. Mode and target-frequency intervals are the 5th and 95th percentiles. The vertical transmissibility band uses the same samples. This is a sensitivity envelope, not a material allowables distribution or qualification confidence statement.
+The optional uncertainty calculation is a seeded Monte Carlo screen. It varies dynamic modulus, loss factor, mass, three CG coordinates, and nominal compression. Mode and target-frequency intervals are the 5th and 95th percentiles. Independent Txx, Tyy, and Tzz transmissibility bands use the same samples at the selected response point. This is a sensitivity envelope, not a material allowables distribution or qualification confidence statement.
 
 ## Validation cases
 

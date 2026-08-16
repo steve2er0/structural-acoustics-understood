@@ -66,6 +66,39 @@ test('transmissibility evaluates direct X, Y, and Z base-to-response directions'
   assert.ok(analysis.toneResults.every(result => result.db === Math.max(...result.axisResults.map(axisResult => axisResult.db))));
   assert.deepEqual(analysis.peakResults.map(result => result.axis), ['X', 'Y', 'Z']);
   assert.equal(analysis.peak.db, Math.max(...analysis.peakResults.map(result => result.db)));
+
+  const uncertainConfig = clone(DEFAULT_SORBOTHANE_CONFIG);
+  uncertainConfig.analysis.frequencyPoints = 25;
+  uncertainConfig.uncertainty.samples = 8;
+  const uncertain = analyzeSorbothaneIsolation(uncertainConfig);
+  assert.deepEqual(Object.keys(uncertain.uncertainty.directionalBands), ['x', 'y', 'z']);
+  const expectedPoints = uncertain.directionalResponses.x.frequencies.length;
+  assert.ok(Object.values(uncertain.uncertainty.directionalBands).every(band => band.lowerDb.length === expectedPoints && band.upperDb.length === expectedPoints));
+  assert.ok(uncertain.uncertainty.toneRangesDbByAxis.every(results => results.length === 3));
+});
+
+test('top-corner response options add rigid-body rotation to CG translation', () => {
+  const cgConfig = baseline();
+  cgConfig.analysis.responsePoint = 'cg';
+  const frequency = 190;
+  const cg = rigidBodyResponseAtFrequency(cgConfig, frequency, 'y');
+  const cornerConfig = clone(cgConfig);
+  cornerConfig.analysis.responsePoint = 'corner-positive';
+  const corner = rigidBodyResponseAtFrequency(cornerConfig, frequency, 'y');
+  const [length, width, height] = cornerConfig.component.dimensionsM;
+  const [cgX, cgY, cgZ] = cornerConfig.component.cgM;
+  const [px, py, pz] = [length / 2 - cgX, width / 2 - cgY, height - cgZ];
+  const expected = [
+    { re: cg.complex[0].re + cg.complex[4].re * pz - cg.complex[5].re * py, im: cg.complex[0].im + cg.complex[4].im * pz - cg.complex[5].im * py },
+    { re: cg.complex[1].re - cg.complex[3].re * pz + cg.complex[5].re * px, im: cg.complex[1].im - cg.complex[3].im * pz + cg.complex[5].im * px },
+    { re: cg.complex[2].re + cg.complex[3].re * py - cg.complex[4].re * px, im: cg.complex[2].im + cg.complex[3].im * py - cg.complex[4].im * px }
+  ];
+  expected.forEach((value, axis) => {
+    close(corner.complex[axis].re, value.re, 1e-12);
+    close(corner.complex[axis].im, value.im, 1e-12);
+  });
+  assert.notEqual(corner.db[1], cg.db[1]);
+  assert.equal(normalizeSorbothaneConfig({ analysis: { responsePoint: 'not-a-real-point' } }).analysis.responsePoint, 'cg');
 });
 
 test('centered symmetric mounts suppress bounce-rocking stiffness coupling', () => {
@@ -202,9 +235,16 @@ test('workbench preserves trailing-zero requirement frequencies in rendered labe
   assert.match(html, /Y LIMIT FAIL/);
   assert.match(html, /Z LIMIT PASS/);
   assert.match(html, /Direct-axis transmissibility · Txx, Tyy, Tzz/);
-  assert.match(html, /Z-base six-DOF response/);
-  assert.match(html, /data-sorbo-chart-hit="direct"/);
-  assert.match(html, /data-sorbo-chart-hit="coupled"/);
+  assert.equal((html.match(/data-sorbo-response-point=/g) ?? []).length, 3);
+  assert.match(html, /data-sorbo-response-point="cg" class="active" aria-pressed="true"/);
+  assert.match(html, /Offset from CG: \(\+0, \+0, \+0\) in/);
+  assert.match(html, /This location also governs the tone and resonance checks below/);
+  assert.doesNotMatch(html, /Coupled response detail|six-DOF response|data-sorbo-field="analysis.excitationAxis"/);
+  assert.equal((html.match(/data-sorbo-chart-hit/g) ?? []).length, 1);
+  assert.equal((html.match(/class="sorbo-uncertainty-band band-/g) ?? []).length, 3);
+  assert.equal((html.match(/class="sorbo-mode-point/g) ?? []).length, 18);
+  assert.match(html, /M5 · Txx/);
+  assert.match(html, /M6 · Tyy/);
   assert.match(html, />600 Hz · Tyy</);
   assert.match(html, />600 Hz · Tzz</);
   assert.equal((html.match(/data-sorbo-action="remove-catalog-tone"/g) ?? []).length, 3);
@@ -331,6 +371,7 @@ test('CSV and Markdown exports retain response phase, provenance, modes, and sou
   assert.equal(csv.trim().split('\n').length, analysis.response.frequencies.length * 3 + 1);
   assert.match(csv, /engineering-extrapolation/);
   assert.match(report, /## Rigid-body modes/);
+  assert.match(report, /Transmissibility response location: Center of gravity/);
   assert.match(report, /## Sources/);
   assert.match(report, /600 Hz/);
   assert.match(report, /1200 Hz/);

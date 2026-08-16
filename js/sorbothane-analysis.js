@@ -105,6 +105,7 @@ export function normalizeSorbothaneConfig(input = {}) {
   config.isolator.poisson = clamp(finite(config.isolator.poisson, 0.49), 0, 0.4995);
   config.environment.accelerationG = [...(source.environment?.accelerationG ?? config.environment.accelerationG)].map((value, index) => finite(value, config.environment.accelerationG[index]));
   config.analysis.frequencyPoints = clamp(Math.round(finite(config.analysis.frequencyPoints, 181)), 41, 501);
+  if (!['cg', 'corner-positive', 'corner-negative'].includes(config.analysis.responsePoint)) config.analysis.responsePoint = 'cg';
   const lateralModeMinimumHz = source.analysis?.lateralModeMinimumHz ?? config.analysis.lateralModeMinimumHz;
   config.analysis.lateralModeMinimumHz = [0, 1].map(index => Math.max(finite(lateralModeMinimumHz[index], config.analysis.lateralModeMinimumHz[index]), 0.1));
   config.analysis.tones = (source.analysis?.tones ?? config.analysis.tones).map(tone => ({ frequencyHz: Math.max(finite(tone.frequencyHz, 600), 0.1), maximumDb: finite(tone.maximumDb, -10) }));
@@ -693,9 +694,11 @@ function percentile(values, probability) {
   return sorted[left] + (index - left) * (sorted[right] - sorted[left]);
 }
 
-export function uncertaintyEnvelope(configInput, nominalResponse = null) {
+export function uncertaintyEnvelope(configInput, nominalResponses = null) {
   const config = normalizeSorbothaneConfig(configInput);
   if (!config.uncertainty.enabled) return null;
+  const axes = ['x', 'y', 'z'];
+  const nominal = nominalResponses ?? Object.fromEntries(axes.map(axis => [axis, frequencyResponse(config, axis)]));
   const random = seededRandom(config.uncertainty.seed);
   const samples = [];
   const count = clamp(config.uncertainty.samples, 8, 80);
@@ -710,20 +713,27 @@ export function uncertaintyEnvelope(configInput, nominalResponse = null) {
     sample.component.cgM[2] += normalRandom(random) * config.uncertainty.cgMm / 2000;
     sample.isolator.compressionPct = clamp(sample.isolator.compressionPct + normalRandom(random) * config.uncertainty.compressionPct / 2, 5, 25);
     const modes = solveRigidBodyModes(sample).modes;
-    const tones = config.analysis.tones.map(tone => rigidBodyResponseAtFrequency(sample, tone.frequencyHz, 'z').db[2]);
-    const response = nominalResponse ? frequencyResponse({ ...sample, analysis: { ...sample.analysis, frequencyPoints: nominalResponse.frequencies.length } }, 'z') : null;
-    samples.push({ modes, tones, response });
+    const tones = config.analysis.tones.map(tone => axes.map((axis, axisIndex) => rigidBodyResponseAtFrequency(sample, tone.frequencyHz, axis).db[axisIndex]));
+    const responses = Object.fromEntries(axes.map(axis => [axis, frequencyResponse({ ...sample, analysis: { ...sample.analysis, frequencyPoints: nominal[axis].frequencies.length } }, axis)]));
+    samples.push({ modes, tones, responses });
   }
-  const nominal = nominalResponse ?? frequencyResponse(config, 'z');
-  const lowerDb = nominal.frequencies.map((_, frequencyIndex) => percentile(samples.map(sample => sample.response?.db[2][frequencyIndex] ?? nominal.db[2][frequencyIndex]), 0.05));
-  const upperDb = nominal.frequencies.map((_, frequencyIndex) => percentile(samples.map(sample => sample.response?.db[2][frequencyIndex] ?? nominal.db[2][frequencyIndex]), 0.95));
+  const directionalBands = Object.fromEntries(axes.map((axis, axisIndex) => [axis, {
+    lowerDb: nominal[axis].frequencies.map((_, frequencyIndex) => percentile(samples.map(sample => sample.responses[axis].db[axisIndex][frequencyIndex]), 0.05)),
+    upperDb: nominal[axis].frequencies.map((_, frequencyIndex) => percentile(samples.map(sample => sample.responses[axis].db[axisIndex][frequencyIndex]), 0.95))
+  }]));
+  const toneRangesDbByAxis = config.analysis.tones.map((_, toneIndex) => axes.map((axis, axisIndex) => ({
+    axis: axis.toUpperCase(),
+    rangeDb: [percentile(samples.map(sample => sample.tones[toneIndex][axisIndex]), 0.05), percentile(samples.map(sample => sample.tones[toneIndex][axisIndex]), 0.95)]
+  })));
   return {
     samples: count,
     modeRangesHz: Array.from({ length: 6 }, (_, mode) => [percentile(samples.map(sample => sample.modes[mode].frequencyHz), 0.05), percentile(samples.map(sample => sample.modes[mode].frequencyHz), 0.95)]),
-    toneRangesDb: config.analysis.tones.map((_, tone) => [percentile(samples.map(sample => sample.tones[tone]), 0.05), percentile(samples.map(sample => sample.tones[tone]), 0.95)]),
-    lowerDb,
-    upperDb,
-    method: `Seeded ${count}-sample Monte Carlo; displayed ranges are 5th-95th percentiles. The plotted response band applies to direct Z-to-Z transmissibility.`
+    toneRangesDbByAxis,
+    toneRangesDb: toneRangesDbByAxis.map(results => results[2].rangeDb),
+    directionalBands,
+    lowerDb: directionalBands.z.lowerDb,
+    upperDb: directionalBands.z.upperDb,
+    method: `Seeded ${count}-sample Monte Carlo; each Txx, Tyy, and Tzz band shows its own 5th-95th percentile range.`
   };
 }
 
@@ -752,7 +762,7 @@ export function analyzeSorbothaneIsolation(configInput, options = {}) {
     return result;
   });
   const peak = peakResults.reduce((largest, result) => result.db > largest.db ? result : largest, peakResults[0]);
-  const uncertainty = options.skipUncertainty || !directionalResponses ? null : uncertaintyEnvelope(config, directionalResponses.z);
+  const uncertainty = options.skipUncertainty || !directionalResponses ? null : uncertaintyEnvelope(config, directionalResponses);
   const warnings = [];
   if (config.analysis.frequencyMaxHz > SORBOTHANE_MATERIAL.digitizedCurveMaxHz) warnings.push(`Material data above ${SORBOTHANE_MATERIAL.digitizedCurveMaxHz} Hz are extrapolated using the selected ${config.isolator.extrapolation} policy.`);
   if (!preload.allEngaged) warnings.push('At least one opposing isolator unloads under the specified quasi-static acceleration. The linear sandwich model is invalid after loss of contact.');

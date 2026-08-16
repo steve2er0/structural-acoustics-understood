@@ -789,6 +789,17 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
 .sorbo-axis.axis-x line { stroke: #ff756d; }
 .sorbo-axis.axis-y line { stroke: #53d5b2; }
 .sorbo-axis.axis-z line { stroke: #58b9ff; }
+.sorbo-response-location { display: grid; grid-template-columns: minmax(180px, .48fr) minmax(0, 1.52fr); align-items: stretch; gap: .65rem; margin: .25rem 0 1rem; padding: .7rem; border: 1px solid var(--sorbo-line); background: rgba(3, 17, 30, .5); }
+.sorbo-response-location > div:first-child { display: grid; align-content: center; gap: .2rem; padding: .35rem .45rem; }
+.sorbo-response-location > div:first-child > span { color: #718ba2; font: 600 .48rem var(--mono); letter-spacing: .065em; text-transform: uppercase; }
+.sorbo-response-location > div:first-child > strong { color: #edf6ff; font-size: .76rem; font-weight: 580; }
+.sorbo-response-location > div:first-child > small { color: #6d879e; font: 500 .5rem var(--mono); }
+.sorbo-response-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; }
+.sorbo-response-options button { min-width: 0; min-height: 58px; display: grid; align-content: center; gap: .22rem; padding: .55rem .6rem; color: #7891a8; text-align: left; cursor: pointer; border: 1px solid var(--sorbo-line); border-radius: 3px; background: rgba(10, 34, 56, .8); }
+.sorbo-response-options button:hover { color: #dce9f5; border-color: rgba(87, 199, 255, .42); }
+.sorbo-response-options button.active { color: #fff; border-color: var(--sorbo-cyan); box-shadow: inset 0 -2px var(--sorbo-cyan); background: rgba(57, 139, 190, .18); }
+.sorbo-response-options b { overflow: hidden; font: 620 .56rem var(--mono); text-overflow: ellipsis; white-space: nowrap; }
+.sorbo-response-options span { color: #6f899f; font-size: .49rem; line-height: 1.35; }
 .sorbo-caption { margin: .8rem 0 0; color: #708aa1; font-size: .58rem; line-height: 1.6; }
 .sorbo-decision-card dl,
 .sorbo-detail-list { display: grid; gap: 0; margin: 1.1rem 0 0; }
@@ -848,10 +859,17 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
 .sorbo-legend-item line { stroke: var(--trace); stroke-width: 2; }
 .sorbo-frequency-marker line { stroke: rgba(224, 236, 246, .25); stroke-width: .7; stroke-dasharray: 3 4; }
 .sorbo-frequency-marker text { fill: #9eb3c6; font-size: 8px; }
+.sorbo-mode-marker.is-rotation line { stroke: rgba(230, 240, 249, .55); stroke-width: 1.1; }
+.sorbo-mode-marker.is-rotation text { fill: #edf6fd; font-weight: 800; }
+.sorbo-mode-point { fill: var(--trace); stroke: rgba(3, 17, 30, .95); stroke-width: 1.2; pointer-events: none; }
+.sorbo-mode-point.is-rotation { stroke: #f4f8fb; stroke-width: 1.6; }
 .sorbo-support-limit { stroke: var(--sorbo-amber); stroke-width: 1.2; stroke-dasharray: 5 4; }
 .sorbo-support-label { fill: var(--sorbo-amber) !important; font-size: 8px !important; }
 .sorbo-axis-label { fill: #9fb4c8 !important; font-size: 10px !important; }
-.sorbo-uncertainty-band { fill: rgba(83, 213, 178, .09); stroke: rgba(83, 213, 178, .22); stroke-width: .6; }
+.sorbo-uncertainty-band { stroke-width: .65; }
+.sorbo-uncertainty-band.band-0 { fill: rgba(88, 185, 255, .075); stroke: rgba(88, 185, 255, .26); }
+.sorbo-uncertainty-band.band-1 { fill: rgba(246, 185, 74, .065); stroke: rgba(246, 185, 74, .24); }
+.sorbo-uncertainty-band.band-2 { fill: rgba(100, 215, 161, .075); stroke: rgba(100, 215, 161, .26); }
 .sorbo-chart-hit { fill: transparent; pointer-events: all; }
 .sorbo-chart-tooltip line { stroke: #d5e4f1; stroke-width: .7; }
 .sorbo-chart-tooltip rect { fill: rgba(3, 17, 30, .96); stroke: rgba(127, 190, 229, .38); }
@@ -999,6 +1017,8 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
   .sorbo-add-criterion { grid-template-columns: 1fr; }
   .sorbo-tone-criterion > span { align-self: auto; }
   .sorbo-uncertainty-tones { grid-template-columns: 1fr; }
+  .sorbo-response-location,
+  .sorbo-response-options { grid-template-columns: 1fr; }
 }
 
 @media print {

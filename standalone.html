@@ -800,6 +800,17 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
 .sorbo-axis.axis-x line { stroke: #ff756d; }
 .sorbo-axis.axis-y line { stroke: #53d5b2; }
 .sorbo-axis.axis-z line { stroke: #58b9ff; }
+.sorbo-response-location { display: grid; grid-template-columns: minmax(180px, .48fr) minmax(0, 1.52fr); align-items: stretch; gap: .65rem; margin: .25rem 0 1rem; padding: .7rem; border: 1px solid var(--sorbo-line); background: rgba(3, 17, 30, .5); }
+.sorbo-response-location > div:first-child { display: grid; align-content: center; gap: .2rem; padding: .35rem .45rem; }
+.sorbo-response-location > div:first-child > span { color: #718ba2; font: 600 .48rem var(--mono); letter-spacing: .065em; text-transform: uppercase; }
+.sorbo-response-location > div:first-child > strong { color: #edf6ff; font-size: .76rem; font-weight: 580; }
+.sorbo-response-location > div:first-child > small { color: #6d879e; font: 500 .5rem var(--mono); }
+.sorbo-response-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; }
+.sorbo-response-options button { min-width: 0; min-height: 58px; display: grid; align-content: center; gap: .22rem; padding: .55rem .6rem; color: #7891a8; text-align: left; cursor: pointer; border: 1px solid var(--sorbo-line); border-radius: 3px; background: rgba(10, 34, 56, .8); }
+.sorbo-response-options button:hover { color: #dce9f5; border-color: rgba(87, 199, 255, .42); }
+.sorbo-response-options button.active { color: #fff; border-color: var(--sorbo-cyan); box-shadow: inset 0 -2px var(--sorbo-cyan); background: rgba(57, 139, 190, .18); }
+.sorbo-response-options b { overflow: hidden; font: 620 .56rem var(--mono); text-overflow: ellipsis; white-space: nowrap; }
+.sorbo-response-options span { color: #6f899f; font-size: .49rem; line-height: 1.35; }
 .sorbo-caption { margin: .8rem 0 0; color: #708aa1; font-size: .58rem; line-height: 1.6; }
 .sorbo-decision-card dl,
 .sorbo-detail-list { display: grid; gap: 0; margin: 1.1rem 0 0; }
@@ -859,10 +870,17 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
 .sorbo-legend-item line { stroke: var(--trace); stroke-width: 2; }
 .sorbo-frequency-marker line { stroke: rgba(224, 236, 246, .25); stroke-width: .7; stroke-dasharray: 3 4; }
 .sorbo-frequency-marker text { fill: #9eb3c6; font-size: 8px; }
+.sorbo-mode-marker.is-rotation line { stroke: rgba(230, 240, 249, .55); stroke-width: 1.1; }
+.sorbo-mode-marker.is-rotation text { fill: #edf6fd; font-weight: 800; }
+.sorbo-mode-point { fill: var(--trace); stroke: rgba(3, 17, 30, .95); stroke-width: 1.2; pointer-events: none; }
+.sorbo-mode-point.is-rotation { stroke: #f4f8fb; stroke-width: 1.6; }
 .sorbo-support-limit { stroke: var(--sorbo-amber); stroke-width: 1.2; stroke-dasharray: 5 4; }
 .sorbo-support-label { fill: var(--sorbo-amber) !important; font-size: 8px !important; }
 .sorbo-axis-label { fill: #9fb4c8 !important; font-size: 10px !important; }
-.sorbo-uncertainty-band { fill: rgba(83, 213, 178, .09); stroke: rgba(83, 213, 178, .22); stroke-width: .6; }
+.sorbo-uncertainty-band { stroke-width: .65; }
+.sorbo-uncertainty-band.band-0 { fill: rgba(88, 185, 255, .075); stroke: rgba(88, 185, 255, .26); }
+.sorbo-uncertainty-band.band-1 { fill: rgba(246, 185, 74, .065); stroke: rgba(246, 185, 74, .24); }
+.sorbo-uncertainty-band.band-2 { fill: rgba(100, 215, 161, .075); stroke: rgba(100, 215, 161, .26); }
 .sorbo-chart-hit { fill: transparent; pointer-events: all; }
 .sorbo-chart-tooltip line { stroke: #d5e4f1; stroke-width: .7; }
 .sorbo-chart-tooltip rect { fill: rgba(3, 17, 30, .96); stroke: rgba(127, 190, 229, .38); }
@@ -1010,6 +1028,8 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
   .sorbo-add-criterion { grid-template-columns: 1fr; }
   .sorbo-tone-criterion > span { align-self: auto; }
   .sorbo-uncertainty-tones { grid-template-columns: 1fr; }
+  .sorbo-response-location,
+  .sorbo-response-options { grid-template-columns: 1fr; }
 }
 
 @media print {
@@ -14493,6 +14513,7 @@ function normalizeSorbothaneConfig(input = {}) {
   config.isolator.poisson = clamp(finite(config.isolator.poisson, 0.49), 0, 0.4995);
   config.environment.accelerationG = [...(source.environment?.accelerationG ?? config.environment.accelerationG)].map((value, index) => finite(value, config.environment.accelerationG[index]));
   config.analysis.frequencyPoints = clamp(Math.round(finite(config.analysis.frequencyPoints, 181)), 41, 501);
+  if (!['cg', 'corner-positive', 'corner-negative'].includes(config.analysis.responsePoint)) config.analysis.responsePoint = 'cg';
   const lateralModeMinimumHz = source.analysis?.lateralModeMinimumHz ?? config.analysis.lateralModeMinimumHz;
   config.analysis.lateralModeMinimumHz = [0, 1].map(index => Math.max(finite(lateralModeMinimumHz[index], config.analysis.lateralModeMinimumHz[index]), 0.1));
   config.analysis.tones = (source.analysis?.tones ?? config.analysis.tones).map(tone => ({ frequencyHz: Math.max(finite(tone.frequencyHz, 600), 0.1), maximumDb: finite(tone.maximumDb, -10) }));
@@ -15081,9 +15102,11 @@ function percentile(values, probability) {
   return sorted[left] + (index - left) * (sorted[right] - sorted[left]);
 }
 
-function uncertaintyEnvelope(configInput, nominalResponse = null) {
+function uncertaintyEnvelope(configInput, nominalResponses = null) {
   const config = normalizeSorbothaneConfig(configInput);
   if (!config.uncertainty.enabled) return null;
+  const axes = ['x', 'y', 'z'];
+  const nominal = nominalResponses ?? Object.fromEntries(axes.map(axis => [axis, frequencyResponse(config, axis)]));
   const random = seededRandom(config.uncertainty.seed);
   const samples = [];
   const count = clamp(config.uncertainty.samples, 8, 80);
@@ -15098,20 +15121,27 @@ function uncertaintyEnvelope(configInput, nominalResponse = null) {
     sample.component.cgM[2] += normalRandom(random) * config.uncertainty.cgMm / 2000;
     sample.isolator.compressionPct = clamp(sample.isolator.compressionPct + normalRandom(random) * config.uncertainty.compressionPct / 2, 5, 25);
     const modes = solveRigidBodyModes(sample).modes;
-    const tones = config.analysis.tones.map(tone => rigidBodyResponseAtFrequency(sample, tone.frequencyHz, 'z').db[2]);
-    const response = nominalResponse ? frequencyResponse({ ...sample, analysis: { ...sample.analysis, frequencyPoints: nominalResponse.frequencies.length } }, 'z') : null;
-    samples.push({ modes, tones, response });
+    const tones = config.analysis.tones.map(tone => axes.map((axis, axisIndex) => rigidBodyResponseAtFrequency(sample, tone.frequencyHz, axis).db[axisIndex]));
+    const responses = Object.fromEntries(axes.map(axis => [axis, frequencyResponse({ ...sample, analysis: { ...sample.analysis, frequencyPoints: nominal[axis].frequencies.length } }, axis)]));
+    samples.push({ modes, tones, responses });
   }
-  const nominal = nominalResponse ?? frequencyResponse(config, 'z');
-  const lowerDb = nominal.frequencies.map((_, frequencyIndex) => percentile(samples.map(sample => sample.response?.db[2][frequencyIndex] ?? nominal.db[2][frequencyIndex]), 0.05));
-  const upperDb = nominal.frequencies.map((_, frequencyIndex) => percentile(samples.map(sample => sample.response?.db[2][frequencyIndex] ?? nominal.db[2][frequencyIndex]), 0.95));
+  const directionalBands = Object.fromEntries(axes.map((axis, axisIndex) => [axis, {
+    lowerDb: nominal[axis].frequencies.map((_, frequencyIndex) => percentile(samples.map(sample => sample.responses[axis].db[axisIndex][frequencyIndex]), 0.05)),
+    upperDb: nominal[axis].frequencies.map((_, frequencyIndex) => percentile(samples.map(sample => sample.responses[axis].db[axisIndex][frequencyIndex]), 0.95))
+  }]));
+  const toneRangesDbByAxis = config.analysis.tones.map((_, toneIndex) => axes.map((axis, axisIndex) => ({
+    axis: axis.toUpperCase(),
+    rangeDb: [percentile(samples.map(sample => sample.tones[toneIndex][axisIndex]), 0.05), percentile(samples.map(sample => sample.tones[toneIndex][axisIndex]), 0.95)]
+  })));
   return {
     samples: count,
     modeRangesHz: Array.from({ length: 6 }, (_, mode) => [percentile(samples.map(sample => sample.modes[mode].frequencyHz), 0.05), percentile(samples.map(sample => sample.modes[mode].frequencyHz), 0.95)]),
-    toneRangesDb: config.analysis.tones.map((_, tone) => [percentile(samples.map(sample => sample.tones[tone]), 0.05), percentile(samples.map(sample => sample.tones[tone]), 0.95)]),
-    lowerDb,
-    upperDb,
-    method: `Seeded ${count}-sample Monte Carlo; displayed ranges are 5th-95th percentiles. The plotted response band applies to direct Z-to-Z transmissibility.`
+    toneRangesDbByAxis,
+    toneRangesDb: toneRangesDbByAxis.map(results => results[2].rangeDb),
+    directionalBands,
+    lowerDb: directionalBands.z.lowerDb,
+    upperDb: directionalBands.z.upperDb,
+    method: `Seeded ${count}-sample Monte Carlo; each Txx, Tyy, and Tzz band shows its own 5th-95th percentile range.`
   };
 }
 
@@ -15140,7 +15170,7 @@ function analyzeSorbothaneIsolation(configInput, options = {}) {
     return result;
   });
   const peak = peakResults.reduce((largest, result) => result.db > largest.db ? result : largest, peakResults[0]);
-  const uncertainty = options.skipUncertainty || !directionalResponses ? null : uncertaintyEnvelope(config, directionalResponses.z);
+  const uncertainty = options.skipUncertainty || !directionalResponses ? null : uncertaintyEnvelope(config, directionalResponses);
   const warnings = [];
   if (config.analysis.frequencyMaxHz > SORBOTHANE_MATERIAL.digitizedCurveMaxHz) warnings.push(`Material data above ${SORBOTHANE_MATERIAL.digitizedCurveMaxHz} Hz are extrapolated using the selected ${config.isolator.extrapolation} policy.`);
   if (!preload.allEngaged) warnings.push('At least one opposing isolator unloads under the specified quasi-static acceleration. The linear sandwich model is invalid after loss of contact.');
@@ -15431,6 +15461,12 @@ const pathSet = (object, path, value) => {
   target[/^\d+$/.test(keys.at(-1)) ? +keys.at(-1) : keys.at(-1)] = value;
 };
 
+const RESPONSE_POINT_CHOICES = [
+  { value: 'cg', shortLabel: 'CG', label: 'Center of gravity' },
+  { value: 'corner-positive', shortLabel: 'Top +X / +Y', label: '+X / +Y top corner' },
+  { value: 'corner-negative', shortLabel: 'Top −X / −Y', label: '−X / −Y top corner' }
+];
+
 const unitDefinitions = {
   length: {
     English: { unit: 'in', fromSI: value => value / INCH, toSI: value => value * INCH },
@@ -15553,8 +15589,6 @@ function inputSidebar(config) {
       input(config, 'isolator.temperatureC', 'Temperature', { quantity: 'temperature', step: 1 })
     ].join(''))}
     ${group('Response & requirements', [
-      select(config, 'analysis.excitationAxis', 'Base excitation', [['x', 'X translation'], ['y', 'Y translation'], ['z', 'Z translation']]),
-      select(config, 'analysis.responsePoint', 'Response point', [['cg', 'Center of gravity'], ['corner-positive', '+X/+Y top corner'], ['corner-negative', '-X/-Y top corner']]),
       select(config, 'analysis.magnitudeScale', 'Plot scale', [['db', 'Amplitude dB'], ['linear', 'Linear magnitude']]),
       input(config, 'analysis.lateralModeMinimumHz.0', 'X translation mode minimum', { unit: 'Hz', min: 0.1, step: 1 }),
       input(config, 'analysis.lateralModeMinimumHz.1', 'Y translation mode minimum', { unit: 'Hz', min: 0.1, step: 1 }),
@@ -15689,9 +15723,8 @@ function chartPath(xs, ys, xMap, yMap) {
   return ys.map((value, index) => `${index ? 'L' : 'M'}${xMap(xs[index]).toFixed(2)},${yMap(value).toFixed(2)}`).join('');
 }
 
-function transmissibilitySvg(analysis, view = 'direct') {
-  const direct = view === 'direct';
-  const response = direct ? analysis.directionalResponses?.x : analysis.response;
+function transmissibilitySvg(analysis) {
+  const response = analysis.directionalResponses?.x;
   if (!response) return '';
   const width = 960;
   const height = 470;
@@ -15700,11 +15733,9 @@ function transmissibilitySvg(analysis, view = 'direct') {
   const plotHeight = height - margin.top - margin.bottom;
   const xMin = Math.log10(response.frequencies[0]);
   const xMax = Math.log10(response.frequencies.at(-1));
-  const radius = Math.hypot(analysis.config.component.dimensionsM[0], analysis.config.component.dimensionsM[1]) / 2;
   const useDb = analysis.config.analysis.magnitudeScale === 'db';
-  const series = direct
-    ? ['x', 'y', 'z'].map((axis, dof) => analysis.directionalResponses[axis].magnitude[dof])
-    : Array.from({ length: 6 }, (_, dof) => response.magnitude[dof].map(value => value * (dof < 3 ? 1 : radius)));
+  const axes = ['x', 'y', 'z'];
+  const series = axes.map((axis, dof) => analysis.directionalResponses[axis].magnitude[dof]);
   const displaySeries = useDb ? series.map(values => values.map(value => 20 * Math.log10(Math.max(value, 1e-10)))) : series;
   const all = displaySeries.flat().filter(Number.isFinite);
   const yMin = useDb ? Math.floor(Math.max(-80, Math.min(...all, -30)) / 10) * 10 : 0;
@@ -15712,31 +15743,33 @@ function transmissibilitySvg(analysis, view = 'direct') {
   const xMap = value => margin.left + (Math.log10(value) - xMin) / (xMax - xMin) * plotWidth;
   const yMap = value => margin.top + (yMax - value) / Math.max(yMax - yMin, 1e-12) * plotHeight;
   const xTicks = [10, 20, 50, 100, 200, 300, 600, 1000, 2000].filter(value => value >= response.frequencies[0] && value <= response.frequencies.at(-1));
-  const yStep = useDb ? 10 : yMax / 5;
   const yTicks = Array.from({ length: 6 }, (_, index) => yMin + index * (yMax - yMin) / 5);
-  const colors = ['#58b9ff', '#f6b94a', '#64d7a1', '#b49cff', '#ff82b3', '#ff795f'];
-  const names = direct ? ['Txx', 'Tyy', 'Tzz'] : ['Tx', 'Ty', 'Tz', 'Rx·r', 'Ry·r', 'Rz·r'];
-  const legendSpacing = direct ? 128 : 94;
-  const paths = displaySeries.map((values, index) => `<path class="sorbo-trace trace-${index}" d="${chartPath(response.frequencies, values, xMap, yMap)}" style="--trace:${colors[index]}"/><g class="sorbo-legend-item" transform="translate(${margin.left + index * legendSpacing},${height - 14})"><line x2="20"/><text x="27" y="4">${names[index]}</text></g>`).join('');
+  const colors = ['#58b9ff', '#f6b94a', '#64d7a1'];
+  const names = ['Txx', 'Tyy', 'Tzz'];
+  const paths = displaySeries.map((values, index) => `<path class="sorbo-trace trace-${index}" d="${chartPath(response.frequencies, values, xMap, yMap)}" style="--trace:${colors[index]}"/><g class="sorbo-legend-item" transform="translate(${margin.left + index * 128},${height - 14})"><line x2="20"/><text x="27" y="4">${names[index]}</text></g>`).join('');
   const supportedX = xMap(SORBOTHANE_MATERIAL.digitizedCurveMaxHz);
-  const markers = [...analysis.modes.map(mode => ({ frequency: mode.frequencyHz, label: `M${mode.number}` })), ...analysis.config.analysis.tones.map(tone => ({ frequency: tone.frequencyHz, label: `${fmt(tone.frequencyHz, 0)}` }))].filter(marker => marker.frequency >= response.frequencies[0] && marker.frequency <= response.frequencies.at(-1)).map((marker, index) => `<g class="sorbo-frequency-marker"><line x1="${xMap(marker.frequency)}" x2="${xMap(marker.frequency)}" y1="${margin.top}" y2="${height - margin.bottom}"/><text x="${xMap(marker.frequency) + 3}" y="${margin.top + 12 + (index % 3) * 12}">${marker.label}</text></g>`).join('');
+  const modeMarkers = analysis.modes.filter(mode => mode.frequencyHz >= response.frequencies[0] && mode.frequencyHz <= response.frequencies.at(-1)).map((mode, index) => `<g class="sorbo-frequency-marker sorbo-mode-marker${mode.number >= 5 ? ' is-rotation' : ''}"><line x1="${xMap(mode.frequencyHz)}" x2="${xMap(mode.frequencyHz)}" y1="${margin.top}" y2="${height - margin.bottom}"/><text x="${xMap(mode.frequencyHz) + 3}" y="${margin.top + 12 + (index % 3) * 12}">M${mode.number}</text></g>`).join('');
+  const toneMarkers = analysis.config.analysis.tones.filter(tone => tone.frequencyHz >= response.frequencies[0] && tone.frequencyHz <= response.frequencies.at(-1)).map((tone, index) => `<g class="sorbo-frequency-marker sorbo-tone-marker"><line x1="${xMap(tone.frequencyHz)}" x2="${xMap(tone.frequencyHz)}" y1="${margin.top}" y2="${height - margin.bottom}"/><text x="${xMap(tone.frequencyHz) + 3}" y="${margin.top + 12 + (index % 3) * 12}">${fmt(tone.frequencyHz, 0)}</text></g>`).join('');
+  const modePoints = analysis.modes.flatMap(mode => axes.map((axis, axisIndex) => {
+    const exact = rigidBodyResponseAtFrequency(analysis.config, mode.frequencyHz, axis);
+    const value = useDb ? exact.db[axisIndex] : exact.magnitude[axisIndex];
+    return `<circle class="sorbo-mode-point point-${axisIndex}${mode.number >= 5 ? ' is-rotation' : ''}" cx="${xMap(mode.frequencyHz)}" cy="${yMap(clamp(value, yMin, yMax))}" r="${mode.number >= 5 ? 4 : 3}" style="--trace:${colors[axisIndex]}"><title>M${mode.number} · ${names[axisIndex]} · ${useDb ? fmtSignedDb(value) : fmt(value, 3)}</title></circle>`;
+  })).join('');
   let uncertainty = '';
-  if (direct && useDb && analysis.uncertainty) {
-    const upper = analysis.uncertainty.upperDb.map((value, index) => [xMap(response.frequencies[index]), yMap(value)]);
-    const lower = analysis.uncertainty.lowerDb.map((value, index) => [xMap(response.frequencies[index]), yMap(value)]).reverse();
-    uncertainty = `<polygon class="sorbo-uncertainty-band" points="${[...upper, ...lower].map(point => point.join(',')).join(' ')}"/>`;
-  }
-  const ariaLabel = direct
-    ? `Direct X-to-X, Y-to-Y, and Z-to-Z base-to-component transmissibility from ${fmt(response.frequencies[0], 0)} to ${fmt(response.frequencies.at(-1), 0)} hertz`
-    : `Six degree of freedom response for ${analysis.config.analysis.excitationAxis.toUpperCase()} base excitation from ${fmt(response.frequencies[0], 0)} to ${fmt(response.frequencies.at(-1), 0)} hertz`;
-  return `<svg class="sorbo-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${ariaLabel}">
+  if (useDb && analysis.uncertainty) uncertainty = axes.map((axis, axisIndex) => {
+    const band = analysis.uncertainty.directionalBands[axis];
+    const upper = band.upperDb.map((value, index) => [xMap(response.frequencies[index]), yMap(value)]);
+    const lower = band.lowerDb.map((value, index) => [xMap(response.frequencies[index]), yMap(value)]).reverse();
+    return `<polygon class="sorbo-uncertainty-band band-${axisIndex}" points="${[...upper, ...lower].map(point => point.join(',')).join(' ')}"/>`;
+  }).join('');
+  return `<svg class="sorbo-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Direct X-to-X, Y-to-Y, and Z-to-Z base-to-component transmissibility from ${fmt(response.frequencies[0], 0)} to ${fmt(response.frequencies.at(-1), 0)} hertz">
     <rect class="sorbo-extrapolated-region" x="${supportedX}" y="${margin.top}" width="${width - margin.right - supportedX}" height="${plotHeight}"/>
     ${xTicks.map(value => `<g class="sorbo-grid"><line x1="${xMap(value)}" x2="${xMap(value)}" y1="${margin.top}" y2="${height - margin.bottom}"/><text x="${xMap(value)}" y="${height - margin.bottom + 21}">${value}</text></g>`).join('')}
     ${yTicks.map(value => `<g class="sorbo-grid"><line x1="${margin.left}" x2="${width - margin.right}" y1="${yMap(value)}" y2="${yMap(value)}"/><text x="${margin.left - 10}" y="${yMap(value) + 4}" text-anchor="end">${fmt(value, useDb ? 0 : 2)}</text></g>`).join('')}
-    ${uncertainty}${markers}${paths}
+    ${uncertainty}${modeMarkers}${toneMarkers}${paths}${modePoints}
     <line class="sorbo-support-limit" x1="${supportedX}" x2="${supportedX}" y1="${margin.top}" y2="${height - margin.bottom}"/><text class="sorbo-support-label" x="${supportedX + 6}" y="${height - margin.bottom - 8}">300 Hz manufacturer curve limit</text>
     <text class="sorbo-axis-label" x="${margin.left + plotWidth / 2}" y="${height - 24}" text-anchor="middle">Frequency (Hz, logarithmic)</text><text class="sorbo-axis-label" transform="translate(18 ${margin.top + plotHeight / 2}) rotate(-90)" text-anchor="middle">${useDb ? 'Amplitude transmissibility (dB)' : 'Linear amplitude ratio'}</text>
-    <rect class="sorbo-chart-hit" x="${margin.left}" y="${margin.top}" width="${plotWidth}" height="${plotHeight}" data-sorbo-chart-hit="${view}"/><g class="sorbo-chart-tooltip" data-sorbo-tooltip="${view}" hidden><line data-tip-line/><rect width="214" height="${direct ? 76 : 120}" rx="10"/><text data-tip-text x="10" y="20"/></g>
+    <rect class="sorbo-chart-hit" x="${margin.left}" y="${margin.top}" width="${plotWidth}" height="${plotHeight}" data-sorbo-chart-hit/><g class="sorbo-chart-tooltip" data-sorbo-tooltip hidden><line data-tip-line/><rect width="214" height="76" rx="10"/><text data-tip-text x="10" y="20"/></g>
   </svg>`;
 }
 
@@ -15772,7 +15805,8 @@ function uncertaintySummary(analysis) {
   if (!analysis.uncertainty) return '<p>Uncertainty envelope disabled.</p>';
   const verticalIndex = analysis.modes.findIndex(mode => mode.dominantIndex === 2);
   const range = analysis.uncertainty.modeRangesHz[Math.max(verticalIndex, 0)];
-  return `<p><strong>Vertical-mode 5-95% range:</strong> ${fmt(range[0], 1)}-${fmt(range[1], 1)} Hz</p><div class="sorbo-uncertainty-tones">${analysis.toneResults.map((tone, index) => `<span><b>${fmt(tone.frequencyHz, 0)} Hz · Tzz</b>${fmt(analysis.uncertainty.toneRangesDb[index][0], 1)} to ${fmt(analysis.uncertainty.toneRangesDb[index][1], 1)} dB</span>`).join('')}</div><small>${esc(analysis.uncertainty.method)}</small>`;
+  const toneRanges = analysis.toneResults.flatMap((tone, toneIndex) => analysis.uncertainty.toneRangesDbByAxis[toneIndex].map(result => `<span><b>${fmt(tone.frequencyHz, 0)} Hz · T${result.axis.toLowerCase()}${result.axis.toLowerCase()}</b>${fmt(result.rangeDb[0], 1)} to ${fmt(result.rangeDb[1], 1)} dB</span>`)).join('');
+  return `<p><strong>Vertical-mode 5-95% range:</strong> ${fmt(range[0], 1)}-${fmt(range[1], 1)} Hz</p><div class="sorbo-uncertainty-tones">${toneRanges}</div><small>${esc(analysis.uncertainty.method)}</small>`;
 }
 
 function overviewPanel(config, analysis) {
@@ -15792,10 +15826,21 @@ function modesPanel(config, analysis) {
     <section class="sorbo-card"><p class="eyebrow">Mode participation</p><h2>Normalized eigenvector components</h2><div class="table-wrap"><table><thead><tr><th>Mode</th><th>Frequency</th><th>Dominant</th><th>X</th><th>Y</th><th>Z</th><th>Roll</th><th>Pitch</th><th>Yaw</th></tr></thead><tbody>${analysis.modes.map(mode => `<tr><td>M${mode.number}</td><td>${fmt(mode.frequencyHz, 2)} Hz</td><td>${esc(mode.dominant)}</td>${mode.participation.map(value => `<td>${fmt(value, 1)}%</td>`).join('')}</tr>`).join('')}</tbody></table></div><p class="sorbo-caption">Rotational DOFs are scaled by the component characteristic planform length before participation percentages are calculated.</p></section></div></section>`;
 }
 
+function responsePointControl(config) {
+  const selected = RESPONSE_POINT_CHOICES.find(choice => choice.value === config.analysis.responsePoint) ?? RESPONSE_POINT_CHOICES[0];
+  const [length, width, height] = config.component.dimensionsM;
+  const [cgX, cgY, cgZ] = config.component.cgM;
+  const signs = selected.value === 'corner-negative' ? [-1, -1] : [1, 1];
+  const offsetM = selected.value === 'cg' ? [0, 0, 0] : [signs[0] * length / 2 - cgX, signs[1] * width / 2 - cgY, height - cgZ];
+  const lengthUnit = unitDefinitions.length[config.units];
+  const signed = value => `${value >= 0 ? '+' : '−'}${fmt(Math.abs(lengthUnit.fromSI(value)), 2)}`;
+  const offset = offsetM.map(signed).join(', ');
+  return `<section class="sorbo-response-location" aria-label="Transmissibility response location"><div><span>Measurement location</span><strong>${esc(selected.label)}</strong><small>Offset from CG: (${offset}) ${lengthUnit.unit}</small></div><div class="sorbo-response-options" role="group" aria-label="Choose response location">${RESPONSE_POINT_CHOICES.map(choice => `<button type="button" data-sorbo-response-point="${choice.value}" class="${choice.value === selected.value ? 'active' : ''}" aria-pressed="${choice.value === selected.value}"><b>${esc(choice.shortLabel)}</b><span>${choice.value === 'cg' ? 'Translation at mass center' : 'Includes rigid-body rocking'}</span></button>`).join('')}</div></section>`;
+}
+
 function transmissibilityPanel(analysis) {
-  const selectedAxis = analysis.config.analysis.excitationAxis.toUpperCase();
-  const responsePoint = analysis.config.analysis.responsePoint.replaceAll('-', ' ');
-  return `<section class="sorbo-tab-panel" data-sorbo-panel="transmissibility"><section class="sorbo-card"><header><div><p class="eyebrow">All translational directions</p><h2>Direct-axis transmissibility · Txx, Tyy, Tzz</h2></div><span>X, Y, and Z base inputs · ${responsePoint}</span></header><p class="sorbo-caption">Each curve uses a separate unit base excitation in the named direction and reports component acceleration in that same direction. This is the direct translational comparison used by the tone and resonance criteria.</p>${transmissibilitySvg(analysis, 'direct')}<div class="sorbo-plot-notes"><span><b>Txx</b> X response from X base input</span><span><b>Tyy</b> Y response from Y base input</span><span><b>Tzz</b> Z response from Z base input</span><span><b>Uncertainty band</b> Applies to Tzz</span></div></section><section class="sorbo-card"><header><div><p class="eyebrow">Coupled response detail</p><h2>${selectedAxis}-base six-DOF response</h2></div><span>Selected in Response &amp; requirements · ${responsePoint}</span></header><p class="sorbo-caption">Use the base-excitation selector to inspect cross-axis translation and rocking generated by one input direction.</p>${transmissibilitySvg(analysis, 'coupled')}<div class="sorbo-plot-notes"><span><b>Solid support region</b> Manufacturer table / digitized data through 300 Hz</span><span><b>Shaded region</b> Selected extrapolation policy</span><span><b>Rx·r, Ry·r, Rz·r</b> Rotation multiplied by characteristic radius</span></div></section>${requirementTable(analysis)}</section>`;
+  const selected = RESPONSE_POINT_CHOICES.find(choice => choice.value === analysis.config.analysis.responsePoint) ?? RESPONSE_POINT_CHOICES[0];
+  return `<section class="sorbo-tab-panel" data-sorbo-panel="transmissibility"><section class="sorbo-card"><header><div><p class="eyebrow">All translational directions</p><h2>Direct-axis transmissibility · Txx, Tyy, Tzz</h2></div><span>Response at ${esc(selected.label)}</span></header>${responsePointControl(analysis.config)}<p class="sorbo-caption">Each curve uses a separate unit base excitation in the named direction and reports acceleration at the selected measurement location in that same direction. Off-CG locations include the rigid-body rocking contribution, u<sub>point</sub> = u<sub>CG</sub> + θ × r. This location also governs the tone and resonance checks below. The three colored envelopes are independent Monte Carlo uncertainty bands.</p>${transmissibilitySvg(analysis)}<div class="sorbo-plot-notes"><span><b>Txx</b> X response from X base input</span><span><b>Tyy</b> Y response from Y base input</span><span><b>Tzz</b> Z response from Z base input</span><span><b>Mode dots</b> Exact response at M1–M6</span><span><b>M5 / M6</b> Roll/pitch-dominated modes may be shoulders rather than peaks when translational participation is weak</span></div></section>${requirementTable(analysis)}</section>`;
 }
 
 function sorbothanePanel(config, analysis) {
@@ -16066,6 +16111,7 @@ function responseCsv(analysis) {
 
 function engineeringReport(analysis) {
   const config = analysis.config;
+  const responsePoint = RESPONSE_POINT_CHOICES.find(choice => choice.value === config.analysis.responsePoint) ?? RESPONSE_POINT_CHOICES[0];
   return `# Sorbothane 6-DOF Isolation Engineering Summary
 
 Generated: ${new Date().toISOString()}
@@ -16077,6 +16123,7 @@ Generated: ${new Date().toISOString()}
 - CG: ${config.component.cgM.map(value => fmt(value / INCH, 3)).join(', ')} in from the component footprint-center / plate coordinate origin
 - Isolator: ${config.isolator.productNumber}; ${config.isolator.durometer} Shore 00; OD ${fmt(config.isolator.odM / INCH, 3)} in; ID ${fmt(config.isolator.idM / INCH, 3)} in; t ${fmt(config.isolator.thicknessM / INCH, 3)} in
 - Stack: ${config.mounts.stackTop} upper / ${config.mounts.stackBottom} lower elements per mount; four mounts
+- Transmissibility response location: ${responsePoint.label}
 - Nominal compression: ${fmt(analysis.preload.compressionPct, 2)}%; preload ${fmt(analysis.preload.preloadN / LBF, 3)} lbf per element
 - Shape factor: ${fmt(analysis.geometry.shapeFactor, 4)}; ${analysis.geometry.equation}
 - Above-300-Hz material assumption: ${config.isolator.extrapolation}
@@ -16115,42 +16162,35 @@ ${SORBOTHANE_REFERENCES.map(reference => `- ${reference.title} (${reference.revi
 }
 
 function bindChartTooltip(root, analysis) {
-  root.querySelectorAll('[data-sorbo-chart-hit]').forEach(hit => {
-    const view = hit.dataset.sorboChartHit;
-    const tooltip = hit.closest('svg')?.querySelector(`[data-sorbo-tooltip="${view}"]`);
-    if (!tooltip) return;
-    const line = tooltip.querySelector('[data-tip-line]');
-    const text = tooltip.querySelector('[data-tip-text]');
-    const response = view === 'direct' ? analysis.directionalResponses.x : analysis.response;
-    hit.addEventListener('pointermove', event => {
-      const svg = hit.closest('svg');
-      const rect = svg.getBoundingClientRect();
-      const viewX = (event.clientX - rect.left) / rect.width * 960;
-      const fraction = clamp((viewX - 68) / (960 - 68 - 22), 0, 1);
-      const frequency = 10 ** (Math.log10(response.frequencies[0]) + fraction * (Math.log10(response.frequencies.at(-1)) - Math.log10(response.frequencies[0])));
-      let index = 0;
-      for (let candidate = 1; candidate < response.frequencies.length; candidate += 1) if (Math.abs(Math.log(response.frequencies[candidate] / frequency)) < Math.abs(Math.log(response.frequencies[index] / frequency))) index = candidate;
-      const x = 68 + index / (response.frequencies.length - 1) * (960 - 68 - 22);
-      const boxX = x > 710 ? x - 223 : x + 9;
-      tooltip.hidden = false;
-      tooltip.setAttribute('transform', `translate(${boxX} 42)`);
-      line.setAttribute('x1', x - boxX);
-      line.setAttribute('x2', x - boxX);
-      line.setAttribute('y1', -14);
-      line.setAttribute('y2', 378);
-      if (view === 'direct') {
-        const rows = ['x', 'y', 'z'].map((axis, dof) => {
-          const axisResponse = analysis.directionalResponses[axis];
-          return `<tspan x="10" dy="16">T${axis}${axis}: ${fmt(axisResponse.db[dof][index], 1)} dB · ${fmt(axisResponse.phaseDeg[dof][index], 0)}°</tspan>`;
-        }).join('');
-        text.innerHTML = `<tspan x="10" dy="0">${fmt(response.frequencies[index], 1)} Hz</tspan>${rows}`;
-      } else {
-        const labels = ['Tx', 'Ty', 'Tz', 'Rx', 'Ry', 'Rz'];
-        text.innerHTML = `<tspan x="10" dy="0">${fmt(response.frequencies[index], 1)} Hz · ${response.axis.toUpperCase()} base</tspan>${labels.map((label, dof) => `<tspan x="10" dy="16">${label}: ${fmt(response.db[dof][index], 1)} dB · ${fmt(response.phaseDeg[dof][index], 0)}°</tspan>`).join('')}`;
-      }
-    });
-    hit.addEventListener('pointerleave', () => { tooltip.hidden = true; });
+  const hit = root.querySelector('[data-sorbo-chart-hit]');
+  const tooltip = hit?.closest('svg')?.querySelector('[data-sorbo-tooltip]');
+  if (!hit || !tooltip) return;
+  const line = tooltip.querySelector('[data-tip-line]');
+  const text = tooltip.querySelector('[data-tip-text]');
+  const response = analysis.directionalResponses.x;
+  hit.addEventListener('pointermove', event => {
+    const svg = hit.closest('svg');
+    const rect = svg.getBoundingClientRect();
+    const viewX = (event.clientX - rect.left) / rect.width * 960;
+    const fraction = clamp((viewX - 68) / (960 - 68 - 22), 0, 1);
+    const frequency = 10 ** (Math.log10(response.frequencies[0]) + fraction * (Math.log10(response.frequencies.at(-1)) - Math.log10(response.frequencies[0])));
+    let index = 0;
+    for (let candidate = 1; candidate < response.frequencies.length; candidate += 1) if (Math.abs(Math.log(response.frequencies[candidate] / frequency)) < Math.abs(Math.log(response.frequencies[index] / frequency))) index = candidate;
+    const x = 68 + index / (response.frequencies.length - 1) * (960 - 68 - 22);
+    const boxX = x > 710 ? x - 223 : x + 9;
+    tooltip.hidden = false;
+    tooltip.setAttribute('transform', `translate(${boxX} 42)`);
+    line.setAttribute('x1', x - boxX);
+    line.setAttribute('x2', x - boxX);
+    line.setAttribute('y1', -14);
+    line.setAttribute('y2', 378);
+    const rows = ['x', 'y', 'z'].map((axis, dof) => {
+      const axisResponse = analysis.directionalResponses[axis];
+      return `<tspan x="10" dy="16">T${axis}${axis}: ${fmt(axisResponse.db[dof][index], 1)} dB · ${fmt(axisResponse.phaseDeg[dof][index], 0)}°</tspan>`;
+    }).join('');
+    text.innerHTML = `<tspan x="10" dy="0">${fmt(response.frequencies[index], 1)} Hz</tspan>${rows}`;
   });
+  hit.addEventListener('pointerleave', () => { tooltip.hidden = true; });
 }
 
 function bindSorbothaneIsolationWorkbench(root = document) {
@@ -16318,6 +16358,12 @@ function bindSorbothaneIsolationWorkbench(root = document) {
   };
   const bindPanelControls = () => {
     shell.querySelectorAll('[data-sorbo-tab]').forEach(button => button.addEventListener('click', () => showTab(button.dataset.sorboTab)));
+    shell.querySelectorAll('[data-sorbo-response-point]').forEach(button => button.addEventListener('click', () => {
+      const responsePoint = button.dataset.sorboResponsePoint;
+      if (responsePoint === config.analysis.responsePoint) return;
+      config.analysis.responsePoint = responsePoint;
+      redrawAnalysis();
+    }));
     shell.querySelectorAll('[data-sorbo-mode]').forEach(button => button.addEventListener('click', () => {
       selectedMode = +button.dataset.sorboMode;
       showTab('modes');
