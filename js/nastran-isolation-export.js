@@ -168,7 +168,7 @@ export function generateNastranIsolationBdf(configInput, analysisInput = null) {
     comment(`1 SLINCH = ${lbmPerSlinch.toFixed(9)} LBM; G0 = ${gravityInPerSec2.toFixed(9)} IN/S^2.`),
     comment('MAT1 RHO: SLINCH/IN^3. CONM2 MASS: SLINCH. CONM2 INERTIA: SLINCH-IN^2.'),
     comment('PBUSH K1/K2/K3: LBF/IN IN BASIC X/Y/Z. PBUSH GE: DIMENSIONLESS LOSS FACTOR.'),
-    comment(`SOURCE CONFIGURATION: ${config.isolator.productNumber}; ${isParkerLordConfig(config) ? 'PARKER LORD COMPLETE MOUNT' : 'CAPTURED SORBOTHANE ELEMENT'}.`),
+    comment(`SOURCE CONFIGURATION: ${config.isolator.productNumber}; ${isParkerLordConfig(config) ? 'PARKER LORD COMPLETE MOUNT' : `CAPTURED ${config.isolator.formulation === 'water-resistant' ? 'WATER-RESISTANT' : 'STANDARD'} SORBOTHANE ELEMENT`}.`),
     comment(`BROWSER RIGID-BODY MODES (HZ): ${modal.modes.map(mode => mode.frequencyHz.toFixed(4)).join(', ')}.`),
     comment(`PBUSH STIFFNESS REFERENCE FREQUENCY: ${referenceFrequencyHz.toFixed(6)} HZ (${settings.stiffnessReferenceMode}).`),
     comment(`PLATE MATERIAL: ${settings.plateMaterial.toUpperCase()}; E = ${settings.plateYoungsModulusPsi.toExponential(7)} PSI; NU = ${settings.platePoisson}; RHO = ${settings.plateDensitySlinchPerIn3.toExponential(7)} SLINCH/IN^3.`),

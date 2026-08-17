@@ -1,4 +1,4 @@
-import { SORBOTHANE_CATALOG, SORBOTHANE_DATA_VERSION, SORBOTHANE_MATERIAL, SORBOTHANE_REFERENCES, sorbothaneCatalogItem } from './sorbothane-data.js';
+import { SORBOTHANE_CATALOG, SORBOTHANE_DATA_VERSION, SORBOTHANE_REFERENCES, sorbothaneCatalogItem, sorbothaneMaterial } from './sorbothane-data.js';
 import { PARKER_LORD_AM_CATALOG, PARKER_LORD_AM_FAMILIES, PARKER_LORD_SOURCE, parkerLordCatalogItem } from './parker-lord-isolators.js';
 import {
   DEFAULT_SORBOTHANE_CONFIG,
@@ -24,6 +24,15 @@ const fmt = (value, digits = 2) => {
   return digits === 0 ? fixed : fixed.replace(/\.?0+$/, '');
 };
 const fmtSignedDb = (value, digits = 1) => `${Number(value) >= 0 ? '+' : ''}${fmt(value, digits)} dB`;
+const materialScalarAtDurometer = (table, durometer) => {
+  const keys = Object.keys(table).map(Number).sort((a, b) => a - b);
+  if (durometer <= keys[0]) return table[keys[0]];
+  if (durometer >= keys.at(-1)) return table[keys.at(-1)];
+  const upperIndex = keys.findIndex(value => value >= durometer);
+  const lower = keys[upperIndex - 1];
+  const upper = keys[upperIndex];
+  return table[lower] + (durometer - lower) / (upper - lower) * (table[upper] - table[lower]);
+};
 const deepClone = value => JSON.parse(JSON.stringify(value));
 const pathGet = (object, path) => path.split('.').reduce((value, key) => value?.[/^\d+$/.test(key) ? +key : key], object);
 const pathSet = (object, path, value) => {
@@ -116,6 +125,7 @@ function inputSidebar(config) {
     `<label class="sorbo-field sorbo-product-field"><span>AM catalog mount<small>${PARKER_LORD_AM_CATALOG.length} records</small></span><input type="search" data-sorbo-product-search placeholder="Filter part, family, or elastomer…"/><select data-sorbo-field="isolator.productNumber" data-sorbo-product>${lordProductOptions(config.isolator.productNumber)}</select></label>`,
     `<p class="sorbo-caption">Complete bonded mounts with catalog axial/radial dynamic rates. Other Parker LORD families require their own model adapter.</p>`
   ].join('') : [
+    select(config, 'isolator.formulation', 'Material formulation', [['standard', 'Standard Sorbothane'], ['water-resistant', 'Water-resistant Sorbothane']], { help: 'Selects a separate manufacturer static-stress, dynamic-modulus, damping, density, and bulk-modulus dataset.' }),
     `<label class="sorbo-field sorbo-product-field"><span>Catalog product<small>${SORBOTHANE_CATALOG.length - 1} records</small></span><input type="search" data-sorbo-product-search placeholder="Filter product number or geometry…"/><select data-sorbo-field="isolator.productNumber" data-sorbo-product>${productOptions(config.isolator.productNumber)}</select></label>`,
     select(config, 'isolator.geometry', 'Geometry', [['washer', 'Catalog washer'], ['ring', 'Annular isolation ring'], ['disc', 'Solid disc']]),
     input(config, 'isolator.odM', 'Outer diameter', { quantity: 'length', min: 0.01, step: 0.01 }),
@@ -330,7 +340,7 @@ function transmissibilitySvg(analysis) {
   const colors = ['#58b9ff', '#f6b94a', '#64d7a1'];
   const names = ['Txx', 'Tyy', 'Tzz'];
   const paths = displaySeries.map((values, index) => `<path class="sorbo-trace trace-${index}" d="${chartPath(response.frequencies, values, xMap, yMap)}" style="--trace:${colors[index]}"/><g class="sorbo-legend-item" transform="translate(${margin.left + index * 128},${height - 14})"><line x2="20"/><text x="27" y="4">${names[index]}</text></g>`).join('');
-  const supportedX = xMap(SORBOTHANE_MATERIAL.digitizedCurveMaxHz);
+  const supportedX = xMap(analysis.material?.digitizedCurveMaxHz ?? 300);
   const modeMarkers = analysis.modes.filter(mode => mode.frequencyHz >= response.frequencies[0] && mode.frequencyHz <= response.frequencies.at(-1)).map((mode, index) => `<g class="sorbo-frequency-marker sorbo-mode-marker${mode.number >= 5 ? ' is-rotation' : ''}"><line x1="${xMap(mode.frequencyHz)}" x2="${xMap(mode.frequencyHz)}" y1="${margin.top}" y2="${height - margin.bottom}"/><text x="${xMap(mode.frequencyHz) + 3}" y="${margin.top + 12 + (index % 3) * 12}">M${mode.number}</text></g>`).join('');
   const toneMarkers = analysis.config.analysis.tones.filter(tone => tone.frequencyHz >= response.frequencies[0] && tone.frequencyHz <= response.frequencies.at(-1)).map((tone, index) => `<g class="sorbo-frequency-marker sorbo-tone-marker"><line x1="${xMap(tone.frequencyHz)}" x2="${xMap(tone.frequencyHz)}" y1="${margin.top}" y2="${height - margin.bottom}"/><text x="${xMap(tone.frequencyHz) + 3}" y="${margin.top + 12 + (index % 3) * 12}">${fmt(tone.frequencyHz, 0)}</text></g>`).join('');
   const modePoints = analysis.modes.flatMap(mode => axes.map((axis, axisIndex) => {
@@ -357,20 +367,22 @@ function transmissibilitySvg(analysis) {
 }
 
 function materialSvg(config) {
-  const frequencies = [5, 10, 15, 30, 50, 75, 100, 150, 200, 300, 600, 1200, 1400, 2000];
+  const material = sorbothaneMaterial(config.isolator.formulation);
+  const frequencies = [...new Set([...material.frequencyHz, 600, 1200, 1400, 2000])].sort((a, b) => a - b);
   const properties = frequencies.map(frequency => sorbothaneDynamicProperties(config, frequency));
   const width = 800;
   const height = 330;
   const margin = { left: 62, right: 60, top: 24, bottom: 48 };
-  const xMap = value => margin.left + (Math.log10(value) - Math.log10(5)) / (Math.log10(2000) - Math.log10(5)) * (width - margin.left - margin.right);
+  const minimumFrequency = material.frequencyHz[0];
+  const xMap = value => margin.left + (Math.log10(value) - Math.log10(minimumFrequency)) / (Math.log10(2000) - Math.log10(minimumFrequency)) * (width - margin.left - margin.right);
   const maxModulus = Math.max(...properties.map(property => property.storageModulusPsi)) * 1.08;
   const yModulus = value => height - margin.bottom - value / maxModulus * (height - margin.top - margin.bottom);
   const yTan = value => height - margin.bottom - value / 1.0 * (height - margin.top - margin.bottom);
-  const measured = properties.map((property, index) => property.frequencyHz <= 300 ? index : -1).filter(index => index >= 0);
+  const measured = properties.map((property, index) => property.frequencyHz <= material.digitizedCurveMaxHz ? index : -1).filter(index => index >= 0);
   const extrapolated = properties.map((_, index) => index).filter(index => index >= measured.at(-1));
   return `<svg class="sorbo-chart sorbo-material-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Storage modulus and loss factor versus frequency with extrapolated region">
-    <rect class="sorbo-extrapolated-region" x="${xMap(300)}" y="${margin.top}" width="${width - margin.right - xMap(300)}" height="${height - margin.top - margin.bottom}"/>
-    ${[5, 10, 30, 100, 300, 600, 1200, 2000].map(value => `<g class="sorbo-grid"><line x1="${xMap(value)}" x2="${xMap(value)}" y1="${margin.top}" y2="${height - margin.bottom}"/><text x="${xMap(value)}" y="${height - 24}">${value}</text></g>`).join('')}
+    <rect class="sorbo-extrapolated-region" x="${xMap(material.digitizedCurveMaxHz)}" y="${margin.top}" width="${width - margin.right - xMap(material.digitizedCurveMaxHz)}" height="${height - margin.top - margin.bottom}"/>
+    ${[1, 5, 10, 30, 100, 300, 600, 1200, 2000].filter(value => value >= minimumFrequency).map(value => `<g class="sorbo-grid"><line x1="${xMap(value)}" x2="${xMap(value)}" y1="${margin.top}" y2="${height - margin.bottom}"/><text x="${xMap(value)}" y="${height - 24}">${value}</text></g>`).join('')}
     <path class="sorbo-property-trace modulus" d="${chartPath(measured.map(index => frequencies[index]), measured.map(index => properties[index].storageModulusPsi), xMap, yModulus)}"/>
     <path class="sorbo-property-trace modulus extrapolated" d="${chartPath(extrapolated.map(index => frequencies[index]), extrapolated.map(index => properties[index].storageModulusPsi), xMap, yModulus)}"/>
     <path class="sorbo-property-trace tan" d="${chartPath(measured.map(index => frequencies[index]), measured.map(index => properties[index].tanDelta), xMap, yTan)}"/>
@@ -400,7 +412,7 @@ function overviewPanel(config, analysis) {
     : analysis.preload.mounts.flatMap(mount => [mount.upperLoadN, mount.lowerLoadN]).map(value => value / LBF);
   const decisionDetails = lord
     ? `<div><dt>Mount model</dt><dd>Parker LORD ${esc(catalog.family)}</dd></div><div><dt>Arrangement</dt><dd>${config.isolator.mountsPerPoint === 2 ? 'Back-to-back pair' : 'Single mount'} / support point</dd></div><div><dt>Published rates</dt><dd>${fmt(catalog.dynamicAxialSpringRateLbPerIn, 0)} axial / ${fmt(catalog.dynamicRadialSpringRateLbPerIn, 0)} radial lb/in</dd></div><div><dt>Installed resultant load</dt><dd>${[Math.min(...loadRange), Math.max(...loadRange)].map(value => fmt(value, 2)).join('–')} lbf / support point</dd></div><div><dt>Rated capacity</dt><dd>${fmt(catalog.ratedLoadLb * config.isolator.mountsPerPoint, 1)} lbf / support point</dd></div><div><dt>Catalog load check</dt><dd>${analysis.preload.catalogCompliant ? 'Within rating' : 'Outside rating'}</dd></div>`
-    : `<div><dt>Shape factor</dt><dd>${fmt(analysis.geometry.shapeFactor, 3)}</dd></div><div><dt>Nominal precompression force</dt><dd>${fmt(analysis.preload.preloadN / LBF, 2)} lbf / element</dd></div><div><dt>Installed element loads</dt><dd>${[Math.min(...loadRange), Math.max(...loadRange)].map(value => fmt(value, 2)).join('–')} lbf</dd></div><div><dt>Opposing elements</dt><dd>${analysis.preload.allEngaged ? 'Engaged' : 'UNLOADED'}</dd></div><div><dt>Catalog load rating</dt><dd>${analysis.preload.catalogCompliant ? 'Within / not applicable' : 'Outside rating'}</dd></div><div><dt>Compression recommendation</dt><dd>${analysis.preload.compressionCompliant ? 'Within 10–20%' : 'Outside 10–20%'}</dd></div>`;
+    : `<div><dt>Material formulation</dt><dd>${esc(analysis.material.label)}</dd></div><div><dt>Shape factor</dt><dd>${fmt(analysis.geometry.shapeFactor, 3)}</dd></div><div><dt>Nominal precompression force</dt><dd>${fmt(analysis.preload.preloadN / LBF, 2)} lbf / element</dd></div><div><dt>Installed element loads</dt><dd>${[Math.min(...loadRange), Math.max(...loadRange)].map(value => fmt(value, 2)).join('–')} lbf</dd></div><div><dt>Opposing elements</dt><dd>${analysis.preload.allEngaged ? 'Engaged' : 'UNLOADED'}</dd></div><div><dt>Catalog load rating</dt><dd>${analysis.preload.catalogCompliant ? 'Within / not applicable' : 'Outside rating'}</dd></div><div><dt>Compression recommendation</dt><dd>${analysis.preload.compressionCompliant ? 'Within 10–20%' : 'Outside 10–20%'}</dd></div>`;
   return `<section class="sorbo-tab-panel is-active" data-sorbo-panel="overview">
     <div class="sorbo-overview-grid"><section class="sorbo-card sorbo-geometry-card"><header><div><p class="eyebrow">Hardware geometry</p><h2>Component on four ${lord ? 'complete mounts' : 'captured mounts'}</h2></div><span>Drag to rotate</span></header><div data-sorbo-overview-scene>${sceneSvg(config, analysis)}</div><p class="sorbo-caption">Coordinate origin: component footprint center on the isolated plate. +Z is upward. CG and mount offsets are rendered from the same coordinates.</p></section>
     <section class="sorbo-card sorbo-decision-card"><p class="eyebrow">Current decision</p><h2 class="${analysis.passes ? 'pass-text' : 'fail-text'}">${analysis.passes ? 'All defined criteria pass' : 'Design review required'}</h2><dl><div><dt>Isolator</dt><dd>${esc(catalog.productNumber)}</dd></div>${decisionDetails}</dl></section></div>
@@ -450,8 +462,12 @@ function parkerLordPanel(config, analysis) {
 function sorbothanePanel(config, analysis) {
   if (isParkerLordConfig(config)) return parkerLordPanel(config, analysis);
   const catalog = sorbothaneCatalogItem(config.isolator.productNumber);
+  const material = sorbothaneMaterial(config.isolator.formulation);
   const rating = catalog.ratedLoadLb ? `${catalog.ratedLoadLb.map(value => fmt(value, 2)).join('-')} lbf` : 'No catalog rating - custom geometry';
-  return `<section class="sorbo-tab-panel" data-sorbo-panel="sorbothane"><div class="sorbo-lower-grid"><section class="sorbo-card"><p class="eyebrow">Selected element</p><h2>${esc(catalog.productNumber)}</h2><dl class="sorbo-detail-list"><div><dt>Geometry</dt><dd>${esc(config.isolator.geometry)}</dd></div><div><dt>OD / ID / t</dt><dd>${fmt(config.isolator.odM / INCH, 3)} / ${fmt(config.isolator.idM / INCH, 3)} / ${fmt(config.isolator.thicknessM / INCH, 3)} in</dd></div><div><dt>Durometer</dt><dd>${config.isolator.durometer} Shore 00</dd></div><div><dt>Rated load</dt><dd>${rating}</dd></div><div><dt>Free / compressed stack</dt><dd>${fmt(analysis.preload.freeThicknessM / INCH, 3)} / ${fmt(analysis.preload.compressedThicknessM / INCH, 3)} in</dd></div><div><dt>Compression</dt><dd>${fmt(analysis.preload.compressionPct, 2)}%</dd></div><div><dt>Loaded area</dt><dd>${fmt(analysis.geometry.loadedAreaIn2, 3)} in²</dd></div><div><dt>Effective area</dt><dd>${fmt(analysis.geometry.effectiveAreaM2 / INCH ** 2, 3)} in²</dd></div><div><dt>Free-to-bulge area</dt><dd>${fmt(analysis.geometry.freeBulgeAreaM2 / INCH ** 2, 3)} in²</dd></div><div><dt>Shape factor</dt><dd>${fmt(analysis.geometry.shapeFactor, 3)}</dd></div><div><dt>Equation</dt><dd>${esc(analysis.geometry.equation)}</dd></div><div><dt>Shape correction</dt><dd>1 + 2SF² = ${fmt(analysis.geometry.shapeCorrection, 3)}</dd></div></dl><p class="sorbo-caption">${esc(catalog.notes || 'Manufacturer standard product. Availability remains subject to change.')}</p></section><section class="sorbo-card"><p class="eyebrow">Dynamic material data</p><h2>E′, E″, and tan δ</h2>${materialSvg(config)}<p class="sorbo-caption">E″ = E′ tan δ. Exact manufacturer table points: 5-50 Hz. Digitized manufacturer guide curves: 75-300 Hz. Shading begins where engineering extrapolation is required.</p></section></div>
+  const dynamicCaption = material.formulation === 'standard'
+    ? 'E″ = E′ tan δ. Manufacturer table points: 5–50 Hz. Digitized guide curves: 75–300 Hz.'
+    : 'E″ = E′ tan δ. Water-resistant dynamic modulus and tan δ curves are digitized from the manufacturer guide from 1–300 Hz.';
+  return `<section class="sorbo-tab-panel" data-sorbo-panel="sorbothane"><div class="sorbo-lower-grid"><section class="sorbo-card"><p class="eyebrow">Selected element</p><h2>${esc(catalog.productNumber)}</h2><dl class="sorbo-detail-list"><div><dt>Formulation</dt><dd>${esc(material.label)}</dd></div><div><dt>Geometry</dt><dd>${esc(config.isolator.geometry)}</dd></div><div><dt>OD / ID / t</dt><dd>${fmt(config.isolator.odM / INCH, 3)} / ${fmt(config.isolator.idM / INCH, 3)} / ${fmt(config.isolator.thicknessM / INCH, 3)} in</dd></div><div><dt>Durometer</dt><dd>${config.isolator.durometer} Shore 00</dd></div><div><dt>Rated load</dt><dd>${rating}</dd></div><div><dt>Free / compressed stack</dt><dd>${fmt(analysis.preload.freeThicknessM / INCH, 3)} / ${fmt(analysis.preload.compressedThicknessM / INCH, 3)} in</dd></div><div><dt>Compression</dt><dd>${fmt(analysis.preload.compressionPct, 2)}%</dd></div><div><dt>Loaded area</dt><dd>${fmt(analysis.geometry.loadedAreaIn2, 3)} in²</dd></div><div><dt>Effective area</dt><dd>${fmt(analysis.geometry.effectiveAreaM2 / INCH ** 2, 3)} in²</dd></div><div><dt>Free-to-bulge area</dt><dd>${fmt(analysis.geometry.freeBulgeAreaM2 / INCH ** 2, 3)} in²</dd></div><div><dt>Shape factor</dt><dd>${fmt(analysis.geometry.shapeFactor, 3)}</dd></div><div><dt>Equation</dt><dd>${esc(analysis.geometry.equation)}</dd></div><div><dt>Shape correction</dt><dd>1 + 2SF² = ${fmt(analysis.geometry.shapeCorrection, 3)}</dd></div><div><dt>Bulk modulus</dt><dd>${fmt(materialScalarAtDurometer(material.bulkModulusGPa, config.isolator.durometer), 3)} GPa</dd></div><div><dt>Density</dt><dd>${fmt(materialScalarAtDurometer(material.densityLbFt3, config.isolator.durometer), 2)} lb/ft³</dd></div></dl><p class="sorbo-caption">${esc(catalog.notes || 'Manufacturer standard product. Availability remains subject to change.')}</p></section><section class="sorbo-card"><p class="eyebrow">${esc(material.label)} · ${fmt(analysis.preload.compressionPct, 1)}% starting compression</p><h2>E′, E″, and tan δ</h2>${materialSvg(config)}<p class="sorbo-caption">${esc(dynamicCaption)} Shading begins where engineering extrapolation is required.</p></section></div>
     ${currentDesignDrawings(config, analysis)}
     <section class="sorbo-card"><header><div><p class="eyebrow">Static captured stack</p><h2>Upper / lower engagement and catalog checks</h2></div><span>${fmt(analysis.preload.compressionPct, 1)}% nominal compression</span></header><div class="table-wrap"><table><thead><tr><th>Mount</th><th>X</th><th>Y</th><th>Payload contribution</th><th>Upper load</th><th>Lower load</th><th>Status</th></tr></thead><tbody>${analysis.preload.mounts.map(mount => `<tr><td>${mount.index}</td><td>${fmt(mount.positionM[0] / INCH, 2)} in</td><td>${fmt(mount.positionM[1] / INCH, 2)} in</td><td>${fmt(mount.payloadN / LBF, 2)} lbf</td><td>${fmt(mount.upperLoadN / LBF, 2)} lbf</td><td>${fmt(mount.lowerLoadN / LBF, 2)} lbf</td><td>${mount.flags.length ? `<span class="sorbo-status fail">${esc(mount.flags.join('; '))}</span>` : '<span class="sorbo-status pass">ENGAGED</span>'}</td></tr>`).join('')}</tbody></table></div><p class="sorbo-caption">${esc(analysis.preload.preloadProvenance)}. Gravity and the specified quasi-static accelerations redistribute load; lower and upper forces differ by the mount payload contribution.</p></section>
   </section>`;
@@ -659,7 +675,10 @@ function catalogScreenControls(config, settingsInput = {}) {
   const filters = settings.library === 'parker-lord-am'
     ? `<label><span>AM family</span><select data-catalog-screen="lordFamily"><option value="all"${settings.lordFamily === 'all' ? ' selected' : ''}>All AM families</option>${PARKER_LORD_AM_FAMILIES.map(family => `<option value="${family.family}"${settings.lordFamily === family.family ? ' selected' : ''}>${family.family} · ${fmt(family.ratedLoadLb, 1)} lbf</option>`).join('')}</select></label><label><span>Elastomer</span><select data-catalog-screen="lordElastomer"><option value="all"${settings.lordElastomer === 'all' ? ' selected' : ''}>All elastomers</option>${['BTR', 'BTR II', 'MEA'].map(value => `<option value="${value}"${settings.lordElastomer === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label>${range('Rated load / mount (lbf)', 'lordRatedLoad', 0.5)}${range('Mounts / support point', 'lordMounts', 1)}`
     : `<label><span>Catalog geometry</span><select data-catalog-screen="geometry"><option value="all"${settings.geometry === 'all' ? ' selected' : ''}>All standard products</option><option value="washer"${settings.geometry === 'washer' ? ' selected' : ''}>Washers</option><option value="ring"${settings.geometry === 'ring' ? ' selected' : ''}>Isolation rings</option><option value="disc"${settings.geometry === 'disc' ? ' selected' : ''}>Discs</option></select></label>${range('OD min / max (in)', 'od', 0.025)}${range('ID min / max (in)', 'id', 0.025)}${range('Thickness min / max (in)', 'thickness', 0.025)}${range('Elements / side min / max', 'stack', 1)}`;
-  return `<div class="sorbo-catalog-controls">${library}${filters}<button type="button" class="button" data-sorbo-action="screen-catalog">Screen full catalog</button></div>`;
+  const formulationNote = settings.library === 'sorbothane' && config.isolator.formulation === 'water-resistant'
+    ? '<p class="sorbo-caption">The screen applies water-resistant material curves to Standard Products Guide geometry. Confirm water-resistant availability, rated load, and the orderable part number with Sorbothane.</p>'
+    : '';
+  return `<div class="sorbo-catalog-controls">${library}${filters}<button type="button" class="button" data-sorbo-action="screen-catalog">Screen full catalog</button>${formulationNote}</div>`;
 }
 
 function catalogToneCriteriaRows(settings) {
@@ -733,7 +752,8 @@ function catalogCandidateTable(candidates, criteria, includeStatus = false, sele
 
 function catalogScreenResult(screen, selection = null) {
   if (screen.library === 'parker-lord-am') return parkerLordScreenResult(screen, selection);
-  const summary = `<div class="sorbo-catalog-summary"><span><b>${screen.catalogPartCount}</b> catalog parts</span><span><b>${screen.eligiblePartCount}</b> within geometry</span><span><b>${screen.combinationCount}</b> part/stack combinations</span><span><b>${screen.passingPartCount}</b> passing part numbers</span></div>`;
+  const formulation = sorbothaneMaterial(screen.formulation);
+  const summary = `<div class="sorbo-catalog-summary"><span><b>${screen.catalogPartCount}</b> catalog parts</span><span><b>${screen.eligiblePartCount}</b> within geometry</span><span><b>${screen.combinationCount}</b> part/stack combinations</span><span><b>${screen.passingPartCount}</b> passing part numbers</span><span><b>${esc(formulation.label)}</b> material model</span></div>`;
   const exclusion = `<p class="sorbo-caption">Pre-screen exclusions by combination: ${screen.exclusions.compression} compression, ${screen.exclusions.engagement} unloading, ${screen.exclusions.ratedLoad} rated load, ${screen.exclusions.xTranslation} X-mode minimum, ${screen.exclusions.yTranslation} Y-mode minimum, ${screen.exclusions.verticalMode} vertical-mode placement. Counts can overlap. ${screen.dynamicallyEvaluatedCount} combinations reached the all-direction tone and resonance evaluation.</p>`;
   if (!screen.recommendations.length) {
     const near = screen.nearMisses.length ? `<h3>Closest dynamically evaluated combinations</h3>${catalogCandidateTable(screen.nearMisses, screen.criteria, true, selection)}` : '';
@@ -750,7 +770,7 @@ function currentDesignPanel(config, settings) {
   const item = lord ? parkerLordCatalogItem(config.isolator.productNumber) : sorbothaneCatalogItem(config.isolator.productNumber);
   const arrangement = lord
     ? `${item.family} · ${item.elastomer} · ${config.isolator.mountsPerPoint === 2 ? 'back-to-back pair' : 'single mount'} / support point`
-    : `${config.isolator.durometer} Shore 00 · ${fmt(config.isolator.odM / INCH, 3)} OD × ${fmt(config.isolator.idM / INCH, 3)} ID × ${fmt(config.isolator.thicknessM / INCH, 3)} in thick · ${config.mounts.stackTop === config.mounts.stackBottom ? `${config.mounts.stackTop} / side` : `${config.mounts.stackTop} upper · ${config.mounts.stackBottom} lower`}`;
+    : `${sorbothaneMaterial(config.isolator.formulation).label} · ${config.isolator.durometer} Shore 00 · ${fmt(config.isolator.odM / INCH, 3)} OD × ${fmt(config.isolator.idM / INCH, 3)} ID × ${fmt(config.isolator.thicknessM / INCH, 3)} in thick · ${config.mounts.stackTop === config.mounts.stackBottom ? `${config.mounts.stackTop} / side` : `${config.mounts.stackTop} upper · ${config.mounts.stackBottom} lower`}`;
   const choices = explorerVariableChoices(config);
   const xLabel = choices.find(([value]) => value === settings.xVariable)?.[1] ?? settings.xVariable;
   const yLabel = choices.find(([value]) => value === settings.yVariable)?.[1] ?? settings.yVariable;
@@ -775,7 +795,7 @@ function isolatorElementDrawing(config) {
   const geometry = item.geometry[0].toUpperCase() + item.geometry.slice(1);
   const planBore = innerRadius > 1 ? `<circle class="sorbo-drawing-bore" cx="140" cy="130" r="${fmt(innerRadius, 2)}"/><line class="sorbo-drawing-dimension" x1="${fmt(140 - innerRadius, 2)}" y1="130" x2="${fmt(140 + innerRadius, 2)}" y2="130"/><line class="sorbo-drawing-tick" x1="${fmt(140 - innerRadius, 2)}" y1="124" x2="${fmt(140 - innerRadius, 2)}" y2="136"/><line class="sorbo-drawing-tick" x1="${fmt(140 + innerRadius, 2)}" y1="124" x2="${fmt(140 + innerRadius, 2)}" y2="136"/><text class="sorbo-drawing-dim-label" x="140" y="116">ID ${fmt(idIn, 3)} in</text>` : '<circle class="sorbo-drawing-center" cx="140" cy="130" r="2.5"/>';
   const section = elementSectionSvg(338, 111, 148, 38, boreRatio);
-  return `<figure class="sorbo-design-drawing"><header><div><p class="eyebrow">Selected part geometry</p><h3>${esc(item.productNumber)} · ${esc(geometry)}</h3></div><span>${config.isolator.durometer} Shore 00</span></header><svg viewBox="0 0 560 270" role="img" aria-label="Dimensioned 2D drawing of current Sorbothane element">
+  return `<figure class="sorbo-design-drawing"><header><div><p class="eyebrow">Selected part geometry</p><h3>${esc(item.productNumber)} · ${esc(geometry)}</h3></div><span>${esc(sorbothaneMaterial(config.isolator.formulation).label)} · ${config.isolator.durometer} Shore 00</span></header><svg viewBox="0 0 560 270" role="img" aria-label="Dimensioned 2D drawing of current Sorbothane element">
     <text class="sorbo-drawing-view-label" x="140" y="28">PLAN</text><text class="sorbo-drawing-view-label" x="412" y="28">SECTION</text>
     <line class="sorbo-drawing-centerline" x1="48" y1="130" x2="232" y2="130"/><line class="sorbo-drawing-centerline" x1="140" y1="38" x2="140" y2="222"/>
     <circle class="sorbo-drawing-element" cx="140" cy="130" r="66"/>${planBore}
@@ -986,7 +1006,7 @@ export function engineeringReport(analysis) {
   const hardware = lord ? parkerLordCatalogItem(config.isolator.productNumber) : sorbothaneCatalogItem(config.isolator.productNumber);
   const hardwareSummary = lord
     ? `- Isolator: Parker LORD ${hardware.productNumber}; ${hardware.family}; ${hardware.elastomer}\n- Catalog rates: ${hardware.dynamicAxialSpringRateLbPerIn} lb/in axial; ${hardware.dynamicRadialSpringRateLbPerIn} lb/in radial; rated load ${hardware.ratedLoadLb} lbf / mount\n- Arrangement: ${config.isolator.mountsPerPoint === 2 ? 'back-to-back pair' : 'single mount'} at each of four support points\n- Screening loss factor: ${fmt(config.isolator.lordLossFactor * config.isolator.lossScale, 3)} (${hardware.lossFactorProvenance})`
-    : `- Isolator: ${config.isolator.productNumber}; ${config.isolator.durometer} Shore 00; OD ${fmt(config.isolator.odM / INCH, 3)} in; ID ${fmt(config.isolator.idM / INCH, 3)} in; t ${fmt(config.isolator.thicknessM / INCH, 3)} in\n- Stack: ${config.mounts.stackTop} upper / ${config.mounts.stackBottom} lower elements per mount; four mounts\n- Nominal compression: ${fmt(analysis.preload.compressionPct, 2)}%; preload ${fmt(analysis.preload.preloadN / LBF, 3)} lbf per element\n- Shape factor: ${fmt(analysis.geometry.shapeFactor, 4)}; ${analysis.geometry.equation}\n- Above-300-Hz material assumption: ${config.isolator.extrapolation}`;
+    : `- Isolator: ${config.isolator.productNumber}; ${config.isolator.durometer} Shore 00; OD ${fmt(config.isolator.odM / INCH, 3)} in; ID ${fmt(config.isolator.idM / INCH, 3)} in; t ${fmt(config.isolator.thicknessM / INCH, 3)} in\n- Material formulation: ${sorbothaneMaterial(config.isolator.formulation).label}\n- Stack: ${config.mounts.stackTop} upper / ${config.mounts.stackBottom} lower elements per mount; four mounts\n- Nominal compression: ${fmt(analysis.preload.compressionPct, 2)}%; preload ${fmt(analysis.preload.preloadN / LBF, 3)} lbf per element\n- Shape factor: ${fmt(analysis.geometry.shapeFactor, 4)}; ${analysis.geometry.equation}\n- Above-300-Hz material assumption: ${config.isolator.extrapolation}`;
   const reportSources = lord
     ? `- ${PARKER_LORD_SOURCE.title} (${PARKER_LORD_SOURCE.document}): ${PARKER_LORD_SOURCE.url}`
     : SORBOTHANE_REFERENCES.map(reference => `- ${reference.title} (${reference.revision}): ${reference.url}`).join('\n');
@@ -1649,13 +1669,14 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
 }
 
 export const sorbothaneIsolationCalculator = {
-  basis: 'Frequency-dependent complex Sorbothane stiffness assembled into a six-DOF rigid-body model',
+  basis: 'Formulation- and precompression-dependent complex Sorbothane stiffness assembled into a six-DOF rigid-body model',
   confidence: 'Source-traceable screening model requiring hardware test correlation',
   inputs: [
     { key: 'mass_lb', label: 'Component mass', unit: 'lbm', type: 'number', default: 10, min: 0.1 },
     { key: 'od_in', label: 'Ring OD', unit: 'in', type: 'number', default: 1.25, min: 0.1 },
     { key: 'id_in', label: 'Ring ID', unit: 'in', type: 'number', default: 0.50, min: 0 },
     { key: 'thickness_in', label: 'Element thickness', unit: 'in', type: 'number', default: 0.25, min: 0.01 },
+    { key: 'formulation', label: 'Material formulation', type: 'select', default: 'standard', options: [['standard', 'Standard Sorbothane'], ['water-resistant', 'Water-resistant Sorbothane']] },
     { key: 'durometer', label: 'Shore 00 durometer', type: 'select', default: 50, options: [[30, '30'], [50, '50'], [70, '70']] },
     { key: 'compression_pct', label: 'Nominal compression', unit: '%', type: 'number', default: 15, min: 1, max: 30 }
   ],
@@ -1665,6 +1686,7 @@ export const sorbothaneIsolationCalculator = {
     config.isolator.odM = Number(values.od_in) * INCH;
     config.isolator.idM = Number(values.id_in) * INCH;
     config.isolator.thicknessM = Number(values.thickness_in) * INCH;
+    config.isolator.formulation = values.formulation === 'water-resistant' ? 'water-resistant' : 'standard';
     config.isolator.durometer = Number(values.durometer);
     config.isolator.compressionPct = Number(values.compression_pct);
     config.uncertainty.enabled = false;

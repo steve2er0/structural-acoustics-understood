@@ -1,4 +1,4 @@
-import { SORBOTHANE_CATALOG, SORBOTHANE_MATERIAL, sorbothaneCatalogItem } from './sorbothane-data.js';
+import { SORBOTHANE_CATALOG, sorbothaneCatalogItem, sorbothaneMaterial } from './sorbothane-data.js';
 import { PARKER_LORD_AM_CATALOG, parkerLordCatalogItem } from './parker-lord-isolators.js';
 
 const INCH = 0.0254;
@@ -42,6 +42,7 @@ export const DEFAULT_SORBOTHANE_CONFIG = {
   },
   isolator: {
     kind: 'sorbothane-element',
+    formulation: 'standard',
     productNumber: 'custom-ring',
     geometry: 'ring',
     odM: 1.25 * INCH,
@@ -126,6 +127,7 @@ export function normalizeSorbothaneConfig(input = {}) {
   config.mounts.stackTop = Math.max(1, Math.round(finite(config.mounts.stackTop, 1)));
   config.mounts.stackBottom = Math.max(1, Math.round(finite(config.mounts.stackBottom, 1)));
   if (!['sorbothane-element', 'parker-lord-am'].includes(config.isolator.kind)) config.isolator.kind = 'sorbothane-element';
+  if (!['standard', 'water-resistant'].includes(config.isolator.formulation)) config.isolator.formulation = 'standard';
   config.isolator.odM = Math.max(finite(config.isolator.odM, DEFAULT_SORBOTHANE_CONFIG.isolator.odM), 1e-5);
   config.isolator.idM = clamp(finite(config.isolator.idM, DEFAULT_SORBOTHANE_CONFIG.isolator.idM), 0, config.isolator.odM * 0.99);
   config.isolator.thicknessM = Math.max(finite(config.isolator.thicknessM, DEFAULT_SORBOTHANE_CONFIG.isolator.thicknessM), 1e-5);
@@ -209,11 +211,11 @@ function materialCurveAtDurometer(table, durometer, compression) {
   });
 }
 
-function tanCurveAtDurometer(durometer) {
+function tanCurveAtDurometer(material, durometer) {
   const durometers = [30, 50, 70];
   const [left, right, mix] = bracket(durometers, durometer);
-  const low = SORBOTHANE_MATERIAL.tanDelta[durometers[left]];
-  const high = SORBOTHANE_MATERIAL.tanDelta[durometers[right]];
+  const low = material.tanDelta[durometers[left]];
+  const high = material.tanDelta[durometers[right]];
   return low.map((value, index) => value + mix * (high[index] - value));
 }
 
@@ -230,9 +232,13 @@ function logLinearExtrapolate(frequency, frequencies, values) {
 export function sorbothaneDynamicProperties(configInput, frequencyHz) {
   const config = normalizeSorbothaneConfig(configInput);
   const { isolator } = config;
-  const frequencies = SORBOTHANE_MATERIAL.frequencyHz;
-  const modulusCurve = materialCurveAtDurometer(SORBOTHANE_MATERIAL.dynamicYoungsModulusPsi, isolator.durometer, clamp(isolator.compressionPct, 10, 20));
-  const tanCurve = tanCurveAtDurometer(isolator.durometer);
+  const material = sorbothaneMaterial(isolator.formulation);
+  const frequencies = material.frequencyHz;
+  const startingCompressionPct = isolator.preloadMode === 'preload'
+    ? compressionForPreload(config, Math.max(isolator.preloadN, 0))
+    : isolator.compressionPct;
+  const modulusCurve = materialCurveAtDurometer(material.dynamicYoungsModulusPsi, isolator.durometer, clamp(startingCompressionPct, 10, 20));
+  const tanCurve = tanCurveAtDurometer(material, isolator.durometer);
   let modulusPsi;
   let tanDelta;
   let provenance;
@@ -244,8 +250,8 @@ export function sorbothaneDynamicProperties(configInput, frequencyHz) {
     modulusPsi = interpolateLog(frequencyHz, frequencies, modulusCurve);
     tanDelta = interpolateLinear(frequencyHz, frequencies, tanCurve);
     const exactIndex = frequencies.indexOf(frequencyHz);
-    if (exactIndex >= 0) provenance = SORBOTHANE_MATERIAL.provenance[exactIndex];
-    else provenance = frequencyHz <= SORBOTHANE_MATERIAL.publishedTableMaxHz ? 'manufacturer-interpolated' : 'manufacturer-digitized-interpolated';
+    if (exactIndex >= 0) provenance = material.provenance[exactIndex];
+    else provenance = material.publishedTableMaxHz > 0 && frequencyHz <= material.publishedTableMaxHz ? 'manufacturer-interpolated' : 'manufacturer-digitized-interpolated';
   } else if (isolator.extrapolation === 'log-linear') {
     modulusPsi = logLinearExtrapolate(frequencyHz, frequencies, modulusCurve);
     tanDelta = tanCurve.at(-1);
@@ -264,8 +270,11 @@ export function sorbothaneDynamicProperties(configInput, frequencyHz) {
     storageModulusPsi: modulusPsi,
     lossModulusPa: storagePa * tanDelta,
     tanDelta,
+    formulation: material.formulation,
+    formulationLabel: material.label,
+    startingCompressionPct,
     provenance,
-    supported: frequencyHz <= SORBOTHANE_MATERIAL.digitizedCurveMaxHz
+    supported: frequencyHz <= material.digitizedCurveMaxHz
   };
 }
 
@@ -322,12 +331,15 @@ export function isolatorGeometry(configInput) {
 }
 
 function stressAtCompression(config, compressionPct) {
-  const durometers = [30, 50, 70];
+  const material = sorbothaneMaterial(config.isolator.formulation);
+  const durometers = Object.keys(material.staticCompressiveStressPsi).map(Number).sort((a, b) => a - b);
   const [left, right, mix] = bracket(durometers, config.isolator.durometer);
   const stress = durometer => {
-    const table = SORBOTHANE_MATERIAL.staticCompressiveStressPsi[durometer];
+    const table = material.staticCompressiveStressPsi[durometer];
     if (compressionPct <= 10) return table[10] * compressionPct / 10;
-    return table[10] + (clamp(compressionPct, 10, 20) - 10) / 10 * (table[20] - table[10]);
+    const compressions = Object.keys(table).map(Number).sort((a, b) => a - b);
+    const [c0, c1, cm] = bracket(compressions, clamp(compressionPct, 10, 20));
+    return table[compressions[c0]] + cm * (table[compressions[c1]] - table[compressions[c0]]);
   };
   return stress(durometers[left]) + mix * (stress(durometers[right]) - stress(durometers[left]));
 }
@@ -440,9 +452,9 @@ export function staticPreloadState(configInput) {
   } else {
     const stressPa = stressAtCompression(config, compressionPct) * PSI;
     preloadN = stressPa * geometry.loadedAreaM2 * geometry.shapeCorrection;
-    preloadProvenance = compressionPct === 10 || compressionPct === 20
-      ? 'calculated from manufacturer-published static stress'
-      : 'calculated from interpolated manufacturer static stress';
+    preloadProvenance = [10, 15, 20].includes(compressionPct)
+      ? 'calculated from the selected manufacturer static-stress curve'
+      : 'calculated by interpolating the selected manufacturer static-stress curves';
   }
   const positions = mountPositions(config);
   const [ax, ay, az] = config.environment.accelerationG;
@@ -929,7 +941,9 @@ export function analyzeSorbothaneIsolation(configInput, options = {}) {
     else warnings.push(`${item.elastomer} loss factor is an editable estimate digitized from the catalog's typical transmissibility curve, not a tabulated specification.`);
     if (!preload.catalogCompliant) warnings.push('At least one support-point resultant load exceeds the catalog rated load for the selected single/back-to-back arrangement.');
   } else {
-    if (config.analysis.frequencyMaxHz > SORBOTHANE_MATERIAL.digitizedCurveMaxHz) warnings.push(`Material data above ${SORBOTHANE_MATERIAL.digitizedCurveMaxHz} Hz are extrapolated using the selected ${config.isolator.extrapolation} policy.`);
+    const material = sorbothaneMaterial(config.isolator.formulation);
+    if (config.analysis.frequencyMaxHz > material.digitizedCurveMaxHz) warnings.push(`${material.label} data above ${material.digitizedCurveMaxHz} Hz are extrapolated using the selected ${config.isolator.extrapolation} policy.`);
+    if (material.formulation === 'water-resistant') warnings.push('Water-resistant properties are applied to the selected catalog geometry for analysis, but the Standard Products Guide part number and rated load do not confirm water-resistant availability. Confirm formulation, load rating, and orderable part number with Sorbothane.');
     if (!preload.allEngaged) warnings.push('At least one opposing isolator unloads under the specified quasi-static acceleration. The linear sandwich model is invalid after loss of contact.');
     if (!preload.catalogCompliant) warnings.push('At least one element load lies outside the manufacturer catalog rating.');
     if (preload.compressionPct < 10 || preload.compressionPct > 20) warnings.push('Nominal compression lies outside the manufacturer 10-20% preferred static-deflection range for shape factors from 0.3 to 1.0.');
@@ -938,6 +952,7 @@ export function analyzeSorbothaneIsolation(configInput, options = {}) {
   }
   return {
     config,
+    material: isParkerLordConfig(config) ? null : sorbothaneMaterial(config.isolator.formulation),
     geometry: isolatorGeometry(config),
     preload,
     modes: modes.modes,
@@ -1157,6 +1172,7 @@ function finalizeCatalogScreen(context, evaluated, exclusions) {
   nearMisses.sort((left, right) => left.score - right.score || left.stackCount - right.stackCount);
   return {
     library: 'sorbothane',
+    formulation: context.config.isolator.formulation,
     settings: { geometry: context.geometry, odRange: context.odRange, idRange: context.idRange, thicknessRange: context.thicknessRange, stackRange: [context.stackMin, context.stackMax] },
     criteria: context.criteria,
     catalogPartCount: context.catalog.length,

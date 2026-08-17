@@ -23,7 +23,7 @@ import {
 } from '../js/sorbothane-analysis.js';
 import { engineeringReport, renderSorbothaneIsolationWorkbench, responseCsv, sorbothaneExplorerSettingsAroundDesign, sorbothaneExplorerVariableDefaults } from '../js/sorbothane-isolation.js';
 import { NASTRAN_IPS_UNITS, generateNastranIsolationBdf } from '../js/nastran-isolation-export.js';
-import { SORBOTHANE_CATALOG, SORBOTHANE_MATERIAL } from '../js/sorbothane-data.js';
+import { SORBOTHANE_CATALOG, SORBOTHANE_MATERIAL, SORBOTHANE_MATERIALS, sorbothaneMaterial } from '../js/sorbothane-data.js';
 import { PARKER_LORD_AM_CATALOG, PARKER_LORD_AM_FAMILIES, parkerLordCatalogItem } from '../js/parker-lord-isolators.js';
 
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -222,6 +222,65 @@ test('material provenance changes at published, digitized, and extrapolated boun
   assert.equal(SORBOTHANE_MATERIAL.digitizedCurveMaxHz, 300);
 });
 
+test('standard and water-resistant Sorbothane use distinct formulation and starting-compression datasets', () => {
+  const standard = SORBOTHANE_MATERIALS.standard;
+  const water = SORBOTHANE_MATERIALS['water-resistant'];
+  assert.equal(sorbothaneMaterial('unknown'), standard);
+  assert.deepEqual(Object.keys(standard.dynamicYoungsModulusPsi[50]).map(Number), [10, 15, 20]);
+  assert.deepEqual(Object.keys(water.dynamicYoungsModulusPsi[50]).map(Number), [10, 15, 20]);
+  assert.equal(water.frequencyHz[0], 1);
+  assert.equal(water.bulkModulusGPa[50], 3.99);
+  assert.equal(water.densityLbFt3[50], 79.78);
+  assert.notDeepEqual(water.dynamicYoungsModulusPsi[50][15], standard.dynamicYoungsModulusPsi[50][15]);
+
+  const config = baseline();
+  const standardAt5 = sorbothaneDynamicProperties(config, 5);
+  const standardAtStartingCompression = [10, 15, 20].map(compressionPct => {
+    const state = baseline();
+    state.isolator.compressionPct = compressionPct;
+    return sorbothaneDynamicProperties(state, 5).storageModulusPsi;
+  });
+  assert.deepEqual(standardAtStartingCompression, [77, 89, 106]);
+  config.isolator.formulation = 'water-resistant';
+  const waterAt5 = sorbothaneDynamicProperties(config, 5);
+  assert.equal(standardAt5.storageModulusPsi, 89);
+  close(waterAt5.storageModulusPsi, 104, 1e-12);
+  close(waterAt5.tanDelta, 0.42, 1e-12);
+  assert.equal(waterAt5.formulationLabel, 'Water-resistant Sorbothane');
+  assert.equal(waterAt5.provenance, 'manufacturer-digitized');
+});
+
+test('preload-driven material selection uses its calculated starting compression curve', () => {
+  const tenPercent = baseline();
+  tenPercent.isolator.compressionPct = 10;
+  const preload = staticPreloadState(tenPercent).preloadN;
+  const preloadDriven = baseline();
+  preloadDriven.isolator.preloadMode = 'preload';
+  preloadDriven.isolator.preloadN = preload;
+  const property = sorbothaneDynamicProperties(preloadDriven, 5);
+  close(property.startingCompressionPct, 10, 1e-9);
+  close(property.storageModulusPsi, 77, 1e-9);
+});
+
+test('formulation propagates through preload, modal solution, and NASTRAN PBUSH export', () => {
+  const standardConfig = baseline();
+  const waterConfig = baseline();
+  waterConfig.isolator.formulation = 'water-resistant';
+  const standardPreload = staticPreloadState(standardConfig);
+  const waterPreload = staticPreloadState(waterConfig);
+  assert.ok(waterPreload.preloadN > standardPreload.preloadN);
+
+  const standardModes = solveRigidBodyModes(standardConfig).modes;
+  const waterModes = solveRigidBodyModes(waterConfig).modes;
+  assert.notEqual(waterModes.find(mode => mode.dominantIndex === 2).frequencyHz, standardModes.find(mode => mode.dominantIndex === 2).frequencyHz);
+
+  const standardBdf = generateNastranIsolationBdf(standardConfig);
+  const waterBdf = generateNastranIsolationBdf(waterConfig);
+  assert.notEqual(waterBdf.isolators.kzLbfPerIn, standardBdf.isolators.kzLbfPerIn);
+  assert.match(standardBdf.deck, /CAPTURED STANDARD SORBOTHANE ELEMENT/);
+  assert.match(waterBdf.deck, /CAPTURED WATER-RESISTANT SORBOTHANE ELEMENT/);
+});
+
 test('catalog includes current washer, ring, disc, and custom records', () => {
   assert.ok(SORBOTHANE_CATALOG.length >= 130);
   assert.ok(SORBOTHANE_CATALOG.some(item => item.geometry === 'washer'));
@@ -401,6 +460,9 @@ test('workbench preserves trailing-zero requirement frequencies in rendered labe
   assert.match(html, />100-200 Hz · Txx peak</);
   assert.match(html, /data-sorbo-inset-axis="0"/);
   assert.match(html, /Mount plane relative to CG/);
+  assert.match(html, /data-sorbo-field="isolator.formulation"/);
+  assert.match(html, /value="standard" selected>Standard Sorbothane/);
+  assert.match(html, /value="water-resistant">Water-resistant Sorbothane/);
   assert.match(html, /Durometer \(Shore 00\)/);
   assert.match(html, /data-sorbo-catalog-progress/);
   assert.match(html, /data-sorbo-action="export-nastran-bdf"/);
@@ -460,6 +522,25 @@ test('workbench preserves trailing-zero requirement frequencies in rendered labe
   const noToneHtml = renderSorbothaneIsolationWorkbench(DEFAULT_SORBOTHANE_CONFIG, {}, { toneCriteria: [] });
   assert.match(noToneHtml, /No discrete-frequency attenuation criteria are active/);
   assert.match(noToneHtml, />0 tone criteria plus resonance limit</);
+});
+
+test('water-resistant formulation is visible in the Isolator workflow and engineering report', () => {
+  const config = baseline();
+  config.isolator.formulation = 'water-resistant';
+  const analysis = analyzeSorbothaneIsolation(config, { skipUncertainty: true });
+  const html = renderSorbothaneIsolationWorkbench(config);
+  const isolatorHtml = tabPanelHtml(html, 'sorbothane', 'explorer');
+  assert.match(html, /value="water-resistant" selected>Water-resistant Sorbothane/);
+  assert.match(isolatorHtml, /Water-resistant Sorbothane · 15% starting compression/);
+  assert.match(isolatorHtml, /1–300 Hz/);
+  assert.match(isolatorHtml, /3\.99 GPa/);
+  assert.match(isolatorHtml, /79\.78 lb\/ft³/);
+  assert.match(html, /Confirm water-resistant availability, rated load, and the orderable part number/);
+  assert.match(analysis.warnings.join(' '), /do not confirm water-resistant availability/);
+  assert.match(engineeringReport(analysis), /Material formulation: Water-resistant Sorbothane/);
+
+  const lordHtml = renderSorbothaneIsolationWorkbench(lordBaseline());
+  assert.doesNotMatch(lordHtml, /data-sorbo-field="isolator.formulation"/);
 });
 
 test('selected design drawings follow catalog geometry and asymmetric stack counts', () => {
@@ -543,11 +624,13 @@ test('catalog screening filters nominal geometry and selects the minimum passing
     stackRange: [1, 2],
     criteria: { lateralModeMinimumHz: [30, 30] }
   });
+  assert.equal(screen.formulation, 'standard');
   assert.equal(screen.eligiblePartCount, 9);
   assert.equal(screen.combinationCount, 18);
   assert.ok(screen.dynamicallyEvaluatedCount > 0);
   assert.ok(screen.recommendations.length > 0);
   assert.ok(screen.recommendations.every(candidate => candidate.pass));
+  assert.ok(screen.recommendations.every(candidate => candidate.config.isolator.formulation === 'standard'));
   assert.ok(screen.recommendations.every(candidate => candidate.item.geometry === 'washer'));
   assert.ok(screen.recommendations.every(candidate => candidate.item.odIn === 1));
   assert.ok(screen.recommendations.every(candidate => candidate.stackCount >= 1 && candidate.stackCount <= 2));

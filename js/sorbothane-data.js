@@ -1,4 +1,4 @@
-export const SORBOTHANE_DATA_VERSION = '2026-08-16';
+export const SORBOTHANE_DATA_VERSION = '2026-08-17';
 
 export const SORBOTHANE_REFERENCES = [
   {
@@ -66,18 +66,23 @@ export const SORBOTHANE_REFERENCES = [
   }
 ];
 
-const frequencyHz = [5, 15, 30, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300];
-const provenance = frequencyHz.map(frequency => frequency <= 50 ? 'manufacturer-published' : 'manufacturer-digitized');
+const standardFrequencyHz = [5, 15, 30, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300];
+const standardProvenance = standardFrequencyHz.map(frequency => frequency <= 50 ? 'manufacturer-published' : 'manufacturer-digitized');
+const waterResistantFrequencyHz = [1, 5, 15, 30, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300];
+const waterResistantProvenance = waterResistantFrequencyHz.map(() => 'manufacturer-digitized');
 
-export const SORBOTHANE_MATERIAL = {
+const standardMaterial = {
+  formulation: 'standard',
+  label: 'Standard Sorbothane',
   source: 'sorbothane-ds101-2021 + sorbothane-edg-2018',
   publishedTableMaxHz: 50,
   digitizedCurveMaxHz: 300,
-  frequencyHz,
-  provenance,
+  frequencyHz: standardFrequencyHz,
+  provenance: standardProvenance,
   notes: [
     'Values at 5, 15, 30, and 50 Hz are transcribed from Data Sheet 101.',
     'Values from 75 through 300 Hz are engineering digitizations of Engineering Design Guide Figures 1-3 and 5; use the source figures for controlled work.',
+    'Separate dynamic modulus curves are used at 10%, 15%, and 20% starting compression.',
     'No manufacturer complex-modulus table was found above 300 Hz. Predictions at 600-2000 Hz require an explicit extrapolation selection and test validation.'
   ],
   dynamicYoungsModulusPsi: {
@@ -103,14 +108,82 @@ export const SORBOTHANE_MATERIAL = {
     70: [0.28, 0.33, 0.36, 0.37, 0.38, 0.39, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40]
   },
   staticCompressiveStressPsi: {
-    30: { 10: 0.9, 20: 2.1 },
-    50: { 10: 2.7, 20: 6.4 },
-    70: { 10: 11.8, 20: 30.0 }
+    30: { 10: 0.9, 15: 1.5, 20: 2.1 },
+    40: { 10: 2.5, 15: 4.4, 20: 6.4 },
+    50: { 10: 2.7, 15: 4.5, 20: 6.4 },
+    60: { 10: 5.7, 15: 9.4, 20: 13.9 },
+    70: { 10: 11.8, 15: 20.3, 20: 30.0 }
   },
   bulkModulusGPa: { 30: 4.5, 50: 5.0, 70: 4.3 },
   densityLbFt3: { 30: 83, 50: 84, 70: 85 },
-  temperatureRangeF: { 30: [-20, 140], 50: [-20, 150], 70: [-20, 160] }
+  temperatureRangeF: { 30: [-20, 140], 50: [-20, 150], 70: [-20, 160] },
+  tensileStrengthPsi: { 30: 26, 50: 107, 70: 191 },
+  elongationAtBreakPct: { 30: 334, 50: 765, 70: 388 },
+  compressionSetPct: { 30: 10, 50: 3, 70: 2 }
 };
+
+const waterResistantMaterial = {
+  formulation: 'water-resistant',
+  label: 'Water-resistant Sorbothane',
+  source: 'sorbothane-edg-2018',
+  publishedTableMaxHz: 0,
+  digitizedCurveMaxHz: 300,
+  frequencyHz: waterResistantFrequencyHz,
+  provenance: waterResistantProvenance,
+  notes: [
+    'Dynamic modulus values are engineering digitizations of Engineering Design Guide Figures 6-8 at 10%, 15%, and 20% starting compression.',
+    'Tan delta values are engineering digitizations of Engineering Design Guide Figure 10.',
+    'Static stress values are engineering digitizations of Engineering Design Guide Figure 9 (ASTM D575, 2014).',
+    'No manufacturer complex-modulus table was found above 300 Hz. Predictions above 300 Hz require an explicit extrapolation selection and test validation.'
+  ],
+  dynamicYoungsModulusPsi: {
+    30: {
+      10: [30, 47, 69, 89, 107, 124, 137, 148, 156, 166, 175, 182, 187, 195, 199],
+      15: [34, 52, 78, 100, 116, 139, 153, 164, 175, 184, 193, 197, 205, 211, 215],
+      20: [40, 60, 88, 113, 136, 158, 172, 186, 198, 207, 215, 223, 225, 225, 221]
+    },
+    50: {
+      10: [66, 92, 127, 155, 181, 204, 225, 238, 252, 264, 274, 285, 290, 299, 310],
+      15: [74, 104, 141, 173, 201, 228, 249, 266, 280, 292, 303, 312, 318, 327, 335],
+      20: [86, 119, 162, 197, 229, 259, 282, 300, 315, 327, 337, 347, 356, 361, 367]
+    },
+    70: {
+      10: [112, 137, 173, 205, 233, 260, 281, 298, 315, 329, 343, 355, 361, 372, 382],
+      15: [128, 157, 195, 230, 261, 290, 315, 333, 351, 366, 378, 387, 395, 404, 412],
+      20: [153, 185, 229, 268, 304, 339, 365, 384, 399, 417, 426, 435, 444, 449, 455]
+    }
+  },
+  tanDelta: {
+    30: [0.45, 0.56, 0.62, 0.64, 0.66, 0.66, 0.66, 0.65, 0.66, 0.65, 0.72, 0.73, 0.75, 0.76, 0.77],
+    50: [0.32, 0.42, 0.48, 0.51, 0.52, 0.52, 0.53, 0.53, 0.52, 0.53, 0.58, 0.59, 0.60, 0.61, 0.61],
+    70: [0.17, 0.28, 0.36, 0.41, 0.45, 0.47, 0.48, 0.49, 0.49, 0.51, 0.57, 0.57, 0.59, 0.60, 0.61]
+  },
+  staticCompressiveStressPsi: {
+    30: { 10: 3.3, 15: 4.5, 20: 5.9 },
+    40: { 10: 3.7, 15: 5.0, 20: 6.6 },
+    50: { 10: 5.1, 15: 7.3, 20: 10.0 },
+    60: { 10: 7.8, 15: 11.6, 20: 16.0 },
+    70: { 10: 12.0, 15: 18.3, 20: 24.7 },
+    80: { 10: 26.7, 15: 42.3, 20: 58.9 }
+  },
+  bulkModulusGPa: { 30: 4.25, 50: 3.99, 70: 4.14 },
+  densityLbFt3: { 30: 78.78, 50: 79.78, 70: 79.60 },
+  temperatureRangeF: { 30: [-20, 140], 50: [-20, 150], 70: [-20, 160] },
+  tensileStrengthPsi: { 30: 130, 50: 131, 70: 170 },
+  elongationAtBreakPct: { 30: 342, 50: 219, 70: 154 },
+  compressionSetPct: { 30: 10, 50: 2, 70: 3 }
+};
+
+export const SORBOTHANE_MATERIALS = Object.freeze({
+  standard: Object.freeze(standardMaterial),
+  'water-resistant': Object.freeze(waterResistantMaterial)
+});
+
+export const SORBOTHANE_MATERIAL = SORBOTHANE_MATERIALS.standard;
+
+export function sorbothaneMaterial(formulation = 'standard') {
+  return SORBOTHANE_MATERIALS[formulation] ?? SORBOTHANE_MATERIALS.standard;
+}
 
 const row = (productNumber, geometry, odIn, idIn, thicknessIn, durometer, ratedLoadLb, notes = '') => ({
   productNumber, geometry, odIn, idIn, thicknessIn, durometer,
