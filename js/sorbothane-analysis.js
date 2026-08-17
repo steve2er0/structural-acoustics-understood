@@ -17,6 +17,11 @@ const transpose = matrix => matrix[0].map((_, column) => matrix.map(row => row[c
 const multiply = (left, right) => left.map(row => right[0].map((_, column) => row.reduce((sum, value, index) => sum + value * right[index][column], 0)));
 const multiplyVector = (matrix, vector) => matrix.map(row => row.reduce((sum, value, index) => sum + value * vector[index], 0));
 
+export const NASTRAN_PLATE_MATERIALS = Object.freeze({
+  aluminum: Object.freeze({ label: 'Aluminum', youngsModulusPsi: 10.3e6, poisson: 0.33, densitySlinchPerIn3: 0.00026684 }),
+  steel: Object.freeze({ label: 'Steel', youngsModulusPsi: 29e6, poisson: 0.30, densitySlinchPerIn3: 0.00073299 })
+});
+
 export const DEFAULT_SORBOTHANE_CONFIG = {
   schema: 'sau-sorbothane-isolation',
   version: 1,
@@ -88,6 +93,7 @@ export const DEFAULT_SORBOTHANE_CONFIG = {
   validation: {
     nastran: {
       plateThicknessIn: 0.125,
+      plateMaterial: 'aluminum',
       plateYoungsModulusPsi: 10.3e6,
       platePoisson: 0.33,
       plateDensitySlinchPerIn3: 0.00026684,
@@ -138,9 +144,11 @@ export function normalizeSorbothaneConfig(input = {}) {
   config.analysis.tones = (source.analysis?.tones ?? config.analysis.tones).map(tone => ({ frequencyHz: Math.max(finite(tone.frequencyHz, 600), 0.1), maximumDb: finite(tone.maximumDb, -10) }));
   const nastran = config.validation.nastran;
   nastran.plateThicknessIn = clamp(finite(nastran.plateThicknessIn, 0.125), 0.005, 5);
-  nastran.plateYoungsModulusPsi = clamp(finite(nastran.plateYoungsModulusPsi, 10.3e6), 1, 1e9);
-  nastran.platePoisson = clamp(finite(nastran.platePoisson, 0.33), -0.99, 0.499);
-  nastran.plateDensitySlinchPerIn3 = clamp(finite(nastran.plateDensitySlinchPerIn3, 0.00026684), 0, 0.01);
+  if (!NASTRAN_PLATE_MATERIALS[nastran.plateMaterial]) nastran.plateMaterial = 'aluminum';
+  const plateMaterial = NASTRAN_PLATE_MATERIALS[nastran.plateMaterial];
+  nastran.plateYoungsModulusPsi = plateMaterial.youngsModulusPsi;
+  nastran.platePoisson = plateMaterial.poisson;
+  nastran.plateDensitySlinchPerIn3 = plateMaterial.densitySlinchPerIn3;
   nastran.meshX = clamp(Math.round(finite(nastran.meshX, 8)), 2, 40);
   nastran.meshY = clamp(Math.round(finite(nastran.meshY, 6)), 2, 40);
   const componentLengthIn = config.component.dimensionsM[0] / INCH;

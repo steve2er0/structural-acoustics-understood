@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   DEFAULT_SORBOTHANE_CONFIG,
+  NASTRAN_PLATE_MATERIALS,
   SORBOTHANE_UNITS,
   analyzeSorbothaneIsolation,
   assembleRigidBodyStiffness,
@@ -294,6 +295,29 @@ test('NASTRAN export uses the IPS slinch contract and a four-point shell-and-bus
   assert.ok(model.isolators.mountGridIds.every(id => model.plate.xCoordinates.length && model.deck.includes(`,${id},800`)));
 });
 
+test('NASTRAN plate material presets keep density and elastic properties synchronized', () => {
+  const aluminum = generateNastranIsolationBdf(baseline());
+  assert.equal(aluminum.settings.plateMaterial, 'aluminum');
+  assert.equal(aluminum.settings.plateDensitySlinchPerIn3, NASTRAN_PLATE_MATERIALS.aluminum.densitySlinchPerIn3);
+  assert.equal(aluminum.settings.plateYoungsModulusPsi, NASTRAN_PLATE_MATERIALS.aluminum.youngsModulusPsi);
+
+  const config = baseline();
+  config.validation.nastran.plateMaterial = 'steel';
+  const steel = generateNastranIsolationBdf(config);
+  const preset = NASTRAN_PLATE_MATERIALS.steel;
+  const expectedPlateSlinch = 10 * 8 * 0.125 * preset.densitySlinchPerIn3;
+  assert.equal(steel.settings.plateMaterial, 'steel');
+  assert.equal(steel.settings.plateDensitySlinchPerIn3, preset.densitySlinchPerIn3);
+  assert.equal(steel.settings.plateYoungsModulusPsi, preset.youngsModulusPsi);
+  assert.equal(steel.settings.platePoisson, preset.poisson);
+  close(steel.plate.includedMassSlinch, expectedPlateSlinch, 1e-12);
+  assert.match(steel.deck, /^\$ PLATE MATERIAL: STEEL;/m);
+  assert.match(steel.deck, /^MAT1,10,2\.9000000E7,,0\.3,7\.3299000E-4$/m);
+
+  const invalid = normalizeSorbothaneConfig({ validation: { nastran: { plateMaterial: 'titanium' } } });
+  assert.equal(invalid.validation.nastran.plateMaterial, 'aluminum');
+});
+
 test('NASTRAN PBUSH stiffness follows the selected isolator and linearization frequency', () => {
   const config = lordBaseline('AM-001-2');
   config.validation.nastran.stiffnessReferenceMode = 'custom';
@@ -381,8 +405,11 @@ test('workbench preserves trailing-zero requirement frequencies in rendered labe
   assert.match(html, /data-sorbo-catalog-progress/);
   assert.match(html, /data-sorbo-action="export-nastran-bdf"/);
   assert.match(html, /data-nastran-field="plateThicknessIn"/);
-  assert.match(html, /data-nastran-field="plateDensitySlinchPerIn3"/);
-  assert.match(html, /0\.00026684/);
+  assert.match(html, /data-nastran-field="plateMaterial"/);
+  assert.match(html, />Aluminum</);
+  assert.match(html, />Steel</);
+  assert.doesNotMatch(html, /data-nastran-field="plateDensitySlinchPerIn3"/);
+  assert.doesNotMatch(html, /data-nastran-field="plateYoungsModulusPsi"|data-nastran-field="platePoisson"/);
   assert.match(html, /in · lbf · s · slinch/);
   assert.match(html, /PARAM,WTMASS,1\.0/);
   assert.match(html, /CQUAD4/);

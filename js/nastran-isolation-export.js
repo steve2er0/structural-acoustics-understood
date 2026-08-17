@@ -171,6 +171,7 @@ export function generateNastranIsolationBdf(configInput, analysisInput = null) {
     comment(`SOURCE CONFIGURATION: ${config.isolator.productNumber}; ${isParkerLordConfig(config) ? 'PARKER LORD COMPLETE MOUNT' : 'CAPTURED SORBOTHANE ELEMENT'}.`),
     comment(`BROWSER RIGID-BODY MODES (HZ): ${modal.modes.map(mode => mode.frequencyHz.toFixed(4)).join(', ')}.`),
     comment(`PBUSH STIFFNESS REFERENCE FREQUENCY: ${referenceFrequencyHz.toFixed(6)} HZ (${settings.stiffnessReferenceMode}).`),
+    comment(`PLATE MATERIAL: ${settings.plateMaterial.toUpperCase()}; E = ${settings.plateYoungsModulusPsi.toExponential(7)} PSI; NU = ${settings.platePoisson}; RHO = ${settings.plateDensitySlinchPerIn3.toExponential(7)} SLINCH/IN^3.`),
     comment(`MASS ACCOUNTING: ${settings.massAccounting}. BOX CONM2 = ${boxMassSlinch.toExponential(7)} SLINCH; INCLUDED PLATE = ${includedPlateMassSlinch.toExponential(7)} SLINCH.`),
     ...warnings.map(warning => comment(`WARNING: ${warning}`)),
     card('PARAM', 'WTMASS', '1.0'),
@@ -218,6 +219,7 @@ export function generateNastranIsolationBdf(configInput, analysisInput = null) {
       rbe3: settings.coupling === 'rbe3' ? 1 : 0
     },
     plate: {
+      material: settings.plateMaterial,
       lengthIn: plateLengthIn,
       widthIn: plateWidthIn,
       thicknessIn: settings.plateThicknessIn,

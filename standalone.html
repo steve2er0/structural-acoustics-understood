@@ -14700,6 +14700,11 @@ const transpose = matrix => matrix[0].map((_, column) => matrix.map(row => row[c
 const multiply = (left, right) => left.map(row => right[0].map((_, column) => row.reduce((sum, value, index) => sum + value * right[index][column], 0)));
 const multiplyVector = (matrix, vector) => matrix.map(row => row.reduce((sum, value, index) => sum + value * vector[index], 0));
 
+const NASTRAN_PLATE_MATERIALS = Object.freeze({
+  aluminum: Object.freeze({ label: 'Aluminum', youngsModulusPsi: 10.3e6, poisson: 0.33, densitySlinchPerIn3: 0.00026684 }),
+  steel: Object.freeze({ label: 'Steel', youngsModulusPsi: 29e6, poisson: 0.30, densitySlinchPerIn3: 0.00073299 })
+});
+
 const DEFAULT_SORBOTHANE_CONFIG = {
   schema: 'sau-sorbothane-isolation',
   version: 1,
@@ -14771,6 +14776,7 @@ const DEFAULT_SORBOTHANE_CONFIG = {
   validation: {
     nastran: {
       plateThicknessIn: 0.125,
+      plateMaterial: 'aluminum',
       plateYoungsModulusPsi: 10.3e6,
       platePoisson: 0.33,
       plateDensitySlinchPerIn3: 0.00026684,
@@ -14821,9 +14827,11 @@ function normalizeSorbothaneConfig(input = {}) {
   config.analysis.tones = (source.analysis?.tones ?? config.analysis.tones).map(tone => ({ frequencyHz: Math.max(finite(tone.frequencyHz, 600), 0.1), maximumDb: finite(tone.maximumDb, -10) }));
   const nastran = config.validation.nastran;
   nastran.plateThicknessIn = clamp(finite(nastran.plateThicknessIn, 0.125), 0.005, 5);
-  nastran.plateYoungsModulusPsi = clamp(finite(nastran.plateYoungsModulusPsi, 10.3e6), 1, 1e9);
-  nastran.platePoisson = clamp(finite(nastran.platePoisson, 0.33), -0.99, 0.499);
-  nastran.plateDensitySlinchPerIn3 = clamp(finite(nastran.plateDensitySlinchPerIn3, 0.00026684), 0, 0.01);
+  if (!NASTRAN_PLATE_MATERIALS[nastran.plateMaterial]) nastran.plateMaterial = 'aluminum';
+  const plateMaterial = NASTRAN_PLATE_MATERIALS[nastran.plateMaterial];
+  nastran.plateYoungsModulusPsi = plateMaterial.youngsModulusPsi;
+  nastran.platePoisson = plateMaterial.poisson;
+  nastran.plateDensitySlinchPerIn3 = plateMaterial.densitySlinchPerIn3;
   nastran.meshX = clamp(Math.round(finite(nastran.meshX, 8)), 2, 40);
   nastran.meshY = clamp(Math.round(finite(nastran.meshY, 6)), 2, 40);
   const componentLengthIn = config.component.dimensionsM[0] / INCH;
@@ -16032,7 +16040,7 @@ async function screenParkerLordCatalogAsync(configInput, settings = {}, options 
 const SORBOTHANE_UNITS = { INCH, LB, LBF, PSI, G0 };
 { PARKER_LORD_AM_CATALOG, SORBOTHANE_CATALOG };
 
-return {DEFAULT_SORBOTHANE_CONFIG,normalizeSorbothaneConfig,isParkerLordConfig,sorbothaneDynamicProperties,isolatorDynamicProperties,isolatorGeometry,staticPreloadState,rigidBodyMassMatrix,mountDynamicStiffness,assembleRigidBodyStiffness,solveRigidBodyModes,rigidBodyResponseAtFrequency,frequencyResponse,uncertaintyEnvelope,analyzeSorbothaneIsolation,runDesignGrid,screenSorbothaneCatalog,screenSorbothaneCatalogAsync,screenParkerLordCatalog,screenParkerLordCatalogAsync,SORBOTHANE_UNITS,SORBOTHANE_CATALOG};
+return {DEFAULT_SORBOTHANE_CONFIG,NASTRAN_PLATE_MATERIALS,normalizeSorbothaneConfig,isParkerLordConfig,sorbothaneDynamicProperties,isolatorDynamicProperties,isolatorGeometry,staticPreloadState,rigidBodyMassMatrix,mountDynamicStiffness,assembleRigidBodyStiffness,solveRigidBodyModes,rigidBodyResponseAtFrequency,frequencyResponse,uncertaintyEnvelope,analyzeSorbothaneIsolation,runDesignGrid,screenSorbothaneCatalog,screenSorbothaneCatalogAsync,screenParkerLordCatalog,screenParkerLordCatalogAsync,SORBOTHANE_UNITS,SORBOTHANE_CATALOG};
 })();
 
 const __nastranIsolationExport=(()=>{
@@ -16202,6 +16210,7 @@ function generateNastranIsolationBdf(configInput, analysisInput = null) {
     comment(`SOURCE CONFIGURATION: ${config.isolator.productNumber}; ${isParkerLordConfig(config) ? 'PARKER LORD COMPLETE MOUNT' : 'CAPTURED SORBOTHANE ELEMENT'}.`),
     comment(`BROWSER RIGID-BODY MODES (HZ): ${modal.modes.map(mode => mode.frequencyHz.toFixed(4)).join(', ')}.`),
     comment(`PBUSH STIFFNESS REFERENCE FREQUENCY: ${referenceFrequencyHz.toFixed(6)} HZ (${settings.stiffnessReferenceMode}).`),
+    comment(`PLATE MATERIAL: ${settings.plateMaterial.toUpperCase()}; E = ${settings.plateYoungsModulusPsi.toExponential(7)} PSI; NU = ${settings.platePoisson}; RHO = ${settings.plateDensitySlinchPerIn3.toExponential(7)} SLINCH/IN^3.`),
     comment(`MASS ACCOUNTING: ${settings.massAccounting}. BOX CONM2 = ${boxMassSlinch.toExponential(7)} SLINCH; INCLUDED PLATE = ${includedPlateMassSlinch.toExponential(7)} SLINCH.`),
     ...warnings.map(warning => comment(`WARNING: ${warning}`)),
     card('PARAM', 'WTMASS', '1.0'),
@@ -16249,6 +16258,7 @@ function generateNastranIsolationBdf(configInput, analysisInput = null) {
       rbe3: settings.coupling === 'rbe3' ? 1 : 0
     },
     plate: {
+      material: settings.plateMaterial,
       lengthIn: plateLengthIn,
       widthIn: plateWidthIn,
       thicknessIn: settings.plateThicknessIn,
@@ -16274,7 +16284,7 @@ return {NASTRAN_IPS_UNITS,nastranExportSettings,generateNastranIsolationBdf};
 const __sorbothaneIsolation=(()=>{
 const {SORBOTHANE_CATALOG,SORBOTHANE_DATA_VERSION,SORBOTHANE_MATERIAL,SORBOTHANE_REFERENCES,sorbothaneCatalogItem}=__sorbothaneData;
 const {PARKER_LORD_AM_CATALOG,PARKER_LORD_AM_FAMILIES,PARKER_LORD_SOURCE,parkerLordCatalogItem}=__parkerLordIsolators;
-const {DEFAULT_SORBOTHANE_CONFIG,normalizeSorbothaneConfig,isParkerLordConfig,sorbothaneDynamicProperties,isolatorDynamicProperties,isolatorGeometry,staticPreloadState,rigidBodyMassMatrix,mountDynamicStiffness,assembleRigidBodyStiffness,solveRigidBodyModes,rigidBodyResponseAtFrequency,frequencyResponse,uncertaintyEnvelope,analyzeSorbothaneIsolation,runDesignGrid,screenSorbothaneCatalog,screenSorbothaneCatalogAsync,screenParkerLordCatalog,screenParkerLordCatalogAsync,SORBOTHANE_UNITS}=__sorbothaneAnalysis;
+const {DEFAULT_SORBOTHANE_CONFIG,NASTRAN_PLATE_MATERIALS,normalizeSorbothaneConfig,isParkerLordConfig,sorbothaneDynamicProperties,isolatorDynamicProperties,isolatorGeometry,staticPreloadState,rigidBodyMassMatrix,mountDynamicStiffness,assembleRigidBodyStiffness,solveRigidBodyModes,rigidBodyResponseAtFrequency,frequencyResponse,uncertaintyEnvelope,analyzeSorbothaneIsolation,runDesignGrid,screenSorbothaneCatalog,screenSorbothaneCatalogAsync,screenParkerLordCatalog,screenParkerLordCatalogAsync,SORBOTHANE_UNITS}=__sorbothaneAnalysis;
 const {generateNastranIsolationBdf}=__nastranIsolationExport;
 const { INCH, LB, LBF, PSI } = SORBOTHANE_UNITS;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
@@ -17154,13 +17164,15 @@ function nastranField(path, label, value, options = {}) {
 function nastranExportOutput(model) {
   const coupling = model.counts.rbe3 ? 'RBE3 distributed coupling' : 'RBE2 rigid coupling';
   const massBasis = model.settings.massAccounting === 'box-plus-plate' ? 'Box CONM2 + physical plate mass' : 'Browser mass preserved; massless plate';
-  return `<div class="sorbo-nastran-summary"><article><span>Plate mesh</span><strong>${model.counts.cquad4} CQUAD4</strong><small>${model.counts.grids} total grids · ${fmt(model.plate.thicknessIn, 4)} in PSHELL</small></article><article><span>Mass model</span><strong>${fmt(model.totalIncludedMassLbm, 4)} lbm</strong><small>${fmt(model.totalIncludedMassSlinch, 7)} slinch · ${esc(massBasis)}</small></article><article><span>Box CONM2</span><strong>${fmt(model.box.massSlinch, 7)} slinch</strong><small>${fmt(model.box.massLbm, 4)} lbm at the current CG</small></article><article><span>Plate contribution</span><strong>${fmt(model.plate.includedMassSlinch, 7)} slinch</strong><small>${fmt(model.plate.includedMassLbm, 4)} lbm included · ρ ${model.settings.plateDensitySlinchPerIn3.toExponential(7)}</small></article><article><span>Coupling</span><strong>${esc(coupling)}</strong><small>${model.counts.cbush} CBUSH · ${model.settings.attachmentSpacingIn.map(value => `${fmt(value, 3)} in`).join(' × ')}</small></article><article><span>Equivalent PBUSH</span><strong>${fmt(model.isolators.kzLbfPerIn, 2)} lbf/in axial</strong><small>${fmt(model.isolators.kxLbfPerIn, 2)} / ${fmt(model.isolators.kyLbfPerIn, 2)} lbf/in radial · η ${fmt(model.isolators.lossFactor, 3)}</small></article><article><span>Linearization</span><strong>${fmt(model.isolators.referenceFrequencyHz, 3)} Hz</strong><small>${model.settings.stiffnessReferenceMode === 'vertical-mode' ? 'Calculated vertical-mode frequency' : 'User-defined reference frequency'}</small></article><article><span>Deck</span><strong>SOL 103 · ${model.settings.modeCount} modes</strong><small>0–${fmt(model.settings.maximumFrequencyHz, 0)} Hz · WTMASS = 1.0</small></article></div>${model.warnings.length ? `<aside class="sorbo-nastran-warnings"><strong>Export-model differences to review</strong><ul>${model.warnings.map(warning => `<li>${esc(warning)}</li>`).join('')}</ul></aside>` : ''}<details class="sorbo-nastran-preview"><summary>Preview generated BDF</summary><pre data-nastran-preview>${esc(model.deck)}</pre></details>`;
+  const material = NASTRAN_PLATE_MATERIALS[model.settings.plateMaterial];
+  return `<div class="sorbo-nastran-summary"><article><span>Plate mesh</span><strong>${model.counts.cquad4} CQUAD4</strong><small>${model.counts.grids} total grids · ${fmt(model.plate.thicknessIn, 4)} in PSHELL</small></article><article><span>Mass model</span><strong>${fmt(model.totalIncludedMassLbm, 4)} lbm</strong><small>${fmt(model.totalIncludedMassSlinch, 7)} slinch · ${esc(massBasis)}</small></article><article><span>Box CONM2</span><strong>${fmt(model.box.massSlinch, 7)} slinch</strong><small>${fmt(model.box.massLbm, 4)} lbm at the current CG</small></article><article><span>Plate contribution</span><strong>${fmt(model.plate.includedMassSlinch, 7)} slinch</strong><small>${fmt(model.plate.includedMassLbm, 4)} lbm included · ${esc(material.label)} · ρ ${model.settings.plateDensitySlinchPerIn3.toExponential(7)}</small></article><article><span>Coupling</span><strong>${esc(coupling)}</strong><small>${model.counts.cbush} CBUSH · ${model.settings.attachmentSpacingIn.map(value => `${fmt(value, 3)} in`).join(' × ')}</small></article><article><span>Equivalent PBUSH</span><strong>${fmt(model.isolators.kzLbfPerIn, 2)} lbf/in axial</strong><small>${fmt(model.isolators.kxLbfPerIn, 2)} / ${fmt(model.isolators.kyLbfPerIn, 2)} lbf/in radial · η ${fmt(model.isolators.lossFactor, 3)}</small></article><article><span>Linearization</span><strong>${fmt(model.isolators.referenceFrequencyHz, 3)} Hz</strong><small>${model.settings.stiffnessReferenceMode === 'vertical-mode' ? 'Calculated vertical-mode frequency' : 'User-defined reference frequency'}</small></article><article><span>Deck</span><strong>SOL 103 · ${model.settings.modeCount} modes</strong><small>0–${fmt(model.settings.maximumFrequencyHz, 0)} Hz · WTMASS = 1.0</small></article></div>${model.warnings.length ? `<aside class="sorbo-nastran-warnings"><strong>Export-model differences to review</strong><ul>${model.warnings.map(warning => `<li>${esc(warning)}</li>`).join('')}</ul></aside>` : ''}<details class="sorbo-nastran-preview"><summary>Preview generated BDF</summary><pre data-nastran-preview>${esc(model.deck)}</pre></details>`;
 }
 
 function nastranExportPanel(config, analysis) {
   const model = generateNastranIsolationBdf(config, analysis);
   const settings = model.settings;
-  return `<section class="sorbo-card sorbo-nastran-card" data-nastran-export><header><div><p class="eyebrow">NASTRAN correlation model</p><h2>Export the isolation system as a SOL 103 BDF</h2></div><button type="button" class="button" data-sorbo-action="export-nastran-bdf">Download BDF</button></header><div class="sorbo-nastran-unit-contract"><strong>IPS mass-unit contract</strong><span>in · lbf · s · slinch</span><p>CONM2 mass is converted from lbm to slinch. MAT1 density is slinch/in³, inertia is slinch·in², CBUSH stiffness is lbf/in, and <code>PARAM,WTMASS,1.0</code> prevents a second mass conversion.</p></div><div class="sorbo-nastran-controls">${nastranField('plateThicknessIn', 'Plate thickness', settings.plateThicknessIn, { unit: 'in', min: 0.005, max: 5, step: 0.005 })}${nastranField('plateDensitySlinchPerIn3', 'Aluminum mass density', settings.plateDensitySlinchPerIn3, { unit: 'slinch/in³', min: 0, max: 0.01, step: 0.00000001, help: `${fmt(settings.plateDensitySlinchPerIn3 * 386.088582677, 5)} lbm/in³ equivalent.` })}${nastranField('massAccounting', 'Mass accounting', settings.massAccounting, { options: [['box-plus-plate', 'Box CONM2 + physical plate'], ['preserve-browser', 'Preserve browser mass']] })}${nastranField('coupling', 'Box-to-plate coupling', settings.coupling, { options: [['rbe3', 'RBE3 distributed'], ['rbe2', 'RBE2 rigid footprint']] })}${nastranField('stiffnessReferenceMode', 'CBUSH stiffness basis', settings.stiffnessReferenceMode, { options: [['vertical-mode', 'Calculated vertical mode'], ['custom', 'Custom frequency']] })}<span data-nastran-custom-frequency${settings.stiffnessReferenceMode === 'custom' ? '' : ' hidden'}>${nastranField('customReferenceFrequencyHz', 'Custom reference', settings.customReferenceFrequencyHz, { unit: 'Hz', min: 0.1, max: 100000, step: 1 })}</span></div><details class="sorbo-nastran-advanced"><summary>Mesh, attachment, and material controls</summary><div class="sorbo-nastran-controls">${nastranField('meshX', 'Nominal X divisions', settings.meshX, { min: 2, max: 40, step: 1 })}${nastranField('meshY', 'Nominal Y divisions', settings.meshY, { min: 2, max: 40, step: 1 })}${nastranField('attachmentSpacingIn.0', 'Box attachment X spacing', settings.attachmentSpacingIn[0], { unit: 'in', min: 0.01, step: 0.05 })}${nastranField('attachmentSpacingIn.1', 'Box attachment Y spacing', settings.attachmentSpacingIn[1], { unit: 'in', min: 0.01, step: 0.05 })}${nastranField('plateYoungsModulusPsi', "Plate Young's modulus", settings.plateYoungsModulusPsi, { unit: 'psi', min: 1, step: 100000 })}${nastranField('platePoisson', "Plate Poisson's ratio", settings.platePoisson, { min: -0.99, max: 0.499, step: 0.01 })}${nastranField('modeCount', 'Requested modes', settings.modeCount, { min: 6, max: 200, step: 1 })}${nastranField('maximumFrequencyHz', 'Maximum extraction frequency', settings.maximumFrequencyHz, { unit: 'Hz', min: 1, step: 100 })}</div></details><div data-nastran-output>${nastranExportOutput(model)}</div></section>`;
+  const materialHelp = 'Sets MAT1 modulus, Poisson ratio, and slinch/in³ density together.';
+  return `<section class="sorbo-card sorbo-nastran-card" data-nastran-export><header><div><p class="eyebrow">NASTRAN correlation model</p><h2>Export the isolation system as a SOL 103 BDF</h2></div><button type="button" class="button" data-sorbo-action="export-nastran-bdf">Download BDF</button></header><div class="sorbo-nastran-unit-contract"><strong>IPS mass-unit contract</strong><span>in · lbf · s · slinch</span><p>CONM2 mass is converted from lbm to slinch. MAT1 density is slinch/in³, inertia is slinch·in², CBUSH stiffness is lbf/in, and <code>PARAM,WTMASS,1.0</code> prevents a second mass conversion.</p></div><div class="sorbo-nastran-controls">${nastranField('plateThicknessIn', 'Plate thickness', settings.plateThicknessIn, { unit: 'in', min: 0.005, max: 5, step: 0.005 })}${nastranField('plateMaterial', 'Plate material', settings.plateMaterial, { options: Object.entries(NASTRAN_PLATE_MATERIALS).map(([key, item]) => [key, item.label]), help: materialHelp })}${nastranField('massAccounting', 'Mass accounting', settings.massAccounting, { options: [['box-plus-plate', 'Box CONM2 + physical plate'], ['preserve-browser', 'Preserve browser mass']] })}${nastranField('coupling', 'Box-to-plate coupling', settings.coupling, { options: [['rbe3', 'RBE3 distributed'], ['rbe2', 'RBE2 rigid footprint']] })}${nastranField('stiffnessReferenceMode', 'CBUSH stiffness basis', settings.stiffnessReferenceMode, { options: [['vertical-mode', 'Calculated vertical mode'], ['custom', 'Custom frequency']] })}<span data-nastran-custom-frequency${settings.stiffnessReferenceMode === 'custom' ? '' : ' hidden'}>${nastranField('customReferenceFrequencyHz', 'Custom reference', settings.customReferenceFrequencyHz, { unit: 'Hz', min: 0.1, max: 100000, step: 1 })}</span></div><details class="sorbo-nastran-advanced"><summary>Mesh and attachment controls</summary><div class="sorbo-nastran-controls">${nastranField('meshX', 'Nominal X divisions', settings.meshX, { min: 2, max: 40, step: 1 })}${nastranField('meshY', 'Nominal Y divisions', settings.meshY, { min: 2, max: 40, step: 1 })}${nastranField('attachmentSpacingIn.0', 'Box attachment X spacing', settings.attachmentSpacingIn[0], { unit: 'in', min: 0.01, step: 0.05 })}${nastranField('attachmentSpacingIn.1', 'Box attachment Y spacing', settings.attachmentSpacingIn[1], { unit: 'in', min: 0.01, step: 0.05 })}${nastranField('modeCount', 'Requested modes', settings.modeCount, { min: 6, max: 200, step: 1 })}${nastranField('maximumFrequencyHz', 'Maximum extraction frequency', settings.maximumFrequencyHz, { unit: 'Hz', min: 1, step: 100 })}</div></details><div data-nastran-output>${nastranExportOutput(model)}</div></section>`;
 }
 
 function assumptionsPanel(config, analysis) {

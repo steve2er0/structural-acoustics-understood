@@ -78,7 +78,7 @@ const pcbAccelerometersBlock = 'const __pcbAccelerometers=(()=>{\n'+moduleSource
 const sorbothaneDataBlock = 'const __sorbothaneData=(()=>{\n'+moduleSource(sorbothaneDataModule)+'\nreturn {SORBOTHANE_DATA_VERSION,SORBOTHANE_REFERENCES,SORBOTHANE_MATERIAL,SORBOTHANE_CATALOG,sorbothaneCatalogItem};\n})();\n\n';
 const parkerLordIsolatorsBlock = 'const __parkerLordIsolators=(()=>{\n'+moduleSource(parkerLordIsolatorsModule)+'\nreturn {PARKER_LORD_SOURCE,PARKER_LORD_AM_FAMILIES,PARKER_LORD_AM_CATALOG,parkerLordCatalogItem,parkerLordLossFactorForProduct};\n})();\n\n';
 const sorbothaneAnalysisExports = [
-  'DEFAULT_SORBOTHANE_CONFIG', 'normalizeSorbothaneConfig', 'isParkerLordConfig', 'sorbothaneDynamicProperties', 'isolatorDynamicProperties',
+  'DEFAULT_SORBOTHANE_CONFIG', 'NASTRAN_PLATE_MATERIALS', 'normalizeSorbothaneConfig', 'isParkerLordConfig', 'sorbothaneDynamicProperties', 'isolatorDynamicProperties',
   'isolatorGeometry', 'staticPreloadState', 'rigidBodyMassMatrix', 'mountDynamicStiffness',
   'assembleRigidBodyStiffness', 'solveRigidBodyModes', 'rigidBodyResponseAtFrequency',
   'frequencyResponse', 'uncertaintyEnvelope', 'analyzeSorbothaneIsolation', 'runDesignGrid',
