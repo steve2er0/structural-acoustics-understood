@@ -1198,6 +1198,7 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   assert.match(syncSource,/const chartsModule = await read\('js\/charts\.js'\)/);
   assert.match(syncSource,/const pcbAccelerometersModule = await read\('js\/pcb-accelerometers-data\.js'\)/);
   assert.match(syncSource,/const parkerLordIsolatorsModule = await read\('js\/parker-lord-isolators\.js'\)/);
+  assert.match(syncSource,/const nastranIsolationExportModule = await read\('js\/nastran-isolation-export\.js'\)/);
   assert.match(syncSource,/const chartsBlock = `const __charts=/);
   assert.match(syncSource,/surface3dSvg/);
   assert.match(syncSource,/rangeChartSvg/);
@@ -1298,8 +1299,13 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   assert.match(html,/const __launchSeaCapstone=\(\(\)=>\{/);
   assert.match(html,/const __workbenchRuntime=\(\(\)=>\{/);
   assert.match(html,/const __engineeringWorkbenches=\(\(\)=>\{/);
-  assert.match(html,/return \{[^}]*screenSorbothaneCatalog,screenSorbothaneCatalogAsync[^}]*\};\n\}\)\(\);\n\nconst __sorbothaneIsolation=/);
+  assert.match(html,/const __nastranIsolationExport=\(\(\)=>\{/);
+  assert.match(html,/function generateNastranIsolationBdf\(configInput, analysisInput = null\)/);
+  assert.match(html,/data-sorbo-action="export-nastran-bdf"/);
+  assert.match(html,/return \{[^}]*screenSorbothaneCatalog,screenSorbothaneCatalogAsync[^}]*\};\n\}\)\(\);\n\nconst __nastranIsolationExport=/);
+  assert.match(html,/return \{NASTRAN_IPS_UNITS,nastranExportSettings,generateNastranIsolationBdf\};\n\}\)\(\);\n\nconst __sorbothaneIsolation=/);
   assert.match(html,/const \{[^}]*screenSorbothaneCatalog,screenSorbothaneCatalogAsync[^}]*\}=__sorbothaneAnalysis;/);
+  assert.match(html,/const \{generateNastranIsolationBdf\}=__nastranIsolationExport;/);
   assert.match(html,/Double-Window SEA Designer/);
   assert.match(html,/Wave Matching &amp; Radiation Canvas|Wave Matching & Radiation Canvas/);
   assert.match(html,/function solveLaunchSeaProject\(projectInput = \{\}\)/);
@@ -1522,7 +1528,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes current interactive runtimes',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v98'/);
+  assert.match(worker,/const CACHE = 'sau-v99'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);
@@ -1534,6 +1540,7 @@ test('offline cache includes current interactive runtimes',()=>{
   assert.match(worker,/\.\/js\/sorbothane-data\.js/);
   assert.match(worker,/\.\/js\/parker-lord-isolators\.js/);
   assert.match(worker,/\.\/js\/sorbothane-analysis\.js/);
+  assert.match(worker,/\.\/js\/nastran-isolation-export\.js/);
   assert.match(worker,/\.\/js\/sorbothane-isolation\.js/);
   assert.match(worker,/\.\/js\/workflow-expansion-data\.js/);
   assert.match(worker,/\.\/js\/workflow-expansion-demos\.js/);

@@ -1017,6 +1017,37 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
 .sorbo-validation-grid article { padding: 1rem; border: 1px solid var(--sorbo-line); background: rgba(4, 20, 35, .7); }
 .sorbo-validation-grid strong { color: #cfe0ec; font-size: .67rem; }
 .sorbo-validation-grid p { color: #7890a5; font-size: .56rem; line-height: 1.55; }
+.sorbo-nastran-card > header { align-items: center; }
+.sorbo-nastran-unit-contract { display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: .75rem; margin: .85rem 0; padding: .75rem .85rem; border: 1px solid rgba(87, 199, 255, .24); background: rgba(43, 125, 173, .08); }
+.sorbo-nastran-unit-contract strong { color: #dcecf8; font-size: .65rem; }
+.sorbo-nastran-unit-contract > span { padding: .2rem .4rem; color: #9edfff; border: 1px solid rgba(87, 199, 255, .28); font: 650 .52rem var(--mono); }
+.sorbo-nastran-unit-contract p { margin: 0; color: #7894a9; font-size: .55rem; line-height: 1.55; }
+.sorbo-nastran-unit-contract code { color: #bfdff2; font-size: .53rem; }
+.sorbo-nastran-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .55rem; }
+.sorbo-nastran-controls > label,
+.sorbo-nastran-controls > span > label { min-width: 0; display: grid; align-content: start; gap: .3rem; padding: .65rem; border: 1px solid var(--sorbo-line); background: rgba(4, 20, 35, .65); }
+.sorbo-nastran-controls label > span { display: flex; justify-content: space-between; gap: .5rem; color: #7894aa; font-size: .52rem; }
+.sorbo-nastran-controls label small { color: #58768d; font: 500 .45rem var(--mono); }
+.sorbo-nastran-controls input,
+.sorbo-nastran-controls select { width: 100%; min-width: 0; }
+.sorbo-nastran-controls em { color: #5e7b91; font-size: .46rem; font-style: normal; line-height: 1.4; }
+.sorbo-nastran-controls > span[hidden] { display: none; }
+.sorbo-nastran-advanced { margin: .65rem 0 0; border: 1px solid rgba(130, 178, 215, .14); background: rgba(3, 17, 30, .42); }
+.sorbo-nastran-advanced > summary { padding: .65rem .75rem; color: #89a7bc; cursor: pointer; font: 600 .52rem var(--mono); }
+.sorbo-nastran-advanced[open] > summary { border-bottom: 1px solid rgba(130, 178, 215, .12); }
+.sorbo-nastran-advanced > .sorbo-nastran-controls { padding: .65rem; }
+.sorbo-nastran-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .55rem; margin-top: .8rem; }
+.sorbo-nastran-summary article { min-width: 0; padding: .75rem; border: 1px solid var(--sorbo-line); background: rgba(4, 20, 35, .72); }
+.sorbo-nastran-summary span,
+.sorbo-nastran-summary small { display: block; color: #6c899f; font-size: .48rem; line-height: 1.45; }
+.sorbo-nastran-summary span { margin-bottom: .35rem; text-transform: uppercase; letter-spacing: .04em; }
+.sorbo-nastran-summary strong { display: block; overflow: hidden; margin-bottom: .22rem; color: #d7e9f5; font: 620 .62rem var(--mono); text-overflow: ellipsis; }
+.sorbo-nastran-warnings { margin-top: .65rem; padding: .75rem .9rem; color: #c9a67c; border: 1px solid rgba(238, 177, 75, .24); background: rgba(110, 72, 20, .08); }
+.sorbo-nastran-warnings strong { font-size: .58rem; }
+.sorbo-nastran-warnings ul { margin: .45rem 0 0; padding-left: 1.15rem; font-size: .52rem; line-height: 1.55; }
+.sorbo-nastran-preview { margin-top: .65rem; border: 1px solid rgba(130, 178, 215, .14); }
+.sorbo-nastran-preview summary { padding: .65rem .75rem; color: #89a7bc; cursor: pointer; font: 600 .52rem var(--mono); }
+.sorbo-nastran-preview pre { max-height: 520px; margin: 0; overflow: auto; padding: .85rem; color: #b8d2e4; border-top: 1px solid rgba(130, 178, 215, .12); background: #03101c; font: 500 .51rem/1.55 var(--mono); tab-size: 2; }
 .sorbo-reference-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; }
 .sorbo-reference-grid article { min-height: 190px; display: flex; flex-direction: column; padding: 1rem; border: 1px solid var(--sorbo-line); background: rgba(4, 20, 35, .72); }
 .sorbo-reference-grid article > span { color: var(--sorbo-cyan); font: 560 .47rem var(--mono); letter-spacing: .04em; text-transform: uppercase; }
@@ -1038,6 +1069,7 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
   .sorbo-tone-criteria { grid-template-columns: 1fr; }
   .sorbo-explorer-result { grid-template-columns: 1fr; }
   .sorbo-validation-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .sorbo-nastran-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 980px) {
@@ -1050,6 +1082,9 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
   .sorbo-lower-grid,
   .sorbo-matrix-grid { grid-template-columns: 1fr; }
   .sorbo-reference-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sorbo-nastran-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sorbo-nastran-unit-contract { grid-template-columns: auto 1fr; }
+  .sorbo-nastran-unit-contract p { grid-column: 1 / -1; }
   .sorbo-design-drawings { grid-template-columns: 1fr; }
   .sorbo-catalog-recommendation { grid-template-columns: 1fr auto; }
   .sorbo-catalog-recommendation > button { grid-column: 1 / -1; }
@@ -1078,6 +1113,10 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
   .sorbo-catalog-summary,
   .sorbo-validation-grid,
   .sorbo-reference-grid { grid-template-columns: 1fr; }
+  .sorbo-nastran-controls,
+  .sorbo-nastran-summary { grid-template-columns: 1fr; }
+  .sorbo-nastran-unit-contract { grid-template-columns: 1fr; }
+  .sorbo-nastran-unit-contract > span { width: max-content; }
   .sorbo-equations p { grid-template-columns: 1fr; gap: .25rem; }
   .sorbo-tone-criterion,
   .sorbo-add-criterion { grid-template-columns: 1fr; }
@@ -14728,6 +14767,23 @@ const DEFAULT_SORBOTHANE_CONFIG = {
     cgMm: 3,
     compressionPct: 2,
     seed: 519
+  },
+  validation: {
+    nastran: {
+      plateThicknessIn: 0.125,
+      plateYoungsModulusPsi: 10.3e6,
+      platePoisson: 0.33,
+      plateDensitySlinchPerIn3: 0.00026684,
+      meshX: 8,
+      meshY: 6,
+      attachmentSpacingIn: [6, 4.8],
+      coupling: 'rbe3',
+      massAccounting: 'box-plus-plate',
+      stiffnessReferenceMode: 'vertical-mode',
+      customReferenceFrequencyHz: 100,
+      modeCount: 20,
+      maximumFrequencyHz: 2000
+    }
   }
 };
 
@@ -14735,9 +14791,10 @@ function normalizeSorbothaneConfig(input = {}) {
   const source = input && typeof input === 'object' ? input : {};
   const config = clone(DEFAULT_SORBOTHANE_CONFIG);
   for (const key of ['units', 'schema', 'version']) if (source[key] != null) config[key] = source[key];
-  for (const section of ['component', 'mounts', 'isolator', 'environment', 'analysis', 'uncertainty']) {
+  for (const section of ['component', 'mounts', 'isolator', 'environment', 'analysis', 'uncertainty', 'validation']) {
     config[section] = { ...config[section], ...(source[section] ?? {}) };
   }
+  config.validation.nastran = { ...DEFAULT_SORBOTHANE_CONFIG.validation.nastran, ...(source.validation?.nastran ?? {}) };
   config.component.dimensionsM = [...(source.component?.dimensionsM ?? config.component.dimensionsM)].map((value, index) => Math.max(finite(value, config.component.dimensionsM[index]), 1e-6));
   config.component.cgM = [...(source.component?.cgM ?? config.component.cgM)].map((value, index) => finite(value, config.component.cgM[index]));
   config.component.inertiaKgM2 = [...(source.component?.inertiaKgM2 ?? config.component.inertiaKgM2)].map((value, index) => finite(value, config.component.inertiaKgM2[index]));
@@ -14762,6 +14819,26 @@ function normalizeSorbothaneConfig(input = {}) {
   const lateralModeMinimumHz = source.analysis?.lateralModeMinimumHz ?? config.analysis.lateralModeMinimumHz;
   config.analysis.lateralModeMinimumHz = [0, 1].map(index => Math.max(finite(lateralModeMinimumHz[index], config.analysis.lateralModeMinimumHz[index]), 0.1));
   config.analysis.tones = (source.analysis?.tones ?? config.analysis.tones).map(tone => ({ frequencyHz: Math.max(finite(tone.frequencyHz, 600), 0.1), maximumDb: finite(tone.maximumDb, -10) }));
+  const nastran = config.validation.nastran;
+  nastran.plateThicknessIn = clamp(finite(nastran.plateThicknessIn, 0.125), 0.005, 5);
+  nastran.plateYoungsModulusPsi = clamp(finite(nastran.plateYoungsModulusPsi, 10.3e6), 1, 1e9);
+  nastran.platePoisson = clamp(finite(nastran.platePoisson, 0.33), -0.99, 0.499);
+  nastran.plateDensitySlinchPerIn3 = clamp(finite(nastran.plateDensitySlinchPerIn3, 0.00026684), 0, 0.01);
+  nastran.meshX = clamp(Math.round(finite(nastran.meshX, 8)), 2, 40);
+  nastran.meshY = clamp(Math.round(finite(nastran.meshY, 6)), 2, 40);
+  const componentLengthIn = config.component.dimensionsM[0] / INCH;
+  const componentWidthIn = config.component.dimensionsM[1] / INCH;
+  const attachment = source.validation?.nastran?.attachmentSpacingIn ?? nastran.attachmentSpacingIn;
+  nastran.attachmentSpacingIn = [
+    clamp(finite(attachment?.[0], componentLengthIn * 0.6), Math.min(0.01, componentLengthIn * 0.1), componentLengthIn * 0.98),
+    clamp(finite(attachment?.[1], componentWidthIn * 0.6), Math.min(0.01, componentWidthIn * 0.1), componentWidthIn * 0.98)
+  ];
+  if (!['rbe3', 'rbe2'].includes(nastran.coupling)) nastran.coupling = 'rbe3';
+  if (!['box-plus-plate', 'preserve-browser'].includes(nastran.massAccounting)) nastran.massAccounting = 'box-plus-plate';
+  if (!['vertical-mode', 'custom'].includes(nastran.stiffnessReferenceMode)) nastran.stiffnessReferenceMode = 'vertical-mode';
+  nastran.customReferenceFrequencyHz = clamp(finite(nastran.customReferenceFrequencyHz, 100), 0.1, 1e5);
+  nastran.modeCount = clamp(Math.round(finite(nastran.modeCount, 20)), 6, 200);
+  nastran.maximumFrequencyHz = clamp(finite(nastran.maximumFrequencyHz, config.analysis.frequencyMaxHz), 1, 1e6);
   return config;
 }
 
@@ -15958,10 +16035,247 @@ const SORBOTHANE_UNITS = { INCH, LB, LBF, PSI, G0 };
 return {DEFAULT_SORBOTHANE_CONFIG,normalizeSorbothaneConfig,isParkerLordConfig,sorbothaneDynamicProperties,isolatorDynamicProperties,isolatorGeometry,staticPreloadState,rigidBodyMassMatrix,mountDynamicStiffness,assembleRigidBodyStiffness,solveRigidBodyModes,rigidBodyResponseAtFrequency,frequencyResponse,uncertaintyEnvelope,analyzeSorbothaneIsolation,runDesignGrid,screenSorbothaneCatalog,screenSorbothaneCatalogAsync,screenParkerLordCatalog,screenParkerLordCatalogAsync,SORBOTHANE_UNITS,SORBOTHANE_CATALOG};
 })();
 
+const __nastranIsolationExport=(()=>{
+const {isParkerLordConfig,mountDynamicStiffness,normalizeSorbothaneConfig,rigidBodyMassMatrix,solveRigidBodyModes}=__sorbothaneAnalysis;
+const NASTRAN_IPS_UNITS = Object.freeze({
+  length: 'in',
+  force: 'lbf',
+  time: 's',
+  mass: 'slinch',
+  inertia: 'slinch·in²',
+  density: 'slinch/in³',
+  modulus: 'psi',
+  stiffness: 'lbf/in',
+  gravityInPerSec2: 386.08858267716535,
+  lbmPerSlinch: 386.08858267716535,
+  inchPerM: 39.37007874015748,
+  lbfPerN: 0.22480894387096
+});
+
+const { gravityInPerSec2, lbmPerSlinch, inchPerM, lbfPerN } = NASTRAN_IPS_UNITS;
+const KG_TO_LBM = 2.2046226218487757;
+const KG_M2_TO_SLINCH_IN2 = KG_TO_LBM * inchPerM ** 2 / lbmPerSlinch;
+const N_PER_M_TO_LBF_PER_IN = lbfPerN / inchPerM;
+const finite = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
+
+const bdfNumber = value => {
+  const number = Number(value);
+  if (!Number.isFinite(number)) throw new Error(`Cannot write non-finite NASTRAN value: ${value}`);
+  if (number === 0) return '0.';
+  const magnitude = Math.abs(number);
+  if (magnitude >= 1e7 || magnitude < 1e-3) return number.toExponential(7).replace('e', 'E').replace('E+', 'E');
+  return Number(number.toPrecision(9)).toString();
+};
+
+const card = (name, ...fields) => [name, ...fields].map(field => {
+  if (field == null || field === '') return '';
+  return typeof field === 'number' ? bdfNumber(field) : String(field);
+}).join(',');
+
+const comment = value => `$ ${String(value).replace(/\r?\n/g, '\n$ ')}`;
+const coordinateKey = (x, y) => `${Number(x).toFixed(9)}:${Number(y).toFixed(9)}`;
+
+function axisCoordinates(halfExtent, divisionsInput, criticalValues = []) {
+  const divisions = Math.max(2, Math.round(divisionsInput));
+  const values = Array.from({ length: divisions + 1 }, (_, index) => -halfExtent + 2 * halfExtent * index / divisions);
+  values.push(0, ...criticalValues.map(value => clamp(value, -halfExtent, halfExtent)));
+  return values
+    .sort((a, b) => a - b)
+    .filter((value, index, list) => index === 0 || Math.abs(value - list[index - 1]) > 1e-8);
+}
+
+function wrapContinuation(name, initialFields, continuationFields, chunkSize = 8) {
+  const lines = [card(name, ...initialFields)];
+  for (let index = 0; index < continuationFields.length; index += chunkSize) {
+    lines.push(card('+', ...continuationFields.slice(index, index + chunkSize)));
+  }
+  return lines;
+}
+
+function cleanFilename(value) {
+  return String(value).replace(/[^a-z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '') || 'isolation-system';
+}
+
+function nastranExportSettings(configInput) {
+  return normalizeSorbothaneConfig(configInput).validation.nastran;
+}
+
+function generateNastranIsolationBdf(configInput, analysisInput = null) {
+  const config = normalizeSorbothaneConfig(configInput);
+  const settings = config.validation.nastran;
+  const modal = analysisInput?.modes ? analysisInput : solveRigidBodyModes(config);
+  const verticalMode = modal.modes.find(mode => mode.dominantIndex === 2) ?? modal.modes[0];
+  const referenceFrequencyHz = settings.stiffnessReferenceMode === 'custom'
+    ? settings.customReferenceFrequencyHz
+    : verticalMode.frequencyHz;
+  const mount = mountDynamicStiffness(config, referenceFrequencyHz);
+  const mass = rigidBodyMassMatrix(config);
+
+  const plateLengthIn = config.component.dimensionsM[0] * inchPerM;
+  const plateWidthIn = config.component.dimensionsM[1] * inchPerM;
+  const plateZIn = config.mounts.planeZM * inchPerM;
+  const cgIn = config.component.cgM.map(value => value * inchPerM);
+  const mountSpacingIn = config.mounts.spacingM.map(value => value * inchPerM);
+  const attachmentSpacingIn = [...settings.attachmentSpacingIn];
+  const mountCoordinates = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sy]) => [sx * mountSpacingIn[0] / 2, sy * mountSpacingIn[1] / 2]);
+  const attachmentCoordinates = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sy]) => [sx * attachmentSpacingIn[0] / 2, sy * attachmentSpacingIn[1] / 2]);
+  const xCoordinates = axisCoordinates(plateLengthIn / 2, settings.meshX, [...mountCoordinates, ...attachmentCoordinates].map(point => point[0]));
+  const yCoordinates = axisCoordinates(plateWidthIn / 2, settings.meshY, [...mountCoordinates, ...attachmentCoordinates].map(point => point[1]));
+
+  const grids = [];
+  const gridByCoordinate = new Map();
+  let nextGridId = 1001;
+  for (const y of yCoordinates) for (const x of xCoordinates) {
+    const grid = { id: nextGridId++, x, y, z: plateZIn };
+    grids.push(grid);
+    gridByCoordinate.set(coordinateKey(x, y), grid.id);
+  }
+  const plateGrid = (x, y) => {
+    const id = gridByCoordinate.get(coordinateKey(x, y));
+    if (!id) throw new Error(`Plate mesh does not contain required grid at (${x}, ${y}) in.`);
+    return id;
+  };
+
+  const quads = [];
+  let nextQuadId = 2001;
+  for (let yIndex = 0; yIndex < yCoordinates.length - 1; yIndex += 1) {
+    for (let xIndex = 0; xIndex < xCoordinates.length - 1; xIndex += 1) {
+      quads.push({
+        id: nextQuadId++,
+        grids: [
+          plateGrid(xCoordinates[xIndex], yCoordinates[yIndex]),
+          plateGrid(xCoordinates[xIndex + 1], yCoordinates[yIndex]),
+          plateGrid(xCoordinates[xIndex + 1], yCoordinates[yIndex + 1]),
+          plateGrid(xCoordinates[xIndex], yCoordinates[yIndex + 1])
+        ]
+      });
+    }
+  }
+
+  const attachmentGridIds = attachmentCoordinates.map(([x, y]) => plateGrid(x, y));
+  const mountGridIds = mountCoordinates.map(([x, y]) => plateGrid(x, y));
+  const groundGrids = mountCoordinates.map(([x, y], index) => ({ id: 8001 + index, x, y, z: plateZIn }));
+  const cgGridId = 9001;
+  const matId = 10;
+  const pshellId = 20;
+  const pbushId = 40;
+  const rbeId = 6001;
+  const conmId = 7001;
+
+  const boxMassLbm = config.component.massKg * KG_TO_LBM;
+  const boxMassSlinch = boxMassLbm / lbmPerSlinch;
+  const inertiaSlinchIn2 = mass.inertiaKgM2.map(value => value * KG_M2_TO_SLINCH_IN2);
+  const physicalPlateMassSlinch = plateLengthIn * plateWidthIn * settings.plateThicknessIn * settings.plateDensitySlinchPerIn3;
+  const includedPlateMassSlinch = settings.massAccounting === 'box-plus-plate' ? physicalPlateMassSlinch : 0;
+  const deckDensity = settings.massAccounting === 'box-plus-plate' ? settings.plateDensitySlinchPerIn3 : null;
+  const kxLbfPerIn = mount.kxNPerM * N_PER_M_TO_LBF_PER_IN;
+  const kyLbfPerIn = mount.kyNPerM * N_PER_M_TO_LBF_PER_IN;
+  const kzLbfPerIn = mount.kzNPerM * N_PER_M_TO_LBF_PER_IN;
+  const lossFactor = finite(mount.material?.tanDelta, 0);
+
+  const warnings = [];
+  if (settings.massAccounting === 'box-plus-plate') warnings.push('The CQUAD4 plate mass is added to the website component mass; NASTRAN total isolated mass is therefore greater than the browser rigid-body mass.');
+  else warnings.push('The plate density is omitted so the CONM2 preserves the browser total mass; plate self-mass and free plate modes are not represented.');
+  if (!isParkerLordConfig(config)) warnings.push(`Sorbothane PBUSH stiffness is frozen at ${referenceFrequencyHz.toFixed(2)} Hz; one SOL 103 property cannot reproduce the browser model's frequency-dependent modulus at every mode.`);
+  if (settings.coupling === 'rbe2') warnings.push('RBE2 makes the four box attachment grids rigid relative to the CG and may increase the apparent plate stiffness.');
+  const coincidentAttachmentCount = attachmentCoordinates.filter(([x, y]) => mountCoordinates.some(([mx, my]) => Math.abs(x - mx) < 1e-8 && Math.abs(y - my) < 1e-8)).length;
+  if (coincidentAttachmentCount === 4) warnings.push('The box attachment footprint coincides with all four isolator grids, so the plate is largely bypassed in the rigid-body load path.');
+
+  const lines = [
+    'SOL 103',
+    'CEND',
+    'TITLE = STRUCTURAL ACOUSTICS UNDERSTOOD - ISOLATION SYSTEM',
+    'ECHO = NONE',
+    'SUBCASE 1',
+    '  LABEL = ISOLATED ASSEMBLY NORMAL MODES',
+    '  METHOD = 42',
+    '  SPC = 1',
+    '  DISPLACEMENT(PLOT) = ALL',
+    '  SPCFORCES(PLOT) = ALL',
+    '  MPCFORCES(PLOT) = ALL',
+    'BEGIN BULK',
+    comment('UNIT CONTRACT: INCH, LBF, SECOND, SLINCH. WTMASS = 1.0.'),
+    comment(`1 SLINCH = ${lbmPerSlinch.toFixed(9)} LBM; G0 = ${gravityInPerSec2.toFixed(9)} IN/S^2.`),
+    comment('MAT1 RHO: SLINCH/IN^3. CONM2 MASS: SLINCH. CONM2 INERTIA: SLINCH-IN^2.'),
+    comment('PBUSH K1/K2/K3: LBF/IN IN BASIC X/Y/Z. PBUSH GE: DIMENSIONLESS LOSS FACTOR.'),
+    comment(`SOURCE CONFIGURATION: ${config.isolator.productNumber}; ${isParkerLordConfig(config) ? 'PARKER LORD COMPLETE MOUNT' : 'CAPTURED SORBOTHANE ELEMENT'}.`),
+    comment(`BROWSER RIGID-BODY MODES (HZ): ${modal.modes.map(mode => mode.frequencyHz.toFixed(4)).join(', ')}.`),
+    comment(`PBUSH STIFFNESS REFERENCE FREQUENCY: ${referenceFrequencyHz.toFixed(6)} HZ (${settings.stiffnessReferenceMode}).`),
+    comment(`MASS ACCOUNTING: ${settings.massAccounting}. BOX CONM2 = ${boxMassSlinch.toExponential(7)} SLINCH; INCLUDED PLATE = ${includedPlateMassSlinch.toExponential(7)} SLINCH.`),
+    ...warnings.map(warning => comment(`WARNING: ${warning}`)),
+    card('PARAM', 'WTMASS', '1.0'),
+    card('PARAM', 'POST', -1),
+    card('EIGRL', 42, 0, settings.maximumFrequencyHz, settings.modeCount),
+    comment('PLATE MATERIAL AND SHELL PROPERTY'),
+    card('MAT1', matId, settings.plateYoungsModulusPsi, '', settings.platePoisson, deckDensity ?? ''),
+    card('PSHELL', pshellId, matId, settings.plateThicknessIn, matId, 1, matId, 0.833333, 0),
+    comment('EQUIVALENT ISOLATOR PROPERTY: K1=X RADIAL, K2=Y RADIAL, K3=Z AXIAL.'),
+    card('PBUSH', pbushId, 'K', kxLbfPerIn, kyLbfPerIn, kzLbfPerIn, 0, 0, 0),
+    card('+', 'GE', lossFactor, lossFactor, lossFactor, 0, 0, 0),
+    comment('PLATE GRIDS AND CQUAD4 ELEMENTS')
+  ];
+
+  grids.forEach(grid => lines.push(card('GRID', grid.id, '', grid.x, grid.y, grid.z)));
+  quads.forEach(quad => lines.push(card('CQUAD4', quad.id, pshellId, ...quad.grids)));
+  lines.push(comment('BOX CG, CONCENTRATED MASS, AND LOAD-DISTRIBUTION COUPLING'));
+  lines.push(card('GRID', cgGridId, '', ...cgIn));
+  lines.push(card('CONM2', conmId, cgGridId, 0, boxMassSlinch, 0, 0, 0));
+  lines.push(card('+', inertiaSlinchIn2[0], Math.abs(inertiaSlinchIn2[3]), inertiaSlinchIn2[1], Math.abs(inertiaSlinchIn2[4]), Math.abs(inertiaSlinchIn2[5]), inertiaSlinchIn2[2]));
+  if (settings.coupling === 'rbe3') {
+    lines.push(...wrapContinuation('RBE3', [rbeId, '', cgGridId, 123456, 1, 123, ...attachmentGridIds.slice(0, 2)], attachmentGridIds.slice(2)));
+  } else {
+    lines.push(card('RBE2', rbeId, cgGridId, 123456, ...attachmentGridIds));
+  }
+  lines.push(comment('FOUR ZERO-LENGTH CBUSHES TO FIXED BASE GRIDS; CID=0 ALIGNS K1/K2/K3 WITH BASIC X/Y/Z.'));
+  groundGrids.forEach(grid => lines.push(card('GRID', grid.id, '', grid.x, grid.y, grid.z)));
+  mountGridIds.forEach((topGridId, index) => lines.push(card('CBUSH', 4001 + index, pbushId, topGridId, groundGrids[index].id, '', '', '', 0)));
+  lines.push(card('SPC1', 1, 123456, ...groundGrids.map(grid => grid.id)));
+  lines.push('ENDDATA');
+
+  const deck = `${lines.join('\n')}\n`;
+  const filename = `${cleanFilename(`isolation-${config.isolator.productNumber}-sol103`)}.bdf`;
+  return {
+    deck,
+    filename,
+    settings: { ...settings, attachmentSpacingIn },
+    units: NASTRAN_IPS_UNITS,
+    counts: {
+      grids: grids.length + groundGrids.length + 1,
+      cquad4: quads.length,
+      cbush: 4,
+      conm2: 1,
+      rbe2: settings.coupling === 'rbe2' ? 1 : 0,
+      rbe3: settings.coupling === 'rbe3' ? 1 : 0
+    },
+    plate: {
+      lengthIn: plateLengthIn,
+      widthIn: plateWidthIn,
+      thicknessIn: settings.plateThicknessIn,
+      densitySlinchPerIn3: deckDensity ?? 0,
+      physicalMassSlinch: physicalPlateMassSlinch,
+      includedMassSlinch: includedPlateMassSlinch,
+      includedMassLbm: includedPlateMassSlinch * lbmPerSlinch,
+      xCoordinates,
+      yCoordinates
+    },
+    box: { massLbm: boxMassLbm, massSlinch: boxMassSlinch, inertiaSlinchIn2, cgIn },
+    totalIncludedMassSlinch: boxMassSlinch + includedPlateMassSlinch,
+    totalIncludedMassLbm: (boxMassSlinch + includedPlateMassSlinch) * lbmPerSlinch,
+    isolators: { referenceFrequencyHz, kxLbfPerIn, kyLbfPerIn, kzLbfPerIn, lossFactor, mountGridIds, groundGridIds: groundGrids.map(grid => grid.id) },
+    attachmentGridIds,
+    warnings
+  };
+}
+
+return {NASTRAN_IPS_UNITS,nastranExportSettings,generateNastranIsolationBdf};
+})();
+
 const __sorbothaneIsolation=(()=>{
 const {SORBOTHANE_CATALOG,SORBOTHANE_DATA_VERSION,SORBOTHANE_MATERIAL,SORBOTHANE_REFERENCES,sorbothaneCatalogItem}=__sorbothaneData;
 const {PARKER_LORD_AM_CATALOG,PARKER_LORD_AM_FAMILIES,PARKER_LORD_SOURCE,parkerLordCatalogItem}=__parkerLordIsolators;
 const {DEFAULT_SORBOTHANE_CONFIG,normalizeSorbothaneConfig,isParkerLordConfig,sorbothaneDynamicProperties,isolatorDynamicProperties,isolatorGeometry,staticPreloadState,rigidBodyMassMatrix,mountDynamicStiffness,assembleRigidBodyStiffness,solveRigidBodyModes,rigidBodyResponseAtFrequency,frequencyResponse,uncertaintyEnvelope,analyzeSorbothaneIsolation,runDesignGrid,screenSorbothaneCatalog,screenSorbothaneCatalogAsync,screenParkerLordCatalog,screenParkerLordCatalogAsync,SORBOTHANE_UNITS}=__sorbothaneAnalysis;
+const {generateNastranIsolationBdf}=__nastranIsolationExport;
 const { INCH, LB, LBF, PSI } = SORBOTHANE_UNITS;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
@@ -16831,6 +17145,24 @@ function explorerResult(grid) {
   return `<div class="sorbo-explorer-result"><section><h3>${esc(grid.output)} isolation map</h3>${heatmapSvg(grid)}</section><section><h3>Ranked candidates</h3><div class="table-wrap"><table><thead><tr><th>Rank</th><th>${esc(grid.xVariable)}</th><th>${esc(grid.yVariable)}</th><th>Six modes (Hz)</th><th>Map value</th>${toneHeaders}<th>Worst peak</th>${mechanicalHeaders}<th>Compliance</th></tr></thead><tbody>${grid.candidates.map((candidate, index) => `<tr${candidate.isReference ? ' class="is-current-design"' : ''}><td>${index + 1}${candidate.isReference ? '<span class="sorbo-selected-tag">Current</span>' : ''}</td><td>${fmt(candidate.xValue, 3)}</td><td>${fmt(candidate.yValue, 3)}</td><td>${candidate.analysis.modes.map(mode => fmt(mode.frequencyHz, 1)).join(' · ')}</td><td>${fmt(candidate.value, 2)}</td>${candidate.analysis.toneResults.map(result => `<td>${fmt(result.db, 1)} dB · ${result.worstAxis}</td>`).join('')}<td>${fmt(candidate.analysis.peak.db, 1)} dB · ${candidate.analysis.peak.axis}</td>${mechanicalCells(candidate)}<td><span class="sorbo-status ${candidate.pass ? 'pass' : 'fail'}">${candidate.pass ? 'PASS' : 'REVIEW'}</span><small>${compliance(candidate)}</small></td></tr>`).join('')}</tbody></table></div></section></div>`;
 }
 
+function nastranField(path, label, value, options = {}) {
+  const unit = options.unit ? `<small>${esc(options.unit)}</small>` : '';
+  if (options.options) return `<label><span>${esc(label)}${unit}</span><select data-nastran-field="${esc(path)}">${options.options.map(([optionValue, optionLabel]) => `<option value="${esc(optionValue)}"${optionValue === value ? ' selected' : ''}>${esc(optionLabel)}</option>`).join('')}</select>${options.help ? `<em>${esc(options.help)}</em>` : ''}</label>`;
+  return `<label><span>${esc(label)}${unit}</span><input data-nastran-field="${esc(path)}" type="number" value="${esc(value)}"${options.min != null ? ` min="${options.min}"` : ''}${options.max != null ? ` max="${options.max}"` : ''} step="${options.step ?? 'any'}"/>${options.help ? `<em>${esc(options.help)}</em>` : ''}</label>`;
+}
+
+function nastranExportOutput(model) {
+  const coupling = model.counts.rbe3 ? 'RBE3 distributed coupling' : 'RBE2 rigid coupling';
+  const massBasis = model.settings.massAccounting === 'box-plus-plate' ? 'Box CONM2 + physical plate mass' : 'Browser mass preserved; massless plate';
+  return `<div class="sorbo-nastran-summary"><article><span>Plate mesh</span><strong>${model.counts.cquad4} CQUAD4</strong><small>${model.counts.grids} total grids · ${fmt(model.plate.thicknessIn, 4)} in PSHELL</small></article><article><span>Mass model</span><strong>${fmt(model.totalIncludedMassLbm, 4)} lbm</strong><small>${fmt(model.totalIncludedMassSlinch, 7)} slinch · ${esc(massBasis)}</small></article><article><span>Box CONM2</span><strong>${fmt(model.box.massSlinch, 7)} slinch</strong><small>${fmt(model.box.massLbm, 4)} lbm at the current CG</small></article><article><span>Plate contribution</span><strong>${fmt(model.plate.includedMassSlinch, 7)} slinch</strong><small>${fmt(model.plate.includedMassLbm, 4)} lbm included · ρ ${model.settings.plateDensitySlinchPerIn3.toExponential(7)}</small></article><article><span>Coupling</span><strong>${esc(coupling)}</strong><small>${model.counts.cbush} CBUSH · ${model.settings.attachmentSpacingIn.map(value => `${fmt(value, 3)} in`).join(' × ')}</small></article><article><span>Equivalent PBUSH</span><strong>${fmt(model.isolators.kzLbfPerIn, 2)} lbf/in axial</strong><small>${fmt(model.isolators.kxLbfPerIn, 2)} / ${fmt(model.isolators.kyLbfPerIn, 2)} lbf/in radial · η ${fmt(model.isolators.lossFactor, 3)}</small></article><article><span>Linearization</span><strong>${fmt(model.isolators.referenceFrequencyHz, 3)} Hz</strong><small>${model.settings.stiffnessReferenceMode === 'vertical-mode' ? 'Calculated vertical-mode frequency' : 'User-defined reference frequency'}</small></article><article><span>Deck</span><strong>SOL 103 · ${model.settings.modeCount} modes</strong><small>0–${fmt(model.settings.maximumFrequencyHz, 0)} Hz · WTMASS = 1.0</small></article></div>${model.warnings.length ? `<aside class="sorbo-nastran-warnings"><strong>Export-model differences to review</strong><ul>${model.warnings.map(warning => `<li>${esc(warning)}</li>`).join('')}</ul></aside>` : ''}<details class="sorbo-nastran-preview"><summary>Preview generated BDF</summary><pre data-nastran-preview>${esc(model.deck)}</pre></details>`;
+}
+
+function nastranExportPanel(config, analysis) {
+  const model = generateNastranIsolationBdf(config, analysis);
+  const settings = model.settings;
+  return `<section class="sorbo-card sorbo-nastran-card" data-nastran-export><header><div><p class="eyebrow">NASTRAN correlation model</p><h2>Export the isolation system as a SOL 103 BDF</h2></div><button type="button" class="button" data-sorbo-action="export-nastran-bdf">Download BDF</button></header><div class="sorbo-nastran-unit-contract"><strong>IPS mass-unit contract</strong><span>in · lbf · s · slinch</span><p>CONM2 mass is converted from lbm to slinch. MAT1 density is slinch/in³, inertia is slinch·in², CBUSH stiffness is lbf/in, and <code>PARAM,WTMASS,1.0</code> prevents a second mass conversion.</p></div><div class="sorbo-nastran-controls">${nastranField('plateThicknessIn', 'Plate thickness', settings.plateThicknessIn, { unit: 'in', min: 0.005, max: 5, step: 0.005 })}${nastranField('plateDensitySlinchPerIn3', 'Aluminum mass density', settings.plateDensitySlinchPerIn3, { unit: 'slinch/in³', min: 0, max: 0.01, step: 0.00000001, help: `${fmt(settings.plateDensitySlinchPerIn3 * 386.088582677, 5)} lbm/in³ equivalent.` })}${nastranField('massAccounting', 'Mass accounting', settings.massAccounting, { options: [['box-plus-plate', 'Box CONM2 + physical plate'], ['preserve-browser', 'Preserve browser mass']] })}${nastranField('coupling', 'Box-to-plate coupling', settings.coupling, { options: [['rbe3', 'RBE3 distributed'], ['rbe2', 'RBE2 rigid footprint']] })}${nastranField('stiffnessReferenceMode', 'CBUSH stiffness basis', settings.stiffnessReferenceMode, { options: [['vertical-mode', 'Calculated vertical mode'], ['custom', 'Custom frequency']] })}<span data-nastran-custom-frequency${settings.stiffnessReferenceMode === 'custom' ? '' : ' hidden'}>${nastranField('customReferenceFrequencyHz', 'Custom reference', settings.customReferenceFrequencyHz, { unit: 'Hz', min: 0.1, max: 100000, step: 1 })}</span></div><details class="sorbo-nastran-advanced"><summary>Mesh, attachment, and material controls</summary><div class="sorbo-nastran-controls">${nastranField('meshX', 'Nominal X divisions', settings.meshX, { min: 2, max: 40, step: 1 })}${nastranField('meshY', 'Nominal Y divisions', settings.meshY, { min: 2, max: 40, step: 1 })}${nastranField('attachmentSpacingIn.0', 'Box attachment X spacing', settings.attachmentSpacingIn[0], { unit: 'in', min: 0.01, step: 0.05 })}${nastranField('attachmentSpacingIn.1', 'Box attachment Y spacing', settings.attachmentSpacingIn[1], { unit: 'in', min: 0.01, step: 0.05 })}${nastranField('plateYoungsModulusPsi', "Plate Young's modulus", settings.plateYoungsModulusPsi, { unit: 'psi', min: 1, step: 100000 })}${nastranField('platePoisson', "Plate Poisson's ratio", settings.platePoisson, { min: -0.99, max: 0.499, step: 0.01 })}${nastranField('modeCount', 'Requested modes', settings.modeCount, { min: 6, max: 200, step: 1 })}${nastranField('maximumFrequencyHz', 'Maximum extraction frequency', settings.maximumFrequencyHz, { unit: 'Hz', min: 1, step: 100 })}</div></details><div data-nastran-output>${nastranExportOutput(model)}</div></section>`;
+}
+
 function assumptionsPanel(config, analysis) {
   const lord = isParkerLordConfig(config);
   const assumptions = lord ? [
@@ -16863,7 +17195,8 @@ function assumptionsPanel(config, analysis) {
     : '<p><span>Complex material</span>E* = E′ + jE″; E″ = E′ tan δ</p><p><span>Captured sandwich</span>k_mount = k_top-stack + k_bottom-stack</p>';
   return `<section class="sorbo-tab-panel" data-sorbo-panel="assumptions"><div class="sorbo-lower-grid"><section class="sorbo-card"><p class="eyebrow">Always visible model boundary</p><h2>Assumptions and failure modes</h2><ul class="sorbo-assumption-list">${assumptions.map(item => `<li>${esc(item)}</li>`).join('')}</ul>${analysis.warnings.length ? `<h3>Active warnings</h3><ul class="sorbo-warning-list">${analysis.warnings.map(item => `<li>${esc(item)}</li>`).join('')}</ul>` : ''}</section><section class="sorbo-card"><p class="eyebrow">Governing equations</p><h2>Mechanics implemented</h2><div class="sorbo-equations"><p><span>Mount kinematics</span>uᵢ = [I − [rᵢ]×] q</p><p><span>Assembled stiffness</span>K*(ω) = Σ Bᵢᵀ diag(kx*, ky*, kz*) Bᵢ</p><p><span>Rigid-body modes</span>K′(fₙ) φ = (2πfₙ)² M φ</p><p><span>Base excitation</span>[−ω²M + K*(ω)] qᵣ = ω²MΓ y</p><p><span>Absolute response</span>qₐ = qᵣ + Γy</p>${modelEquations}</div></section></div>
     <section class="sorbo-card"><p class="eyebrow">Numerical transparency</p><h2>M and K′(100 Hz)</h2><div class="sorbo-matrix-grid">${matrixTable(analysis.massMatrix, 'Mass matrix M (SI)')}${matrixTable(analysis.stiffnessAt100Hz, 'Storage stiffness K′ (SI)')}</div></section>
-    <section class="sorbo-card"><p class="eyebrow">Validation suite</p><h2>Implemented checks</h2><div class="sorbo-validation-grid"><article><strong>SDOF closure</strong><p>Symmetric vertical response is compared with the analytical base-excited complex-stiffness SDOF solution.</p></article><article><strong>Symmetry</strong><p>Centered CG and symmetric mounts suppress the expected translation/rotation cross terms.</p></article><article><strong>CG shift / height</strong><p>Planar CG offsets and mount-plane separation introduce the expected coupling terms.</p></article><article><strong>Series & sandwich</strong><p>Elements in a stack divide stiffness; opposing preloaded stacks add incremental stiffness.</p></article><article><strong>Units</strong><p>All mechanics use SI; English and SI controls convert only at the UI boundary.</p></article></div></section>
+    ${nastranExportPanel(config, analysis)}
+    <section class="sorbo-card"><p class="eyebrow">Validation suite</p><h2>Implemented checks</h2><div class="sorbo-validation-grid"><article><strong>SDOF closure</strong><p>Symmetric vertical response is compared with the analytical base-excited complex-stiffness SDOF solution.</p></article><article><strong>Symmetry</strong><p>Centered CG and symmetric mounts suppress the expected translation/rotation cross terms.</p></article><article><strong>CG shift / height</strong><p>Planar CG offsets and mount-plane separation introduce the expected coupling terms.</p></article><article><strong>Series & sandwich</strong><p>Elements in a stack divide stiffness; opposing preloaded stacks add incremental stiffness.</p></article><article><strong>Units</strong><p>The browser mechanics use SI internally; the BDF exporter explicitly converts to a consistent inch–lbf–second–slinch contract.</p></article></div></section>
     <section class="sorbo-card"><p class="eyebrow">Authoritative sources</p><h2>References and data provenance</h2><div class="sorbo-reference-grid">${sourceCards}</div><p class="sorbo-caption">${lord ? `Parker LORD catalog accessed ${PARKER_LORD_SOURCE.accessed}. The AM series is integrated; Plate Form, Multiplane, Miniature, High Deflection, and other catalog families require separate model adapters.` : `Research snapshot ${SORBOTHANE_DATA_VERSION}. Catalog availability is explicitly subject to change; verify current product pages before procurement.`}</p></section>
   </section>`;
 }
@@ -17228,6 +17561,34 @@ function bindSorbothaneIsolationWorkbench(root = document) {
     shell.querySelector('[data-sorbo-speed]')?.addEventListener('input', event => { speed = +event.target.value; });
     shell.querySelectorAll('[data-sorbo-camera]').forEach(control => control.addEventListener('input', event => { camera[event.target.dataset.sorboCamera] = +event.target.value; }));
     shell.querySelector('[data-sorbo-action="reset-camera"]')?.addEventListener('click', () => { camera = { yaw: -32, pitch: 24 }; const yaw = shell.querySelector('[data-sorbo-camera="yaw"]'); const pitch = shell.querySelector('[data-sorbo-camera="pitch"]'); if (yaw) yaw.value = -32; if (pitch) pitch.value = 24; });
+    const refreshNastranExport = () => {
+      const model = generateNastranIsolationBdf(config, analysis);
+      const output = shell.querySelector('[data-nastran-output]');
+      if (output) output.innerHTML = nastranExportOutput(model);
+      shell.querySelectorAll('[data-nastran-field]').forEach(control => {
+        const value = pathGet(config.validation.nastran, control.dataset.nastranField);
+        control.value = String(value);
+      });
+      const customFrequency = shell.querySelector('[data-nastran-custom-frequency]');
+      if (customFrequency) customFrequency.hidden = config.validation.nastran.stiffnessReferenceMode !== 'custom';
+      return model;
+    };
+    shell.querySelectorAll('[data-nastran-field]').forEach(control => control.addEventListener('change', event => {
+      const field = event.target.dataset.nastranField;
+      const value = event.target.tagName === 'SELECT' ? event.target.value : Number(event.target.value);
+      pathSet(config.validation.nastran, field, value);
+      config = normalizeSorbothaneConfig(config);
+      save();
+      const model = refreshNastranExport();
+      const live = shell.querySelector('[data-sorbo-live]');
+      if (live) live.textContent = `NASTRAN export updated. ${model.counts.cquad4} CQUAD4 elements and four CBUSH isolators.`;
+    }));
+    shell.querySelector('[data-sorbo-action="export-nastran-bdf"]')?.addEventListener('click', () => {
+      const model = refreshNastranExport();
+      download(model.filename, model.deck, 'text/plain;charset=utf-8');
+      const live = shell.querySelector('[data-sorbo-live]');
+      if (live) live.textContent = `Downloaded ${model.filename}.`;
+    });
     const catalogResult = shell.querySelector('[data-sorbo-catalog-result]');
     const cancelCatalogScreen = () => {
       catalogRunToken += 1;

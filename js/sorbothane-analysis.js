@@ -84,6 +84,23 @@ export const DEFAULT_SORBOTHANE_CONFIG = {
     cgMm: 3,
     compressionPct: 2,
     seed: 519
+  },
+  validation: {
+    nastran: {
+      plateThicknessIn: 0.125,
+      plateYoungsModulusPsi: 10.3e6,
+      platePoisson: 0.33,
+      plateDensitySlinchPerIn3: 0.00026684,
+      meshX: 8,
+      meshY: 6,
+      attachmentSpacingIn: [6, 4.8],
+      coupling: 'rbe3',
+      massAccounting: 'box-plus-plate',
+      stiffnessReferenceMode: 'vertical-mode',
+      customReferenceFrequencyHz: 100,
+      modeCount: 20,
+      maximumFrequencyHz: 2000
+    }
   }
 };
 
@@ -91,9 +108,10 @@ export function normalizeSorbothaneConfig(input = {}) {
   const source = input && typeof input === 'object' ? input : {};
   const config = clone(DEFAULT_SORBOTHANE_CONFIG);
   for (const key of ['units', 'schema', 'version']) if (source[key] != null) config[key] = source[key];
-  for (const section of ['component', 'mounts', 'isolator', 'environment', 'analysis', 'uncertainty']) {
+  for (const section of ['component', 'mounts', 'isolator', 'environment', 'analysis', 'uncertainty', 'validation']) {
     config[section] = { ...config[section], ...(source[section] ?? {}) };
   }
+  config.validation.nastran = { ...DEFAULT_SORBOTHANE_CONFIG.validation.nastran, ...(source.validation?.nastran ?? {}) };
   config.component.dimensionsM = [...(source.component?.dimensionsM ?? config.component.dimensionsM)].map((value, index) => Math.max(finite(value, config.component.dimensionsM[index]), 1e-6));
   config.component.cgM = [...(source.component?.cgM ?? config.component.cgM)].map((value, index) => finite(value, config.component.cgM[index]));
   config.component.inertiaKgM2 = [...(source.component?.inertiaKgM2 ?? config.component.inertiaKgM2)].map((value, index) => finite(value, config.component.inertiaKgM2[index]));
@@ -118,6 +136,26 @@ export function normalizeSorbothaneConfig(input = {}) {
   const lateralModeMinimumHz = source.analysis?.lateralModeMinimumHz ?? config.analysis.lateralModeMinimumHz;
   config.analysis.lateralModeMinimumHz = [0, 1].map(index => Math.max(finite(lateralModeMinimumHz[index], config.analysis.lateralModeMinimumHz[index]), 0.1));
   config.analysis.tones = (source.analysis?.tones ?? config.analysis.tones).map(tone => ({ frequencyHz: Math.max(finite(tone.frequencyHz, 600), 0.1), maximumDb: finite(tone.maximumDb, -10) }));
+  const nastran = config.validation.nastran;
+  nastran.plateThicknessIn = clamp(finite(nastran.plateThicknessIn, 0.125), 0.005, 5);
+  nastran.plateYoungsModulusPsi = clamp(finite(nastran.plateYoungsModulusPsi, 10.3e6), 1, 1e9);
+  nastran.platePoisson = clamp(finite(nastran.platePoisson, 0.33), -0.99, 0.499);
+  nastran.plateDensitySlinchPerIn3 = clamp(finite(nastran.plateDensitySlinchPerIn3, 0.00026684), 0, 0.01);
+  nastran.meshX = clamp(Math.round(finite(nastran.meshX, 8)), 2, 40);
+  nastran.meshY = clamp(Math.round(finite(nastran.meshY, 6)), 2, 40);
+  const componentLengthIn = config.component.dimensionsM[0] / INCH;
+  const componentWidthIn = config.component.dimensionsM[1] / INCH;
+  const attachment = source.validation?.nastran?.attachmentSpacingIn ?? nastran.attachmentSpacingIn;
+  nastran.attachmentSpacingIn = [
+    clamp(finite(attachment?.[0], componentLengthIn * 0.6), Math.min(0.01, componentLengthIn * 0.1), componentLengthIn * 0.98),
+    clamp(finite(attachment?.[1], componentWidthIn * 0.6), Math.min(0.01, componentWidthIn * 0.1), componentWidthIn * 0.98)
+  ];
+  if (!['rbe3', 'rbe2'].includes(nastran.coupling)) nastran.coupling = 'rbe3';
+  if (!['box-plus-plate', 'preserve-browser'].includes(nastran.massAccounting)) nastran.massAccounting = 'box-plus-plate';
+  if (!['vertical-mode', 'custom'].includes(nastran.stiffnessReferenceMode)) nastran.stiffnessReferenceMode = 'vertical-mode';
+  nastran.customReferenceFrequencyHz = clamp(finite(nastran.customReferenceFrequencyHz, 100), 0.1, 1e5);
+  nastran.modeCount = clamp(Math.round(finite(nastran.modeCount, 20)), 6, 200);
+  nastran.maximumFrequencyHz = clamp(finite(nastran.maximumFrequencyHz, config.analysis.frequencyMaxHz), 1, 1e6);
   return config;
 }
 

@@ -21,6 +21,7 @@ import {
   staticPreloadState
 } from '../js/sorbothane-analysis.js';
 import { engineeringReport, renderSorbothaneIsolationWorkbench, responseCsv, sorbothaneExplorerSettingsAroundDesign, sorbothaneExplorerVariableDefaults } from '../js/sorbothane-isolation.js';
+import { NASTRAN_IPS_UNITS, generateNastranIsolationBdf } from '../js/nastran-isolation-export.js';
 import { SORBOTHANE_CATALOG, SORBOTHANE_MATERIAL } from '../js/sorbothane-data.js';
 import { PARKER_LORD_AM_CATALOG, PARKER_LORD_AM_FAMILIES, parkerLordCatalogItem } from '../js/parker-lord-isolators.js';
 
@@ -263,6 +264,72 @@ test('Parker LORD AM rated-load frequency closes and back-to-back installation d
   close(staticPreloadState(pairedConfig).capacityPerPointN, 6 * SORBOTHANE_UNITS.LBF, 1e-12);
 });
 
+test('NASTRAN export uses the IPS slinch contract and a four-point shell-and-bush topology', () => {
+  const config = baseline();
+  const model = generateNastranIsolationBdf(config);
+  const expectedBoxSlinch = 10 / NASTRAN_IPS_UNITS.lbmPerSlinch;
+  const expectedPlateSlinch = 10 * 8 * 0.125 * 0.00026684;
+  close(model.box.massSlinch, expectedBoxSlinch, 1e-12);
+  close(model.plate.physicalMassSlinch, expectedPlateSlinch, 1e-12);
+  close(model.plate.includedMassSlinch, expectedPlateSlinch, 1e-12);
+  close(model.totalIncludedMassSlinch, expectedBoxSlinch + expectedPlateSlinch, 1e-12);
+  assert.equal(model.plate.densitySlinchPerIn3, 0.00026684);
+  assert.equal(model.counts.cbush, 4);
+  assert.equal(model.counts.conm2, 1);
+  assert.equal(model.counts.rbe3, 1);
+  assert.equal(model.counts.rbe2, 0);
+  assert.ok(model.counts.cquad4 >= 48);
+  assert.match(model.deck, /^SOL 103$/m);
+  assert.match(model.deck, /^PARAM,WTMASS,1\.0$/m);
+  assert.match(model.deck, /^MAT1,10,1\.0300000E7,,0\.33,2\.6684000E-4$/m);
+  assert.match(model.deck, /^PSHELL,20,10,0\.125,/m);
+  assert.match(model.deck, /^CONM2,7001,9001,0\.,/m);
+  assert.match(model.deck, /^RBE3,6001,,9001,123456,1,123,/m);
+  assert.doesNotMatch(model.deck, /^RBE2,/m);
+  assert.equal((model.deck.match(/^CQUAD4,/gm) ?? []).length, model.counts.cquad4);
+  const cbushCards = model.deck.match(/^CBUSH,.*$/gm) ?? [];
+  assert.equal(cbushCards.length, 4);
+  assert.ok(cbushCards.every(line => line.endsWith(',,,,0.')));
+  assert.match(model.deck, /^SPC1,1,123456,8001,8002,8003,8004$/m);
+  assert.ok(model.isolators.mountGridIds.every(id => model.plate.xCoordinates.length && model.deck.includes(`,${id},800`)));
+});
+
+test('NASTRAN PBUSH stiffness follows the selected isolator and linearization frequency', () => {
+  const config = lordBaseline('AM-001-2');
+  config.validation.nastran.stiffnessReferenceMode = 'custom';
+  config.validation.nastran.customReferenceFrequencyHz = 137;
+  const single = generateNastranIsolationBdf(config);
+  close(single.isolators.referenceFrequencyHz, 137, 1e-12);
+  close(single.isolators.kzLbfPerIn, 89, 1e-8);
+  close(single.isolators.kxLbfPerIn, 74, 1e-8);
+  const pbushFields = single.deck.match(/^PBUSH,.*$/m)[0].split(',');
+  close(Number(pbushFields[3]), 74, 1e-8);
+  close(Number(pbushFields[4]), 74, 1e-8);
+  close(Number(pbushFields[5]), 89, 1e-8);
+  assert.doesNotMatch(single.warnings.join(' '), /frequency-dependent modulus/);
+
+  config.isolator.mountsPerPoint = 2;
+  const paired = generateNastranIsolationBdf(config);
+  close(paired.isolators.kzLbfPerIn, 178, 1e-8);
+  close(paired.isolators.kxLbfPerIn, 148, 1e-8);
+});
+
+test('NASTRAN correlation options make massless-plate and rigid-footprint assumptions explicit', () => {
+  const config = baseline();
+  config.validation.nastran.massAccounting = 'preserve-browser';
+  config.validation.nastran.coupling = 'rbe2';
+  const model = generateNastranIsolationBdf(config);
+  assert.equal(model.plate.includedMassSlinch, 0);
+  close(model.totalIncludedMassSlinch, model.box.massSlinch, 1e-12);
+  assert.equal(model.counts.rbe2, 1);
+  assert.equal(model.counts.rbe3, 0);
+  assert.match(model.deck, /^MAT1,10,1\.0300000E7,,0\.33,$/m);
+  assert.match(model.deck, /^RBE2,6001,9001,123456,/m);
+  assert.doesNotMatch(model.deck, /^RBE3,/m);
+  assert.match(model.warnings.join(' '), /plate density is omitted/i);
+  assert.match(model.warnings.join(' '), /apparent plate stiffness/i);
+});
+
 test('Parker LORD catalog screening evaluates every eligible part and single/back-to-back arrangement', async () => {
   const config = lordBaseline('AM-006-1');
   const criteria = { lateralModeMinimumHz: [1, 1], verticalModeRangeHz: [1, 100], resonanceBandHz: [1, 100], resonanceMaximumDb: 100, tones: [] };
@@ -312,6 +379,16 @@ test('workbench preserves trailing-zero requirement frequencies in rendered labe
   assert.match(html, /Mount plane relative to CG/);
   assert.match(html, /Durometer \(Shore 00\)/);
   assert.match(html, /data-sorbo-catalog-progress/);
+  assert.match(html, /data-sorbo-action="export-nastran-bdf"/);
+  assert.match(html, /data-nastran-field="plateThicknessIn"/);
+  assert.match(html, /data-nastran-field="plateDensitySlinchPerIn3"/);
+  assert.match(html, /0\.00026684/);
+  assert.match(html, /in · lbf · s · slinch/);
+  assert.match(html, /PARAM,WTMASS,1\.0/);
+  assert.match(html, /CQUAD4/);
+  assert.match(html, /CBUSH/);
+  assert.match(html, /CONM2/);
+  assert.match(html, /RBE3 distributed/);
   assert.match(html, /data-sorbo-action="load-current-into-explorer"/);
   assert.match(html, /Current analysis design/);
   assert.match(isolatorHtml, /aria-label="Dimensioned 2D drawing of current Sorbothane element"/);

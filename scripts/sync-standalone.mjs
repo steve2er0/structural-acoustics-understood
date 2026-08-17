@@ -22,6 +22,7 @@ const pcbAccelerometersModule = await read('js/pcb-accelerometers-data.js');
 const sorbothaneDataModule = await read('js/sorbothane-data.js');
 const parkerLordIsolatorsModule = await read('js/parker-lord-isolators.js');
 const sorbothaneAnalysisModule = await read('js/sorbothane-analysis.js');
+const nastranIsolationExportModule = await read('js/nastran-isolation-export.js');
 const sorbothaneIsolationModule = await read('js/sorbothane-isolation.js');
 const calculatorsModule = await read('js/calculators.js');
 const seaCouplingModule = await read('js/sea-coupling.js');
@@ -86,11 +87,12 @@ const sorbothaneAnalysisExports = [
 ];
 const sorbothaneAnalysisImports = sorbothaneAnalysisExports.filter(name => name !== 'SORBOTHANE_CATALOG');
 const sorbothaneAnalysisBlock = `const __sorbothaneAnalysis=(()=>{\nconst {SORBOTHANE_CATALOG,SORBOTHANE_MATERIAL,sorbothaneCatalogItem}=__sorbothaneData;\nconst {PARKER_LORD_AM_CATALOG,parkerLordCatalogItem}=__parkerLordIsolators;\n${moduleSource(sorbothaneAnalysisModule)}\nreturn {${sorbothaneAnalysisExports.join(',')}};\n})();\n\n`;
+const nastranIsolationExportBlock = `const __nastranIsolationExport=(()=>{\nconst {isParkerLordConfig,mountDynamicStiffness,normalizeSorbothaneConfig,rigidBodyMassMatrix,solveRigidBodyModes}=__sorbothaneAnalysis;\n${moduleSource(nastranIsolationExportModule)}\nreturn {NASTRAN_IPS_UNITS,nastranExportSettings,generateNastranIsolationBdf};\n})();\n\n`;
 const workflowExpansionDataBlock = 'const __workflowExpansionData=(()=>{\n'+moduleSource(workflowExpansionDataModule)+'\nreturn {workflowExpansionSections,workflowExpansionToolCatalog,workflowExpansionDemos,workflowExpansionCaseNotes,workflowExpansionReferenceGroups};\n})();\n\n';
 const programExpansionDataBlock = 'const __programExpansionData=(()=>{\n'+moduleSource(programExpansionDataModule)+'\nreturn {programExpansionSections,programExpansionToolCatalog,programExpansionDemos,programExpansionCaseNotes,programExpansionReferenceGroups};\n})();\n\n';
 const seaParameterDataBlock = 'const __seaParameterData=(()=>{\n'+moduleSource(seaParameterDataModule)+'\nreturn {seaParameterSections,seaParameterToolCatalog,seaParameterDemos,seaParameterCaseNotes,seaParameterReferenceGroups};\n})();\n\n';
-const sorbothaneIsolationBlock = `const __sorbothaneIsolation=(()=>{\nconst {SORBOTHANE_CATALOG,SORBOTHANE_DATA_VERSION,SORBOTHANE_MATERIAL,SORBOTHANE_REFERENCES,sorbothaneCatalogItem}=__sorbothaneData;\nconst {PARKER_LORD_AM_CATALOG,PARKER_LORD_AM_FAMILIES,PARKER_LORD_SOURCE,parkerLordCatalogItem}=__parkerLordIsolators;\nconst {${sorbothaneAnalysisImports.join(',')}}=__sorbothaneAnalysis;\n${moduleSource(sorbothaneIsolationModule)}\nreturn {renderSorbothaneIsolationWorkbench,bindSorbothaneIsolationWorkbench,sorbothaneIsolationCalculator,sorbothaneIsolationWorkbench};\n})();\n\n`;
-standalone = replaceRange(standalone, 'const __data=(()=>{', 'const __calculators=(()=>{', dataBlock + workflowExpansionDataBlock + programExpansionDataBlock + seaParameterDataBlock + pcbAccelerometersBlock + sorbothaneDataBlock + parkerLordIsolatorsBlock + sorbothaneAnalysisBlock + sorbothaneIsolationBlock);
+const sorbothaneIsolationBlock = `const __sorbothaneIsolation=(()=>{\nconst {SORBOTHANE_CATALOG,SORBOTHANE_DATA_VERSION,SORBOTHANE_MATERIAL,SORBOTHANE_REFERENCES,sorbothaneCatalogItem}=__sorbothaneData;\nconst {PARKER_LORD_AM_CATALOG,PARKER_LORD_AM_FAMILIES,PARKER_LORD_SOURCE,parkerLordCatalogItem}=__parkerLordIsolators;\nconst {${sorbothaneAnalysisImports.join(',')}}=__sorbothaneAnalysis;\nconst {generateNastranIsolationBdf}=__nastranIsolationExport;\n${moduleSource(sorbothaneIsolationModule)}\nreturn {renderSorbothaneIsolationWorkbench,bindSorbothaneIsolationWorkbench,sorbothaneIsolationCalculator,sorbothaneIsolationWorkbench};\n})();\n\n`;
+standalone = replaceRange(standalone, 'const __data=(()=>{', 'const __calculators=(()=>{', dataBlock + workflowExpansionDataBlock + programExpansionDataBlock + seaParameterDataBlock + pcbAccelerometersBlock + sorbothaneDataBlock + parkerLordIsolatorsBlock + sorbothaneAnalysisBlock + nastranIsolationExportBlock + sorbothaneIsolationBlock);
 
 const calculatorsSource = moduleSource(calculatorsModule).replace(
   'const calculatorRegistry = createEngineeringRegistry(calculatorDefinitions);',

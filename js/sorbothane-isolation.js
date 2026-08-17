@@ -12,6 +12,7 @@ import {
   screenSorbothaneCatalogAsync,
   sorbothaneDynamicProperties
 } from './sorbothane-analysis.js';
+import { generateNastranIsolationBdf } from './nastran-isolation-export.js';
 
 const { INCH, LB, LBF, PSI } = SORBOTHANE_UNITS;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
@@ -882,6 +883,24 @@ function explorerResult(grid) {
   return `<div class="sorbo-explorer-result"><section><h3>${esc(grid.output)} isolation map</h3>${heatmapSvg(grid)}</section><section><h3>Ranked candidates</h3><div class="table-wrap"><table><thead><tr><th>Rank</th><th>${esc(grid.xVariable)}</th><th>${esc(grid.yVariable)}</th><th>Six modes (Hz)</th><th>Map value</th>${toneHeaders}<th>Worst peak</th>${mechanicalHeaders}<th>Compliance</th></tr></thead><tbody>${grid.candidates.map((candidate, index) => `<tr${candidate.isReference ? ' class="is-current-design"' : ''}><td>${index + 1}${candidate.isReference ? '<span class="sorbo-selected-tag">Current</span>' : ''}</td><td>${fmt(candidate.xValue, 3)}</td><td>${fmt(candidate.yValue, 3)}</td><td>${candidate.analysis.modes.map(mode => fmt(mode.frequencyHz, 1)).join(' · ')}</td><td>${fmt(candidate.value, 2)}</td>${candidate.analysis.toneResults.map(result => `<td>${fmt(result.db, 1)} dB · ${result.worstAxis}</td>`).join('')}<td>${fmt(candidate.analysis.peak.db, 1)} dB · ${candidate.analysis.peak.axis}</td>${mechanicalCells(candidate)}<td><span class="sorbo-status ${candidate.pass ? 'pass' : 'fail'}">${candidate.pass ? 'PASS' : 'REVIEW'}</span><small>${compliance(candidate)}</small></td></tr>`).join('')}</tbody></table></div></section></div>`;
 }
 
+function nastranField(path, label, value, options = {}) {
+  const unit = options.unit ? `<small>${esc(options.unit)}</small>` : '';
+  if (options.options) return `<label><span>${esc(label)}${unit}</span><select data-nastran-field="${esc(path)}">${options.options.map(([optionValue, optionLabel]) => `<option value="${esc(optionValue)}"${optionValue === value ? ' selected' : ''}>${esc(optionLabel)}</option>`).join('')}</select>${options.help ? `<em>${esc(options.help)}</em>` : ''}</label>`;
+  return `<label><span>${esc(label)}${unit}</span><input data-nastran-field="${esc(path)}" type="number" value="${esc(value)}"${options.min != null ? ` min="${options.min}"` : ''}${options.max != null ? ` max="${options.max}"` : ''} step="${options.step ?? 'any'}"/>${options.help ? `<em>${esc(options.help)}</em>` : ''}</label>`;
+}
+
+function nastranExportOutput(model) {
+  const coupling = model.counts.rbe3 ? 'RBE3 distributed coupling' : 'RBE2 rigid coupling';
+  const massBasis = model.settings.massAccounting === 'box-plus-plate' ? 'Box CONM2 + physical plate mass' : 'Browser mass preserved; massless plate';
+  return `<div class="sorbo-nastran-summary"><article><span>Plate mesh</span><strong>${model.counts.cquad4} CQUAD4</strong><small>${model.counts.grids} total grids · ${fmt(model.plate.thicknessIn, 4)} in PSHELL</small></article><article><span>Mass model</span><strong>${fmt(model.totalIncludedMassLbm, 4)} lbm</strong><small>${fmt(model.totalIncludedMassSlinch, 7)} slinch · ${esc(massBasis)}</small></article><article><span>Box CONM2</span><strong>${fmt(model.box.massSlinch, 7)} slinch</strong><small>${fmt(model.box.massLbm, 4)} lbm at the current CG</small></article><article><span>Plate contribution</span><strong>${fmt(model.plate.includedMassSlinch, 7)} slinch</strong><small>${fmt(model.plate.includedMassLbm, 4)} lbm included · ρ ${model.settings.plateDensitySlinchPerIn3.toExponential(7)}</small></article><article><span>Coupling</span><strong>${esc(coupling)}</strong><small>${model.counts.cbush} CBUSH · ${model.settings.attachmentSpacingIn.map(value => `${fmt(value, 3)} in`).join(' × ')}</small></article><article><span>Equivalent PBUSH</span><strong>${fmt(model.isolators.kzLbfPerIn, 2)} lbf/in axial</strong><small>${fmt(model.isolators.kxLbfPerIn, 2)} / ${fmt(model.isolators.kyLbfPerIn, 2)} lbf/in radial · η ${fmt(model.isolators.lossFactor, 3)}</small></article><article><span>Linearization</span><strong>${fmt(model.isolators.referenceFrequencyHz, 3)} Hz</strong><small>${model.settings.stiffnessReferenceMode === 'vertical-mode' ? 'Calculated vertical-mode frequency' : 'User-defined reference frequency'}</small></article><article><span>Deck</span><strong>SOL 103 · ${model.settings.modeCount} modes</strong><small>0–${fmt(model.settings.maximumFrequencyHz, 0)} Hz · WTMASS = 1.0</small></article></div>${model.warnings.length ? `<aside class="sorbo-nastran-warnings"><strong>Export-model differences to review</strong><ul>${model.warnings.map(warning => `<li>${esc(warning)}</li>`).join('')}</ul></aside>` : ''}<details class="sorbo-nastran-preview"><summary>Preview generated BDF</summary><pre data-nastran-preview>${esc(model.deck)}</pre></details>`;
+}
+
+function nastranExportPanel(config, analysis) {
+  const model = generateNastranIsolationBdf(config, analysis);
+  const settings = model.settings;
+  return `<section class="sorbo-card sorbo-nastran-card" data-nastran-export><header><div><p class="eyebrow">NASTRAN correlation model</p><h2>Export the isolation system as a SOL 103 BDF</h2></div><button type="button" class="button" data-sorbo-action="export-nastran-bdf">Download BDF</button></header><div class="sorbo-nastran-unit-contract"><strong>IPS mass-unit contract</strong><span>in · lbf · s · slinch</span><p>CONM2 mass is converted from lbm to slinch. MAT1 density is slinch/in³, inertia is slinch·in², CBUSH stiffness is lbf/in, and <code>PARAM,WTMASS,1.0</code> prevents a second mass conversion.</p></div><div class="sorbo-nastran-controls">${nastranField('plateThicknessIn', 'Plate thickness', settings.plateThicknessIn, { unit: 'in', min: 0.005, max: 5, step: 0.005 })}${nastranField('plateDensitySlinchPerIn3', 'Aluminum mass density', settings.plateDensitySlinchPerIn3, { unit: 'slinch/in³', min: 0, max: 0.01, step: 0.00000001, help: `${fmt(settings.plateDensitySlinchPerIn3 * 386.088582677, 5)} lbm/in³ equivalent.` })}${nastranField('massAccounting', 'Mass accounting', settings.massAccounting, { options: [['box-plus-plate', 'Box CONM2 + physical plate'], ['preserve-browser', 'Preserve browser mass']] })}${nastranField('coupling', 'Box-to-plate coupling', settings.coupling, { options: [['rbe3', 'RBE3 distributed'], ['rbe2', 'RBE2 rigid footprint']] })}${nastranField('stiffnessReferenceMode', 'CBUSH stiffness basis', settings.stiffnessReferenceMode, { options: [['vertical-mode', 'Calculated vertical mode'], ['custom', 'Custom frequency']] })}<span data-nastran-custom-frequency${settings.stiffnessReferenceMode === 'custom' ? '' : ' hidden'}>${nastranField('customReferenceFrequencyHz', 'Custom reference', settings.customReferenceFrequencyHz, { unit: 'Hz', min: 0.1, max: 100000, step: 1 })}</span></div><details class="sorbo-nastran-advanced"><summary>Mesh, attachment, and material controls</summary><div class="sorbo-nastran-controls">${nastranField('meshX', 'Nominal X divisions', settings.meshX, { min: 2, max: 40, step: 1 })}${nastranField('meshY', 'Nominal Y divisions', settings.meshY, { min: 2, max: 40, step: 1 })}${nastranField('attachmentSpacingIn.0', 'Box attachment X spacing', settings.attachmentSpacingIn[0], { unit: 'in', min: 0.01, step: 0.05 })}${nastranField('attachmentSpacingIn.1', 'Box attachment Y spacing', settings.attachmentSpacingIn[1], { unit: 'in', min: 0.01, step: 0.05 })}${nastranField('plateYoungsModulusPsi', "Plate Young's modulus", settings.plateYoungsModulusPsi, { unit: 'psi', min: 1, step: 100000 })}${nastranField('platePoisson', "Plate Poisson's ratio", settings.platePoisson, { min: -0.99, max: 0.499, step: 0.01 })}${nastranField('modeCount', 'Requested modes', settings.modeCount, { min: 6, max: 200, step: 1 })}${nastranField('maximumFrequencyHz', 'Maximum extraction frequency', settings.maximumFrequencyHz, { unit: 'Hz', min: 1, step: 100 })}</div></details><div data-nastran-output>${nastranExportOutput(model)}</div></section>`;
+}
+
 function assumptionsPanel(config, analysis) {
   const lord = isParkerLordConfig(config);
   const assumptions = lord ? [
@@ -914,7 +933,8 @@ function assumptionsPanel(config, analysis) {
     : '<p><span>Complex material</span>E* = E′ + jE″; E″ = E′ tan δ</p><p><span>Captured sandwich</span>k_mount = k_top-stack + k_bottom-stack</p>';
   return `<section class="sorbo-tab-panel" data-sorbo-panel="assumptions"><div class="sorbo-lower-grid"><section class="sorbo-card"><p class="eyebrow">Always visible model boundary</p><h2>Assumptions and failure modes</h2><ul class="sorbo-assumption-list">${assumptions.map(item => `<li>${esc(item)}</li>`).join('')}</ul>${analysis.warnings.length ? `<h3>Active warnings</h3><ul class="sorbo-warning-list">${analysis.warnings.map(item => `<li>${esc(item)}</li>`).join('')}</ul>` : ''}</section><section class="sorbo-card"><p class="eyebrow">Governing equations</p><h2>Mechanics implemented</h2><div class="sorbo-equations"><p><span>Mount kinematics</span>uᵢ = [I − [rᵢ]×] q</p><p><span>Assembled stiffness</span>K*(ω) = Σ Bᵢᵀ diag(kx*, ky*, kz*) Bᵢ</p><p><span>Rigid-body modes</span>K′(fₙ) φ = (2πfₙ)² M φ</p><p><span>Base excitation</span>[−ω²M + K*(ω)] qᵣ = ω²MΓ y</p><p><span>Absolute response</span>qₐ = qᵣ + Γy</p>${modelEquations}</div></section></div>
     <section class="sorbo-card"><p class="eyebrow">Numerical transparency</p><h2>M and K′(100 Hz)</h2><div class="sorbo-matrix-grid">${matrixTable(analysis.massMatrix, 'Mass matrix M (SI)')}${matrixTable(analysis.stiffnessAt100Hz, 'Storage stiffness K′ (SI)')}</div></section>
-    <section class="sorbo-card"><p class="eyebrow">Validation suite</p><h2>Implemented checks</h2><div class="sorbo-validation-grid"><article><strong>SDOF closure</strong><p>Symmetric vertical response is compared with the analytical base-excited complex-stiffness SDOF solution.</p></article><article><strong>Symmetry</strong><p>Centered CG and symmetric mounts suppress the expected translation/rotation cross terms.</p></article><article><strong>CG shift / height</strong><p>Planar CG offsets and mount-plane separation introduce the expected coupling terms.</p></article><article><strong>Series & sandwich</strong><p>Elements in a stack divide stiffness; opposing preloaded stacks add incremental stiffness.</p></article><article><strong>Units</strong><p>All mechanics use SI; English and SI controls convert only at the UI boundary.</p></article></div></section>
+    ${nastranExportPanel(config, analysis)}
+    <section class="sorbo-card"><p class="eyebrow">Validation suite</p><h2>Implemented checks</h2><div class="sorbo-validation-grid"><article><strong>SDOF closure</strong><p>Symmetric vertical response is compared with the analytical base-excited complex-stiffness SDOF solution.</p></article><article><strong>Symmetry</strong><p>Centered CG and symmetric mounts suppress the expected translation/rotation cross terms.</p></article><article><strong>CG shift / height</strong><p>Planar CG offsets and mount-plane separation introduce the expected coupling terms.</p></article><article><strong>Series & sandwich</strong><p>Elements in a stack divide stiffness; opposing preloaded stacks add incremental stiffness.</p></article><article><strong>Units</strong><p>The browser mechanics use SI internally; the BDF exporter explicitly converts to a consistent inch–lbf–second–slinch contract.</p></article></div></section>
     <section class="sorbo-card"><p class="eyebrow">Authoritative sources</p><h2>References and data provenance</h2><div class="sorbo-reference-grid">${sourceCards}</div><p class="sorbo-caption">${lord ? `Parker LORD catalog accessed ${PARKER_LORD_SOURCE.accessed}. The AM series is integrated; Plate Form, Multiplane, Miniature, High Deflection, and other catalog families require separate model adapters.` : `Research snapshot ${SORBOTHANE_DATA_VERSION}. Catalog availability is explicitly subject to change; verify current product pages before procurement.`}</p></section>
   </section>`;
 }
@@ -1279,6 +1299,34 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
     shell.querySelector('[data-sorbo-speed]')?.addEventListener('input', event => { speed = +event.target.value; });
     shell.querySelectorAll('[data-sorbo-camera]').forEach(control => control.addEventListener('input', event => { camera[event.target.dataset.sorboCamera] = +event.target.value; }));
     shell.querySelector('[data-sorbo-action="reset-camera"]')?.addEventListener('click', () => { camera = { yaw: -32, pitch: 24 }; const yaw = shell.querySelector('[data-sorbo-camera="yaw"]'); const pitch = shell.querySelector('[data-sorbo-camera="pitch"]'); if (yaw) yaw.value = -32; if (pitch) pitch.value = 24; });
+    const refreshNastranExport = () => {
+      const model = generateNastranIsolationBdf(config, analysis);
+      const output = shell.querySelector('[data-nastran-output]');
+      if (output) output.innerHTML = nastranExportOutput(model);
+      shell.querySelectorAll('[data-nastran-field]').forEach(control => {
+        const value = pathGet(config.validation.nastran, control.dataset.nastranField);
+        control.value = String(value);
+      });
+      const customFrequency = shell.querySelector('[data-nastran-custom-frequency]');
+      if (customFrequency) customFrequency.hidden = config.validation.nastran.stiffnessReferenceMode !== 'custom';
+      return model;
+    };
+    shell.querySelectorAll('[data-nastran-field]').forEach(control => control.addEventListener('change', event => {
+      const field = event.target.dataset.nastranField;
+      const value = event.target.tagName === 'SELECT' ? event.target.value : Number(event.target.value);
+      pathSet(config.validation.nastran, field, value);
+      config = normalizeSorbothaneConfig(config);
+      save();
+      const model = refreshNastranExport();
+      const live = shell.querySelector('[data-sorbo-live]');
+      if (live) live.textContent = `NASTRAN export updated. ${model.counts.cquad4} CQUAD4 elements and four CBUSH isolators.`;
+    }));
+    shell.querySelector('[data-sorbo-action="export-nastran-bdf"]')?.addEventListener('click', () => {
+      const model = refreshNastranExport();
+      download(model.filename, model.deck, 'text/plain;charset=utf-8');
+      const live = shell.querySelector('[data-sorbo-live]');
+      if (live) live.textContent = `Downloaded ${model.filename}.`;
+    });
     const catalogResult = shell.querySelector('[data-sorbo-catalog-result]');
     const cancelCatalogScreen = () => {
       catalogRunToken += 1;
