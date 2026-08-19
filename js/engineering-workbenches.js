@@ -394,6 +394,7 @@ export const engineeringAnalysisDefinitions = [
     visualLegend: 'live dimensions · drive direction · active regime',
     defaultTakeaway: 'Characteristic mobility is a real mean-response conductance. It screens the level hidden by finite-structure resonances; it does not replace a measured complex FRF or finite-model response.',
     evidenceFirst: true,
+    physicalAfterPrimaryPlot: true,
     renderDiagram: infiniteMobilityDiagram,
     inputGroups: [
       { title: 'Structure family', fieldKeys: ['geometry'], open: true },

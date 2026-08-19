@@ -286,15 +286,21 @@ function evidenceTakeaway(context, type, index, item) {
   return context.result?.interpretation?.engineeringConsiderations?.[0] ?? context.result?.interpretation?.physicalMeaning ?? 'Use this supporting evidence to challenge the controlling result.';
 }
 
-function evidenceHtml(context) {
+function evidenceHtml(context, options = {}) {
   const { result, error } = context;
   if (error || !result) return '';
+  const include = (type, index) => {
+    if (options.onlyPrimaryPlot) return type === 'plot' && index === 0;
+    if (options.excludePrimaryPlot) return type !== 'plot' || index !== 0;
+    return true;
+  };
   const plots = (result.plots ?? []).map((plot, index) => {
+    if (!include('plot', index)) return '';
     const selected = selectedTraceIndices(context, plot, index);
     return `<section class="workbench-evidence-panel"><header><h3>${workbenchEsc(plot.title ?? 'Analysis plot')}</h3><span>live project state</span></header>${traceSelectorHtml(context, plot, index)}<div class="chart-shell site-chart-container" data-wb-chart="${index}">${lineChartSvg(plotForIndices(plot, selected))}</div><p class="capstone-panel-takeaway"><strong>Engineering takeaway</strong>${workbenchEsc(evidenceTakeaway(context, 'plot', index, plot))}</p></section>`;
   }).join('');
-  const heatmaps = (result.heatmaps ?? []).map((heatmap, index) => `<section class="workbench-evidence-panel"><header><h3>${workbenchEsc(heatmap.title ?? 'Analysis map')}</h3><span>live project state</span></header><div class="chart-shell site-chart-container">${heatmapSvg(heatmap)}</div><p class="capstone-panel-takeaway"><strong>Engineering takeaway</strong>${workbenchEsc(evidenceTakeaway(context, 'heatmap', index, heatmap))}</p></section>`).join('');
-  const tables = (result.tables ?? []).map((table, index) => `<section class="workbench-evidence-panel"><header><h3>${workbenchEsc(table.title ?? 'Analysis table')}</h3><span>traceable values</span></header><div class="table-wrap"><table><thead><tr>${(table.columns ?? []).map(column => `<th>${workbenchEsc(column)}</th>`).join('')}</tr></thead><tbody>${(table.rows ?? []).map(row => `<tr>${row.map(cell => `<td>${workbenchEsc(typeof cell === 'number' ? workbenchFmt(cell) : cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><p class="capstone-panel-takeaway"><strong>Engineering takeaway</strong>${workbenchEsc(evidenceTakeaway(context, 'table', index, table))}</p></section>`).join('');
+  const heatmaps = (result.heatmaps ?? []).map((heatmap, index) => include('heatmap', index) ? `<section class="workbench-evidence-panel"><header><h3>${workbenchEsc(heatmap.title ?? 'Analysis map')}</h3><span>live project state</span></header><div class="chart-shell site-chart-container">${heatmapSvg(heatmap)}</div><p class="capstone-panel-takeaway"><strong>Engineering takeaway</strong>${workbenchEsc(evidenceTakeaway(context, 'heatmap', index, heatmap))}</p></section>` : '').join('');
+  const tables = (result.tables ?? []).map((table, index) => include('table', index) ? `<section class="workbench-evidence-panel"><header><h3>${workbenchEsc(table.title ?? 'Analysis table')}</h3><span>traceable values</span></header><div class="table-wrap"><table><thead><tr>${(table.columns ?? []).map(column => `<th>${workbenchEsc(column)}</th>`).join('')}</tr></thead><tbody>${(table.rows ?? []).map(row => `<tr>${row.map(cell => `<td>${workbenchEsc(typeof cell === 'number' ? workbenchFmt(cell) : cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><p class="capstone-panel-takeaway"><strong>Engineering takeaway</strong>${workbenchEsc(evidenceTakeaway(context, 'table', index, table))}</p></section>` : '').join('');
   return `${plots}${heatmaps}${tables}`;
 }
 
@@ -359,8 +365,12 @@ export function renderEngineeringAnalysis(definition, calculators, projectInput 
   const diagram = definition.renderDiagram?.(context) ?? '';
   const diagramTakeaway = definition.diagramTakeaway?.(context) ?? result?.interpretation?.physicalMeaning ?? definition.defaultTakeaway;
   const physicalEvidence = `<section class="workbench-domain-panel"><header><div><p class="eyebrow">${workbenchEsc(definition.visualLabel)}</p><h3>${workbenchEsc(definition.visualTitle)}</h3></div><span>${workbenchEsc(definition.visualLegend)}</span></header>${diagram}<p class="capstone-panel-takeaway"><strong>Engineering takeaway</strong>${workbenchEsc(diagramTakeaway)}</p></section>`;
-  const analysisEvidence = `<section class="capstone-analytics workbench-analytics engineering-analysis-evidence"><header><div><p class="eyebrow">Live engineering evidence</p><h2>${workbenchEsc(definition.evidenceTitle ?? `${definition.title} results`)}</h2></div><p>The physical view, metrics, curves, and source record share one persisted state.</p></header>${resultSummaryHtml(context)}${compareHtml(context)}<div class="workbench-evidence-grid">${evidenceHtml(context)}</div>${checksHtml(context)}${sourceHtml(context)}${relatedHtml(context)}</section>`;
-  const mainEvidence = definition.evidenceFirst ? `${analysisEvidence}${physicalEvidence}` : `${physicalEvidence}${analysisEvidence}`;
+  const evidenceHeader = `<header><div><p class="eyebrow">Live engineering evidence</p><h2>${workbenchEsc(definition.evidenceTitle ?? `${definition.title} results`)}</h2></div><p>The physical view, metrics, curves, and source record share one persisted state.</p></header>`;
+  const followOnEvidence = `${resultSummaryHtml(context)}${compareHtml(context)}<div class="workbench-evidence-grid">${evidenceHtml(context, { excludePrimaryPlot: true })}</div>${checksHtml(context)}${sourceHtml(context)}${relatedHtml(context)}`;
+  const analysisEvidence = definition.physicalAfterPrimaryPlot
+    ? `<section class="capstone-analytics workbench-analytics engineering-analysis-evidence">${evidenceHeader}<div class="workbench-evidence-grid">${evidenceHtml(context, { onlyPrimaryPlot: true })}</div></section>${physicalEvidence}<section class="capstone-analytics workbench-analytics engineering-analysis-evidence">${followOnEvidence}</section>`
+    : `<section class="capstone-analytics workbench-analytics engineering-analysis-evidence">${evidenceHeader}${resultSummaryHtml(context)}${compareHtml(context)}<div class="workbench-evidence-grid">${evidenceHtml(context)}</div>${checksHtml(context)}${sourceHtml(context)}${relatedHtml(context)}</section>`;
+  const mainEvidence = definition.physicalAfterPrimaryPlot ? analysisEvidence : definition.evidenceFirst ? `${analysisEvidence}${physicalEvidence}` : `${physicalEvidence}${analysisEvidence}`;
   return `<div class="page-shell site-page-shell site-page-shell-capstone site-page-shell-workbench site-page-shell-analysis" data-workbench-id="${workbenchEsc(definition.id)}" data-engineering-profile="analysis">
     <nav class="breadcrumbs site-breadcrumbs" aria-label="Breadcrumb"><a href="#/tools">Tools</a><span aria-hidden="true">›</span><span>${workbenchEsc(definition.category)}</span><span aria-hidden="true">›</span><span aria-current="page">${workbenchEsc(definition.title)}</span></nav>
     ${decisionHeroHtml(context)}

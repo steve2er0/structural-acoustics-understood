@@ -1585,6 +1585,7 @@ test('shared engineering-tool runtime exposes decision-centered wet-tank, modal-
   const mobilityEntry=engineeringAnalysisRegistry['infinite-mobility-atlas'];
   assert.equal(mobilityDefinition.profile,'analysis');
   assert.equal(mobilityDefinition.evidenceFirst,true);
+  assert.equal(mobilityDefinition.physicalAfterPrimaryPlot,true);
   assert.ok(mobilityDefinition.sources.length>=3);
   const mobilityHtml=mobilityEntry.render();
   assert.match(mobilityHtml,/Which characteristic constituent governs the mean drive-point mobility at this frequency/);
@@ -1594,6 +1595,7 @@ test('shared engineering-tool runtime exposes decision-centered wet-tank, modal-
   assert.match(mobilityHtml,/data-wb-trace-selector="infinite-mobility-atlas:0"/);
   assert.match(mobilityHtml,/\/tool\/infinite-mobility-atlas\?mode=quick/);
   assert.ok(mobilityHtml.indexOf('Cylindrical-shell constituent mobility response')<mobilityHtml.indexOf('Closed cylindrical shell'),'the response evidence is shown before the geometry view');
+  assert.ok(mobilityHtml.indexOf('Closed cylindrical shell')<mobilityHtml.indexOf('Selected shell mobility'),'the geometry view is shown before numerical summary cards');
   assert.match(mobilityHtml,/Mean shell radius/);
   assert.doesNotMatch(mobilityHtml,/Radius of curvature/);
   const mobilityState=createEngineeringToolProject(mobilityDefinition,registry);
@@ -1617,6 +1619,7 @@ test('shared engineering-tool runtime exposes decision-centered wet-tank, modal-
   const runtimeSource=readFileSync(new URL('../js/workbench-runtime.js',import.meta.url),'utf8');
   assert.match(runtimeSource,/function fieldVisible\(context, field\)/);
   assert.match(runtimeSource,/definition\.evidenceFirst/);
+  assert.match(runtimeSource,/definition\.physicalAfterPrimaryPlot/);
 });
 
 test('site visual system exposes reusable components and themes every non-home route',()=>{
