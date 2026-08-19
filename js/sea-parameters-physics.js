@@ -422,6 +422,238 @@ export function radiationEfficiencyAtlasState(input = {}) {
   };
 }
 
+/* Infinite-structure (characteristic) mobilities.
+ * Primary source: Hambric, "To Infinity and Beyond - the Amazing Uses of
+ * Infinite Structure Mobility Theory," Inter-Noise 2019, equations (2)-(14).
+ * The values returned here are real, propagating-wave conductances intended
+ * for mean-response / high-modal-overlap screening, not complex finite-FRF
+ * predictions at an individual resonance or antiresonance.
+ */
+export function infiniteMobilityAtlasState(input = {}) {
+  const frequency = positive(input.frequency, 1000);
+  const requestedMinimum = positive(input.frequencyMin, 10);
+  const requestedMaximum = positive(input.frequencyMax, 50000);
+  const frequencyMin = Math.min(requestedMinimum, requestedMaximum / 1.01);
+  const frequencyMax = Math.max(requestedMaximum, frequencyMin * 1.01);
+  const frequencies = logspace(frequencyMin, frequencyMax, 160);
+  const properties = plateProperties(input);
+  const omega = TAU * frequency;
+
+  const memberWidth = positive(input.memberWidth, 0.025);
+  const memberHeight = positive(input.memberHeight, 0.04);
+  const memberArea = memberWidth * memberHeight;
+  const memberInertia = memberWidth * memberHeight ** 3 / 12;
+  const rodLongitudinalSpeed = Math.sqrt(properties.modulus / properties.density);
+  const axialRodMobility = 1 / (properties.density * memberArea * rodLongitudinalSpeed);
+  const beamBendingSpeed = value => (
+    properties.modulus * memberInertia * (TAU * value) ** 2 / (properties.density * memberArea)
+  ) ** 0.25;
+  const beamCenterMobility = value => 1 / (2 * properties.density * memberArea * beamBendingSpeed(value));
+  const beamFreeEndMobility = value => 2 / (properties.density * memberArea * beamBendingSpeed(value));
+  const thinPlateMobility = 1 / (8 * Math.sqrt(properties.bendingStiffness * properties.surfaceMass));
+
+  const faceThickness = positive(input.faceThickness, 0.0006);
+  const coreThickness = positive(input.coreThickness, 0.0248);
+  const coreDensity = positive(input.coreDensity, 48);
+  const coreShearModulus = positive(input.coreShearModulus, 85e6);
+  const sandwichSurfaceMass = 2 * properties.density * faceThickness + coreDensity * coreThickness;
+  const faceCentroidOffset = (coreThickness + faceThickness) / 2;
+  const sandwichBendingStiffness = (
+    2 * properties.modulus / (1 - properties.poisson ** 2)
+    * (faceThickness ** 3 / 12 + faceThickness * faceCentroidOffset ** 2)
+  );
+  const sandwichShearStiffness = 5 / 6 * coreShearModulus * coreThickness;
+  const sandwichClassicalSpeed = value => (
+    sandwichBendingStiffness * (TAU * value) ** 2 / sandwichSurfaceMass
+  ) ** 0.25;
+  const sandwichTotalSpeed = value => {
+    const localOmega = TAU * value;
+    const shearTerm = localOmega ** 2 * sandwichBendingStiffness / sandwichShearStiffness;
+    const bendingWavenumberSquared = (
+      shearTerm + Math.sqrt(shearTerm ** 2 + 4 * sandwichBendingStiffness * sandwichSurfaceMass * localOmega ** 2)
+    ) / (2 * sandwichBendingStiffness);
+    return localOmega / Math.sqrt(bendingWavenumberSquared);
+  };
+  const sandwichMobility = value => {
+    const totalSpeed = sandwichTotalSpeed(value);
+    const classicalSpeed = sandwichClassicalSpeed(value);
+    return TAU * value / (4 * sandwichSurfaceMass * totalSpeed ** 2)
+      * (1 - 0.5 * (totalSpeed / classicalSpeed) ** 3);
+  };
+  const sandwichShearSpeed = Math.sqrt(sandwichShearStiffness / sandwichSurfaceMass);
+  const sandwichTransitionFrequency = sandwichShearStiffness / Math.sqrt(sandwichBendingStiffness * sandwichSurfaceMass) / TAU;
+
+  const shellRadius = positive(input.shellRadius ?? input.radius, 1.8);
+  const shellThickness = positive(input.shellThickness ?? input.thickness, 0.004);
+  const shellClosed = input.shellClosed !== false;
+  const shellArcAngleDeg = clamp(number(input.shellArcAngleDeg, 120), 5, 360);
+  const shellArcAngleRad = shellArcAngleDeg * Math.PI / 180;
+  const shellAxialLength = positive(input.shellAxialLength ?? input.length, properties.length);
+  const shellBendingStiffness = properties.modulus * shellThickness ** 3 / (12 * (1 - properties.poisson ** 2));
+  const shellLongitudinalSpeed = properties.longitudinalSpeed;
+  const shellRingFrequency = shellLongitudinalSpeed / (TAU * shellRadius);
+  const shellLowTransitionRatio = 0.77 * shellThickness / shellRadius;
+  const shellPlateTransitionRatio = 0.6;
+  const shellHasCurvedRegime = shellLowTransitionRatio < shellPlateTransitionRatio;
+  const shellCircumference = TAU * shellRadius;
+  const shellArcLength = shellRadius * shellArcAngleRad;
+  const shellBeamEquivalentArea = (shellClosed ? shellCircumference : shellArcLength) * shellThickness;
+  const shellBeamEquivalentInertia = shellClosed ? null : shellArcLength * shellThickness ** 3 / 12;
+  const closedShellBeamEquivalentSpeed = value => Math.sqrt(
+    value / shellRingFrequency * shellLongitudinalSpeed ** 2 / Math.sqrt(2)
+  );
+  const curvedPanelStripSpeed = value => (
+    properties.modulus * shellBeamEquivalentInertia * (TAU * value) ** 2
+    / (properties.density * shellBeamEquivalentArea)
+  ) ** 0.25;
+  const shellBeamEquivalentSpeed = value => shellClosed ? closedShellBeamEquivalentSpeed(value) : curvedPanelStripSpeed(value);
+  const shellBeamMobility = value => {
+    return 1 / (2 * properties.density * shellBeamEquivalentArea * shellBeamEquivalentSpeed(value));
+  };
+  const shellCurvedMobility = value => (
+    0.66 / (2.3 * shellLongitudinalSpeed * properties.density * shellThickness ** 2)
+    * Math.sqrt(value / shellRingFrequency)
+  );
+  const shellPlateMobility = 1 / (8 * Math.sqrt(shellBendingStiffness * properties.density * shellThickness));
+  const shellRegimeAt = value => {
+    const ratio = value / shellRingFrequency;
+    if (shellHasCurvedRegime) {
+      if (ratio < shellLowTransitionRatio) return shellClosed ? 'beam-like' : 'strip-like curved panel';
+      if (ratio < shellPlateTransitionRatio) return 'curved-shell';
+      return 'plate-like';
+    }
+    return ratio < shellPlateTransitionRatio
+      ? shellClosed ? 'beam-like (thin-shell range compressed)' : 'strip-like curved panel (thin-shell range compressed)'
+      : 'plate-like';
+  };
+  const shellMobility = value => {
+    const regime = shellRegimeAt(value);
+    if (regime.startsWith('beam-like') || regime.startsWith('strip-like')) return shellBeamMobility(value);
+    if (regime === 'curved-shell') return shellCurvedMobility(value);
+    return shellPlateMobility;
+  };
+
+  const focus = String(input.focus ?? 'cylindrical-shell');
+  const focusState = {
+    'rod-axial': {
+      label: 'Axial rod characteristic mobility',
+      mobility: axialRodMobility,
+      basis: 'Y = 1/(ρAcL)'
+    },
+    'beam-flexural': {
+      label: 'Infinite beam flexural mobility, center drive',
+      mobility: beamCenterMobility(frequency),
+      basis: 'Y = 1/(2ρAcB)'
+    },
+    'beam-free-end': {
+      label: 'Semi-infinite beam flexural mobility, free-end drive',
+      mobility: beamFreeEndMobility(frequency),
+      basis: 'Y = 2/(ρAcB)'
+    },
+    'thin-plate': {
+      label: 'Infinite thin-plate mobility',
+      mobility: thinPlateMobility,
+      basis: 'Y = 1/(8√(Dρh))'
+    },
+    'sandwich-panel': {
+      label: 'Infinite sandwich-panel mobility',
+      mobility: sandwichMobility(frequency),
+      basis: 'Flexural-to-shear approximation'
+    },
+    'cylindrical-shell': {
+      label: `Cylindrical-shell mobility, ${shellRegimeAt(frequency)} regime`,
+      mobility: shellMobility(frequency),
+      basis: 'Beam / curved-shell / plate piecewise relation'
+    }
+  };
+  const selectedFocus = Object.hasOwn(focusState, focus) ? focus : 'cylindrical-shell';
+  const selected = focusState[selectedFocus];
+  const forceRms = positive(input.forceRms, 10);
+
+  return {
+    frequency,
+    frequencyMin,
+    frequencyMax,
+    frequencies,
+    properties,
+    member: {
+      width: memberWidth,
+      height: memberHeight,
+      area: memberArea,
+      inertia: memberInertia,
+      longitudinalSpeed: rodLongitudinalSpeed
+    },
+    axialRodMobility,
+    beamBendingSpeed: beamBendingSpeed(frequency),
+    beamCenterMobility: beamCenterMobility(frequency),
+    beamFreeEndMobility: beamFreeEndMobility(frequency),
+    thinPlateMobility,
+    sandwich: {
+      faceThickness,
+      coreThickness,
+      coreDensity,
+      coreShearModulus,
+      surfaceMass: sandwichSurfaceMass,
+      bendingStiffness: sandwichBendingStiffness,
+      shearStiffness: sandwichShearStiffness,
+      classicalSpeed: sandwichClassicalSpeed(frequency),
+      totalSpeed: sandwichTotalSpeed(frequency),
+      shearSpeed: sandwichShearSpeed,
+      transitionFrequency: sandwichTransitionFrequency,
+      mobility: sandwichMobility(frequency)
+    },
+    shell: {
+      radius: shellRadius,
+      thickness: shellThickness,
+      circumference: shellCircumference,
+      closed: shellClosed,
+      arcAngleDeg: shellClosed ? 360 : shellArcAngleDeg,
+      arcAngleRad: shellClosed ? TAU : shellArcAngleRad,
+      arcLength: shellClosed ? shellCircumference : shellArcLength,
+      axialLength: shellAxialLength,
+      panelArea: (shellClosed ? shellCircumference : shellArcLength) * shellAxialLength,
+      thicknessToRadius: shellThickness / shellRadius,
+      beamEquivalentArea: shellBeamEquivalentArea,
+      beamEquivalentInertia: shellBeamEquivalentInertia,
+      beamEquivalentSpeed: shellBeamEquivalentSpeed(frequency),
+      beamEquivalentBasis: shellClosed ? 'Whole-circumference closed-shell beam equivalent' : 'Open curved-panel strip proxy',
+      bendingStiffness: shellBendingStiffness,
+      longitudinalSpeed: shellLongitudinalSpeed,
+      ringFrequency: shellRingFrequency,
+      normalizedFrequency: frequency / shellRingFrequency,
+      lowTransitionRatio: shellLowTransitionRatio,
+      lowTransitionFrequency: shellLowTransitionRatio * shellRingFrequency,
+      plateTransitionRatio: shellPlateTransitionRatio,
+      plateTransitionFrequency: shellPlateTransitionRatio * shellRingFrequency,
+      hasCurvedRegime: shellHasCurvedRegime,
+      regime: shellRegimeAt(frequency),
+      beamMobility: shellBeamMobility(frequency),
+      curvedMobility: shellCurvedMobility(frequency),
+      plateMobility: shellPlateMobility,
+      mobility: shellMobility(frequency)
+    },
+    selected: {
+      focus: selectedFocus,
+      ...selected,
+      impedance: 1 / selected.mobility,
+      forceRms,
+      inputPower: 0.5 * forceRms ** 2 * selected.mobility
+    },
+    curves: {
+      rodAxial: frequencies.map(() => axialRodMobility),
+      beamCenter: frequencies.map(beamCenterMobility),
+      beamFreeEnd: frequencies.map(beamFreeEndMobility),
+      thinPlate: frequencies.map(() => thinPlateMobility),
+      sandwich: frequencies.map(sandwichMobility),
+      shellBeam: frequencies.map(shellBeamMobility),
+      shellCurved: frequencies.map(shellCurvedMobility),
+      shellPlate: frequencies.map(() => shellPlateMobility),
+      shellApplicable: frequencies.map(shellMobility)
+    },
+    provenance: 'Hambric Inter-Noise 2019 equations (2)-(14); ACS 519 cylindrical-shell slides reproduce the beam, curved-shell, and plate relations. Values are real characteristic mobilities for screening mean finite response.'
+  };
+}
+
 export function drivingPointImpedanceState(input = {}) {
   const model = String(input.model ?? 'plate-center');
   const frequency = positive(input.frequency, 1000);

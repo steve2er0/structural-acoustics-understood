@@ -3,6 +3,7 @@ import {
   drivingPointImpedanceState,
   equipmentLoadingState,
   equivalentPowerInjectionState,
+  infiniteMobilityAtlasState,
   installedFairingSeaState,
   modalDensityAtlasState,
   radiationEfficiencyAtlasState,
@@ -48,6 +49,7 @@ function previewFrame(inner) { return `<svg viewBox="0 0 520 180" aria-hidden="t
 const previewMap = Object.freeze({
   'sea-parameter-chain': previewFrame('<rect x="18" y="64" width="82" height="52" fill="#164453"/><rect x="132" y="64" width="82" height="52" fill="#1e6077"/><rect x="246" y="64" width="82" height="52" fill="#b96d37"/><rect x="360" y="64" width="82" height="52" fill="#376e56"/><path d="M100 90 H132 M214 90 H246 M328 90 H360" stroke="#172027" stroke-width="6"/><circle cx="480" cy="90" r="24" fill="#dce9ec" stroke="#172027" stroke-width="4"/>'),
   'modal-density-regime-map': previewFrame('<path d="M35 145 C145 135 190 115 255 70 S400 35 490 24" fill="none" stroke="#1e6077" stroke-width="6"/><path d="M35 132 H490" stroke="#b96d37" stroke-width="4"/><line x1="285" y1="22" x2="285" y2="150" stroke="#172027" stroke-dasharray="6 5"/>'),
+  'infinite-mobility-wave-atlas': previewFrame('<path d="M30 130 C145 120 250 95 486 45" fill="none" stroke="#1e6077" stroke-width="6"/><path d="M30 105 H486" stroke="#b96d37" stroke-width="5"/><path d="M30 68 C160 78 230 120 330 88 S435 42 486 56" fill="none" stroke="#376e56" stroke-width="5"/><line x1="302" y1="24" x2="302" y2="152" stroke="#172027" stroke-dasharray="6 5"/>'),
   'sea-driving-point-mobility': previewFrame('<rect x="26" y="52" width="145" height="76" fill="#164453"/><path d="M171 90 H276" stroke="#b96d37" stroke-width="7"/><circle cx="308" cy="90" r="32" fill="#dce9ec" stroke="#1e6077" stroke-width="5"/><path d="M340 90 H490" stroke="#1e6077" stroke-width="5"/><path d="M410 55 C430 75 430 105 410 125" fill="none" stroke="#b96d37" stroke-width="4"/>'),
   'sea-coupling-mechanisms': previewFrame('<rect x="24" y="47" width="150" height="88" fill="#164453"/><rect x="346" y="65" width="150" height="70" fill="#1e6077"/><path d="M182 73 H335 M320 62 L338 73 L320 84" stroke="#b96d37" stroke-width="8" fill="none"/><path d="M335 112 H182 M198 103 L180 112 L198 121" stroke="#657176" stroke-width="4" fill="none"/><circle cx="260" cy="92" r="14" fill="#172027"/>'),
   'environment-to-sea-power': previewFrame('<path d="M24 45 C75 20 110 70 156 45 S230 70 276 45" fill="none" stroke="#1e6077" stroke-width="14" opacity=".7"/><rect x="32" y="100" width="244" height="28" fill="#164453"/><path d="M292 90 H390" stroke="#b96d37" stroke-width="9"/><rect x="405" y="45" width="78" height="90" fill="#376e56"/><text x="444" y="98" text-anchor="middle" fill="#faf8f2" font-size="18">W</text>'),
@@ -97,6 +99,38 @@ function mountModalDensity(root) {
     const sy = value => y0 + height - (Math.log10(value) - Math.log10(minY)) / Math.log10(maxY / minY) * height;
     const path = state.frequencies.map((f, i) => `${i ? 'L' : 'M'}${sx(f).toFixed(1)},${sy(state.curve[i]).toFixed(1)}`).join(' ');
     svg.innerHTML = `<rect width="1000" height="440" fill="${C.paper}"/><line x1="${x0}" y1="${y0 + height}" x2="${x0 + width}" y2="${y0 + height}" stroke="${C.muted}"/><line x1="${x0}" y1="${y0}" x2="${x0}" y2="${y0 + height}" stroke="${C.muted}"/><path d="${path}" fill="none" stroke="${C.teal}" stroke-width="6"/><line x1="${sx(state.frequency)}" y1="${y0}" x2="${sx(state.frequency)}" y2="${y0 + height}" stroke="${C.rust}" stroke-dasharray="6 5"/><circle cx="${sx(state.frequency)}" cy="${sy(state.modalDensity)}" r="8" fill="${C.rust}"/><text x="725" y="82" font-size="13" fill="${C.muted}">modal density</text><text x="725" y="114" font-size="25" font-weight="700" fill="${C.ink}">${fmt(state.modalDensity, 3)}</text><text x="725" y="158" font-size="13" fill="${C.muted}">modes / band</text><text x="725" y="190" font-size="25" font-weight="700" fill="${C.teal}">${fmt(state.modesInBand, 2)}</text><text x="725" y="234" font-size="13" fill="${C.muted}">modal overlap</text><text x="725" y="266" font-size="25" font-weight="700" fill="${C.rust}">${fmt(state.modalOverlap, 2)}</text><text x="725" y="326" font-size="12" fill="${C.ink}">${esc(state.readiness)}</text>`;
+  });
+}
+
+function mountInfiniteMobility(root) {
+  return mountLab(root, [
+    { key: 'focus', stateKey: 'focus', label: 'Structure', type: 'select', value: 'cylindrical-shell', options: [{ value: 'rod-axial', label: 'Axial rod' }, { value: 'beam-flexural', label: 'Flexural beam' }, { value: 'thin-plate', label: 'Thin plate' }, { value: 'sandwich-panel', label: 'Sandwich panel' }, { value: 'cylindrical-shell', label: 'Cylindrical shell' }] },
+    { key: 'frequency', stateKey: 'frequency', label: 'Selected frequency', min: 40, max: 10000, step: 20, value: 1000, unit: ' Hz' },
+    { key: 'radius', stateKey: 'shellRadius', label: 'Shell radius', min: 0.2, max: 3.5, step: 0.05, value: 1.8, unit: ' m' }
+  ], 'Characteristic mobility is a real mean-response trend. Change structure and frequency to see the finite-FRF reference level and the shell wave-regime transitions.', (svg, v) => {
+    const state = infiniteMobilityAtlasState({ focus: v.focus, frequency: v.frequency, frequencyMin: 20, frequencyMax: 20000, shellRadius: v.radius, thickness: 0.003, shellThickness: 0.004, memberWidth: 0.025, memberHeight: 0.04, faceThickness: 0.0006, coreThickness: 0.0248, coreDensity: 48, coreShearModulus: 85e6, modulus: 70e9, density: 2700, poisson: 0.33 });
+    const curveByFocus = {
+      'rod-axial': { label: 'axial rod', values: state.curves.rodAxial, color: C.teal },
+      'beam-flexural': { label: 'flexural beam', values: state.curves.beamCenter, color: C.teal },
+      'thin-plate': { label: 'thin plate', values: state.curves.thinPlate, color: C.teal },
+      'sandwich-panel': { label: 'sandwich panel', values: state.curves.sandwich, color: C.teal },
+      'cylindrical-shell': { label: 'shell applicable relation', values: state.curves.shellApplicable, color: C.teal }
+    };
+    const primary = curveByFocus[state.selected.focus];
+    const traces = state.selected.focus === 'cylindrical-shell'
+      ? [primary, { label: 'beam-like', values: state.curves.shellBeam, color: C.grid }, { label: 'curved-shell', values: state.curves.shellCurved, color: C.rust }, { label: 'plate-like', values: state.curves.shellPlate, color: C.green }]
+      : [primary, { label: 'thin-plate reference', values: state.curves.thinPlate, color: C.rust }];
+    const x0 = 70, y0 = 55, width = 620, height = 290;
+    const values = traces.flatMap(item => item.values).filter(value => value > 0);
+    const minY = Math.min(...values) / 1.6, maxY = Math.max(...values) * 1.6;
+    const sx = value => logPosition(value, state.frequencyMin, state.frequencyMax, x0, width);
+    const sy = value => y0 + height - (Math.log10(value) - Math.log10(minY)) / Math.log10(maxY / minY) * height;
+    const paths = traces.map((item, index) => `<path d="${state.frequencies.map((f, i) => `${i ? 'L' : 'M'}${sx(f).toFixed(1)},${sy(item.values[i]).toFixed(1)}`).join(' ')}" fill="none" stroke="${item.color}" stroke-width="${index === 0 ? 6 : 3}" ${index > 0 ? 'stroke-dasharray="7 5"' : ''}/>`).join('');
+    const focusMobility = state.selected.mobility;
+    const transitions = state.selected.focus === 'cylindrical-shell'
+      ? `<text x="735" y="284" font-size="12" fill="${C.rust}">ring ${fmt(state.shell.ringFrequency, 0)} Hz</text><text x="735" y="312" font-size="12" fill="${C.muted}">${esc(state.shell.regime)}</text>`
+      : `<text x="735" y="284" font-size="12" fill="${C.rust}">plate reference ${fmt(state.thinPlateMobility, 4)}</text>`;
+    svg.innerHTML = `<rect width="1000" height="440" fill="${C.paper}"/><line x1="${x0}" y1="${y0 + height}" x2="${x0 + width}" y2="${y0 + height}" stroke="${C.muted}"/><line x1="${x0}" y1="${y0}" x2="${x0}" y2="${y0 + height}" stroke="${C.muted}"/><line x1="${sx(v.frequency)}" y1="${y0}" x2="${sx(v.frequency)}" y2="${y0 + height}" stroke="${C.ink}" stroke-dasharray="6 5"/>${paths}<circle cx="${sx(v.frequency)}" cy="${sy(focusMobility)}" r="8" fill="${C.ink}"/><text x="${x0}" y="30" font-size="17" font-weight="700" fill="${C.ink}">Real characteristic mobility — ${esc(primary.label)}</text><text x="735" y="82" font-size="13" fill="${C.muted}">Re{Y} at ${fmt(v.frequency, 0)} Hz</text><text x="735" y="120" font-size="27" font-weight="700" fill="${C.ink}">${fmt(focusMobility, 4)}</text><text x="735" y="150" font-size="12" fill="${C.muted}">m/(N·s)</text><text x="735" y="205" font-size="13" fill="${C.muted}">finite-FRF reference</text><text x="735" y="235" font-size="14" fill="${C.ink}">mean trend, not each mode</text>${transitions}<text x="${x0}" y="386" font-size="12" fill="${C.muted}">The selected curve is the propagating-wave conductance used for high-frequency mean-response and force-power screening.</text>`;
   });
 }
 
@@ -212,6 +246,7 @@ function mountFairing(root) {
 const mounts = Object.freeze({
   'sea-parameter-chain': mountParameterChain,
   'modal-density-regime-map': mountModalDensity,
+  'infinite-mobility-wave-atlas': mountInfiniteMobility,
   'sea-driving-point-mobility': mountMobility,
   'sea-coupling-mechanisms': mountClf,
   'environment-to-sea-power': mountPower,

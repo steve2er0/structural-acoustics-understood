@@ -7,6 +7,7 @@ import {
   drivingPointImpedanceState,
   equipmentLoadingState,
   equivalentPowerInjectionState,
+  infiniteMobilityAtlasState,
   installedFairingSeaState,
   modalDensityAtlasState,
   radiationEfficiencyAtlasState,
@@ -19,6 +20,7 @@ const stat = (label, value, unit = '', tone = '', note = '') => ({ label, value,
 const trace = (name, x, y, extra = {}) => ({ name, x, y, ...extra });
 const mm = value => Number(value) / 1000;
 const gpa = value => Number(value) * 1e9;
+const mpa = value => Number(value) * 1e6;
 const launchConsiderations = primary => [
   primary,
   'Preserve the frequency-band definition, subsystem boundary, units, direction, and parameter provenance when transferring this result into an SEA model.',
@@ -41,6 +43,115 @@ const syncModalDensityMaterial = values => {
   const material = materials[values.material] || materials.aluminum;
   return { ...values, modulus: material.E / 1e9, density: material.rho, poisson: material.nu };
 };
+const syncInfiniteMobilityMaterial = values => {
+  const material = materials[values.material] || materials.aluminum;
+  return { ...values, modulus: material.E / 1e9, density: material.rho, poisson: material.nu };
+};
+const infiniteMobilityFocus = values => {
+  const geometry = String(values.geometry ?? 'cylindrical-shell');
+  if (geometry === 'beam') return String(values.beam_geometry ?? 'beam-flexural');
+  if (geometry === 'flat-panel') return 'thin-plate';
+  if (geometry === 'sandwich-panel') return 'sandwich-panel';
+  return 'cylindrical-shell';
+};
+const infiniteMobilityGeometryLabel = values => {
+  const geometry = String(values.geometry ?? 'cylindrical-shell');
+  if (geometry === 'beam') {
+    const labels = {
+      'rod-axial': 'Axial rod',
+      'beam-flexural': 'Infinite flexural beam, center drive',
+      'beam-free-end': 'Semi-infinite flexural beam, free-end drive'
+    };
+    return labels[String(values.beam_geometry)] ?? labels['beam-flexural'];
+  }
+  if (geometry === 'flat-panel') return 'Infinite thin isotropic flat panel';
+  if (geometry === 'sandwich-panel') return 'Symmetric sandwich panel, flexural-to-shear screen';
+  if (geometry === 'curved-panel') return 'Open curved cylindrical panel / shell segment';
+  return 'Unstiffened thin circular cylindrical shell';
+};
+const svgEsc = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+const schematicNumber = (value, digits = 3) => {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '—';
+  const magnitude = Math.abs(number);
+  if (magnitude >= 1e4 || (magnitude > 0 && magnitude < 1e-3)) return number.toExponential(2);
+  return String(Number(number.toFixed(digits)));
+};
+const schematicLength = (meters, system, compact = false) => {
+  const value = Number(meters);
+  if (system === 'English') return compact ? `${schematicNumber(value * 39.37007874)} in` : `${schematicNumber(value * 3.280839895)} ft`;
+  return compact ? `${schematicNumber(value * 1000)} mm` : `${schematicNumber(value)} m`;
+};
+const schematicArea = (squareMeters, system) => system === 'English'
+  ? `${schematicNumber(squareMeters * 10.76391042)} ft²`
+  : `${schematicNumber(squareMeters)} m²`;
+const mobilitySchematicDefs = `
+  <defs>
+    <linearGradient id="ims-shell" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#102d49"/><stop offset=".5" stop-color="#1b6382"/><stop offset="1" stop-color="#0c263f"/></linearGradient>
+    <linearGradient id="ims-metal" x1="0" x2="1"><stop stop-color="#58bfff"/><stop offset=".48" stop-color="#173b60"/><stop offset="1" stop-color="#76d9ff"/></linearGradient>
+    <linearGradient id="ims-core" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#2c7b76"/><stop offset="1" stop-color="#103e4a"/></linearGradient>
+    <marker id="ims-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10z" fill="#ffcf66"/></marker>
+    <marker id="ims-dim" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#9eb7d3" stroke-width="1.7"/></marker>
+    <filter id="ims-glow"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>`;
+
+function infiniteMobilitySchematic(values, state) {
+  const geometry = String(values.geometry ?? 'cylindrical-shell');
+  const material = materials[values.material] || materials.aluminum;
+  const title = infiniteMobilityGeometryLabel(values);
+  const shell = state.shell;
+  const makeSvg = system => {
+    const head = `<rect width="1000" height="520" fill="#061a2c"/><path d="M0 74 H1000" stroke="#21435f"/><text x="42" y="39" fill="#edf7ff" font-family="ui-sans-serif,system-ui" font-size="22" font-weight="700">${svgEsc(title)}</text><text x="42" y="61" fill="#8ba9c5" font-family="ui-monospace,monospace" font-size="12">${svgEsc(material.label)} · characteristic-mobility geometry</text>`;
+    const card = (x, y, accent, eyebrow, line1, line2 = '') => `<g><rect x="${x}" y="${y}" width="286" height="67" rx="7" fill="#0a2238" stroke="${accent}" stroke-opacity=".62"/><rect x="${x}" y="${y}" width="5" height="67" rx="2" fill="${accent}"/><text x="${x + 18}" y="${y + 21}" fill="${accent}" font-family="ui-monospace,monospace" font-size="10" font-weight="700">${svgEsc(eyebrow)}</text><text x="${x + 18}" y="${y + 42}" fill="#edf7ff" font-family="ui-sans-serif,system-ui" font-size="13" font-weight="650">${svgEsc(line1)}</text>${line2 ? `<text x="${x + 18}" y="${y + 58}" fill="#a5bad1" font-family="ui-monospace,monospace" font-size="11">${svgEsc(line2)}</text>` : ''}</g>`;
+    const footer = `<text x="42" y="492" fill="#8ba9c5" font-family="ui-sans-serif,system-ui" font-size="12">Geometry is schematic and dimensions follow the active inputs. The mobility plot above shows which constituent relation is active by frequency.</text>`;
+    if (geometry === 'curved-panel') {
+      const selectedColor = shell.regime.startsWith('strip-like') ? '#55b8ff' : shell.regime === 'curved-shell' ? '#ffcf66' : '#65d9a0';
+      return `<svg viewBox="0 0 1000 520" role="img" aria-label="Open curved cylindrical panel geometry">${mobilitySchematicDefs}${head}<g>
+        <path d="M150 370 C170 210 300 125 450 170 C535 196 580 268 590 338" fill="none" stroke="#214c68" stroke-width="34"/>
+        <path d="M150 354 C170 194 300 109 450 154 C535 180 580 252 590 322" fill="none" stroke="#8bdcff" stroke-width="6"/>
+        <path d="M180 354 C200 226 304 158 440 198 C498 216 534 263 545 320" fill="none" stroke="url(#ims-shell)" stroke-width="18"/>
+        <line x1="385" y1="354" x2="385" y2="165" stroke="#9eb7d3" stroke-width="1.5" marker-start="url(#ims-dim)" marker-end="url(#ims-dim)"/><text x="398" y="263" fill="#d4e5f5" font-family="ui-monospace,monospace" font-size="13">R = ${svgEsc(schematicLength(shell.radius, system))}</text>
+        <path d="M385 104 V214" stroke="#ffcf66" stroke-width="4" marker-end="url(#ims-arrow)"/><text x="398" y="122" fill="#ffdf91" font-family="ui-monospace,monospace" font-size="13">F</text>
+        <path d="M145 410 H590" stroke="#9eb7d3" stroke-width="1.5" marker-start="url(#ims-dim)" marker-end="url(#ims-dim)"/><text x="368" y="435" text-anchor="middle" fill="#d4e5f5" font-family="ui-monospace,monospace" font-size="13">arc = ${svgEsc(schematicLength(shell.arcLength, system))} · θ = ${schematicNumber(shell.arcAngleDeg, 0)}°</text>
+        <text x="694" y="175" fill="#edf7ff" font-family="ui-sans-serif,system-ui" font-size="18" font-weight="700">Open curved panel</text>
+        <text x="694" y="209" fill="#a5bad1" font-family="ui-monospace,monospace" font-size="13">L = ${svgEsc(schematicLength(shell.axialLength, system))}</text>
+        <text x="694" y="235" fill="#a5bad1" font-family="ui-monospace,monospace" font-size="13">t = ${svgEsc(schematicLength(shell.thickness, system, true))}</text>
+        <circle cx="700" cy="284" r="8" fill="${selectedColor}"/><text x="720" y="289" fill="#edf7ff" font-family="ui-sans-serif,system-ui" font-size="14">Active: ${svgEsc(shell.regime)}</text>
+      </g>${footer}</svg>`;
+    }
+    if (geometry === 'cylindrical-shell') {
+      const selectedColor = shell.regime.startsWith('beam-like') ? '#55b8ff' : shell.regime === 'curved-shell' ? '#ffcf66' : '#65d9a0';
+      return `<svg viewBox="0 0 1000 520" role="img" aria-label="Closed cylindrical shell geometry">${mobilitySchematicDefs}${head}<g>
+        <ellipse cx="224" cy="268" rx="102" ry="132" fill="#0b2a43" stroke="#8bdcff" stroke-width="3"/>
+        <path d="M224 136 H560 V400 H224z" fill="url(#ims-shell)" stroke="#8bdcff" stroke-width="3"/>
+        <ellipse cx="560" cy="268" rx="102" ry="132" fill="url(#ims-shell)" stroke="#8bdcff" stroke-width="3"/>
+        <ellipse cx="224" cy="268" rx="86" ry="112" fill="none" stroke="#9eb7d3" stroke-dasharray="7 7"/>
+        <line x1="224" y1="268" x2="224" y2="136" stroke="#9eb7d3" stroke-width="1.5" marker-start="url(#ims-dim)" marker-end="url(#ims-dim)"/><text x="238" y="203" fill="#d4e5f5" font-family="ui-monospace,monospace" font-size="13">R = ${svgEsc(schematicLength(shell.radius, system))}</text>
+        <path d="M394 96 V180" stroke="#ffcf66" stroke-width="4" marker-end="url(#ims-arrow)"/><text x="408" y="115" fill="#ffdf91" font-family="ui-monospace,monospace" font-size="13">F</text>
+        <line x1="101" y1="132" x2="130" y2="150" stroke="#9eb7d3" stroke-width="1.5" marker-start="url(#ims-dim)" marker-end="url(#ims-dim)"/><text x="72" y="116" fill="#d4e5f5" font-family="ui-monospace,monospace" font-size="13">t = ${svgEsc(schematicLength(shell.thickness, system, true))}</text>
+        <text x="704" y="175" fill="#edf7ff" font-family="ui-sans-serif,system-ui" font-size="18" font-weight="700">Closed cylindrical shell</text>
+        <text x="704" y="210" fill="#a5bad1" font-family="ui-monospace,monospace" font-size="13">circumference = ${svgEsc(schematicLength(shell.circumference, system))}</text>
+        <text x="704" y="236" fill="#a5bad1" font-family="ui-monospace,monospace" font-size="13">h/R = ${schematicNumber(shell.thicknessToRadius, 4)}</text>
+        <circle cx="710" cy="284" r="8" fill="${selectedColor}"/><text x="730" y="289" fill="#edf7ff" font-family="ui-sans-serif,system-ui" font-size="14">Active: ${svgEsc(shell.regime)}</text>
+      </g>${footer}</svg>`;
+    }
+    if (geometry === 'beam') {
+      const beam = String(values.beam_geometry ?? 'beam-flexural');
+      const axial = beam === 'rod-axial';
+      const freeEnd = beam === 'beam-free-end';
+      const xForce = freeEnd ? 154 : 386;
+      const forcePath = axial ? `<path d="M80 250 H${xForce + 30}" stroke="#ffcf66" stroke-width="4" marker-end="url(#ims-arrow)"/><text x="82" y="232" fill="#ffdf91" font-family="ui-monospace,monospace" font-size="13">AXIAL F</text>` : `<path d="M${xForce} 128 V203" stroke="#ffcf66" stroke-width="4" marker-end="url(#ims-arrow)"/><text x="${xForce + 12}" y="143" fill="#ffdf91" font-family="ui-monospace,monospace" font-size="13">TRANSVERSE F</text>`;
+      const driveLabel = axial ? 'Longitudinal wave' : freeEnd ? 'Free-end flexural drive' : 'Center flexural drive';
+      return `<svg viewBox="0 0 1000 520" role="img" aria-label="Beam or rod geometry with selected characteristic-mobility drive condition">${mobilitySchematicDefs}${head}<g><path d="M150 210 H575 V300 H150z" fill="url(#ims-metal)" stroke="#8bdcff" stroke-width="2"/><path d="M150 210 L205 170 H630 L575 210z" fill="#2f7397" stroke="#8bdcff" stroke-width="2"/><path d="M575 210 L630 170 V260 L575 300z" fill="#103450" stroke="#8bdcff" stroke-width="2"/><line x1="150" y1="255" x2="575" y2="255" stroke="#d8f1ff" stroke-dasharray="6 5"/><rect x="690" y="196" width="150" height="120" fill="#10334d" stroke="#8bdcff" stroke-width="2"/><line x1="690" y1="256" x2="840" y2="256" stroke="#8ba9c5" stroke-dasharray="5 4"/><line x1="765" y1="196" x2="765" y2="316" stroke="#8ba9c5" stroke-dasharray="5 4"/><line x1="690" y1="340" x2="840" y2="340" stroke="#9eb7d3" marker-start="url(#ims-dim)" marker-end="url(#ims-dim)"/><text x="765" y="361" text-anchor="middle" fill="#d4e5f5" font-family="ui-monospace,monospace" font-size="12">b = ${svgEsc(schematicLength(state.member.width, system, true))}</text><line x1="864" y1="196" x2="864" y2="316" stroke="#9eb7d3" marker-start="url(#ims-dim)" marker-end="url(#ims-dim)"/><text x="885" y="258" fill="#d4e5f5" font-family="ui-monospace,monospace" font-size="12">h = ${svgEsc(schematicLength(state.member.height, system, true))}</text>${forcePath}<text x="150" y="390" fill="#55b8ff" font-family="ui-monospace,monospace" font-size="13">${svgEsc(driveLabel)}</text><text x="150" y="414" fill="#a5bad1" font-family="ui-monospace,monospace" font-size="12">A = ${svgEsc(schematicArea(state.member.area, system))} · I = ${schematicNumber(state.member.inertia, 4)} m⁴</text></g>${card(650, 100, axial ? '#ffcf66' : '#55b8ff', 'SELECTED WAVE FAMILY', axial ? 'Axial characteristic mobility' : 'Flexural characteristic mobility', axial ? 'Y = 1/(ρAcL)' : freeEnd ? 'Y = 2/(ρAcB)' : 'Y = 1/(2ρAcB)')}${footer}</svg>`;
+    }
+    if (geometry === 'flat-panel') {
+      return `<svg viewBox="0 0 1000 520" role="img" aria-label="Infinite thin plate geometry with point drive and outward flexural waves">${mobilitySchematicDefs}${head}<g><path d="M155 168 H628 L730 228 H258z" fill="#2e7195" stroke="#8bdcff" stroke-width="2"/><path d="M258 228 H730 V355 H258z" fill="url(#ims-metal)" stroke="#8bdcff" stroke-width="2"/><path d="M258 355 L730 355 L628 414 H155z" fill="#10334d" stroke="#8bdcff" stroke-width="2"/><circle cx="494" cy="288" r="16" fill="#ffcf66" filter="url(#ims-glow)"/><path d="M494 111 V266" stroke="#ffcf66" stroke-width="4" marker-end="url(#ims-arrow)"/><text x="507" y="128" fill="#ffdf91" font-family="ui-monospace,monospace" font-size="13">POINT FORCE F</text><ellipse cx="494" cy="288" rx="70" ry="34" fill="none" stroke="#65d9a0" stroke-width="2"/><ellipse cx="494" cy="288" rx="125" ry="61" fill="none" stroke="#65d9a0" stroke-width="2" stroke-dasharray="7 5"/><ellipse cx="494" cy="288" rx="180" ry="88" fill="none" stroke="#65d9a0" stroke-width="2" stroke-dasharray="7 5"/><line x1="760" y1="228" x2="760" y2="355" stroke="#9eb7d3" marker-start="url(#ims-dim)" marker-end="url(#ims-dim)"/><text x="778" y="294" fill="#d4e5f5" font-family="ui-monospace,monospace" font-size="12">t = ${svgEsc(schematicLength(state.properties.thickness, system, true))}</text><text x="262" y="456" fill="#a5bad1" font-family="ui-monospace,monospace" font-size="12">Two-dimensional bending waves spread radially from the local point drive.</text></g>${card(650, 100, '#65d9a0', 'INFINITE THIN PLATE', 'Local material + thickness set the mean level', `Y = 1/(8√(Dρt)) · D = ${schematicNumber(state.properties.bendingStiffness, 2)} N·m`)}${footer}</svg>`;
+    }
+    const sandwich = state.sandwich;
+    return `<svg viewBox="0 0 1000 520" role="img" aria-label="Symmetric sandwich panel geometry showing face sheets and shear core">${mobilitySchematicDefs}${head}<g><path d="M140 174 H700 L762 208 H202z" fill="#56bfff" fill-opacity=".8" stroke="#a8e4ff" stroke-width="2"/><path d="M202 208 H762 V237 H202z" fill="#1f6190" stroke="#a8e4ff" stroke-width="2"/><path d="M202 237 H762 V346 H202z" fill="url(#ims-core)" stroke="#65d9a0" stroke-width="2"/><path d="M202 346 H762 V375 H202z" fill="#1f6190" stroke="#a8e4ff" stroke-width="2"/><path d="M202 375 H762 L700 409 H140z" fill="#56bfff" fill-opacity=".8" stroke="#a8e4ff" stroke-width="2"/><path d="M470 105 V194" stroke="#ffcf66" stroke-width="4" marker-end="url(#ims-arrow)"/><text x="482" y="122" fill="#ffdf91" font-family="ui-monospace,monospace" font-size="13">POINT FORCE F</text><path d="M306 275 C338 245 370 305 402 275 S466 245 498 275" fill="none" stroke="#ffcf66" stroke-width="3" marker-end="url(#ims-arrow)"/><text x="278" y="246" fill="#ffdf91" font-family="ui-monospace,monospace" font-size="11">LOW f · FACE-SHEET FLEXURE</text><path d="M597 266 V326 M624 266 V326 M651 266 V326" stroke="#65d9a0" stroke-width="4" marker-end="url(#ims-arrow)"/><text x="572" y="246" fill="#b8f3d2" font-family="ui-monospace,monospace" font-size="11">HIGH f · CORE SHEAR</text><line x1="798" y1="208" x2="798" y2="237" stroke="#9eb7d3" marker-start="url(#ims-dim)" marker-end="url(#ims-dim)"/><text x="816" y="225" fill="#d4e5f5" font-family="ui-monospace,monospace" font-size="11">tf ${svgEsc(schematicLength(sandwich.faceThickness, system, true))}</text><line x1="852" y1="237" x2="852" y2="346" stroke="#9eb7d3" marker-start="url(#ims-dim)" marker-end="url(#ims-dim)"/><text x="870" y="294" fill="#d4e5f5" font-family="ui-monospace,monospace" font-size="11">tc ${svgEsc(schematicLength(sandwich.coreThickness, system, true))}</text></g>${card(650, 100, '#65d9a0', 'SYMMETRIC SANDWICH', 'Face-sheet flexure transitions toward core shear', `f shear scale = ${schematicNumber(sandwich.transitionFrequency, 0)} Hz`)}${footer}</svg>`;
+  };
+  return { title, svg: makeSvg('SI'), svgByUnit: { English: makeSvg('English') } };
+}
 const modalDensityTypeOptions = [
   { value: 'acoustic-1d', label: 'Acoustic 1D pipe' }, { value: 'acoustic-2d', label: 'Acoustic 2D cavity' }, { value: 'acoustic-3d', label: 'Acoustic 3D cavity' },
   { value: 'beam-bending', label: 'Beam transverse bending' }, { value: 'beam-torsion', label: 'Beam torsion' }, { value: 'beam-longitudinal', label: 'Beam longitudinal · supplementary' }, { value: 'grid-bending', label: 'Grid structure bending' },
@@ -158,6 +269,219 @@ const definitions = {
         ],
         tables,
         presentation: { primaryEvidence: { type: 'plot', index: 0 }, primaryEvidenceCount: 1, primaryValueCount: 6 }
+      };
+    }
+  },
+
+  'infinite-mobility-atlas': {
+    category: 'Structural Acoustics',
+    basis: 'Infinite-structure characteristic mobility relations for rods, beams, panels, sandwich panels, and cylindrical shells',
+    confidence: 'Closed-form mean-response and high-frequency screening relations; not a finite-FRF resonance model',
+    inputs: [
+      { key: 'geometry', label: 'Structure family', type: 'select', default: 'cylindrical-shell', group: '1. Structure family', groupOpen: true, options: [{ value: 'cylindrical-shell', label: 'Cylindrical shell' }, { value: 'curved-panel', label: 'Curved cylindrical panel' }, { value: 'beam', label: 'Beam or rod' }, { value: 'flat-panel', label: 'Flat panel' }, { value: 'sandwich-panel', label: 'Sandwich panel' }], help: 'Choose the structural family first. The next section exposes only that family’s applicable geometry definition.' },
+
+      { key: 'material', label: 'Material preset', type: 'select', default: 'aluminum', group: '2. Material', groupOpen: true, options: materialOptions, help: 'Selecting a preset populates the editable modulus, density, and Poisson-ratio fields below.' },
+      { key: 'modulus', label: 'Young’s modulus', unit: 'GPa', type: 'number', default: materials.aluminum.E / 1e9, min: 0.01, group: '2. Material' },
+      { key: 'density', label: 'Structural density', unit: 'kg/m³', type: 'number', default: materials.aluminum.rho, min: 1, group: '2. Material' },
+      { key: 'poisson', label: 'Poisson ratio', type: 'number', default: materials.aluminum.nu, min: -0.49, max: 0.49, group: '2. Material' },
+
+      { key: 'shell_geometry', label: 'Specific geometry', type: 'select', default: 'unstiffened-thin-circular', group: '3. Specific geometry', groupOpen: true, visibleWhen: { geometry: 'cylindrical-shell' }, options: [{ value: 'unstiffened-thin-circular', label: 'Unstiffened thin circular shell' }], help: 'Applies the published beam-like, curved-shell, and plate-like characteristic-mobility regimes.' },
+      { key: 'shell_radius', label: 'Mean shell radius', unit: 'm', type: 'number', default: 1.8, min: 0.001, group: '3. Specific geometry', visibleWhen: { geometry: 'cylindrical-shell' } },
+      { key: 'shell_thickness', label: 'Shell-wall thickness', unit: 'mm', type: 'number', default: 4, min: 0.02, group: '3. Specific geometry', visibleWhen: { geometry: 'cylindrical-shell' } },
+
+      { key: 'curved_panel_geometry', label: 'Specific geometry', type: 'select', default: 'open-cylindrical-segment', group: '3. Specific geometry', groupOpen: true, visibleWhen: { geometry: 'curved-panel' }, options: [{ value: 'open-cylindrical-segment', label: 'Open thin cylindrical shell segment' }], help: 'Uses the cylindrical ring, curved-shell, and local flat-plate relations. Its low-frequency relation is an explicit arc-width strip proxy, not a closed-cylinder beam equivalent.' },
+      { key: 'curved_panel_radius', label: 'Radius of curvature', unit: 'm', type: 'number', default: 1.8, min: 0.001, group: '3. Specific geometry', visibleWhen: { geometry: 'curved-panel' } },
+      { key: 'curved_panel_arc_angle', label: 'Subtended arc angle', unit: 'deg', type: 'number', default: 120, min: 5, max: 355, group: '3. Specific geometry', visibleWhen: { geometry: 'curved-panel' } },
+      { key: 'curved_panel_axial_length', label: 'Axial panel length', unit: 'm', type: 'number', default: 2.4, min: 0.01, group: '3. Specific geometry', visibleWhen: { geometry: 'curved-panel' } },
+      { key: 'curved_panel_thickness', label: 'Panel-wall thickness', unit: 'mm', type: 'number', default: 4, min: 0.02, group: '3. Specific geometry', visibleWhen: { geometry: 'curved-panel' } },
+
+      { key: 'beam_geometry', label: 'Specific geometry', type: 'select', default: 'beam-flexural', group: '3. Specific geometry', groupOpen: true, visibleWhen: { geometry: 'beam' }, options: [{ value: 'rod-axial', label: 'Axial rod' }, { value: 'beam-flexural', label: 'Infinite flexural beam, center drive' }, { value: 'beam-free-end', label: 'Semi-infinite flexural beam, free-end drive' }], help: 'Choose the wave family and drive condition before entering the rectangular member section.' },
+      { key: 'member_width', label: 'Rectangular-section width', unit: 'mm', type: 'number', default: 25, min: 0.1, group: '3. Specific geometry', visibleWhen: { geometry: 'beam' } },
+      { key: 'member_height', label: 'Rectangular-section height', unit: 'mm', type: 'number', default: 40, min: 0.1, group: '3. Specific geometry', visibleWhen: { geometry: 'beam' } },
+
+      { key: 'panel_geometry', label: 'Specific geometry', type: 'select', default: 'infinite-thin-isotropic', group: '3. Specific geometry', groupOpen: true, visibleWhen: { geometry: 'flat-panel' }, options: [{ value: 'infinite-thin-isotropic', label: 'Infinite thin isotropic flat panel' }], help: 'The paired relation is the propagating-wave thin-plate characteristic mobility.' },
+      { key: 'plate_thickness', label: 'Panel thickness', unit: 'mm', type: 'number', default: 3, min: 0.02, group: '3. Specific geometry', visibleWhen: { geometry: 'flat-panel' } },
+
+      { key: 'sandwich_geometry', label: 'Specific geometry', type: 'select', default: 'symmetric-shear-core', group: '3. Specific geometry', groupOpen: true, visibleWhen: { geometry: 'sandwich-panel' }, options: [{ value: 'symmetric-shear-core', label: 'Symmetric face sheets with shear core' }], help: 'The selected material applies to both isotropic face sheets; enter the core properties below.' },
+      { key: 'face_thickness', label: 'Face-sheet thickness', unit: 'mm', type: 'number', default: 0.6, min: 0.01, group: '3. Specific geometry', visibleWhen: { geometry: 'sandwich-panel' } },
+      { key: 'core_thickness', label: 'Core thickness', unit: 'mm', type: 'number', default: 24.8, min: 0.1, group: '3. Specific geometry', visibleWhen: { geometry: 'sandwich-panel' } },
+      { key: 'core_density', label: 'Core density', unit: 'kg/m³', type: 'number', default: 48, min: 0.1, group: '3. Specific geometry', visibleWhen: { geometry: 'sandwich-panel' } },
+      { key: 'core_shear_modulus', label: 'Core shear modulus', unit: 'MPa', type: 'number', default: 85, min: 0.001, group: '3. Specific geometry', visibleWhen: { geometry: 'sandwich-panel' } },
+
+      { key: 'frequency', label: 'Selected frequency', unit: 'Hz', type: 'number', default: 1000, min: 0.1, group: '4. Excitation & plot' },
+      { key: 'frequency_min', label: 'Plot minimum frequency', unit: 'Hz', type: 'number', default: 10, min: 0.01, group: '4. Excitation & plot' },
+      { key: 'frequency_max', label: 'Plot maximum frequency', unit: 'Hz', type: 'number', default: 50000, min: 0.1, group: '4. Excitation & plot' },
+      { key: 'force', label: 'Reference RMS point force', unit: 'N', type: 'number', default: 10, min: 0.0001, group: '4. Excitation & plot' }
+    ],
+    syncPreset: syncInfiniteMobilityMaterial,
+    theory: '<p>Characteristic mobility represents energy carried away by propagating structural waves. For a finite structure it is a mean-response reference—often near the geometric mean of resonant and antiresonant mobility—not a replacement for a complex measured or modal FRF.</p>',
+    assumptions: ['Uniform, unbounded or weakly reflecting member, plate, sandwich panel, or shell.', 'Point drive is small relative to the active structural wavelength.', 'Curves show real propagating-wave conductance; finite boundaries, individual modes, joints, and attachment compliance are excluded.', 'The sandwich relation uses a symmetric face-sheet / shear-core approximation; the closed-shell relation is a thin, unstiffened-cylinder screen. An open curved panel retains the local cylindrical shell and plate relations but replaces the full-cylinder low-frequency branch with an arc-width strip proxy.'],
+    example: 'Overlay an acquired drive-point mobility with the appropriate curve to check units and high-frequency mean level, then use the cylindrical-shell plot to identify beam-like, curved-shell, and plate-like regions.',
+    compute(values) {
+      const state = infiniteMobilityAtlasState({
+        focus: infiniteMobilityFocus(values),
+        frequency: values.frequency,
+        frequencyMin: values.frequency_min,
+        frequencyMax: values.frequency_max,
+        forceRms: values.force,
+        modulus: gpa(values.modulus),
+        density: values.density,
+        poisson: values.poisson,
+        thickness: mm(values.plate_thickness),
+        memberWidth: mm(values.member_width),
+        memberHeight: mm(values.member_height),
+        faceThickness: mm(values.face_thickness),
+        coreThickness: mm(values.core_thickness),
+        coreDensity: values.core_density,
+        coreShearModulus: mpa(values.core_shear_modulus),
+        shellRadius: values.geometry === 'curved-panel' ? values.curved_panel_radius : values.shell_radius,
+        shellThickness: mm(values.geometry === 'curved-panel' ? values.curved_panel_thickness : values.shell_thickness),
+        shellArcAngleDeg: values.curved_panel_arc_angle,
+        shellAxialLength: values.curved_panel_axial_length,
+        shellClosed: values.geometry !== 'curved-panel'
+      });
+      const curves = state.curves;
+      const highlighted = state.selected.focus;
+      const emphasis = key => highlighted === key;
+      const geometryLabel = infiniteMobilityGeometryLabel(values);
+      const geometrySchematic = infiniteMobilitySchematic(values, state);
+      const shellTransitionNote = state.shell.hasCurvedRegime
+        ? `${state.shell.lowTransitionFrequency.toFixed(1)} Hz beam→shell; ${state.shell.plateTransitionFrequency.toFixed(1)} Hz shell→plate`
+        : 'h/a compresses the source-model curved-shell interval; treat the result as a rough thin-shell screen.';
+      const shellSelected = values.geometry === 'cylindrical-shell' || values.geometry === 'curved-panel';
+      const shellValues = [
+        stat('Selected shell mobility', state.shell.mobility, 'm/(N·s)'),
+        stat(state.shell.closed ? 'Beam-like shell mobility' : 'Curved-panel strip-proxy mobility', state.shell.beamMobility, 'm/(N·s)'),
+        stat('Curved-shell mobility', state.shell.curvedMobility, 'm/(N·s)'),
+        stat('Flat-plate limit mobility', state.shell.plateMobility, 'm/(N·s)'),
+        stat('Shell ring frequency', state.shell.ringFrequency, 'Hz'),
+        stat('Shell regime', state.shell.regime),
+        stat('Shell h/R', state.shell.thicknessToRadius),
+        stat(state.shell.closed ? 'Beam-equivalent section area' : 'Arc-strip proxy area', state.shell.beamEquivalentArea, 'm²'),
+        stat(state.shell.closed ? 'Beam-equivalent bending speed' : 'Arc-strip proxy bending speed', state.shell.beamEquivalentSpeed, 'm/s'),
+        stat('Flat-plate flexural rigidity', state.shell.bendingStiffness, 'N·m'),
+        stat('Characteristic impedance', state.selected.impedance, 'N·s/m'),
+        stat('Reference input power', state.selected.inputPower, 'W')
+      ];
+      const generalValues = [
+        stat('Highlighted real mobility', state.selected.mobility, 'm/(N·s)'),
+        stat('Characteristic impedance', state.selected.impedance, 'N·s/m'),
+        stat('Reference input power', state.selected.inputPower, 'W'),
+        stat('Thin-plate mobility', state.thinPlateMobility, 'm/(N·s)'),
+        stat('Shell ring frequency', state.shell.ringFrequency, 'Hz'),
+        stat('Shell regime', state.shell.regime),
+        stat('Sandwich shear-transition scale', state.sandwich.transitionFrequency, 'Hz')
+      ];
+      const shellRelationTable = {
+        title: values.geometry === 'curved-panel' ? 'Curved-panel constituent mobility relations' : 'Cylindrical-shell constituent mobility relations',
+        columns: ['Constituent model', 'Applicable normalized-frequency range', 'Re{Y} (m/N·s)'],
+        rows: [
+          [state.shell.beamEquivalentBasis, `Ω < 0.77h/R = ${state.shell.lowTransitionRatio.toExponential(3)}`, state.shell.beamMobility],
+          ['Curved-shell relation', state.shell.hasCurvedRegime ? `${state.shell.lowTransitionRatio.toExponential(3)} < Ω < 0.6` : 'Compressed for this h/R; screening only', state.shell.curvedMobility],
+          ['Flat-plate limit', 'Ω > 0.6', state.shell.plateMobility],
+          [`Selected piecewise relation (${state.shell.regime})`, `Ω = ${state.shell.normalizedFrequency.toExponential(3)}`, state.shell.mobility]
+        ]
+      };
+      const generalTable = {
+        title: 'Mobility models at the selected frequency',
+        columns: ['Structure / drive', 'Re{Y} (m/N·s)', 'Characteristic impedance (N·s/m)'],
+        rows: [
+          ['Axial rod', state.axialRodMobility, 1 / state.axialRodMobility],
+          ['Infinite flexural beam, center', state.beamCenterMobility, 1 / state.beamCenterMobility],
+          ['Semi-infinite flexural beam, free end', state.beamFreeEndMobility, 1 / state.beamFreeEndMobility],
+          ['Infinite thin plate', state.thinPlateMobility, 1 / state.thinPlateMobility],
+          ['Sandwich panel', state.sandwich.mobility, 1 / state.sandwich.mobility],
+          [`Cylindrical shell (${state.shell.regime})`, state.shell.mobility, 1 / state.shell.mobility]
+        ]
+      };
+      const shellConstituentKind = frequency => {
+        const ratio = frequency / state.shell.ringFrequency;
+        if (state.shell.hasCurvedRegime) {
+          if (ratio < state.shell.lowTransitionRatio) return 'low';
+          if (ratio < state.shell.plateTransitionRatio) return 'curved';
+          return 'plate';
+        }
+        return ratio < state.shell.plateTransitionRatio ? 'low' : 'plate';
+      };
+      const activeConstituentTrace = (kind, source) => {
+        const pairs = state.frequencies.map((frequency, index) => ({ frequency, value: source[index] })).filter(({ frequency }) => shellConstituentKind(frequency) === kind);
+        return { x: pairs.map(pair => pair.frequency), y: pairs.map(pair => pair.value) };
+      };
+      const lowConstituentLabel = state.shell.closed ? 'Beam-like active constituent' : 'Arc-strip proxy active constituent';
+      const lowExtensionLabel = state.shell.closed ? 'Beam-like relation extension' : 'Arc-strip proxy extension';
+      const currentConstituentKind = shellConstituentKind(state.frequency);
+      const constituentColors = Object.freeze({ low: '#55b8ff', curved: '#ffcf66', plate: '#65d9a0' });
+      const currentConstituentLabel = currentConstituentKind === 'low' ? lowConstituentLabel : currentConstituentKind === 'curved' ? 'Curved-shell active constituent' : 'Flat-plate active constituent';
+      const lowActive = activeConstituentTrace('low', curves.shellBeam);
+      const curvedActive = activeConstituentTrace('curved', curves.shellCurved);
+      const plateActive = activeConstituentTrace('plate', curves.shellPlate);
+      const activeConstituentTraces = [
+        lowActive.x.length ? trace(lowConstituentLabel, lowActive.x, lowActive.y, { color: constituentColors.low, emphasis: true }) : null,
+        curvedActive.x.length ? trace('Curved-shell active constituent', curvedActive.x, curvedActive.y, { color: constituentColors.curved, emphasis: true }) : null,
+        plateActive.x.length ? trace('Flat-plate active constituent', plateActive.x, plateActive.y, { color: constituentColors.plate, emphasis: true }) : null
+      ].filter(Boolean);
+      const shellConstituentPlot = {
+        title: values.geometry === 'curved-panel' ? 'Curved-panel constituent mobility response' : 'Cylindrical-shell constituent mobility response',
+        xLabel: 'Frequency (Hz)',
+        yLabel: 'Real characteristic mobility (m/N·s)',
+        xScale: 'log',
+        yScale: 'log',
+        traceSelector: { label: 'Constituent relations to display', initial: 'emphasis' },
+        traces: [
+          trace('Resulting piecewise response', state.frequencies, curves.shellApplicable, { color: '#c1d0df', dash: true }),
+          ...activeConstituentTraces,
+          trace(`Selected point · ${currentConstituentLabel}`, [state.frequency], [state.shell.mobility], { color: constituentColors[currentConstituentKind], emphasis: true, showPoints: true, pointRadius: 8, hideLine: true }),
+          trace(lowExtensionLabel, state.frequencies, curves.shellBeam, { color: constituentColors.low, dash: true }),
+          trace('Curved-shell relation extension', state.frequencies, curves.shellCurved, { color: constituentColors.curved, dash: true }),
+          trace('Flat-plate relation extension', state.frequencies, curves.shellPlate, { color: constituentColors.plate, dash: true })
+        ]
+      };
+      const generalAtlasPlot = {
+        title: 'Infinite-structure mobility atlas',
+        xLabel: 'Frequency (Hz)',
+        yLabel: 'Real characteristic mobility (m/N·s)',
+        xScale: 'log',
+        yScale: 'log',
+        traceSelector: { label: 'Structure mobilities to display', initial: 'emphasis' },
+        traces: [
+          trace('Axial rod', state.frequencies, curves.rodAxial, { emphasis: emphasis('rod-axial') }),
+          trace('Infinite flexural beam, center drive', state.frequencies, curves.beamCenter, { emphasis: emphasis('beam-flexural') }),
+          trace('Semi-infinite beam, free-end drive', state.frequencies, curves.beamFreeEnd, { emphasis: emphasis('beam-free-end') }),
+          trace('Infinite thin plate', state.frequencies, curves.thinPlate, { emphasis: emphasis('thin-plate') }),
+          trace('Sandwich panel', state.frequencies, curves.sandwich, { emphasis: emphasis('sandwich-panel') }),
+          trace('Cylindrical-shell applicable relation', state.frequencies, curves.shellApplicable, { emphasis: emphasis('cylindrical-shell') })
+        ]
+      };
+      const fullShellExtensionsPlot = {
+        title: values.geometry === 'curved-panel' ? 'Curved-panel full constituent-relation extensions' : 'Cylindrical-shell full constituent-relation extensions',
+        xLabel: 'Frequency (Hz)',
+        yLabel: 'Real characteristic mobility (m/N·s)',
+        xScale: 'log',
+        yScale: 'log',
+        traceSelector: { label: 'Shell relations to display', initial: 'emphasis' },
+        traces: [
+          trace('Applicable piecewise shell relation', state.frequencies, curves.shellApplicable, { emphasis: true }),
+          trace(lowExtensionLabel, state.frequencies, curves.shellBeam),
+          trace('Curved-shell relation', state.frequencies, curves.shellCurved),
+          trace('Plate-like shell relation', state.frequencies, curves.shellPlate)
+        ]
+      };
+      return {
+        values: shellSelected ? shellValues : generalValues,
+        interpretation: `${geometryLabel} at ${state.frequency.toFixed(1)} Hz gives Re{Y}=${state.selected.mobility.toExponential(3)} m/(N·s) from ${state.selected.basis}. The shell screen is in its ${state.shell.regime} regime; ${shellTransitionNote}`,
+        engineeringConsiderations: launchConsiderations('Use the appropriate infinite-structure curve as a high-frequency mean and calibration check for fairing barrels, decks, struts, pipes, and sandwich equipment panels; then retain finite-model or measured FRFs where modes, interfaces, or installed fluid loading decide the result.'),
+        warnings: [
+          'Do not interpret a characteristic mobility as the value at every resonance or antiresonance. It is a real mean-response conductance, not a complex finite-structure FRF.',
+          'The cylindrical-shell regime boundaries are approximate. Frames, orthotropy, pressure, local reinforcements, end conditions, and fluid loading can move them materially.',
+          'The reference input-power result uses ½F²Re{Y}; do not substitute transfer mobility for drive-point conductance.',
+          ...(values.geometry === 'curved-panel' ? ['An open curved panel is not a closed cylinder: its low-frequency branch is an explicit arc-width strip proxy. Boundary restraints, panel aspect ratio, curvature coupling, and edge reflection require a finite-panel or shell model when they control the response.'] : [])
+        ],
+        plots: shellSelected ? [shellConstituentPlot, fullShellExtensionsPlot] : [generalAtlasPlot, fullShellExtensionsPlot],
+        schematics: [geometrySchematic],
+        tables: shellSelected ? [shellRelationTable, generalTable] : [generalTable],
+        presentation: shellSelected
+          ? { primaryEvidenceStack: [{ type: 'plot', index: 0 }, { type: 'schematic', index: 0 }, { type: 'table', index: 0 }], primaryValueCount: 11 }
+          : { primaryEvidenceStack: [{ type: 'plot', index: 0 }, { type: 'schematic', index: 0 }], primaryValueCount: 7 }
       };
     }
   },

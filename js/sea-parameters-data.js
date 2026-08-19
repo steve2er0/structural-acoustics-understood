@@ -1,4 +1,4 @@
-/* SEA parameter curriculum derived from SEA_parameters_revAB. */
+/* SEA parameter and infinite-structure-mobility curriculum. */
 
 const modules = [
   {
@@ -28,7 +28,21 @@ const modules = [
     source: 'SEA_parameters_revAB Appendices A, B, H, I, and J'
   },
   {
-    id: 'sea-mobility-radiation-coupling', number: '60', caseNumber: '63', toolId: 'clf-mechanism-library', demoId: 'sea-coupling-mechanisms',
+    id: 'infinite-structure-mobility', number: '60', caseNumber: '63', toolId: 'infinite-mobility-atlas', demoId: 'infinite-mobility-wave-atlas',
+    title: 'Infinite-Structure Mobility', eyebrow: 'The mean hidden by resonances',
+    summary: 'Use characteristic mobility to connect propagating waves in rods, beams, plates, sandwich panels, and cylindrical shells to the mean level of finite-structure drive-point response.',
+    equation: 'Yplate=1/(8√(Dρh)) · Ybeam=1/(2ρAcB) · Πin=½F²Re{Y}',
+    mechanism: 'A local force launches structural waves that carry energy away from the drive. In a sufficiently large, damped, or high-modal-overlap structure, returning waves are less important at the drive point, so the real characteristic mobility gives a useful mean response between resonant peaks and antiresonant dips. The applicable relation follows the wave family: axial and flexural member waves, two-dimensional plate bending, sandwich flexure-to-shear transition, or cylindrical-shell beam-like, curved-shell, and plate-like behavior.',
+    intuition: 'Infinite does not mean the hardware has no boundaries. It means the local drive initially sees outward-traveling wave paths more than it sees their later reflections. The ideal curve is therefore a calibration ruler and a trend line, not a prediction of every narrow resonance.',
+    launch: 'Fairing barrels, tanks, interstages, struts, pipe runs, payload decks, and sandwich equipment panels all use mobility to convert local force into accepted structural power. Overlaying measured drive-point mobility with the appropriate characteristic curve can expose unit, gain, force-channel, or sensor-calibration errors before a finite-element or SEA model is trusted.',
+    findings: ['For a finite structure, characteristic mobility often lies near the geometric mean of the resonant and antiresonant mobility envelopes.', 'Infinite thin-plate mobility is frequency independent, while flexural-beam mobility decreases with the square root of frequency.', 'A sandwich panel transitions from a thin-plate-like mobility to a higher, shear-controlled trend as core shear limits wave speed.', 'Cylinder ring frequency and h/a identify approximate beam-like, curved-shell, and plate-like mobility regions.', 'Characteristic mobility is real conductance: it is the term that converts force squared into mean injected power.'],
+    decisions: ['Plot the source-traceable characteristic curve beside every measured drive-point mobility before using it for calibration or SEA source power.', 'Use finite modal or FE response near sparse modes, boundaries, supports, cutouts, and attachments.', 'Treat shell-regime boundaries and fluid-added-mass corrections as sensitivity variables rather than fixed universal transitions.'],
+    limitation: 'The paired atlas assumes uniform isotropic members, plates, symmetric sandwich construction, or thin unstiffened cylindrical shells with a point drive. It excludes local reinforcement, orthotropy, nonlinear joints, complex phase, finite boundary details, pressurization, and frequency-dependent fluid loading.',
+    source: 'Hambric, “To Infinity and Beyond – the Amazing Uses of Infinite Structure Mobility Theory,” Inter-Noise 2019, equations (2)–(14); ACS 519 Combined, Cylindrical Shells slide 20.',
+    sourceTrail: 'Local references: <code>references/In19_inf_panel.pdf</code> and <code>references/ACS519_Combined.pdf</code>. The paired calculator implements the published real characteristic-mobility relations and labels its screening assumptions explicitly.'
+  },
+  {
+    id: 'sea-mobility-radiation-coupling', number: '61', caseNumber: '64', toolId: 'clf-mechanism-library', demoId: 'sea-coupling-mechanisms',
     title: 'Mobility, Radiation & CLF Mechanism Library', eyebrow: 'Derive the arrow in the network',
     summary: 'Build directional SEA couplings from point impedance, plate and shell mobility, radiation resistance, line joints, bolts, frames, and nonresonant transmission.',
     equation: 'Πᵢ→ⱼ=ωηᵢⱼEᵢ;  ηⱼᵢ=ηᵢⱼnᵢ/nⱼ',
@@ -41,7 +55,7 @@ const modules = [
     source: 'SEA_parameters_revAB Appendices C, D, and G'
   },
   {
-    id: 'equivalent-sea-source-power', number: '61', caseNumber: '64', toolId: 'equivalent-power-injection', demoId: 'environment-to-sea-power',
+    id: 'equivalent-sea-source-power', number: '62', caseNumber: '65', toolId: 'equivalent-power-injection', demoId: 'environment-to-sea-power',
     title: 'External Environment to Equivalent SEA Power', eyebrow: 'Pressure is not watts',
     summary: 'Convert diffuse liftoff acoustics, ascent TBL pressure, Corcos coherence, and localized force into the band-power vector required by SEA.',
     equation: 'Πdiffuse∝σ⟨p²⟩n/(f²m″);  Πforce=½F²Re{Y}',
@@ -54,7 +68,7 @@ const modules = [
     source: 'SEA_parameters_revAB Appendices K and T'
   },
   {
-    id: 'sea-response-recovery-concentration', number: '62', caseNumber: '65', toolId: 'sea-response-recovery', demoId: 'sea-local-response',
+    id: 'sea-response-recovery-concentration', number: '63', caseNumber: '66', toolId: 'sea-response-recovery', demoId: 'sea-local-response',
     title: 'SEA Response Recovery & Statistical Concentration', eyebrow: 'From average energy to a local design quantity',
     summary: 'Recover velocity, acceleration, pressure, SPL, and bending stress from subsystem energy, then estimate local statistical concentration and boundary risk.',
     equation: 'E=M⟨v²⟩;  E=V⟨p²⟩/(ρc²);  Vmax²/Vrms²=f(n,η,Δf,D)',
@@ -67,7 +81,7 @@ const modules = [
     source: 'SEA_parameters_revAB introduction and Appendix S'
   },
   {
-    id: 'installed-fairing-sea-parameters', number: '63', caseNumber: '66', toolId: 'installed-fairing-sea', demoId: 'fairing-blanket-network',
+    id: 'installed-fairing-sea-parameters', number: '64', caseNumber: '67', toolId: 'installed-fairing-sea', demoId: 'fairing-blanket-network',
     title: 'Installed Fairing SEA Parameters', eyebrow: 'Component TL is not payload attenuation',
     summary: 'Combine equipment loading, shell radiation, nonresonant transmission, blanket IL and absorption, coverage, leakage, and payload-cavity loss in one auditable network.',
     equation: 'NR=10log₁₀(1+α/τ);  τinstalled=Σ(Sᵢ/S)τᵢ',
@@ -102,6 +116,7 @@ export const seaParameterSections = modules.map(module => ({
 
 export const seaParameterToolCatalog = [
   { id: 'sea-parameter-workbench', title: 'SEA Parameter Workbench', category: 'SEA & Energy', description: 'Build a traceable geometry-to-modal-density-to-loss-to-coupling-to-power-to-response parameter chain.', complexity: 'Advanced', keywords: ['SEA parameters', 'provenance', 'launch vehicle', 'uncertainty'] },
+  { id: 'infinite-mobility-atlas', title: 'Infinite-Structure Mobility Atlas', category: 'Structural Acoustics', description: 'Plot source-traceable characteristic mobilities for rods, flexural beams, thin and sandwich panels, and cylindrical shells.', complexity: 'Core', keywords: ['infinite mobility', 'characteristic mobility', 'Skudrzyk', 'drive-point mobility', 'shell'] },
   { id: 'sea-impedance-library', title: 'SEA Driving-Point Impedance Library', category: 'SEA & Energy', description: 'Calculate analytical plate, shell, rod, and high-frequency driving-point mobility and injected force power.', complexity: 'Core', keywords: ['mobility', 'impedance', 'conductance', 'point force'] },
   { id: 'clf-mechanism-library', title: 'CLF Mechanism Library', category: 'SEA & Energy', description: 'Derive reciprocal CLFs for beams, plates, point bridges, bolts, line joints, radiation, and fairing mass-law paths.', complexity: 'Advanced', keywords: ['CLF', 'reciprocity', 'junction', 'radiation coupling'] },
   { id: 'equivalent-power-injection', title: 'Equivalent SEA Power Injection', category: 'SEA & Energy', description: 'Convert diffuse acoustic, TBL, Corcos, and point-force environments into watts per analysis band.', complexity: 'Advanced', keywords: ['equivalent power', 'TBL', 'Corcos', 'diffuse field'] },
@@ -115,6 +130,7 @@ export const seaParameterToolCatalog = [
 export const seaParameterDemos = [
   { id: 'sea-parameter-chain', title: 'Build the SEA Parameter Chain', description: 'Move from launch-vehicle construction and environment through derived parameters, stored energy, and recovered response.', topic: 'SEA Parameters', toolId: 'sea-parameter-workbench' },
   { id: 'modal-density-regime-map', title: 'Watch Modal Density Change Regime', description: 'Switch wave family and frequency while modes per band, overlap, and dimensional transitions move together.', topic: 'Modal Density', toolId: 'modal-density' },
+  { id: 'infinite-mobility-wave-atlas', title: 'Find the Mean Hidden by Resonances', description: 'Compare rod, beam, plate, sandwich, and shell characteristic mobilities while cylinder regime transitions move with ring frequency.', topic: 'Infinite Mobility', toolId: 'infinite-mobility-atlas' },
   { id: 'sea-driving-point-mobility', title: 'Where a Force Enters the SEA Model', description: 'Compare plate center, edge, shell, rod, and high-frequency conductance as force becomes band power.', topic: 'Mobility', toolId: 'sea-impedance-library' },
   { id: 'sea-coupling-mechanisms', title: 'Build a CLF from the Physical Junction', description: 'Change point, line, bolt, frame, radiation, and mass-law mechanisms while reciprocal directional CLFs update.', topic: 'SEA Coupling', toolId: 'clf-mechanism-library' },
   { id: 'environment-to-sea-power', title: 'Turn Pressure and Force into SEA Watts', description: 'Compare diffuse, TBL, Corcos, and point-force power accepted by the same launch-vehicle panel.', topic: 'SEA Excitation', toolId: 'equivalent-power-injection' },
@@ -128,24 +144,30 @@ export const seaParameterDemos = [
 const esc = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 
 function deepDiveBody(module) {
+  const infiniteMobility = module.id === 'infinite-structure-mobility';
+  const findingsHeading = infiniteMobility ? 'Findings from the infinite-mobility lesson' : 'Findings from the SEA parameter deep dive';
+  const laboratoryLabel = infiniteMobility ? 'Infinite-structure mobility laboratory' : 'SEA parameter laboratory';
+  const takeaway = infiniteMobility
+    ? 'A characteristic mobility is a source-traceable mean-response reference: use it to understand wave regime, validate measured drive-point data, and bound power input before resolving finite-structure details.'
+    : 'A credible SEA prediction retains the origin, direction, bandwidth, field assumption, configuration, and uncertainty of every parameter—not only the solved energy.';
   return `<p>${esc(module.mechanism)}</p>
 <h2>Engineering intuition</h2><p>${esc(module.intuition)}</p>
 <div class="callout"><strong>Launch-vehicle application.</strong> ${esc(module.launch)}</div>
-<h2>Findings from the SEA parameter deep dive</h2><ol>${module.findings.map(item => `<li>${esc(item)}</li>`).join('')}</ol>
-<h2>Interactive engineering model</h2><div class="case-demo"><div class="case-demo-header"><div><p class="eyebrow">SEA parameter laboratory</p><h3>${esc(module.title)}</h3></div><a class="concept-tool-link" href="#/tool/${encodeURIComponent(module.toolId)}">Open paired calculator →</a></div><div data-embedded-demo="${esc(module.demoId)}"></div></div>
+<h2>${findingsHeading}</h2><ol>${module.findings.map(item => `<li>${esc(item)}</li>`).join('')}</ol>
+<h2>Interactive engineering model</h2><div class="case-demo"><div class="case-demo-header"><div><p class="eyebrow">${laboratoryLabel}</p><h3>${esc(module.title)}</h3></div><a class="concept-tool-link" href="#/tool/${encodeURIComponent(module.toolId)}">Open paired calculator →</a></div><div data-embedded-demo="${esc(module.demoId)}"></div></div>
 <h2>Design and analysis decisions</h2><ul>${module.decisions.map(item => `<li>${esc(item)}</li>`).join('')}</ul>
 <h2>Assumptions and model boundary</h2><p>${esc(module.limitation)}</p>
-<div class="callout"><strong>Engineering takeaway.</strong> A credible SEA prediction retains the origin, direction, bandwidth, field assumption, configuration, and uncertainty of every parameter—not only the solved energy.</div>
-<h2>Source trail</h2><p>${esc(module.source)}. Local reference: <code>references/SEA_parameters_revAB.pdf</code>. Source equations were independently screened for units, limiting behavior, reciprocity, and typographical risk before implementation.</p>`;
+<div class="callout"><strong>Engineering takeaway.</strong> ${takeaway}</div>
+<h2>Source trail</h2><p>${esc(module.source)}. ${module.sourceTrail || 'Local reference: <code>references/SEA_parameters_revAB.pdf</code>. Source equations were independently screened for units, limiting behavior, reciprocity, and typographical risk before implementation.'}</p>`;
 }
 
 export const seaParameterCaseNotes = modules.map(module => ({
   id: `sea-parameters-${module.id}`,
   number: module.caseNumber,
   title: module.title,
-  summary: `${module.summary} Includes launch-vehicle applications and findings from the complete parameter-note review.`,
-  readTime: '11 min',
-  tags: ['SEA parameters', 'launch vehicles', module.eyebrow],
+  summary: `${module.summary} Includes launch-vehicle applications and findings from the complete ${module.id === 'infinite-structure-mobility' ? 'infinite-mobility lesson' : 'parameter-note review'}.`,
+  readTime: module.id === 'infinite-structure-mobility' ? '10 min' : '11 min',
+  tags: module.id === 'infinite-structure-mobility' ? ['infinite mobility', 'structural waves', module.eyebrow] : ['SEA parameters', 'launch vehicles', module.eyebrow],
   body: deepDiveBody(module)
 }));
 
@@ -154,6 +176,8 @@ export const seaParameterReferenceGroups = [{
   items: [
     { title: 'Statistical Energy Analysis Parameters, Revision AB', author: 'Tom Irvine', note: 'Local 62-page reference covering SEA inputs, excitation conversion, response recovery, blankets, and TBL convection velocity.' },
     { title: 'Theory and Application of Statistical Energy Analysis', author: 'Lyon & DeJong', note: 'Primary SEA theory source cited throughout the parameter handbook.' },
-    { title: 'Random Vibrations in Spacecraft Structure Design', author: 'Jaap Wijker', note: 'Aerospace SEA, modal density, equipment loading, radiation, and qualification context.' }
+    { title: 'Random Vibrations in Spacecraft Structure Design', author: 'Jaap Wijker', note: 'Aerospace SEA, modal density, equipment loading, radiation, and qualification context.' },
+    { title: 'To Infinity and Beyond – the Amazing Uses of Infinite Structure Mobility Theory', author: 'Stephen Hambric', note: 'Local Inter-Noise 2019 paper; characteristic-mobility formulas and their rod, beam, plate, sandwich-panel, and cylindrical-shell applications. File: references/In19_inf_panel.pdf.' },
+    { title: 'ACS 519 Combined – Cylindrical Shells', author: 'Stephen Hambric', note: 'Local course reference; reproduces the beam, curved-shell, and infinite-plate shell-mobility regime relations. File: references/ACS519_Combined.pdf.' }
   ]
 }];

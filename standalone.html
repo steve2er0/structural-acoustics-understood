@@ -329,6 +329,8 @@ h3 { font-size: 1.07rem; line-height: 1.2; letter-spacing: -.018em; }
 .field-help { color: var(--quiet); font-size: .68rem; }
 .calc-form-actions { display: flex; gap: .5rem; flex-wrap: wrap; padding-top: .2rem; }
 .calc-results { min-height: 440px; padding: 1.1rem; }
+.engineering-schematic { overflow: hidden; border: 1px solid var(--line); background: #061a2c; }
+.engineering-schematic svg { display: block; width: 100%; min-height: 320px; }
 .result-summary { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); border-top: 1px solid var(--line); border-left: 1px solid var(--line); margin-bottom: 1rem; }
 .result-summary-supporting { margin: .7rem 0 0; }
 .result-stat { padding: .85rem; background: rgba(255,255,255,.42); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
@@ -1856,6 +1858,7 @@ body.site-system-route .field-group select:focus,
 body.site-system-route .field-group textarea:focus { border-color: var(--site-color-cyan); box-shadow: 0 0 0 2px rgba(85, 184, 255, .12); }
 body.site-system-route .select-search-filter output { color: #7f96b0; }
 body.site-system-route .calc-results { background: rgba(3, 16, 30, .36); }
+body.site-system-route .engineering-schematic { border-color: var(--site-color-border); background: #061a2c; }
 body.site-system-route .result-summary { border-color: var(--site-color-border); }
 body.site-system-route .result-stat { border-color: var(--site-color-border); background: rgba(13, 41, 68, .58); }
 body.site-system-route .result-stat small { color: #7189a3; }
@@ -7668,7 +7671,7 @@ return {programExpansionSections,programExpansionToolCatalog,programExpansionDem
 })();
 
 const __seaParameterData=(()=>{
-/* SEA parameter curriculum derived from SEA_parameters_revAB. */
+/* SEA parameter and infinite-structure-mobility curriculum. */
 
 const modules = [
   {
@@ -7698,7 +7701,21 @@ const modules = [
     source: 'SEA_parameters_revAB Appendices A, B, H, I, and J'
   },
   {
-    id: 'sea-mobility-radiation-coupling', number: '60', caseNumber: '63', toolId: 'clf-mechanism-library', demoId: 'sea-coupling-mechanisms',
+    id: 'infinite-structure-mobility', number: '60', caseNumber: '63', toolId: 'infinite-mobility-atlas', demoId: 'infinite-mobility-wave-atlas',
+    title: 'Infinite-Structure Mobility', eyebrow: 'The mean hidden by resonances',
+    summary: 'Use characteristic mobility to connect propagating waves in rods, beams, plates, sandwich panels, and cylindrical shells to the mean level of finite-structure drive-point response.',
+    equation: 'Yplate=1/(8√(Dρh)) · Ybeam=1/(2ρAcB) · Πin=½F²Re{Y}',
+    mechanism: 'A local force launches structural waves that carry energy away from the drive. In a sufficiently large, damped, or high-modal-overlap structure, returning waves are less important at the drive point, so the real characteristic mobility gives a useful mean response between resonant peaks and antiresonant dips. The applicable relation follows the wave family: axial and flexural member waves, two-dimensional plate bending, sandwich flexure-to-shear transition, or cylindrical-shell beam-like, curved-shell, and plate-like behavior.',
+    intuition: 'Infinite does not mean the hardware has no boundaries. It means the local drive initially sees outward-traveling wave paths more than it sees their later reflections. The ideal curve is therefore a calibration ruler and a trend line, not a prediction of every narrow resonance.',
+    launch: 'Fairing barrels, tanks, interstages, struts, pipe runs, payload decks, and sandwich equipment panels all use mobility to convert local force into accepted structural power. Overlaying measured drive-point mobility with the appropriate characteristic curve can expose unit, gain, force-channel, or sensor-calibration errors before a finite-element or SEA model is trusted.',
+    findings: ['For a finite structure, characteristic mobility often lies near the geometric mean of the resonant and antiresonant mobility envelopes.', 'Infinite thin-plate mobility is frequency independent, while flexural-beam mobility decreases with the square root of frequency.', 'A sandwich panel transitions from a thin-plate-like mobility to a higher, shear-controlled trend as core shear limits wave speed.', 'Cylinder ring frequency and h/a identify approximate beam-like, curved-shell, and plate-like mobility regions.', 'Characteristic mobility is real conductance: it is the term that converts force squared into mean injected power.'],
+    decisions: ['Plot the source-traceable characteristic curve beside every measured drive-point mobility before using it for calibration or SEA source power.', 'Use finite modal or FE response near sparse modes, boundaries, supports, cutouts, and attachments.', 'Treat shell-regime boundaries and fluid-added-mass corrections as sensitivity variables rather than fixed universal transitions.'],
+    limitation: 'The paired atlas assumes uniform isotropic members, plates, symmetric sandwich construction, or thin unstiffened cylindrical shells with a point drive. It excludes local reinforcement, orthotropy, nonlinear joints, complex phase, finite boundary details, pressurization, and frequency-dependent fluid loading.',
+    source: 'Hambric, “To Infinity and Beyond – the Amazing Uses of Infinite Structure Mobility Theory,” Inter-Noise 2019, equations (2)–(14); ACS 519 Combined, Cylindrical Shells slide 20.',
+    sourceTrail: 'Local references: <code>references/In19_inf_panel.pdf</code> and <code>references/ACS519_Combined.pdf</code>. The paired calculator implements the published real characteristic-mobility relations and labels its screening assumptions explicitly.'
+  },
+  {
+    id: 'sea-mobility-radiation-coupling', number: '61', caseNumber: '64', toolId: 'clf-mechanism-library', demoId: 'sea-coupling-mechanisms',
     title: 'Mobility, Radiation & CLF Mechanism Library', eyebrow: 'Derive the arrow in the network',
     summary: 'Build directional SEA couplings from point impedance, plate and shell mobility, radiation resistance, line joints, bolts, frames, and nonresonant transmission.',
     equation: 'Πᵢ→ⱼ=ωηᵢⱼEᵢ;  ηⱼᵢ=ηᵢⱼnᵢ/nⱼ',
@@ -7711,7 +7728,7 @@ const modules = [
     source: 'SEA_parameters_revAB Appendices C, D, and G'
   },
   {
-    id: 'equivalent-sea-source-power', number: '61', caseNumber: '64', toolId: 'equivalent-power-injection', demoId: 'environment-to-sea-power',
+    id: 'equivalent-sea-source-power', number: '62', caseNumber: '65', toolId: 'equivalent-power-injection', demoId: 'environment-to-sea-power',
     title: 'External Environment to Equivalent SEA Power', eyebrow: 'Pressure is not watts',
     summary: 'Convert diffuse liftoff acoustics, ascent TBL pressure, Corcos coherence, and localized force into the band-power vector required by SEA.',
     equation: 'Πdiffuse∝σ⟨p²⟩n/(f²m″);  Πforce=½F²Re{Y}',
@@ -7724,7 +7741,7 @@ const modules = [
     source: 'SEA_parameters_revAB Appendices K and T'
   },
   {
-    id: 'sea-response-recovery-concentration', number: '62', caseNumber: '65', toolId: 'sea-response-recovery', demoId: 'sea-local-response',
+    id: 'sea-response-recovery-concentration', number: '63', caseNumber: '66', toolId: 'sea-response-recovery', demoId: 'sea-local-response',
     title: 'SEA Response Recovery & Statistical Concentration', eyebrow: 'From average energy to a local design quantity',
     summary: 'Recover velocity, acceleration, pressure, SPL, and bending stress from subsystem energy, then estimate local statistical concentration and boundary risk.',
     equation: 'E=M⟨v²⟩;  E=V⟨p²⟩/(ρc²);  Vmax²/Vrms²=f(n,η,Δf,D)',
@@ -7737,7 +7754,7 @@ const modules = [
     source: 'SEA_parameters_revAB introduction and Appendix S'
   },
   {
-    id: 'installed-fairing-sea-parameters', number: '63', caseNumber: '66', toolId: 'installed-fairing-sea', demoId: 'fairing-blanket-network',
+    id: 'installed-fairing-sea-parameters', number: '64', caseNumber: '67', toolId: 'installed-fairing-sea', demoId: 'fairing-blanket-network',
     title: 'Installed Fairing SEA Parameters', eyebrow: 'Component TL is not payload attenuation',
     summary: 'Combine equipment loading, shell radiation, nonresonant transmission, blanket IL and absorption, coverage, leakage, and payload-cavity loss in one auditable network.',
     equation: 'NR=10log₁₀(1+α/τ);  τinstalled=Σ(Sᵢ/S)τᵢ',
@@ -7772,6 +7789,7 @@ const seaParameterSections = modules.map(module => ({
 
 const seaParameterToolCatalog = [
   { id: 'sea-parameter-workbench', title: 'SEA Parameter Workbench', category: 'SEA & Energy', description: 'Build a traceable geometry-to-modal-density-to-loss-to-coupling-to-power-to-response parameter chain.', complexity: 'Advanced', keywords: ['SEA parameters', 'provenance', 'launch vehicle', 'uncertainty'] },
+  { id: 'infinite-mobility-atlas', title: 'Infinite-Structure Mobility Atlas', category: 'Structural Acoustics', description: 'Plot source-traceable characteristic mobilities for rods, flexural beams, thin and sandwich panels, and cylindrical shells.', complexity: 'Core', keywords: ['infinite mobility', 'characteristic mobility', 'Skudrzyk', 'drive-point mobility', 'shell'] },
   { id: 'sea-impedance-library', title: 'SEA Driving-Point Impedance Library', category: 'SEA & Energy', description: 'Calculate analytical plate, shell, rod, and high-frequency driving-point mobility and injected force power.', complexity: 'Core', keywords: ['mobility', 'impedance', 'conductance', 'point force'] },
   { id: 'clf-mechanism-library', title: 'CLF Mechanism Library', category: 'SEA & Energy', description: 'Derive reciprocal CLFs for beams, plates, point bridges, bolts, line joints, radiation, and fairing mass-law paths.', complexity: 'Advanced', keywords: ['CLF', 'reciprocity', 'junction', 'radiation coupling'] },
   { id: 'equivalent-power-injection', title: 'Equivalent SEA Power Injection', category: 'SEA & Energy', description: 'Convert diffuse acoustic, TBL, Corcos, and point-force environments into watts per analysis band.', complexity: 'Advanced', keywords: ['equivalent power', 'TBL', 'Corcos', 'diffuse field'] },
@@ -7785,6 +7803,7 @@ const seaParameterToolCatalog = [
 const seaParameterDemos = [
   { id: 'sea-parameter-chain', title: 'Build the SEA Parameter Chain', description: 'Move from launch-vehicle construction and environment through derived parameters, stored energy, and recovered response.', topic: 'SEA Parameters', toolId: 'sea-parameter-workbench' },
   { id: 'modal-density-regime-map', title: 'Watch Modal Density Change Regime', description: 'Switch wave family and frequency while modes per band, overlap, and dimensional transitions move together.', topic: 'Modal Density', toolId: 'modal-density' },
+  { id: 'infinite-mobility-wave-atlas', title: 'Find the Mean Hidden by Resonances', description: 'Compare rod, beam, plate, sandwich, and shell characteristic mobilities while cylinder regime transitions move with ring frequency.', topic: 'Infinite Mobility', toolId: 'infinite-mobility-atlas' },
   { id: 'sea-driving-point-mobility', title: 'Where a Force Enters the SEA Model', description: 'Compare plate center, edge, shell, rod, and high-frequency conductance as force becomes band power.', topic: 'Mobility', toolId: 'sea-impedance-library' },
   { id: 'sea-coupling-mechanisms', title: 'Build a CLF from the Physical Junction', description: 'Change point, line, bolt, frame, radiation, and mass-law mechanisms while reciprocal directional CLFs update.', topic: 'SEA Coupling', toolId: 'clf-mechanism-library' },
   { id: 'environment-to-sea-power', title: 'Turn Pressure and Force into SEA Watts', description: 'Compare diffuse, TBL, Corcos, and point-force power accepted by the same launch-vehicle panel.', topic: 'SEA Excitation', toolId: 'equivalent-power-injection' },
@@ -7798,24 +7817,30 @@ const seaParameterDemos = [
 const esc = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 
 function deepDiveBody(module) {
+  const infiniteMobility = module.id === 'infinite-structure-mobility';
+  const findingsHeading = infiniteMobility ? 'Findings from the infinite-mobility lesson' : 'Findings from the SEA parameter deep dive';
+  const laboratoryLabel = infiniteMobility ? 'Infinite-structure mobility laboratory' : 'SEA parameter laboratory';
+  const takeaway = infiniteMobility
+    ? 'A characteristic mobility is a source-traceable mean-response reference: use it to understand wave regime, validate measured drive-point data, and bound power input before resolving finite-structure details.'
+    : 'A credible SEA prediction retains the origin, direction, bandwidth, field assumption, configuration, and uncertainty of every parameter—not only the solved energy.';
   return `<p>${esc(module.mechanism)}</p>
 <h2>Engineering intuition</h2><p>${esc(module.intuition)}</p>
 <div class="callout"><strong>Launch-vehicle application.</strong> ${esc(module.launch)}</div>
-<h2>Findings from the SEA parameter deep dive</h2><ol>${module.findings.map(item => `<li>${esc(item)}</li>`).join('')}</ol>
-<h2>Interactive engineering model</h2><div class="case-demo"><div class="case-demo-header"><div><p class="eyebrow">SEA parameter laboratory</p><h3>${esc(module.title)}</h3></div><a class="concept-tool-link" href="#/tool/${encodeURIComponent(module.toolId)}">Open paired calculator →</a></div><div data-embedded-demo="${esc(module.demoId)}"></div></div>
+<h2>${findingsHeading}</h2><ol>${module.findings.map(item => `<li>${esc(item)}</li>`).join('')}</ol>
+<h2>Interactive engineering model</h2><div class="case-demo"><div class="case-demo-header"><div><p class="eyebrow">${laboratoryLabel}</p><h3>${esc(module.title)}</h3></div><a class="concept-tool-link" href="#/tool/${encodeURIComponent(module.toolId)}">Open paired calculator →</a></div><div data-embedded-demo="${esc(module.demoId)}"></div></div>
 <h2>Design and analysis decisions</h2><ul>${module.decisions.map(item => `<li>${esc(item)}</li>`).join('')}</ul>
 <h2>Assumptions and model boundary</h2><p>${esc(module.limitation)}</p>
-<div class="callout"><strong>Engineering takeaway.</strong> A credible SEA prediction retains the origin, direction, bandwidth, field assumption, configuration, and uncertainty of every parameter—not only the solved energy.</div>
-<h2>Source trail</h2><p>${esc(module.source)}. Local reference: <code>references/SEA_parameters_revAB.pdf</code>. Source equations were independently screened for units, limiting behavior, reciprocity, and typographical risk before implementation.</p>`;
+<div class="callout"><strong>Engineering takeaway.</strong> ${takeaway}</div>
+<h2>Source trail</h2><p>${esc(module.source)}. ${module.sourceTrail || 'Local reference: <code>references/SEA_parameters_revAB.pdf</code>. Source equations were independently screened for units, limiting behavior, reciprocity, and typographical risk before implementation.'}</p>`;
 }
 
 const seaParameterCaseNotes = modules.map(module => ({
   id: `sea-parameters-${module.id}`,
   number: module.caseNumber,
   title: module.title,
-  summary: `${module.summary} Includes launch-vehicle applications and findings from the complete parameter-note review.`,
-  readTime: '11 min',
-  tags: ['SEA parameters', 'launch vehicles', module.eyebrow],
+  summary: `${module.summary} Includes launch-vehicle applications and findings from the complete ${module.id === 'infinite-structure-mobility' ? 'infinite-mobility lesson' : 'parameter-note review'}.`,
+  readTime: module.id === 'infinite-structure-mobility' ? '10 min' : '11 min',
+  tags: module.id === 'infinite-structure-mobility' ? ['infinite mobility', 'structural waves', module.eyebrow] : ['SEA parameters', 'launch vehicles', module.eyebrow],
   body: deepDiveBody(module)
 }));
 
@@ -7824,7 +7849,9 @@ const seaParameterReferenceGroups = [{
   items: [
     { title: 'Statistical Energy Analysis Parameters, Revision AB', author: 'Tom Irvine', note: 'Local 62-page reference covering SEA inputs, excitation conversion, response recovery, blankets, and TBL convection velocity.' },
     { title: 'Theory and Application of Statistical Energy Analysis', author: 'Lyon & DeJong', note: 'Primary SEA theory source cited throughout the parameter handbook.' },
-    { title: 'Random Vibrations in Spacecraft Structure Design', author: 'Jaap Wijker', note: 'Aerospace SEA, modal density, equipment loading, radiation, and qualification context.' }
+    { title: 'Random Vibrations in Spacecraft Structure Design', author: 'Jaap Wijker', note: 'Aerospace SEA, modal density, equipment loading, radiation, and qualification context.' },
+    { title: 'To Infinity and Beyond – the Amazing Uses of Infinite Structure Mobility Theory', author: 'Stephen Hambric', note: 'Local Inter-Noise 2019 paper; characteristic-mobility formulas and their rod, beam, plate, sandwich-panel, and cylindrical-shell applications. File: references/In19_inf_panel.pdf.' },
+    { title: 'ACS 519 Combined – Cylindrical Shells', author: 'Stephen Hambric', note: 'Local course reference; reproduces the beam, curved-shell, and infinite-plate shell-mobility regime relations. File: references/ACS519_Combined.pdf.' }
   ]
 }];
 
@@ -22133,6 +22160,238 @@ function radiationEfficiencyAtlasState(input = {}) {
   };
 }
 
+/* Infinite-structure (characteristic) mobilities.
+ * Primary source: Hambric, "To Infinity and Beyond - the Amazing Uses of
+ * Infinite Structure Mobility Theory," Inter-Noise 2019, equations (2)-(14).
+ * The values returned here are real, propagating-wave conductances intended
+ * for mean-response / high-modal-overlap screening, not complex finite-FRF
+ * predictions at an individual resonance or antiresonance.
+ */
+function infiniteMobilityAtlasState(input = {}) {
+  const frequency = positive(input.frequency, 1000);
+  const requestedMinimum = positive(input.frequencyMin, 10);
+  const requestedMaximum = positive(input.frequencyMax, 50000);
+  const frequencyMin = Math.min(requestedMinimum, requestedMaximum / 1.01);
+  const frequencyMax = Math.max(requestedMaximum, frequencyMin * 1.01);
+  const frequencies = logspace(frequencyMin, frequencyMax, 160);
+  const properties = plateProperties(input);
+  const omega = TAU * frequency;
+
+  const memberWidth = positive(input.memberWidth, 0.025);
+  const memberHeight = positive(input.memberHeight, 0.04);
+  const memberArea = memberWidth * memberHeight;
+  const memberInertia = memberWidth * memberHeight ** 3 / 12;
+  const rodLongitudinalSpeed = Math.sqrt(properties.modulus / properties.density);
+  const axialRodMobility = 1 / (properties.density * memberArea * rodLongitudinalSpeed);
+  const beamBendingSpeed = value => (
+    properties.modulus * memberInertia * (TAU * value) ** 2 / (properties.density * memberArea)
+  ) ** 0.25;
+  const beamCenterMobility = value => 1 / (2 * properties.density * memberArea * beamBendingSpeed(value));
+  const beamFreeEndMobility = value => 2 / (properties.density * memberArea * beamBendingSpeed(value));
+  const thinPlateMobility = 1 / (8 * Math.sqrt(properties.bendingStiffness * properties.surfaceMass));
+
+  const faceThickness = positive(input.faceThickness, 0.0006);
+  const coreThickness = positive(input.coreThickness, 0.0248);
+  const coreDensity = positive(input.coreDensity, 48);
+  const coreShearModulus = positive(input.coreShearModulus, 85e6);
+  const sandwichSurfaceMass = 2 * properties.density * faceThickness + coreDensity * coreThickness;
+  const faceCentroidOffset = (coreThickness + faceThickness) / 2;
+  const sandwichBendingStiffness = (
+    2 * properties.modulus / (1 - properties.poisson ** 2)
+    * (faceThickness ** 3 / 12 + faceThickness * faceCentroidOffset ** 2)
+  );
+  const sandwichShearStiffness = 5 / 6 * coreShearModulus * coreThickness;
+  const sandwichClassicalSpeed = value => (
+    sandwichBendingStiffness * (TAU * value) ** 2 / sandwichSurfaceMass
+  ) ** 0.25;
+  const sandwichTotalSpeed = value => {
+    const localOmega = TAU * value;
+    const shearTerm = localOmega ** 2 * sandwichBendingStiffness / sandwichShearStiffness;
+    const bendingWavenumberSquared = (
+      shearTerm + Math.sqrt(shearTerm ** 2 + 4 * sandwichBendingStiffness * sandwichSurfaceMass * localOmega ** 2)
+    ) / (2 * sandwichBendingStiffness);
+    return localOmega / Math.sqrt(bendingWavenumberSquared);
+  };
+  const sandwichMobility = value => {
+    const totalSpeed = sandwichTotalSpeed(value);
+    const classicalSpeed = sandwichClassicalSpeed(value);
+    return TAU * value / (4 * sandwichSurfaceMass * totalSpeed ** 2)
+      * (1 - 0.5 * (totalSpeed / classicalSpeed) ** 3);
+  };
+  const sandwichShearSpeed = Math.sqrt(sandwichShearStiffness / sandwichSurfaceMass);
+  const sandwichTransitionFrequency = sandwichShearStiffness / Math.sqrt(sandwichBendingStiffness * sandwichSurfaceMass) / TAU;
+
+  const shellRadius = positive(input.shellRadius ?? input.radius, 1.8);
+  const shellThickness = positive(input.shellThickness ?? input.thickness, 0.004);
+  const shellClosed = input.shellClosed !== false;
+  const shellArcAngleDeg = clamp(number(input.shellArcAngleDeg, 120), 5, 360);
+  const shellArcAngleRad = shellArcAngleDeg * Math.PI / 180;
+  const shellAxialLength = positive(input.shellAxialLength ?? input.length, properties.length);
+  const shellBendingStiffness = properties.modulus * shellThickness ** 3 / (12 * (1 - properties.poisson ** 2));
+  const shellLongitudinalSpeed = properties.longitudinalSpeed;
+  const shellRingFrequency = shellLongitudinalSpeed / (TAU * shellRadius);
+  const shellLowTransitionRatio = 0.77 * shellThickness / shellRadius;
+  const shellPlateTransitionRatio = 0.6;
+  const shellHasCurvedRegime = shellLowTransitionRatio < shellPlateTransitionRatio;
+  const shellCircumference = TAU * shellRadius;
+  const shellArcLength = shellRadius * shellArcAngleRad;
+  const shellBeamEquivalentArea = (shellClosed ? shellCircumference : shellArcLength) * shellThickness;
+  const shellBeamEquivalentInertia = shellClosed ? null : shellArcLength * shellThickness ** 3 / 12;
+  const closedShellBeamEquivalentSpeed = value => Math.sqrt(
+    value / shellRingFrequency * shellLongitudinalSpeed ** 2 / Math.sqrt(2)
+  );
+  const curvedPanelStripSpeed = value => (
+    properties.modulus * shellBeamEquivalentInertia * (TAU * value) ** 2
+    / (properties.density * shellBeamEquivalentArea)
+  ) ** 0.25;
+  const shellBeamEquivalentSpeed = value => shellClosed ? closedShellBeamEquivalentSpeed(value) : curvedPanelStripSpeed(value);
+  const shellBeamMobility = value => {
+    return 1 / (2 * properties.density * shellBeamEquivalentArea * shellBeamEquivalentSpeed(value));
+  };
+  const shellCurvedMobility = value => (
+    0.66 / (2.3 * shellLongitudinalSpeed * properties.density * shellThickness ** 2)
+    * Math.sqrt(value / shellRingFrequency)
+  );
+  const shellPlateMobility = 1 / (8 * Math.sqrt(shellBendingStiffness * properties.density * shellThickness));
+  const shellRegimeAt = value => {
+    const ratio = value / shellRingFrequency;
+    if (shellHasCurvedRegime) {
+      if (ratio < shellLowTransitionRatio) return shellClosed ? 'beam-like' : 'strip-like curved panel';
+      if (ratio < shellPlateTransitionRatio) return 'curved-shell';
+      return 'plate-like';
+    }
+    return ratio < shellPlateTransitionRatio
+      ? shellClosed ? 'beam-like (thin-shell range compressed)' : 'strip-like curved panel (thin-shell range compressed)'
+      : 'plate-like';
+  };
+  const shellMobility = value => {
+    const regime = shellRegimeAt(value);
+    if (regime.startsWith('beam-like') || regime.startsWith('strip-like')) return shellBeamMobility(value);
+    if (regime === 'curved-shell') return shellCurvedMobility(value);
+    return shellPlateMobility;
+  };
+
+  const focus = String(input.focus ?? 'cylindrical-shell');
+  const focusState = {
+    'rod-axial': {
+      label: 'Axial rod characteristic mobility',
+      mobility: axialRodMobility,
+      basis: 'Y = 1/(ρAcL)'
+    },
+    'beam-flexural': {
+      label: 'Infinite beam flexural mobility, center drive',
+      mobility: beamCenterMobility(frequency),
+      basis: 'Y = 1/(2ρAcB)'
+    },
+    'beam-free-end': {
+      label: 'Semi-infinite beam flexural mobility, free-end drive',
+      mobility: beamFreeEndMobility(frequency),
+      basis: 'Y = 2/(ρAcB)'
+    },
+    'thin-plate': {
+      label: 'Infinite thin-plate mobility',
+      mobility: thinPlateMobility,
+      basis: 'Y = 1/(8√(Dρh))'
+    },
+    'sandwich-panel': {
+      label: 'Infinite sandwich-panel mobility',
+      mobility: sandwichMobility(frequency),
+      basis: 'Flexural-to-shear approximation'
+    },
+    'cylindrical-shell': {
+      label: `Cylindrical-shell mobility, ${shellRegimeAt(frequency)} regime`,
+      mobility: shellMobility(frequency),
+      basis: 'Beam / curved-shell / plate piecewise relation'
+    }
+  };
+  const selectedFocus = Object.hasOwn(focusState, focus) ? focus : 'cylindrical-shell';
+  const selected = focusState[selectedFocus];
+  const forceRms = positive(input.forceRms, 10);
+
+  return {
+    frequency,
+    frequencyMin,
+    frequencyMax,
+    frequencies,
+    properties,
+    member: {
+      width: memberWidth,
+      height: memberHeight,
+      area: memberArea,
+      inertia: memberInertia,
+      longitudinalSpeed: rodLongitudinalSpeed
+    },
+    axialRodMobility,
+    beamBendingSpeed: beamBendingSpeed(frequency),
+    beamCenterMobility: beamCenterMobility(frequency),
+    beamFreeEndMobility: beamFreeEndMobility(frequency),
+    thinPlateMobility,
+    sandwich: {
+      faceThickness,
+      coreThickness,
+      coreDensity,
+      coreShearModulus,
+      surfaceMass: sandwichSurfaceMass,
+      bendingStiffness: sandwichBendingStiffness,
+      shearStiffness: sandwichShearStiffness,
+      classicalSpeed: sandwichClassicalSpeed(frequency),
+      totalSpeed: sandwichTotalSpeed(frequency),
+      shearSpeed: sandwichShearSpeed,
+      transitionFrequency: sandwichTransitionFrequency,
+      mobility: sandwichMobility(frequency)
+    },
+    shell: {
+      radius: shellRadius,
+      thickness: shellThickness,
+      circumference: shellCircumference,
+      closed: shellClosed,
+      arcAngleDeg: shellClosed ? 360 : shellArcAngleDeg,
+      arcAngleRad: shellClosed ? TAU : shellArcAngleRad,
+      arcLength: shellClosed ? shellCircumference : shellArcLength,
+      axialLength: shellAxialLength,
+      panelArea: (shellClosed ? shellCircumference : shellArcLength) * shellAxialLength,
+      thicknessToRadius: shellThickness / shellRadius,
+      beamEquivalentArea: shellBeamEquivalentArea,
+      beamEquivalentInertia: shellBeamEquivalentInertia,
+      beamEquivalentSpeed: shellBeamEquivalentSpeed(frequency),
+      beamEquivalentBasis: shellClosed ? 'Whole-circumference closed-shell beam equivalent' : 'Open curved-panel strip proxy',
+      bendingStiffness: shellBendingStiffness,
+      longitudinalSpeed: shellLongitudinalSpeed,
+      ringFrequency: shellRingFrequency,
+      normalizedFrequency: frequency / shellRingFrequency,
+      lowTransitionRatio: shellLowTransitionRatio,
+      lowTransitionFrequency: shellLowTransitionRatio * shellRingFrequency,
+      plateTransitionRatio: shellPlateTransitionRatio,
+      plateTransitionFrequency: shellPlateTransitionRatio * shellRingFrequency,
+      hasCurvedRegime: shellHasCurvedRegime,
+      regime: shellRegimeAt(frequency),
+      beamMobility: shellBeamMobility(frequency),
+      curvedMobility: shellCurvedMobility(frequency),
+      plateMobility: shellPlateMobility,
+      mobility: shellMobility(frequency)
+    },
+    selected: {
+      focus: selectedFocus,
+      ...selected,
+      impedance: 1 / selected.mobility,
+      forceRms,
+      inputPower: 0.5 * forceRms ** 2 * selected.mobility
+    },
+    curves: {
+      rodAxial: frequencies.map(() => axialRodMobility),
+      beamCenter: frequencies.map(beamCenterMobility),
+      beamFreeEnd: frequencies.map(beamFreeEndMobility),
+      thinPlate: frequencies.map(() => thinPlateMobility),
+      sandwich: frequencies.map(sandwichMobility),
+      shellBeam: frequencies.map(shellBeamMobility),
+      shellCurved: frequencies.map(shellCurvedMobility),
+      shellPlate: frequencies.map(() => shellPlateMobility),
+      shellApplicable: frequencies.map(shellMobility)
+    },
+    provenance: 'Hambric Inter-Noise 2019 equations (2)-(14); ACS 519 cylindrical-shell slides reproduce the beam, curved-shell, and plate relations. Values are real characteristic mobilities for screening mean finite response.'
+  };
+}
+
 function drivingPointImpedanceState(input = {}) {
   const model = String(input.model ?? 'plate-center');
   const frequency = positive(input.frequency, 1000);
@@ -22486,7 +22745,7 @@ function seaParameterWorkbenchState(input = {}) {
   ] };
 }
 
-return {SEA_PARAMETER_PRESETS,empiricalLossFactorState,modalDensityAtlasState,radiationEfficiencyAtlasState,drivingPointImpedanceState,clfMechanismState,tblConvectionState,equivalentPowerInjectionState,equipmentLoadingState,seaResponseRecoveryState,installedFairingSeaState,seaParameterWorkbenchState};
+return {SEA_PARAMETER_PRESETS,empiricalLossFactorState,modalDensityAtlasState,radiationEfficiencyAtlasState,infiniteMobilityAtlasState,drivingPointImpedanceState,clfMechanismState,tblConvectionState,equivalentPowerInjectionState,equipmentLoadingState,seaResponseRecoveryState,installedFairingSeaState,seaParameterWorkbenchState};
 })();
 
 const __launchSeaCapstone=(()=>{
@@ -27132,13 +27391,14 @@ return {programExpansionPreviewSvg,mountProgramExpansionDemo,programExpansionSup
 })();
 
 const __seaParameterCalculators=(()=>{
-const {SEA_PARAMETER_PRESETS,empiricalLossFactorState,modalDensityAtlasState,radiationEfficiencyAtlasState,drivingPointImpedanceState,clfMechanismState,tblConvectionState,equivalentPowerInjectionState,equipmentLoadingState,seaResponseRecoveryState,installedFairingSeaState,seaParameterWorkbenchState}=__seaParameterPhysics;
+const {SEA_PARAMETER_PRESETS,empiricalLossFactorState,modalDensityAtlasState,radiationEfficiencyAtlasState,infiniteMobilityAtlasState,drivingPointImpedanceState,clfMechanismState,tblConvectionState,equivalentPowerInjectionState,equipmentLoadingState,seaResponseRecoveryState,installedFairingSeaState,seaParameterWorkbenchState}=__seaParameterPhysics;
 const {materials}=__calculators;
 /* Calculators for the SEA parameter handbook expansion. */
 const stat = (label, value, unit = '', tone = '', note = '') => ({ label, value, unit, tone, note });
 const trace = (name, x, y, extra = {}) => ({ name, x, y, ...extra });
 const mm = value => Number(value) / 1000;
 const gpa = value => Number(value) * 1e9;
+const mpa = value => Number(value) * 1e6;
 const launchConsiderations = primary => [
   primary,
   'Preserve the frequency-band definition, subsystem boundary, units, direction, and parameter provenance when transferring this result into an SEA model.',
@@ -27161,6 +27421,115 @@ const syncModalDensityMaterial = values => {
   const material = materials[values.material] || materials.aluminum;
   return { ...values, modulus: material.E / 1e9, density: material.rho, poisson: material.nu };
 };
+const syncInfiniteMobilityMaterial = values => {
+  const material = materials[values.material] || materials.aluminum;
+  return { ...values, modulus: material.E / 1e9, density: material.rho, poisson: material.nu };
+};
+const infiniteMobilityFocus = values => {
+  const geometry = String(values.geometry ?? 'cylindrical-shell');
+  if (geometry === 'beam') return String(values.beam_geometry ?? 'beam-flexural');
+  if (geometry === 'flat-panel') return 'thin-plate';
+  if (geometry === 'sandwich-panel') return 'sandwich-panel';
+  return 'cylindrical-shell';
+};
+const infiniteMobilityGeometryLabel = values => {
+  const geometry = String(values.geometry ?? 'cylindrical-shell');
+  if (geometry === 'beam') {
+    const labels = {
+      'rod-axial': 'Axial rod',
+      'beam-flexural': 'Infinite flexural beam, center drive',
+      'beam-free-end': 'Semi-infinite flexural beam, free-end drive'
+    };
+    return labels[String(values.beam_geometry)] ?? labels['beam-flexural'];
+  }
+  if (geometry === 'flat-panel') return 'Infinite thin isotropic flat panel';
+  if (geometry === 'sandwich-panel') return 'Symmetric sandwich panel, flexural-to-shear screen';
+  if (geometry === 'curved-panel') return 'Open curved cylindrical panel / shell segment';
+  return 'Unstiffened thin circular cylindrical shell';
+};
+const svgEsc = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+const schematicNumber = (value, digits = 3) => {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '—';
+  const magnitude = Math.abs(number);
+  if (magnitude >= 1e4 || (magnitude > 0 && magnitude < 1e-3)) return number.toExponential(2);
+  return String(Number(number.toFixed(digits)));
+};
+const schematicLength = (meters, system, compact = false) => {
+  const value = Number(meters);
+  if (system === 'English') return compact ? `${schematicNumber(value * 39.37007874)} in` : `${schematicNumber(value * 3.280839895)} ft`;
+  return compact ? `${schematicNumber(value * 1000)} mm` : `${schematicNumber(value)} m`;
+};
+const schematicArea = (squareMeters, system) => system === 'English'
+  ? `${schematicNumber(squareMeters * 10.76391042)} ft²`
+  : `${schematicNumber(squareMeters)} m²`;
+const mobilitySchematicDefs = `
+  <defs>
+    <linearGradient id="ims-shell" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#102d49"/><stop offset=".5" stop-color="#1b6382"/><stop offset="1" stop-color="#0c263f"/></linearGradient>
+    <linearGradient id="ims-metal" x1="0" x2="1"><stop stop-color="#58bfff"/><stop offset=".48" stop-color="#173b60"/><stop offset="1" stop-color="#76d9ff"/></linearGradient>
+    <linearGradient id="ims-core" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#2c7b76"/><stop offset="1" stop-color="#103e4a"/></linearGradient>
+    <marker id="ims-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10z" fill="#ffcf66"/></marker>
+    <marker id="ims-dim" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#9eb7d3" stroke-width="1.7"/></marker>
+    <filter id="ims-glow"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>`;
+
+function infiniteMobilitySchematic(values, state) {
+  const geometry = String(values.geometry ?? 'cylindrical-shell');
+  const material = materials[values.material] || materials.aluminum;
+  const title = infiniteMobilityGeometryLabel(values);
+  const shell = state.shell;
+  const makeSvg = system => {
+    const head = `<rect width="1000" height="520" fill="#061a2c"/><path d="M0 74 H1000" stroke="#21435f"/><text x="42" y="39" fill="#edf7ff" font-family="ui-sans-serif,system-ui" font-size="22" font-weight="700">${svgEsc(title)}</text><text x="42" y="61" fill="#8ba9c5" font-family="ui-monospace,monospace" font-size="12">${svgEsc(material.label)} · characteristic-mobility geometry</text>`;
+    const card = (x, y, accent, eyebrow, line1, line2 = '') => `<g><rect x="${x}" y="${y}" width="286" height="67" rx="7" fill="#0a2238" stroke="${accent}" stroke-opacity=".62"/><rect x="${x}" y="${y}" width="5" height="67" rx="2" fill="${accent}"/><text x="${x + 18}" y="${y + 21}" fill="${accent}" font-family="ui-monospace,monospace" font-size="10" font-weight="700">${svgEsc(eyebrow)}</text><text x="${x + 18}" y="${y + 42}" fill="#edf7ff" font-family="ui-sans-serif,system-ui" font-size="13" font-weight="650">${svgEsc(line1)}</text>${line2 ? `<text x="${x + 18}" y="${y + 58}" fill="#a5bad1" font-family="ui-monospace,monospace" font-size="11">${svgEsc(line2)}</text>` : ''}</g>`;
+    const footer = `<text x="42" y="492" fill="#8ba9c5" font-family="ui-sans-serif,system-ui" font-size="12">Geometry is schematic and dimensions follow the active inputs. The mobility plot above shows which constituent relation is active by frequency.</text>`;
+    if (geometry === 'curved-panel') {
+      const selectedColor = shell.regime.startsWith('strip-like') ? '#55b8ff' : shell.regime === 'curved-shell' ? '#ffcf66' : '#65d9a0';
+      return `<svg viewBox="0 0 1000 520" role="img" aria-label="Open curved cylindrical panel geometry">${mobilitySchematicDefs}${head}<g>
+        <path d="M150 370 C170 210 300 125 450 170 C535 196 580 268 590 338" fill="none" stroke="#214c68" stroke-width="34"/>
+        <path d="M150 354 C170 194 300 109 450 154 C535 180 580 252 590 322" fill="none" stroke="#8bdcff" stroke-width="6"/>
+        <path d="M180 354 C200 226 304 158 440 198 C498 216 534 263 545 320" fill="none" stroke="url(#ims-shell)" stroke-width="18"/>
+        <line x1="385" y1="354" x2="385" y2="165" stroke="#9eb7d3" stroke-width="1.5" marker-start="url(#ims-dim)" marker-end="url(#ims-dim)"/><text x="398" y="263" fill="#d4e5f5" font-family="ui-monospace,monospace" font-size="13">R = ${svgEsc(schematicLength(shell.radius, system))}</text>
+        <path d="M385 104 V214" stroke="#ffcf66" stroke-width="4" marker-end="url(#ims-arrow)"/><text x="398" y="122" fill="#ffdf91" font-family="ui-monospace,monospace" font-size="13">F</text>
+        <path d="M145 410 H590" stroke="#9eb7d3" stroke-width="1.5" marker-start="url(#ims-dim)" marker-end="url(#ims-dim)"/><text x="368" y="435" text-anchor="middle" fill="#d4e5f5" font-family="ui-monospace,monospace" font-size="13">arc = ${svgEsc(schematicLength(shell.arcLength, system))} · θ = ${schematicNumber(shell.arcAngleDeg, 0)}°</text>
+        <text x="694" y="175" fill="#edf7ff" font-family="ui-sans-serif,system-ui" font-size="18" font-weight="700">Open curved panel</text>
+        <text x="694" y="209" fill="#a5bad1" font-family="ui-monospace,monospace" font-size="13">L = ${svgEsc(schematicLength(shell.axialLength, system))}</text>
+        <text x="694" y="235" fill="#a5bad1" font-family="ui-monospace,monospace" font-size="13">t = ${svgEsc(schematicLength(shell.thickness, system, true))}</text>
+        <circle cx="700" cy="284" r="8" fill="${selectedColor}"/><text x="720" y="289" fill="#edf7ff" font-family="ui-sans-serif,system-ui" font-size="14">Active: ${svgEsc(shell.regime)}</text>
+      </g>${footer}</svg>`;
+    }
+    if (geometry === 'cylindrical-shell') {
+      const selectedColor = shell.regime.startsWith('beam-like') ? '#55b8ff' : shell.regime === 'curved-shell' ? '#ffcf66' : '#65d9a0';
+      return `<svg viewBox="0 0 1000 520" role="img" aria-label="Closed cylindrical shell geometry">${mobilitySchematicDefs}${head}<g>
+        <ellipse cx="224" cy="268" rx="102" ry="132" fill="#0b2a43" stroke="#8bdcff" stroke-width="3"/>
+        <path d="M224 136 H560 V400 H224z" fill="url(#ims-shell)" stroke="#8bdcff" stroke-width="3"/>
+        <ellipse cx="560" cy="268" rx="102" ry="132" fill="url(#ims-shell)" stroke="#8bdcff" stroke-width="3"/>
+        <ellipse cx="224" cy="268" rx="86" ry="112" fill="none" stroke="#9eb7d3" stroke-dasharray="7 7"/>
+        <line x1="224" y1="268" x2="224" y2="136" stroke="#9eb7d3" stroke-width="1.5" marker-start="url(#ims-dim)" marker-end="url(#ims-dim)"/><text x="238" y="203" fill="#d4e5f5" font-family="ui-monospace,monospace" font-size="13">R = ${svgEsc(schematicLength(shell.radius, system))}</text>
+        <path d="M394 96 V180" stroke="#ffcf66" stroke-width="4" marker-end="url(#ims-arrow)"/><text x="408" y="115" fill="#ffdf91" font-family="ui-monospace,monospace" font-size="13">F</text>
+        <line x1="101" y1="132" x2="130" y2="150" stroke="#9eb7d3" stroke-width="1.5" marker-start="url(#ims-dim)" marker-end="url(#ims-dim)"/><text x="72" y="116" fill="#d4e5f5" font-family="ui-monospace,monospace" font-size="13">t = ${svgEsc(schematicLength(shell.thickness, system, true))}</text>
+        <text x="704" y="175" fill="#edf7ff" font-family="ui-sans-serif,system-ui" font-size="18" font-weight="700">Closed cylindrical shell</text>
+        <text x="704" y="210" fill="#a5bad1" font-family="ui-monospace,monospace" font-size="13">circumference = ${svgEsc(schematicLength(shell.circumference, system))}</text>
+        <text x="704" y="236" fill="#a5bad1" font-family="ui-monospace,monospace" font-size="13">h/R = ${schematicNumber(shell.thicknessToRadius, 4)}</text>
+        <circle cx="710" cy="284" r="8" fill="${selectedColor}"/><text x="730" y="289" fill="#edf7ff" font-family="ui-sans-serif,system-ui" font-size="14">Active: ${svgEsc(shell.regime)}</text>
+      </g>${footer}</svg>`;
+    }
+    if (geometry === 'beam') {
+      const beam = String(values.beam_geometry ?? 'beam-flexural');
+      const axial = beam === 'rod-axial';
+      const freeEnd = beam === 'beam-free-end';
+      const xForce = freeEnd ? 154 : 386;
+      const forcePath = axial ? `<path d="M80 250 H${xForce + 30}" stroke="#ffcf66" stroke-width="4" marker-end="url(#ims-arrow)"/><text x="82" y="232" fill="#ffdf91" font-family="ui-monospace,monospace" font-size="13">AXIAL F</text>` : `<path d="M${xForce} 128 V203" stroke="#ffcf66" stroke-width="4" marker-end="url(#ims-arrow)"/><text x="${xForce + 12}" y="143" fill="#ffdf91" font-family="ui-monospace,monospace" font-size="13">TRANSVERSE F</text>`;
+      const driveLabel = axial ? 'Longitudinal wave' : freeEnd ? 'Free-end flexural drive' : 'Center flexural drive';
+      return `<svg viewBox="0 0 1000 520" role="img" aria-label="Beam or rod geometry with selected characteristic-mobility drive condition">${mobilitySchematicDefs}${head}<g><path d="M150 210 H575 V300 H150z" fill="url(#ims-metal)" stroke="#8bdcff" stroke-width="2"/><path d="M150 210 L205 170 H630 L575 210z" fill="#2f7397" stroke="#8bdcff" stroke-width="2"/><path d="M575 210 L630 170 V260 L575 300z" fill="#103450" stroke="#8bdcff" stroke-width="2"/><line x1="150" y1="255" x2="575" y2="255" stroke="#d8f1ff" stroke-dasharray="6 5"/><rect x="690" y="196" width="150" height="120" fill="#10334d" stroke="#8bdcff" stroke-width="2"/><line x1="690" y1="256" x2="840" y2="256" stroke="#8ba9c5" stroke-dasharray="5 4"/><line x1="765" y1="196" x2="765" y2="316" stroke="#8ba9c5" stroke-dasharray="5 4"/><line x1="690" y1="340" x2="840" y2="340" stroke="#9eb7d3" marker-start="url(#ims-dim)" marker-end="url(#ims-dim)"/><text x="765" y="361" text-anchor="middle" fill="#d4e5f5" font-family="ui-monospace,monospace" font-size="12">b = ${svgEsc(schematicLength(state.member.width, system, true))}</text><line x1="864" y1="196" x2="864" y2="316" stroke="#9eb7d3" marker-start="url(#ims-dim)" marker-end="url(#ims-dim)"/><text x="885" y="258" fill="#d4e5f5" font-family="ui-monospace,monospace" font-size="12">h = ${svgEsc(schematicLength(state.member.height, system, true))}</text>${forcePath}<text x="150" y="390" fill="#55b8ff" font-family="ui-monospace,monospace" font-size="13">${svgEsc(driveLabel)}</text><text x="150" y="414" fill="#a5bad1" font-family="ui-monospace,monospace" font-size="12">A = ${svgEsc(schematicArea(state.member.area, system))} · I = ${schematicNumber(state.member.inertia, 4)} m⁴</text></g>${card(650, 100, axial ? '#ffcf66' : '#55b8ff', 'SELECTED WAVE FAMILY', axial ? 'Axial characteristic mobility' : 'Flexural characteristic mobility', axial ? 'Y = 1/(ρAcL)' : freeEnd ? 'Y = 2/(ρAcB)' : 'Y = 1/(2ρAcB)')}${footer}</svg>`;
+    }
+    if (geometry === 'flat-panel') {
+      return `<svg viewBox="0 0 1000 520" role="img" aria-label="Infinite thin plate geometry with point drive and outward flexural waves">${mobilitySchematicDefs}${head}<g><path d="M155 168 H628 L730 228 H258z" fill="#2e7195" stroke="#8bdcff" stroke-width="2"/><path d="M258 228 H730 V355 H258z" fill="url(#ims-metal)" stroke="#8bdcff" stroke-width="2"/><path d="M258 355 L730 355 L628 414 H155z" fill="#10334d" stroke="#8bdcff" stroke-width="2"/><circle cx="494" cy="288" r="16" fill="#ffcf66" filter="url(#ims-glow)"/><path d="M494 111 V266" stroke="#ffcf66" stroke-width="4" marker-end="url(#ims-arrow)"/><text x="507" y="128" fill="#ffdf91" font-family="ui-monospace,monospace" font-size="13">POINT FORCE F</text><ellipse cx="494" cy="288" rx="70" ry="34" fill="none" stroke="#65d9a0" stroke-width="2"/><ellipse cx="494" cy="288" rx="125" ry="61" fill="none" stroke="#65d9a0" stroke-width="2" stroke-dasharray="7 5"/><ellipse cx="494" cy="288" rx="180" ry="88" fill="none" stroke="#65d9a0" stroke-width="2" stroke-dasharray="7 5"/><line x1="760" y1="228" x2="760" y2="355" stroke="#9eb7d3" marker-start="url(#ims-dim)" marker-end="url(#ims-dim)"/><text x="778" y="294" fill="#d4e5f5" font-family="ui-monospace,monospace" font-size="12">t = ${svgEsc(schematicLength(state.properties.thickness, system, true))}</text><text x="262" y="456" fill="#a5bad1" font-family="ui-monospace,monospace" font-size="12">Two-dimensional bending waves spread radially from the local point drive.</text></g>${card(650, 100, '#65d9a0', 'INFINITE THIN PLATE', 'Local material + thickness set the mean level', `Y = 1/(8√(Dρt)) · D = ${schematicNumber(state.properties.bendingStiffness, 2)} N·m`)}${footer}</svg>`;
+    }
+    const sandwich = state.sandwich;
+    return `<svg viewBox="0 0 1000 520" role="img" aria-label="Symmetric sandwich panel geometry showing face sheets and shear core">${mobilitySchematicDefs}${head}<g><path d="M140 174 H700 L762 208 H202z" fill="#56bfff" fill-opacity=".8" stroke="#a8e4ff" stroke-width="2"/><path d="M202 208 H762 V237 H202z" fill="#1f6190" stroke="#a8e4ff" stroke-width="2"/><path d="M202 237 H762 V346 H202z" fill="url(#ims-core)" stroke="#65d9a0" stroke-width="2"/><path d="M202 346 H762 V375 H202z" fill="#1f6190" stroke="#a8e4ff" stroke-width="2"/><path d="M202 375 H762 L700 409 H140z" fill="#56bfff" fill-opacity=".8" stroke="#a8e4ff" stroke-width="2"/><path d="M470 105 V194" stroke="#ffcf66" stroke-width="4" marker-end="url(#ims-arrow)"/><text x="482" y="122" fill="#ffdf91" font-family="ui-monospace,monospace" font-size="13">POINT FORCE F</text><path d="M306 275 C338 245 370 305 402 275 S466 245 498 275" fill="none" stroke="#ffcf66" stroke-width="3" marker-end="url(#ims-arrow)"/><text x="278" y="246" fill="#ffdf91" font-family="ui-monospace,monospace" font-size="11">LOW f · FACE-SHEET FLEXURE</text><path d="M597 266 V326 M624 266 V326 M651 266 V326" stroke="#65d9a0" stroke-width="4" marker-end="url(#ims-arrow)"/><text x="572" y="246" fill="#b8f3d2" font-family="ui-monospace,monospace" font-size="11">HIGH f · CORE SHEAR</text><line x1="798" y1="208" x2="798" y2="237" stroke="#9eb7d3" marker-start="url(#ims-dim)" marker-end="url(#ims-dim)"/><text x="816" y="225" fill="#d4e5f5" font-family="ui-monospace,monospace" font-size="11">tf ${svgEsc(schematicLength(sandwich.faceThickness, system, true))}</text><line x1="852" y1="237" x2="852" y2="346" stroke="#9eb7d3" marker-start="url(#ims-dim)" marker-end="url(#ims-dim)"/><text x="870" y="294" fill="#d4e5f5" font-family="ui-monospace,monospace" font-size="11">tc ${svgEsc(schematicLength(sandwich.coreThickness, system, true))}</text></g>${card(650, 100, '#65d9a0', 'SYMMETRIC SANDWICH', 'Face-sheet flexure transitions toward core shear', `f shear scale = ${schematicNumber(sandwich.transitionFrequency, 0)} Hz`)}${footer}</svg>`;
+  };
+  return { title, svg: makeSvg('SI'), svgByUnit: { English: makeSvg('English') } };
+}
 const modalDensityTypeOptions = [
   { value: 'acoustic-1d', label: 'Acoustic 1D pipe' }, { value: 'acoustic-2d', label: 'Acoustic 2D cavity' }, { value: 'acoustic-3d', label: 'Acoustic 3D cavity' },
   { value: 'beam-bending', label: 'Beam transverse bending' }, { value: 'beam-torsion', label: 'Beam torsion' }, { value: 'beam-longitudinal', label: 'Beam longitudinal · supplementary' }, { value: 'grid-bending', label: 'Grid structure bending' },
@@ -27278,6 +27647,219 @@ const definitions = {
         ],
         tables,
         presentation: { primaryEvidence: { type: 'plot', index: 0 }, primaryEvidenceCount: 1, primaryValueCount: 6 }
+      };
+    }
+  },
+
+  'infinite-mobility-atlas': {
+    category: 'Structural Acoustics',
+    basis: 'Infinite-structure characteristic mobility relations for rods, beams, panels, sandwich panels, and cylindrical shells',
+    confidence: 'Closed-form mean-response and high-frequency screening relations; not a finite-FRF resonance model',
+    inputs: [
+      { key: 'geometry', label: 'Structure family', type: 'select', default: 'cylindrical-shell', group: '1. Structure family', groupOpen: true, options: [{ value: 'cylindrical-shell', label: 'Cylindrical shell' }, { value: 'curved-panel', label: 'Curved cylindrical panel' }, { value: 'beam', label: 'Beam or rod' }, { value: 'flat-panel', label: 'Flat panel' }, { value: 'sandwich-panel', label: 'Sandwich panel' }], help: 'Choose the structural family first. The next section exposes only that family’s applicable geometry definition.' },
+
+      { key: 'material', label: 'Material preset', type: 'select', default: 'aluminum', group: '2. Material', groupOpen: true, options: materialOptions, help: 'Selecting a preset populates the editable modulus, density, and Poisson-ratio fields below.' },
+      { key: 'modulus', label: 'Young’s modulus', unit: 'GPa', type: 'number', default: materials.aluminum.E / 1e9, min: 0.01, group: '2. Material' },
+      { key: 'density', label: 'Structural density', unit: 'kg/m³', type: 'number', default: materials.aluminum.rho, min: 1, group: '2. Material' },
+      { key: 'poisson', label: 'Poisson ratio', type: 'number', default: materials.aluminum.nu, min: -0.49, max: 0.49, group: '2. Material' },
+
+      { key: 'shell_geometry', label: 'Specific geometry', type: 'select', default: 'unstiffened-thin-circular', group: '3. Specific geometry', groupOpen: true, visibleWhen: { geometry: 'cylindrical-shell' }, options: [{ value: 'unstiffened-thin-circular', label: 'Unstiffened thin circular shell' }], help: 'Applies the published beam-like, curved-shell, and plate-like characteristic-mobility regimes.' },
+      { key: 'shell_radius', label: 'Mean shell radius', unit: 'm', type: 'number', default: 1.8, min: 0.001, group: '3. Specific geometry', visibleWhen: { geometry: 'cylindrical-shell' } },
+      { key: 'shell_thickness', label: 'Shell-wall thickness', unit: 'mm', type: 'number', default: 4, min: 0.02, group: '3. Specific geometry', visibleWhen: { geometry: 'cylindrical-shell' } },
+
+      { key: 'curved_panel_geometry', label: 'Specific geometry', type: 'select', default: 'open-cylindrical-segment', group: '3. Specific geometry', groupOpen: true, visibleWhen: { geometry: 'curved-panel' }, options: [{ value: 'open-cylindrical-segment', label: 'Open thin cylindrical shell segment' }], help: 'Uses the cylindrical ring, curved-shell, and local flat-plate relations. Its low-frequency relation is an explicit arc-width strip proxy, not a closed-cylinder beam equivalent.' },
+      { key: 'curved_panel_radius', label: 'Radius of curvature', unit: 'm', type: 'number', default: 1.8, min: 0.001, group: '3. Specific geometry', visibleWhen: { geometry: 'curved-panel' } },
+      { key: 'curved_panel_arc_angle', label: 'Subtended arc angle', unit: 'deg', type: 'number', default: 120, min: 5, max: 355, group: '3. Specific geometry', visibleWhen: { geometry: 'curved-panel' } },
+      { key: 'curved_panel_axial_length', label: 'Axial panel length', unit: 'm', type: 'number', default: 2.4, min: 0.01, group: '3. Specific geometry', visibleWhen: { geometry: 'curved-panel' } },
+      { key: 'curved_panel_thickness', label: 'Panel-wall thickness', unit: 'mm', type: 'number', default: 4, min: 0.02, group: '3. Specific geometry', visibleWhen: { geometry: 'curved-panel' } },
+
+      { key: 'beam_geometry', label: 'Specific geometry', type: 'select', default: 'beam-flexural', group: '3. Specific geometry', groupOpen: true, visibleWhen: { geometry: 'beam' }, options: [{ value: 'rod-axial', label: 'Axial rod' }, { value: 'beam-flexural', label: 'Infinite flexural beam, center drive' }, { value: 'beam-free-end', label: 'Semi-infinite flexural beam, free-end drive' }], help: 'Choose the wave family and drive condition before entering the rectangular member section.' },
+      { key: 'member_width', label: 'Rectangular-section width', unit: 'mm', type: 'number', default: 25, min: 0.1, group: '3. Specific geometry', visibleWhen: { geometry: 'beam' } },
+      { key: 'member_height', label: 'Rectangular-section height', unit: 'mm', type: 'number', default: 40, min: 0.1, group: '3. Specific geometry', visibleWhen: { geometry: 'beam' } },
+
+      { key: 'panel_geometry', label: 'Specific geometry', type: 'select', default: 'infinite-thin-isotropic', group: '3. Specific geometry', groupOpen: true, visibleWhen: { geometry: 'flat-panel' }, options: [{ value: 'infinite-thin-isotropic', label: 'Infinite thin isotropic flat panel' }], help: 'The paired relation is the propagating-wave thin-plate characteristic mobility.' },
+      { key: 'plate_thickness', label: 'Panel thickness', unit: 'mm', type: 'number', default: 3, min: 0.02, group: '3. Specific geometry', visibleWhen: { geometry: 'flat-panel' } },
+
+      { key: 'sandwich_geometry', label: 'Specific geometry', type: 'select', default: 'symmetric-shear-core', group: '3. Specific geometry', groupOpen: true, visibleWhen: { geometry: 'sandwich-panel' }, options: [{ value: 'symmetric-shear-core', label: 'Symmetric face sheets with shear core' }], help: 'The selected material applies to both isotropic face sheets; enter the core properties below.' },
+      { key: 'face_thickness', label: 'Face-sheet thickness', unit: 'mm', type: 'number', default: 0.6, min: 0.01, group: '3. Specific geometry', visibleWhen: { geometry: 'sandwich-panel' } },
+      { key: 'core_thickness', label: 'Core thickness', unit: 'mm', type: 'number', default: 24.8, min: 0.1, group: '3. Specific geometry', visibleWhen: { geometry: 'sandwich-panel' } },
+      { key: 'core_density', label: 'Core density', unit: 'kg/m³', type: 'number', default: 48, min: 0.1, group: '3. Specific geometry', visibleWhen: { geometry: 'sandwich-panel' } },
+      { key: 'core_shear_modulus', label: 'Core shear modulus', unit: 'MPa', type: 'number', default: 85, min: 0.001, group: '3. Specific geometry', visibleWhen: { geometry: 'sandwich-panel' } },
+
+      { key: 'frequency', label: 'Selected frequency', unit: 'Hz', type: 'number', default: 1000, min: 0.1, group: '4. Excitation & plot' },
+      { key: 'frequency_min', label: 'Plot minimum frequency', unit: 'Hz', type: 'number', default: 10, min: 0.01, group: '4. Excitation & plot' },
+      { key: 'frequency_max', label: 'Plot maximum frequency', unit: 'Hz', type: 'number', default: 50000, min: 0.1, group: '4. Excitation & plot' },
+      { key: 'force', label: 'Reference RMS point force', unit: 'N', type: 'number', default: 10, min: 0.0001, group: '4. Excitation & plot' }
+    ],
+    syncPreset: syncInfiniteMobilityMaterial,
+    theory: '<p>Characteristic mobility represents energy carried away by propagating structural waves. For a finite structure it is a mean-response reference—often near the geometric mean of resonant and antiresonant mobility—not a replacement for a complex measured or modal FRF.</p>',
+    assumptions: ['Uniform, unbounded or weakly reflecting member, plate, sandwich panel, or shell.', 'Point drive is small relative to the active structural wavelength.', 'Curves show real propagating-wave conductance; finite boundaries, individual modes, joints, and attachment compliance are excluded.', 'The sandwich relation uses a symmetric face-sheet / shear-core approximation; the closed-shell relation is a thin, unstiffened-cylinder screen. An open curved panel retains the local cylindrical shell and plate relations but replaces the full-cylinder low-frequency branch with an arc-width strip proxy.'],
+    example: 'Overlay an acquired drive-point mobility with the appropriate curve to check units and high-frequency mean level, then use the cylindrical-shell plot to identify beam-like, curved-shell, and plate-like regions.',
+    compute(values) {
+      const state = infiniteMobilityAtlasState({
+        focus: infiniteMobilityFocus(values),
+        frequency: values.frequency,
+        frequencyMin: values.frequency_min,
+        frequencyMax: values.frequency_max,
+        forceRms: values.force,
+        modulus: gpa(values.modulus),
+        density: values.density,
+        poisson: values.poisson,
+        thickness: mm(values.plate_thickness),
+        memberWidth: mm(values.member_width),
+        memberHeight: mm(values.member_height),
+        faceThickness: mm(values.face_thickness),
+        coreThickness: mm(values.core_thickness),
+        coreDensity: values.core_density,
+        coreShearModulus: mpa(values.core_shear_modulus),
+        shellRadius: values.geometry === 'curved-panel' ? values.curved_panel_radius : values.shell_radius,
+        shellThickness: mm(values.geometry === 'curved-panel' ? values.curved_panel_thickness : values.shell_thickness),
+        shellArcAngleDeg: values.curved_panel_arc_angle,
+        shellAxialLength: values.curved_panel_axial_length,
+        shellClosed: values.geometry !== 'curved-panel'
+      });
+      const curves = state.curves;
+      const highlighted = state.selected.focus;
+      const emphasis = key => highlighted === key;
+      const geometryLabel = infiniteMobilityGeometryLabel(values);
+      const geometrySchematic = infiniteMobilitySchematic(values, state);
+      const shellTransitionNote = state.shell.hasCurvedRegime
+        ? `${state.shell.lowTransitionFrequency.toFixed(1)} Hz beam→shell; ${state.shell.plateTransitionFrequency.toFixed(1)} Hz shell→plate`
+        : 'h/a compresses the source-model curved-shell interval; treat the result as a rough thin-shell screen.';
+      const shellSelected = values.geometry === 'cylindrical-shell' || values.geometry === 'curved-panel';
+      const shellValues = [
+        stat('Selected shell mobility', state.shell.mobility, 'm/(N·s)'),
+        stat(state.shell.closed ? 'Beam-like shell mobility' : 'Curved-panel strip-proxy mobility', state.shell.beamMobility, 'm/(N·s)'),
+        stat('Curved-shell mobility', state.shell.curvedMobility, 'm/(N·s)'),
+        stat('Flat-plate limit mobility', state.shell.plateMobility, 'm/(N·s)'),
+        stat('Shell ring frequency', state.shell.ringFrequency, 'Hz'),
+        stat('Shell regime', state.shell.regime),
+        stat('Shell h/R', state.shell.thicknessToRadius),
+        stat(state.shell.closed ? 'Beam-equivalent section area' : 'Arc-strip proxy area', state.shell.beamEquivalentArea, 'm²'),
+        stat(state.shell.closed ? 'Beam-equivalent bending speed' : 'Arc-strip proxy bending speed', state.shell.beamEquivalentSpeed, 'm/s'),
+        stat('Flat-plate flexural rigidity', state.shell.bendingStiffness, 'N·m'),
+        stat('Characteristic impedance', state.selected.impedance, 'N·s/m'),
+        stat('Reference input power', state.selected.inputPower, 'W')
+      ];
+      const generalValues = [
+        stat('Highlighted real mobility', state.selected.mobility, 'm/(N·s)'),
+        stat('Characteristic impedance', state.selected.impedance, 'N·s/m'),
+        stat('Reference input power', state.selected.inputPower, 'W'),
+        stat('Thin-plate mobility', state.thinPlateMobility, 'm/(N·s)'),
+        stat('Shell ring frequency', state.shell.ringFrequency, 'Hz'),
+        stat('Shell regime', state.shell.regime),
+        stat('Sandwich shear-transition scale', state.sandwich.transitionFrequency, 'Hz')
+      ];
+      const shellRelationTable = {
+        title: values.geometry === 'curved-panel' ? 'Curved-panel constituent mobility relations' : 'Cylindrical-shell constituent mobility relations',
+        columns: ['Constituent model', 'Applicable normalized-frequency range', 'Re{Y} (m/N·s)'],
+        rows: [
+          [state.shell.beamEquivalentBasis, `Ω < 0.77h/R = ${state.shell.lowTransitionRatio.toExponential(3)}`, state.shell.beamMobility],
+          ['Curved-shell relation', state.shell.hasCurvedRegime ? `${state.shell.lowTransitionRatio.toExponential(3)} < Ω < 0.6` : 'Compressed for this h/R; screening only', state.shell.curvedMobility],
+          ['Flat-plate limit', 'Ω > 0.6', state.shell.plateMobility],
+          [`Selected piecewise relation (${state.shell.regime})`, `Ω = ${state.shell.normalizedFrequency.toExponential(3)}`, state.shell.mobility]
+        ]
+      };
+      const generalTable = {
+        title: 'Mobility models at the selected frequency',
+        columns: ['Structure / drive', 'Re{Y} (m/N·s)', 'Characteristic impedance (N·s/m)'],
+        rows: [
+          ['Axial rod', state.axialRodMobility, 1 / state.axialRodMobility],
+          ['Infinite flexural beam, center', state.beamCenterMobility, 1 / state.beamCenterMobility],
+          ['Semi-infinite flexural beam, free end', state.beamFreeEndMobility, 1 / state.beamFreeEndMobility],
+          ['Infinite thin plate', state.thinPlateMobility, 1 / state.thinPlateMobility],
+          ['Sandwich panel', state.sandwich.mobility, 1 / state.sandwich.mobility],
+          [`Cylindrical shell (${state.shell.regime})`, state.shell.mobility, 1 / state.shell.mobility]
+        ]
+      };
+      const shellConstituentKind = frequency => {
+        const ratio = frequency / state.shell.ringFrequency;
+        if (state.shell.hasCurvedRegime) {
+          if (ratio < state.shell.lowTransitionRatio) return 'low';
+          if (ratio < state.shell.plateTransitionRatio) return 'curved';
+          return 'plate';
+        }
+        return ratio < state.shell.plateTransitionRatio ? 'low' : 'plate';
+      };
+      const activeConstituentTrace = (kind, source) => {
+        const pairs = state.frequencies.map((frequency, index) => ({ frequency, value: source[index] })).filter(({ frequency }) => shellConstituentKind(frequency) === kind);
+        return { x: pairs.map(pair => pair.frequency), y: pairs.map(pair => pair.value) };
+      };
+      const lowConstituentLabel = state.shell.closed ? 'Beam-like active constituent' : 'Arc-strip proxy active constituent';
+      const lowExtensionLabel = state.shell.closed ? 'Beam-like relation extension' : 'Arc-strip proxy extension';
+      const currentConstituentKind = shellConstituentKind(state.frequency);
+      const constituentColors = Object.freeze({ low: '#55b8ff', curved: '#ffcf66', plate: '#65d9a0' });
+      const currentConstituentLabel = currentConstituentKind === 'low' ? lowConstituentLabel : currentConstituentKind === 'curved' ? 'Curved-shell active constituent' : 'Flat-plate active constituent';
+      const lowActive = activeConstituentTrace('low', curves.shellBeam);
+      const curvedActive = activeConstituentTrace('curved', curves.shellCurved);
+      const plateActive = activeConstituentTrace('plate', curves.shellPlate);
+      const activeConstituentTraces = [
+        lowActive.x.length ? trace(lowConstituentLabel, lowActive.x, lowActive.y, { color: constituentColors.low, emphasis: true }) : null,
+        curvedActive.x.length ? trace('Curved-shell active constituent', curvedActive.x, curvedActive.y, { color: constituentColors.curved, emphasis: true }) : null,
+        plateActive.x.length ? trace('Flat-plate active constituent', plateActive.x, plateActive.y, { color: constituentColors.plate, emphasis: true }) : null
+      ].filter(Boolean);
+      const shellConstituentPlot = {
+        title: values.geometry === 'curved-panel' ? 'Curved-panel constituent mobility response' : 'Cylindrical-shell constituent mobility response',
+        xLabel: 'Frequency (Hz)',
+        yLabel: 'Real characteristic mobility (m/N·s)',
+        xScale: 'log',
+        yScale: 'log',
+        traceSelector: { label: 'Constituent relations to display', initial: 'emphasis' },
+        traces: [
+          trace('Resulting piecewise response', state.frequencies, curves.shellApplicable, { color: '#c1d0df', dash: true }),
+          ...activeConstituentTraces,
+          trace(`Selected point · ${currentConstituentLabel}`, [state.frequency], [state.shell.mobility], { color: constituentColors[currentConstituentKind], emphasis: true, showPoints: true, pointRadius: 8, hideLine: true }),
+          trace(lowExtensionLabel, state.frequencies, curves.shellBeam, { color: constituentColors.low, dash: true }),
+          trace('Curved-shell relation extension', state.frequencies, curves.shellCurved, { color: constituentColors.curved, dash: true }),
+          trace('Flat-plate relation extension', state.frequencies, curves.shellPlate, { color: constituentColors.plate, dash: true })
+        ]
+      };
+      const generalAtlasPlot = {
+        title: 'Infinite-structure mobility atlas',
+        xLabel: 'Frequency (Hz)',
+        yLabel: 'Real characteristic mobility (m/N·s)',
+        xScale: 'log',
+        yScale: 'log',
+        traceSelector: { label: 'Structure mobilities to display', initial: 'emphasis' },
+        traces: [
+          trace('Axial rod', state.frequencies, curves.rodAxial, { emphasis: emphasis('rod-axial') }),
+          trace('Infinite flexural beam, center drive', state.frequencies, curves.beamCenter, { emphasis: emphasis('beam-flexural') }),
+          trace('Semi-infinite beam, free-end drive', state.frequencies, curves.beamFreeEnd, { emphasis: emphasis('beam-free-end') }),
+          trace('Infinite thin plate', state.frequencies, curves.thinPlate, { emphasis: emphasis('thin-plate') }),
+          trace('Sandwich panel', state.frequencies, curves.sandwich, { emphasis: emphasis('sandwich-panel') }),
+          trace('Cylindrical-shell applicable relation', state.frequencies, curves.shellApplicable, { emphasis: emphasis('cylindrical-shell') })
+        ]
+      };
+      const fullShellExtensionsPlot = {
+        title: values.geometry === 'curved-panel' ? 'Curved-panel full constituent-relation extensions' : 'Cylindrical-shell full constituent-relation extensions',
+        xLabel: 'Frequency (Hz)',
+        yLabel: 'Real characteristic mobility (m/N·s)',
+        xScale: 'log',
+        yScale: 'log',
+        traceSelector: { label: 'Shell relations to display', initial: 'emphasis' },
+        traces: [
+          trace('Applicable piecewise shell relation', state.frequencies, curves.shellApplicable, { emphasis: true }),
+          trace(lowExtensionLabel, state.frequencies, curves.shellBeam),
+          trace('Curved-shell relation', state.frequencies, curves.shellCurved),
+          trace('Plate-like shell relation', state.frequencies, curves.shellPlate)
+        ]
+      };
+      return {
+        values: shellSelected ? shellValues : generalValues,
+        interpretation: `${geometryLabel} at ${state.frequency.toFixed(1)} Hz gives Re{Y}=${state.selected.mobility.toExponential(3)} m/(N·s) from ${state.selected.basis}. The shell screen is in its ${state.shell.regime} regime; ${shellTransitionNote}`,
+        engineeringConsiderations: launchConsiderations('Use the appropriate infinite-structure curve as a high-frequency mean and calibration check for fairing barrels, decks, struts, pipes, and sandwich equipment panels; then retain finite-model or measured FRFs where modes, interfaces, or installed fluid loading decide the result.'),
+        warnings: [
+          'Do not interpret a characteristic mobility as the value at every resonance or antiresonance. It is a real mean-response conductance, not a complex finite-structure FRF.',
+          'The cylindrical-shell regime boundaries are approximate. Frames, orthotropy, pressure, local reinforcements, end conditions, and fluid loading can move them materially.',
+          'The reference input-power result uses ½F²Re{Y}; do not substitute transfer mobility for drive-point conductance.',
+          ...(values.geometry === 'curved-panel' ? ['An open curved panel is not a closed cylinder: its low-frequency branch is an explicit arc-width strip proxy. Boundary restraints, panel aspect ratio, curvature coupling, and edge reflection require a finite-panel or shell model when they control the response.'] : [])
+        ],
+        plots: shellSelected ? [shellConstituentPlot, fullShellExtensionsPlot] : [generalAtlasPlot, fullShellExtensionsPlot],
+        schematics: [geometrySchematic],
+        tables: shellSelected ? [shellRelationTable, generalTable] : [generalTable],
+        presentation: shellSelected
+          ? { primaryEvidenceStack: [{ type: 'plot', index: 0 }, { type: 'schematic', index: 0 }, { type: 'table', index: 0 }], primaryValueCount: 11 }
+          : { primaryEvidenceStack: [{ type: 'plot', index: 0 }, { type: 'schematic', index: 0 }], primaryValueCount: 7 }
       };
     }
   },
@@ -27557,7 +28139,7 @@ return {seaParameterCalculatorRegistry};
 })();
 
 const __seaParameterDemos=(()=>{
-const {SEA_PARAMETER_PRESETS,empiricalLossFactorState,modalDensityAtlasState,radiationEfficiencyAtlasState,drivingPointImpedanceState,clfMechanismState,tblConvectionState,equivalentPowerInjectionState,equipmentLoadingState,seaResponseRecoveryState,installedFairingSeaState,seaParameterWorkbenchState}=__seaParameterPhysics;
+const {SEA_PARAMETER_PRESETS,empiricalLossFactorState,modalDensityAtlasState,radiationEfficiencyAtlasState,infiniteMobilityAtlasState,drivingPointImpedanceState,clfMechanismState,tblConvectionState,equivalentPowerInjectionState,equipmentLoadingState,seaResponseRecoveryState,installedFairingSeaState,seaParameterWorkbenchState}=__seaParameterPhysics;
 const C = Object.freeze({ ink: '#172027', teal: '#1e6077', dark: '#164453', rust: '#b96d37', muted: '#657176', grid: '#ada497', paper: '#faf8f2', wash: '#e7e2d8', pale: '#dce9ec', green: '#376e56' });
 const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
@@ -27595,6 +28177,7 @@ function previewFrame(inner) { return `<svg viewBox="0 0 520 180" aria-hidden="t
 const previewMap = Object.freeze({
   'sea-parameter-chain': previewFrame('<rect x="18" y="64" width="82" height="52" fill="#164453"/><rect x="132" y="64" width="82" height="52" fill="#1e6077"/><rect x="246" y="64" width="82" height="52" fill="#b96d37"/><rect x="360" y="64" width="82" height="52" fill="#376e56"/><path d="M100 90 H132 M214 90 H246 M328 90 H360" stroke="#172027" stroke-width="6"/><circle cx="480" cy="90" r="24" fill="#dce9ec" stroke="#172027" stroke-width="4"/>'),
   'modal-density-regime-map': previewFrame('<path d="M35 145 C145 135 190 115 255 70 S400 35 490 24" fill="none" stroke="#1e6077" stroke-width="6"/><path d="M35 132 H490" stroke="#b96d37" stroke-width="4"/><line x1="285" y1="22" x2="285" y2="150" stroke="#172027" stroke-dasharray="6 5"/>'),
+  'infinite-mobility-wave-atlas': previewFrame('<path d="M30 130 C145 120 250 95 486 45" fill="none" stroke="#1e6077" stroke-width="6"/><path d="M30 105 H486" stroke="#b96d37" stroke-width="5"/><path d="M30 68 C160 78 230 120 330 88 S435 42 486 56" fill="none" stroke="#376e56" stroke-width="5"/><line x1="302" y1="24" x2="302" y2="152" stroke="#172027" stroke-dasharray="6 5"/>'),
   'sea-driving-point-mobility': previewFrame('<rect x="26" y="52" width="145" height="76" fill="#164453"/><path d="M171 90 H276" stroke="#b96d37" stroke-width="7"/><circle cx="308" cy="90" r="32" fill="#dce9ec" stroke="#1e6077" stroke-width="5"/><path d="M340 90 H490" stroke="#1e6077" stroke-width="5"/><path d="M410 55 C430 75 430 105 410 125" fill="none" stroke="#b96d37" stroke-width="4"/>'),
   'sea-coupling-mechanisms': previewFrame('<rect x="24" y="47" width="150" height="88" fill="#164453"/><rect x="346" y="65" width="150" height="70" fill="#1e6077"/><path d="M182 73 H335 M320 62 L338 73 L320 84" stroke="#b96d37" stroke-width="8" fill="none"/><path d="M335 112 H182 M198 103 L180 112 L198 121" stroke="#657176" stroke-width="4" fill="none"/><circle cx="260" cy="92" r="14" fill="#172027"/>'),
   'environment-to-sea-power': previewFrame('<path d="M24 45 C75 20 110 70 156 45 S230 70 276 45" fill="none" stroke="#1e6077" stroke-width="14" opacity=".7"/><rect x="32" y="100" width="244" height="28" fill="#164453"/><path d="M292 90 H390" stroke="#b96d37" stroke-width="9"/><rect x="405" y="45" width="78" height="90" fill="#376e56"/><text x="444" y="98" text-anchor="middle" fill="#faf8f2" font-size="18">W</text>'),
@@ -27644,6 +28227,38 @@ function mountModalDensity(root) {
     const sy = value => y0 + height - (Math.log10(value) - Math.log10(minY)) / Math.log10(maxY / minY) * height;
     const path = state.frequencies.map((f, i) => `${i ? 'L' : 'M'}${sx(f).toFixed(1)},${sy(state.curve[i]).toFixed(1)}`).join(' ');
     svg.innerHTML = `<rect width="1000" height="440" fill="${C.paper}"/><line x1="${x0}" y1="${y0 + height}" x2="${x0 + width}" y2="${y0 + height}" stroke="${C.muted}"/><line x1="${x0}" y1="${y0}" x2="${x0}" y2="${y0 + height}" stroke="${C.muted}"/><path d="${path}" fill="none" stroke="${C.teal}" stroke-width="6"/><line x1="${sx(state.frequency)}" y1="${y0}" x2="${sx(state.frequency)}" y2="${y0 + height}" stroke="${C.rust}" stroke-dasharray="6 5"/><circle cx="${sx(state.frequency)}" cy="${sy(state.modalDensity)}" r="8" fill="${C.rust}"/><text x="725" y="82" font-size="13" fill="${C.muted}">modal density</text><text x="725" y="114" font-size="25" font-weight="700" fill="${C.ink}">${fmt(state.modalDensity, 3)}</text><text x="725" y="158" font-size="13" fill="${C.muted}">modes / band</text><text x="725" y="190" font-size="25" font-weight="700" fill="${C.teal}">${fmt(state.modesInBand, 2)}</text><text x="725" y="234" font-size="13" fill="${C.muted}">modal overlap</text><text x="725" y="266" font-size="25" font-weight="700" fill="${C.rust}">${fmt(state.modalOverlap, 2)}</text><text x="725" y="326" font-size="12" fill="${C.ink}">${esc(state.readiness)}</text>`;
+  });
+}
+
+function mountInfiniteMobility(root) {
+  return mountLab(root, [
+    { key: 'focus', stateKey: 'focus', label: 'Structure', type: 'select', value: 'cylindrical-shell', options: [{ value: 'rod-axial', label: 'Axial rod' }, { value: 'beam-flexural', label: 'Flexural beam' }, { value: 'thin-plate', label: 'Thin plate' }, { value: 'sandwich-panel', label: 'Sandwich panel' }, { value: 'cylindrical-shell', label: 'Cylindrical shell' }] },
+    { key: 'frequency', stateKey: 'frequency', label: 'Selected frequency', min: 40, max: 10000, step: 20, value: 1000, unit: ' Hz' },
+    { key: 'radius', stateKey: 'shellRadius', label: 'Shell radius', min: 0.2, max: 3.5, step: 0.05, value: 1.8, unit: ' m' }
+  ], 'Characteristic mobility is a real mean-response trend. Change structure and frequency to see the finite-FRF reference level and the shell wave-regime transitions.', (svg, v) => {
+    const state = infiniteMobilityAtlasState({ focus: v.focus, frequency: v.frequency, frequencyMin: 20, frequencyMax: 20000, shellRadius: v.radius, thickness: 0.003, shellThickness: 0.004, memberWidth: 0.025, memberHeight: 0.04, faceThickness: 0.0006, coreThickness: 0.0248, coreDensity: 48, coreShearModulus: 85e6, modulus: 70e9, density: 2700, poisson: 0.33 });
+    const curveByFocus = {
+      'rod-axial': { label: 'axial rod', values: state.curves.rodAxial, color: C.teal },
+      'beam-flexural': { label: 'flexural beam', values: state.curves.beamCenter, color: C.teal },
+      'thin-plate': { label: 'thin plate', values: state.curves.thinPlate, color: C.teal },
+      'sandwich-panel': { label: 'sandwich panel', values: state.curves.sandwich, color: C.teal },
+      'cylindrical-shell': { label: 'shell applicable relation', values: state.curves.shellApplicable, color: C.teal }
+    };
+    const primary = curveByFocus[state.selected.focus];
+    const traces = state.selected.focus === 'cylindrical-shell'
+      ? [primary, { label: 'beam-like', values: state.curves.shellBeam, color: C.grid }, { label: 'curved-shell', values: state.curves.shellCurved, color: C.rust }, { label: 'plate-like', values: state.curves.shellPlate, color: C.green }]
+      : [primary, { label: 'thin-plate reference', values: state.curves.thinPlate, color: C.rust }];
+    const x0 = 70, y0 = 55, width = 620, height = 290;
+    const values = traces.flatMap(item => item.values).filter(value => value > 0);
+    const minY = Math.min(...values) / 1.6, maxY = Math.max(...values) * 1.6;
+    const sx = value => logPosition(value, state.frequencyMin, state.frequencyMax, x0, width);
+    const sy = value => y0 + height - (Math.log10(value) - Math.log10(minY)) / Math.log10(maxY / minY) * height;
+    const paths = traces.map((item, index) => `<path d="${state.frequencies.map((f, i) => `${i ? 'L' : 'M'}${sx(f).toFixed(1)},${sy(item.values[i]).toFixed(1)}`).join(' ')}" fill="none" stroke="${item.color}" stroke-width="${index === 0 ? 6 : 3}" ${index > 0 ? 'stroke-dasharray="7 5"' : ''}/>`).join('');
+    const focusMobility = state.selected.mobility;
+    const transitions = state.selected.focus === 'cylindrical-shell'
+      ? `<text x="735" y="284" font-size="12" fill="${C.rust}">ring ${fmt(state.shell.ringFrequency, 0)} Hz</text><text x="735" y="312" font-size="12" fill="${C.muted}">${esc(state.shell.regime)}</text>`
+      : `<text x="735" y="284" font-size="12" fill="${C.rust}">plate reference ${fmt(state.thinPlateMobility, 4)}</text>`;
+    svg.innerHTML = `<rect width="1000" height="440" fill="${C.paper}"/><line x1="${x0}" y1="${y0 + height}" x2="${x0 + width}" y2="${y0 + height}" stroke="${C.muted}"/><line x1="${x0}" y1="${y0}" x2="${x0}" y2="${y0 + height}" stroke="${C.muted}"/><line x1="${sx(v.frequency)}" y1="${y0}" x2="${sx(v.frequency)}" y2="${y0 + height}" stroke="${C.ink}" stroke-dasharray="6 5"/>${paths}<circle cx="${sx(v.frequency)}" cy="${sy(focusMobility)}" r="8" fill="${C.ink}"/><text x="${x0}" y="30" font-size="17" font-weight="700" fill="${C.ink}">Real characteristic mobility — ${esc(primary.label)}</text><text x="735" y="82" font-size="13" fill="${C.muted}">Re{Y} at ${fmt(v.frequency, 0)} Hz</text><text x="735" y="120" font-size="27" font-weight="700" fill="${C.ink}">${fmt(focusMobility, 4)}</text><text x="735" y="150" font-size="12" fill="${C.muted}">m/(N·s)</text><text x="735" y="205" font-size="13" fill="${C.muted}">finite-FRF reference</text><text x="735" y="235" font-size="14" fill="${C.ink}">mean trend, not each mode</text>${transitions}<text x="${x0}" y="386" font-size="12" fill="${C.muted}">The selected curve is the propagating-wave conductance used for high-frequency mean-response and force-power screening.</text>`;
   });
 }
 
@@ -27759,6 +28374,7 @@ function mountFairing(root) {
 const mounts = Object.freeze({
   'sea-parameter-chain': mountParameterChain,
   'modal-density-regime-map': mountModalDensity,
+  'infinite-mobility-wave-atlas': mountInfiniteMobility,
   'sea-driving-point-mobility': mountMobility,
   'sea-coupling-mechanisms': mountClf,
   'environment-to-sea-power': mountPower,
@@ -28985,6 +29601,10 @@ const demoTakeawayRegistry = Object.freeze({
     const frequency = number(state, ['frequency'], 1000), loss = number(state, ['lossFactor'], 0.02), type = choice(state, ['type'], 'plate-bending');
     return `The ${type.replaceAll('-', ' ')} population at ${frequency.toFixed(0)} Hz must be judged using both modes per band and overlap with η=${loss.toFixed(3)}. A dense bending family does not make every wave family or connected subsystem statistical.`;
   },
+  'infinite-mobility-wave-atlas': state => {
+    const frequency = number(state, ['frequency'], 1000), focus = choice(state, ['focus'], 'cylindrical-shell'), radius = number(state, ['radius'], 1.8);
+    return `At ${frequency.toFixed(0)} Hz, the ${focus.replaceAll('-', ' ')} characteristic curve is a real propagating-wave mean, not an individual finite-structure peak. With shell radius ${radius.toFixed(2)} m, use the ring-frequency transition as a regime screen before treating barrel behavior as a flat plate.`;
+  },
   'sea-driving-point-mobility': state => {
     const model = choice(state, ['model'], 'plate-center'), force = number(state, ['forceRms'], 10);
     return `The ${model.replaceAll('-', ' ')} model converts the ${force.toFixed(1)} N RMS force into power through drive-point conductance. A transfer-FRF magnitude cannot replace this real local power input without phase and impedance evidence.`;
@@ -29936,15 +30556,16 @@ const subjectWheel = [
     chapterIds: [
       'structures-waves', 'shell-acoustics-deep-dive', 'orthotropic-panels-deep-dive',
       'pipe-flow-noise-deep-dive', 'wave-matching-deep-dive', 'wet-tank-dynamics-deep-dive',
-      'hybrid-method-handoffs'
+      'hybrid-method-handoffs', 'infinite-structure-mobility'
     ],
-    demoIds: ['beam-wave', 'dispersion', 'ring', 'orthotropic-coincidence'],
-    toolIds: ['beam', 'bending-wave', 'plate-modes', 'shell-acoustics', 'wave-matching-atlas', 'wet-tank-dynamics'],
+    demoIds: ['beam-wave', 'dispersion', 'ring', 'orthotropic-coincidence', 'infinite-mobility-wave-atlas'],
+    toolIds: ['beam', 'bending-wave', 'plate-modes', 'shell-acoustics', 'wave-matching-atlas', 'wet-tank-dynamics', 'infinite-mobility-atlas'],
     caseStudyIds: [
       'bending-delay', 'ring-vs-critical', 'honeycomb-junctions-exp-sea',
       'acs519-shell-acoustics-deep-dive', 'acs519-orthotropic-panels-deep-dive',
       'acs519-pipe-flow-noise-deep-dive', 'acs519-wave-matching-deep-dive',
-      'acs519-wet-tank-dynamics-deep-dive', 'program-hybrid-method-handoffs'
+      'acs519-wet-tank-dynamics-deep-dive', 'program-hybrid-method-handoffs',
+      'sea-parameters-infinite-structure-mobility'
     ]
   },
   {
@@ -30774,6 +31395,7 @@ const __engineeringResults=(()=>{
  * @property {Array<Object>} [plots]
  * @property {Array<Object>} [rangeCharts]
  * @property {Array<Object>} [surfaces3d]
+ * @property {Array<{title?: string, svg: string, svgByUnit?: Record<string, string>}>} [schematics]
  * @property {Array<Object>} [heatmaps]
  * @property {Array<Object>} [tables]
  * @property {Object} [csv]
@@ -30965,7 +31587,7 @@ function buildPresentation(id, result, values) {
     else if (result.heatmaps?.length) primaryEvidence = { type: 'heatmap', index: 0 };
     else if (result.tables?.length) primaryEvidence = { type: 'table', index: 0 };
   }
-  const validEvidenceTypes = new Set(['plot', 'rangeChart', 'heatmap', 'surface3d', 'table']);
+  const validEvidenceTypes = new Set(['plot', 'rangeChart', 'heatmap', 'surface3d', 'schematic', 'table']);
   const requestedStack = Array.isArray(requested.primaryEvidenceStack)
     ? requested.primaryEvidenceStack.filter(item => item && validEvidenceTypes.has(item.type) && Number.isInteger(item.index) && item.index >= 0).map(item => ({ type: item.type, index: item.index, ...(Number.isInteger(item.count) ? { count: Math.max(1, Math.min(6, item.count)) } : {}) }))
     : [];
@@ -32117,7 +32739,8 @@ function displayEngineeringResult(result,system){
   const plots=(result.plots||[]).map(plot=>{const x=axisUnitInfo(plot.xLabel),y=axisUnitInfo(plot.yLabel);return {...plot,xLabel:x?.label||plot.xLabel,yLabel:y?.label||plot.yLabel,traces:(plot.traces||[]).map(trace=>({...trace,name:trace.displayNameByUnit?.[system]||trace.name,x:x?trace.x.map(value=>toDisplayNumber(value,x.unit,system)):[...trace.x],y:y?trace.y.map(value=>toDisplayNumber(value,y.unit,system)):[...trace.y]}))};});
   const rangeCharts=(result.rangeCharts||[]).map(chart=>{const conversion=unitConversion(chart.unit);if(!conversion)return {...chart};const convert=value=>value==null?value:toDisplayNumber(value,chart.unit,system);return {...chart,unit:conversion.unit,axisLabel:String(chart.axisLabel||'').replace(`(${chart.unit})`,`(${conversion.unit})`),min:convert(chart.min),max:convert(chart.max),lanes:(chart.lanes||[]).map(lane=>({...lane,start:convert(lane.start),end:convert(lane.end),startLabel:'',endLabel:''})),markers:(chart.markers||[]).map(marker=>({...marker,value:convert(marker.value)}))};});
   const tables=(result.tables||[]).map(table=>{const conversions=(table.columns||[]).map(column=>axisUnitInfo(column));return {...table,columns:(table.columns||[]).map((column,index)=>conversions[index]?.label||column),rows:(table.rows||[]).map(row=>row.map((value,index)=>conversions[index]?toDisplayNumber(value,conversions[index].unit,system):value))};});
-  return {...result,values:(result.values||[]).map(convertValue),plots,rangeCharts,tables,interpretation:result.interpretationByUnit?.[system]||result.interpretation};
+  const schematics=(result.schematics||[]).map(schematic=>({...schematic,svg:schematic.svgByUnit?.[system]||schematic.svg}));
+  return {...result,values:(result.values||[]).map(convertValue),plots,rangeCharts,tables,schematics,interpretation:result.interpretationByUnit?.[system]||result.interpretation};
 }
 
 const {sections:baseSections,toolCatalog:baseToolCatalog,demos:baseDemos,caseNotes:baseCaseNotes,referenceGroups:baseReferenceGroups,glossary}=__data;
@@ -32336,6 +32959,7 @@ function fieldHtml(field,value,unitSystem='SI'){
   const key=esc(field.key),displayUnit=toDisplayUnit(field.unit,unitSystem),label=`<label for="field-${key}">${esc(field.label)}${field.unit?`<span data-field-unit="${key}" data-native-unit="${esc(field.unit)}">${esc(displayUnit)}</span>`:''}</label>`;
   const convertible=field.type!=='textarea'&&unitConversion(field.unit),displayValue=convertible?toDisplayNumber(value,field.unit,unitSystem):value;
   const unitData=field.unit?` data-native-unit="${esc(field.unit)}"`:'';
+  const visibilityData=field.visibleWhen?` data-visible-when="${esc(JSON.stringify(field.visibleWhen))}"`:'';
   const limit=(name,raw)=>raw!=null?`${name}="${esc(convertible?toDisplayNumber(raw,field.unit,unitSystem):raw)}"`:'';
   const displayStep=field.step!=null?toDisplayStep(field.step,field.unit,unitSystem):field.step;
   let control='';
@@ -32357,7 +32981,7 @@ function fieldHtml(field,value,unitSystem='SI'){
   else if(field.type==='textarea')control=`<textarea id="field-${key}" data-key="${key}"${unitData} spellcheck="false">${esc(value)}</textarea><div class="field-file-row"><button type="button" class="button-quiet file-load" data-target="field-${key}">Load CSV / text</button><input class="file-input" type="file" accept=".csv,.txt,text/csv,text/plain" data-target="field-${key}" hidden/></div>`;
   else if(field.type==='range')control=`<input id="field-${key}" data-key="${key}"${unitData} type="range" value="${esc(displayValue)}" ${limit('min',field.min)} ${limit('max',field.max)} ${field.step!=null?`step="${esc(displayStep)}"`:''}/>`;
   else control=`<input id="field-${key}" data-key="${key}"${unitData} type="${field.type==='text'?'text':'number'}" value="${esc(displayValue)}" ${limit('min',field.min)} ${limit('max',field.max)} ${field.type==='number'?'step="any"':''}/>`;
-  return `<div class="field-group">${label}${control}${field.help?`<div class="field-help">${esc(field.help)}</div>`:''}</div>`;
+  return `<div class="field-group"${visibilityData}>${label}${control}${field.help?`<div class="field-help">${esc(field.help)}</div>`:''}</div>`;
 }
 function fieldGroup(field){
   if(field.group)return field.group;
@@ -32371,7 +32995,7 @@ function fieldGroup(field){
 function renderInputFields(fields,values,unitSystem){
   if(fields.length<=10)return fields.map(field=>fieldHtml(field,values[field.key],unitSystem)).join('');
   const groups=new Map();for(const field of fields){const group=fieldGroup(field);if(!groups.has(group))groups.set(group,[]);groups.get(group).push(field);}
-  return [...groups].map(([name,items],index)=>`<details class="calc-input-group" ${index<2?'open':''}><summary>${esc(name)} <span>${items.length}</span></summary><div>${items.map(field=>fieldHtml(field,values[field.key],unitSystem)).join('')}</div></details>`).join('');
+  return [...groups].map(([name,items],index)=>`<details class="calc-input-group" data-input-group ${items.some(field=>field.groupOpen)||index<2?'open':''}><summary>${esc(name)} <span>${items.length}</span></summary><div>${items.map(field=>fieldHtml(field,values[field.key],unitSystem)).join('')}</div></details>`).join('');
 }
 function relevantReferences(category){
   const map={Acoustics:'Structural acoustics',Dynamics:'Structural dynamics','Random & Shock':'Random vibration and shock',Structures:'Structural dynamics','Waves & Structures':'Structural acoustics','Structural Acoustics':'Structural acoustics','Aero / Distributed Loads':'Aeroacoustics and distributed pressure','SEA & Energy':'SEA and high frequency','Test & Signal':'Signal processing and measurements','Noise Control':'Structural acoustics',Utilities:'Signal processing and measurements'};
@@ -32490,12 +33114,13 @@ function renderResult(result,meta){
   const commentary=`<section class="engineering-commentary" data-result-section="explanation" aria-label="Engineering commentary"><article class="commentary-lead"><p class="commentary-label">Engineering interpretation</p><p>${esc(result.interpretation.summary)}</p><h3>Physical meaning</h3><p>${esc(result.interpretation.physicalMeaning)}</p></article>${alertBlock}<div class="commentary-grid">${assumptionCard}</div></section>`;
   const renderPlot=(p,i,primary=false)=>{
     const initialIndices=initialChartTraceIndices(p),svg=lineChartSvg(chartPlotForIndices(p,initialIndices));
-    const selector=p.traceSelector&&p.traces?.length>1?`<fieldset class="chart-trace-selector" data-chart-trace-selector="${i}"><legend>${esc(p.traceSelector.label||'Curves to display')}</legend><div class="chart-trace-options">${p.traces.map((trace,index)=>`<label><input type="checkbox" data-chart-trace-option="${index}" ${initialIndices.includes(index)?'checked':''}/><span>${esc(trace.name||`Trace ${index+1}`)}</span></label>`).join('')}</div><div class="chart-trace-actions"><button type="button" class="button-quiet" data-chart-trace-all>Show all</button><button type="button" class="button-quiet" data-chart-trace-current>Current only</button></div><small>Choose one or more curves. The axes rescale to the visible modal densities.</small></fieldset>`:'';
+    const selector=p.traceSelector&&p.traces?.length>1?`<fieldset class="chart-trace-selector" data-chart-trace-selector="${i}"><legend>${esc(p.traceSelector.label||'Curves to display')}</legend><div class="chart-trace-options">${p.traces.map((trace,index)=>`<label><input type="checkbox" data-chart-trace-option="${index}" ${initialIndices.includes(index)?'checked':''}/><span>${esc(trace.name||`Trace ${index+1}`)}</span></label>`).join('')}</div><div class="chart-trace-actions"><button type="button" class="button-quiet" data-chart-trace-all>Show all</button><button type="button" class="button-quiet" data-chart-trace-current>Current only</button></div><small>Choose one or more curves. The axes rescale to the visible response curves.</small></fieldset>`:'';
     return `<div class="result-block${primary?' result-block-primary':''}" data-result-section="plot">${selector}<div class="chart-toolbar"><button data-chart-data="${i}">View data</button><button data-chart-csv="${i}">Download CSV</button><button data-chart-svg="${i}">Download SVG</button><button data-chart-png="${i}">Download PNG</button></div><div class="chart-shell site-chart-container" data-chart="${i}">${svg}</div><div class="chart-data-panel" data-chart-data-panel="${i}" hidden></div></div>`;
   };
   const renderRangeChart=(chart,i,primary=false)=>`<div class="result-block result-range-chart${primary?' result-block-primary':''}" data-result-section="range-chart"><div class="chart-toolbar"><button data-range-chart-svg="${i}">Download SVG</button><button data-range-chart-png="${i}">Download PNG</button></div><div class="chart-shell site-chart-container" data-range-chart="${i}">${rangeChartSvg(chart)}</div></div>`;
   const renderHeatmap=(h,i,primary=false)=>`<div class="result-block${primary?' result-block-primary':''}" data-result-section="heatmap"><div class="chart-toolbar"><button data-heatmap-svg="${i}">Download SVG</button><button data-heatmap-png="${i}">Download PNG</button></div><div class="chart-shell site-chart-container" data-heatmap="${i}">${heatmapSvg(h)}</div></div>`;
   const renderSurface3d=(surface,i,primary=false)=>`<div class="result-block${primary?' result-block-primary':''}" data-result-section="surface3d"><div class="chart-toolbar"><button data-surface3d-svg="${i}">Download SVG</button><button data-surface3d-png="${i}">Download PNG</button></div><div class="chart-shell surface3d-shell site-chart-container" data-surface3d="${i}">${surface3dSvg(surface)}</div></div>`;
+  const renderSchematic=(schematic,i,primary=false)=>`<div class="result-block result-schematic${primary?' result-block-primary':''}" data-result-section="schematic"><div class="chart-toolbar"><button data-schematic-svg="${i}">Download SVG</button><button data-schematic-png="${i}">Download PNG</button></div><div class="engineering-schematic site-chart-container" data-schematic="${i}">${schematic.svg||''}</div></div>`;
   const evidence=result.presentation?.primaryEvidence;
   const explicitEvidenceStack=Array.isArray(result.presentation?.primaryEvidenceStack)&&result.presentation.primaryEvidenceStack.length>1;
   const evidenceStack=explicitEvidenceStack?result.presentation.primaryEvidenceStack:(evidence?[evidence]:[]);
@@ -32503,6 +33128,7 @@ function renderResult(result,meta){
   const animationControls=animation?.type==='harmonic'?`<section class="mode-animation-panel" data-mode-animation data-default-rate="${animation.defaultRateHz}"><div class="mode-animation-copy"><p class="eyebrow">Harmonic mode animation</p><p>${esc(animation.note)}</p></div><div class="mode-animation-actions"><button type="button" class="button-secondary" data-mode-animation-toggle aria-pressed="true">Pause</button><label><span>Visual speed</span><select data-mode-animation-rate><option value="0.25">Slow</option><option value="0.5" ${animation.defaultRateHz===.5?'selected':''}>Normal</option><option value="1">Fast</option></select></label><button type="button" class="button-quiet" data-mode-animation-reset>Reset</button><output data-mode-animation-phase aria-hidden="true">+1.00 phase</output><span class="sr-only" data-mode-animation-status aria-live="polite"></span></div></section>`:'';
   const primaryHeatmapIndices=new Set();
   const primarySurfaceIndices=new Set();
+  const primarySchematicIndices=new Set();
   const primaryPlotIndices=new Set();
   const primaryRangeChartIndices=new Set();
   const primaryTableIndices=new Set();
@@ -32519,6 +33145,7 @@ function renderResult(result,meta){
       const indices=result.surfaces3d.map((_,index)=>index).slice(selection.index,selection.index+count);indices.forEach(index=>primarySurfaceIndices.add(index));
       const surfaces=indices.map(index=>renderSurface3d(result.surfaces3d[index],index,true)).join('');return indices.length>1?`<div class="result-evidence-grid result-evidence-grid-3d" aria-label="Primary 3D mode shapes">${surfaces}</div>`:surfaces;
     }
+    if(selection.type==='schematic'&&result.schematics?.[selection.index]){primarySchematicIndices.add(selection.index);return renderSchematic(result.schematics[selection.index],selection.index,true);}
     if(selection.type==='table'&&result.tables?.[selection.index]){primaryTableIndices.add(selection.index);return renderTable(result.tables[selection.index],{primary:true,index:selection.index});}
     return'';
   };
@@ -32528,13 +33155,14 @@ function renderResult(result,meta){
   const supportingRangeCharts=(result.rangeCharts||[]).map((chart,index)=>primaryRangeChartIndices.has(index)?'':renderRangeChart(chart,index)).join('');
   const supportingHeatmaps=(result.heatmaps||[]).map((heatmap,index)=>primaryHeatmapIndices.has(index)?'':renderHeatmap(heatmap,index)).join('');
   const supportingSurfaces=(result.surfaces3d||[]).map((surface,index)=>primarySurfaceIndices.has(index)?'':renderSurface3d(surface,index)).join('');
+  const supportingSchematics=(result.schematics||[]).map((schematic,index)=>primarySchematicIndices.has(index)?'':renderSchematic(schematic,index)).join('');
   const supportingTables=(result.tables||[]).map((table,index)=>primaryTableIndices.has(index)?'':renderTable(table,{index})).join('');
-  const supportingEvidence=`${supportingSurfaces}${supportingPlots}${supportingRangeCharts}${supportingHeatmaps}${supportingTables}`;
+  const supportingEvidence=`${supportingSchematics}${supportingSurfaces}${supportingPlots}${supportingRangeCharts}${supportingHeatmaps}${supportingTables}`;
   const csv=result.csv?`<div class="result-block"><button class="button-secondary" data-action="download-csv">Download result CSV</button></div>`:'';
   const secondaryValues=supportingValues?`<details class="supporting-values"><summary>Supporting values <span>${result.values.length-primaryValueCount}</span></summary><div class="result-summary result-summary-supporting">${supportingValues}</div></details>`:'';
   const numericalResults=`<section class="numerical-results-section" data-result-section="numerical"><h3 class="result-section-title">Numerical results</h3><div class="result-summary">${primaryValues}</div>${secondaryValues}</section>`;
   const supportingSection=supportingEvidence?`<details class="supporting-evidence"><summary>Supporting plots, maps, and tables</summary><div class="supporting-evidence-body">${supportingEvidence}</div></details>`:'';
-  const hasVisualPrimary=evidenceStack.some(item=>item.type==='plot'||item.type==='rangeChart'||item.type==='heatmap'||item.type==='surface3d');
+  const hasVisualPrimary=evidenceStack.some(item=>item.type==='plot'||item.type==='rangeChart'||item.type==='heatmap'||item.type==='surface3d'||item.type==='schematic');
   const hasTablePrimary=evidenceStack.some(item=>item.type==='table');
   const resultBody=hasVisualPrimary?`${animationControls}${primaryEvidence}${numericalResults}${commentary}`:hasTablePrimary?`${numericalResults}${primaryEvidence}${commentary}`:`${numericalResults}${commentary}`;
   return `${resultBody}${supportingSection}${csv}`;
@@ -32550,6 +33178,24 @@ function bindTool(route){
   const fieldsByKey=new Map((calc.inputs||[]).map(field=>[field.key,field]));
   let latest=null,lastUnitSystem=unitSystem?.value||'SI',resultCleanup=()=>{};
   const run=()=>{resultCleanup();resultCleanup=()=>{};try{latest=displayEngineeringResult(calc.compute(collectForm(form)),unitSystem?.value||'SI');resultsEl.innerHTML=renderResult(latest,meta);resultCleanup=bindResultActions(latest,meta)||(()=>{});}catch(err){latest=null;resultsEl.innerHTML=`<div class="calc-error"><strong>Calculation could not be completed.</strong><br>${esc(err.message||String(err))}</div>`;}};
+  const syncConditionalFields=()=>{
+    const current=collectForm(form);
+    form.querySelectorAll('[data-visible-when]').forEach(field=>{
+      try{
+        const rule=JSON.parse(field.dataset.visibleWhen||'{}');
+        const visible=Object.entries(rule).every(([key,expected])=>{
+          const actual=String(current[key]??'');
+          return Array.isArray(expected)?expected.map(String).includes(actual):actual===String(expected);
+        });
+        field.hidden=!visible;
+      }catch{field.hidden=false;}
+    });
+    form.querySelectorAll('[data-input-group]').forEach(group=>{
+      const visible=[...group.querySelectorAll('.field-group')].filter(field=>!field.hidden);
+      group.hidden=!visible.length;
+      const count=group.querySelector('summary span');if(count)count.textContent=String(visible.length);
+    });
+  };
   const applyPresetDependencies=target=>{
     if(target?.dataset.key!=='material'||typeof calc.syncPreset!=='function')return;
     const current=collectForm(form),synced=calc.syncPreset(current),system=unitSystem?.value||'SI';
@@ -32563,22 +33209,22 @@ function bindTool(route){
   const syncUnitSystem=()=>{
     const next=unitSystem?.value||'SI';
     if(next===lastUnitSystem)return;
-    form.querySelectorAll('input[data-native-unit]').forEach(input=>{const native=fromDisplayNumber(input.value,input.dataset.nativeUnit,lastUnitSystem),field=fieldsByKey.get(input.dataset.key);input.value=String(Number(toDisplayNumber(native,input.dataset.nativeUnit,next).toPrecision(12)));if(field?.min!=null)input.min=String(toDisplayNumber(field.min,input.dataset.nativeUnit,next));if(field?.max!=null)input.max=String(toDisplayNumber(field.max,input.dataset.nativeUnit,next));input.step=input.matches('input[type="range"]')&&field?.step!=null?String(toDisplayStep(field.step,input.dataset.nativeUnit,next)):'any';});
+    form.querySelectorAll('input[data-native-unit]').forEach(input=>{const native=fromDisplayNumber(input.value,input.dataset.nativeUnit,lastUnitSystem),field=fieldsByKey.get(input.dataset.key),displayed=Number(toDisplayNumber(native,input.dataset.nativeUnit,next));input.value=Number.isFinite(displayed)?String(Number(displayed.toPrecision(12))):String(native??'');if(field?.min!=null)input.min=String(toDisplayNumber(field.min,input.dataset.nativeUnit,next));if(field?.max!=null)input.max=String(toDisplayNumber(field.max,input.dataset.nativeUnit,next));input.step=input.matches('input[type="range"]')&&field?.step!=null?String(toDisplayStep(field.step,input.dataset.nativeUnit,next)):'any';});
     form.querySelectorAll('[data-field-unit]').forEach(label=>{label.textContent=toDisplayUnit(label.dataset.nativeUnit,next);});
     lastUnitSystem=next;run();
   };
   form.addEventListener('submit',e=>{e.preventDefault();run();});
   unitSystem?.addEventListener('input',syncUnitSystem);
   unitSystem?.addEventListener('change',syncUnitSystem);
-  let timer;form.addEventListener('input',e=>{if(e.target===unitSystem||e.target.matches('textarea,[data-select-search]'))return;applyPresetDependencies(e.target);clearTimeout(timer);timer=setTimeout(run,120);});
-  document.querySelector('[data-action="reset-calculator"]')?.addEventListener('click',()=>{const system=unitSystem?.value||'SI';searchableSelects.reset();for(const f of calc.inputs||[]){const el=form.querySelector(`[data-key="${CSS.escape(f.key)}"]`);if(el)el.value=el.matches('input[type="number"],input[type="range"]')?toDisplayNumber(f.default,f.unit,system):f.default??'';}searchableSelects.reset();run();});
+  let timer;const handleFieldEdit=e=>{if(e.target===unitSystem||e.target.matches('textarea,[data-select-search]'))return;applyPresetDependencies(e.target);syncConditionalFields();clearTimeout(timer);timer=setTimeout(run,120);};form.addEventListener('input',handleFieldEdit);form.addEventListener('change',handleFieldEdit);
+  document.querySelector('[data-action="reset-calculator"]')?.addEventListener('click',()=>{const system=unitSystem?.value||'SI';searchableSelects.reset();for(const f of calc.inputs||[]){const el=form.querySelector(`[data-key="${CSS.escape(f.key)}"]`);if(el)el.value=el.matches('input[type="number"],input[type="range"]')?toDisplayNumber(f.default,f.unit,system):f.default??'';}searchableSelects.reset();syncConditionalFields();run();});
   document.querySelector('[data-action="share-calculation"]')?.addEventListener('click',async()=>{const values=collectForm(form),params=new URLSearchParams();if(unitSystem?.value==='English')params.set('units','English');for(const f of calc.inputs||[]){const value=String(values[f.key]??'');if(value===String(f.default??''))continue;if(f.type==='textarea'&&value.length>800)continue;params.set(f.key,value);}const url=`${location.origin}${location.pathname}#/tool/${encodeURIComponent(id)}${params.size?`?${params}`:''}`;try{await navigator.clipboard.writeText(url);showToast(params.size?'Share link copied':'Link copied; large pasted data remains local');}catch{prompt('Copy this link',url);}});
   document.querySelector('[data-action="copy-results"]')?.addEventListener('click',async()=>{if(!latest){showToast('Calculate first');return;}const text=engineeringResultToText(meta.title,latest,formatNumber);try{await navigator.clipboard.writeText(text);showToast('Engineering result copied');}catch{prompt('Copy engineering result',text);}});
   document.querySelectorAll('.file-load').forEach(btn=>btn.addEventListener('click',()=>document.querySelector(`.file-input[data-target="${CSS.escape(btn.dataset.target)}"]`)?.click()));
   document.querySelectorAll('.file-input').forEach(input=>input.addEventListener('change',async()=>{const file=input.files?.[0];if(!file)return;const text=await file.text(),target=document.getElementById(input.dataset.target);if(target){target.value=text;run();showToast(`${file.name} loaded locally`);}}));
   document.querySelectorAll('.tab-button').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.tab-button').forEach(b=>b.classList.toggle('active',b===btn));const tpl=document.querySelector(`#tab-${CSS.escape(btn.dataset.tab)}`);document.querySelector('#tab-panel').innerHTML=tpl?.innerHTML||'';}));
   const priorCleanup=routeCleanup;routeCleanup=()=>{priorCleanup();resultCleanup();searchableSelects.cleanup();clearTimeout(timer);};
-  run();
+  syncConditionalFields();run();
 }
 function bindHarmonicAnimation(result){
   const controls=document.querySelector('[data-mode-animation]');
@@ -32639,6 +33285,7 @@ function bindResultActions(result,meta){
   (result.rangeCharts||[]).forEach((chart,i)=>{const svg=rangeChartSvg(chart);document.querySelector(`[data-range-chart-svg="${i}"]`)?.addEventListener('click',()=>downloadSvg(`${slug(meta.title)}-range-${i+1}.svg`,svg));document.querySelector(`[data-range-chart-png="${i}"]`)?.addEventListener('click',()=>svgToPng(svg,`${slug(meta.title)}-range-${i+1}.png`));});
   (result.heatmaps||[]).forEach((h,i)=>{const svg=heatmapSvg(h);document.querySelector(`[data-heatmap-svg="${i}"]`)?.addEventListener('click',()=>downloadSvg(`${slug(meta.title)}-heatmap-${i+1}.svg`,svg));document.querySelector(`[data-heatmap-png="${i}"]`)?.addEventListener('click',()=>svgToPng(svg,`${slug(meta.title)}-heatmap-${i+1}.png`));});
   (result.surfaces3d||[]).forEach((surface,i)=>{const svg=surface3dSvg(surface);document.querySelector(`[data-surface3d-svg="${i}"]`)?.addEventListener('click',()=>downloadSvg(`${slug(meta.title)}-3d-mode-${i+1}.svg`,svg));document.querySelector(`[data-surface3d-png="${i}"]`)?.addEventListener('click',()=>svgToPng(svg,`${slug(meta.title)}-3d-mode-${i+1}.png`));});
+  (result.schematics||[]).forEach((schematic,i)=>{const svg=schematic.svg||'';document.querySelector(`[data-schematic-svg="${i}"]`)?.addEventListener('click',()=>downloadSvg(`${slug(meta.title)}-geometry-${i+1}.svg`,svg));document.querySelector(`[data-schematic-png="${i}"]`)?.addEventListener('click',()=>svgToPng(svg,`${slug(meta.title)}-geometry-${i+1}.png`));});
   return bindHarmonicAnimation(result);
 }
 

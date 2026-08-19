@@ -65,7 +65,7 @@ if (!standalone.includes('name="color-scheme"')) {
   );
 }
 
-standalone = replaceRange(standalone, '<style>\n', '</style>', `<style>\n${styles}`);
+standalone = replaceRange(standalone, '<style>', '</style>', `<style>\n${styles}`);
 standalone = standalone.replace(/(?:<\/style>)+/, '</style>');
 
 const stripImports = source => source.replace(/^import\s+[\s\S]*?;\s*/gm, '');
@@ -191,7 +191,7 @@ const programExpansionCalculatorsBlock = `const __programExpansionCalculators=((
 const programExpansionDemosBlock = `const __programExpansionDemos=(()=>{\n${programExpansionPhysicsImports}\n${moduleSource(programExpansionDemosModule)}\nreturn {programExpansionPreviewSvg,mountProgramExpansionDemo,programExpansionSupportedDemoIds};\n})();\n\n`;
 const seaParameterPhysicsExports = [
   'SEA_PARAMETER_PRESETS', 'empiricalLossFactorState', 'modalDensityAtlasState',
-  'radiationEfficiencyAtlasState', 'drivingPointImpedanceState', 'clfMechanismState',
+  'radiationEfficiencyAtlasState', 'infiniteMobilityAtlasState', 'drivingPointImpedanceState', 'clfMechanismState',
   'tblConvectionState', 'equivalentPowerInjectionState', 'equipmentLoadingState',
   'seaResponseRecoveryState', 'installedFairingSeaState', 'seaParameterWorkbenchState'
 ];

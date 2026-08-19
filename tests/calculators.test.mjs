@@ -19,6 +19,7 @@ import {
   clfMechanismState,
   equipmentLoadingState,
   equivalentPowerInjectionState,
+  infiniteMobilityAtlasState,
   installedFairingSeaState,
   modalDensityAtlasState,
   seaParameterWorkbenchState,
@@ -152,10 +153,10 @@ const caseNotes=[...baseCaseNotes,...acs519CaseNotes,...workflowExpansionCaseNot
 const defaults=id=>Object.fromEntries(registry[id].inputs.map(f=>[f.key,f.default]));
 const metric=(result,label)=>result.values.find(x=>x.label===label)?.value;
 const close=(actual,expected,rel=1e-6)=>assert.ok(Math.abs(actual-expected)<=rel*Math.max(1,Math.abs(expected)),`${actual} ≠ ${expected}`);
-const evidenceCollection={plot:'plots',rangeChart:'rangeCharts',heatmap:'heatmaps',surface3d:'surfaces3d',table:'tables'};
+const evidenceCollection={plot:'plots',rangeChart:'rangeCharts',heatmap:'heatmaps',surface3d:'surfaces3d',schematic:'schematics',table:'tables'};
 
 test('every catalog entry has a calculator and every default case runs',()=>{
-  assert.equal(catalog.length,113);
+  assert.equal(catalog.length,114);
   assert.deepEqual(catalog.filter(t=>!registry[t.id]),[]);
   assert.deepEqual(Object.keys(registry).filter(id=>!catalog.some(t=>t.id===id)),[]);
   for(const tool of catalog){
@@ -184,7 +185,7 @@ test('every calculator returns the complete engineering response schema',()=>{
     assert.ok(result.relatedConcepts.length>=2,`${tool.id} needs related concepts`);
     assert.ok(result.relatedConcepts.every(item=>item.title&&item.description&&item.href),`${tool.id} has an incomplete related concept`);
     assert.ok(result.presentation&&Number.isInteger(result.presentation.primaryValueCount),`${tool.id} needs presentation metadata`);
-    if(result.presentation.primaryEvidence){const {type,index}=result.presentation.primaryEvidence;assert.ok(['plot','rangeChart','heatmap','surface3d','table'].includes(type),`${tool.id} has an invalid primary evidence type`);assert.ok(result[evidenceCollection[type]]?.[index],`${tool.id} primary evidence does not exist`);}
+    if(result.presentation.primaryEvidence){const {type,index}=result.presentation.primaryEvidence;assert.ok(['plot','rangeChart','heatmap','surface3d','schematic','table'].includes(type),`${tool.id} has an invalid primary evidence type`);assert.ok(result[evidenceCollection[type]]?.[index],`${tool.id} primary evidence does not exist`);}
     assert.ok(Array.isArray(result.presentation.primaryEvidenceStack),`${tool.id} needs a primary evidence stack`);
     result.presentation.primaryEvidenceStack.forEach(({type,index})=>assert.ok(result[evidenceCollection[type]]?.[index],`${tool.id} stacked primary evidence does not exist`));
     assert.doesNotMatch(result.interpretation.physicalMeaning,/^The reported\b/,`${tool.id} retained generic category commentary`);
@@ -726,10 +727,10 @@ test('zero correlation combines PSD RMS by root-sum-square',()=>{
 
 
 test('content architecture matches the approved full build',()=>{
-  assert.equal(sections.length,63);
-  assert.equal(sections.reduce((n,s)=>n+s.concepts.length,0),389);
-  assert.equal(demos.length,79);
-  assert.equal(caseNotes.length,66);
+  assert.equal(sections.length,64);
+  assert.equal(sections.reduce((n,s)=>n+s.concepts.length,0),395);
+  assert.equal(demos.length,80);
+  assert.equal(caseNotes.length,67);
   assert.deepEqual(demos.map(d=>d.id).sort(),[...supportedDemoIds].sort());
   assert.deepEqual(demos.filter(d=>!catalog.some(t=>t.id===d.toolId)),[]);
   assert.deepEqual(sections.flatMap(s=>s.concepts).filter(c=>c.toolId&&!catalog.some(t=>t.id===c.toolId)),[]);
@@ -776,6 +777,141 @@ test('SEA parameter models preserve dimensional, reciprocity, power, and recover
   assert.ok(tight.installedNoiseReduction>leaky.installedNoiseReduction);
   const workbench=seaParameterWorkbenchState();
   assert.ok(workbench.externalPower>0&&workbench.energy>0&&workbench.provenance.length>=7);
+});
+
+test('infinite-structure mobility atlas reproduces source plate, beam, sandwich, and shell limits',()=>{
+  const E=70e9,rho=2700,nu=.33,plateThickness=.003,memberWidth=.025,memberHeight=.04;
+  const state=infiniteMobilityAtlasState({
+    focus:'cylindrical-shell',frequency:1000,frequencyMin:1,frequencyMax:50000,
+    modulus:E,density:rho,poisson:nu,thickness:plateThickness,
+    memberWidth,memberHeight,faceThickness:.0006,coreThickness:.0248,coreDensity:48,coreShearModulus:85e6,
+    shellRadius:1.8,shellThickness:.004
+  });
+  const D=E*plateThickness**3/(12*(1-nu**2));
+  close(state.thinPlateMobility,1/(8*Math.sqrt(D*rho*plateThickness)),1e-14);
+  close(state.beamFreeEndMobility/state.beamCenterMobility,4,1e-12);
+  const cBeam=(E*(memberWidth*memberHeight**3/12)*(2*Math.PI*1000)**2/(rho*memberWidth*memberHeight))**.25;
+  close(state.beamCenterMobility,1/(2*rho*memberWidth*memberHeight*cBeam),1e-14);
+  assert.ok(state.curves.beamCenter.at(-1)<state.curves.beamCenter[0]);
+
+  const sandwichPlateLimit=infiniteMobilityAtlasState({
+    focus:'sandwich-panel',frequency:1,modulus:E,density:rho,poisson:nu,
+    faceThickness:.0006,coreThickness:.0248,coreDensity:48,coreShearModulus:1e20
+  });
+  close(sandwichPlateLimit.sandwich.mobility,1/(8*Math.sqrt(sandwichPlateLimit.sandwich.bendingStiffness*sandwichPlateLimit.sandwich.surfaceMass)),1e-9);
+  const sandwichLow=infiniteMobilityAtlasState({focus:'sandwich-panel',frequency:20,coreShearModulus:85e6});
+  const sandwichHigh=infiniteMobilityAtlasState({focus:'sandwich-panel',frequency:20000,coreShearModulus:85e6});
+  assert.ok(sandwichHigh.sandwich.mobility>sandwichLow.sandwich.mobility);
+
+  const cL=Math.sqrt(E/(rho*(1-nu**2))), shellRadius=1.8,shellThickness=.004;
+  const ring=cL/(2*Math.PI*shellRadius), lowRatio=.77*shellThickness/shellRadius;
+  const shellLow=infiniteMobilityAtlasState({focus:'cylindrical-shell',frequency:.5*lowRatio*ring,modulus:E,density:rho,poisson:nu,shellRadius,shellThickness});
+  const expectedBeam=1/(4*Math.PI*shellRadius*rho*shellThickness*Math.sqrt((shellLow.frequency/ring)*cL**2/Math.sqrt(2)));
+  close(shellLow.shell.mobility,expectedBeam,1e-14);
+  const shellMiddle=infiniteMobilityAtlasState({focus:'cylindrical-shell',frequency:.3*ring,modulus:E,density:rho,poisson:nu,shellRadius,shellThickness});
+  const expectedMiddle=.66/(2.3*cL*rho*shellThickness**2)*Math.sqrt(.3);
+  close(shellMiddle.shell.mobility,expectedMiddle,1e-14);
+  const shellHigh=infiniteMobilityAtlasState({focus:'cylindrical-shell',frequency:.8*ring,modulus:E,density:rho,poisson:nu,shellRadius,shellThickness});
+  const shellD=E*shellThickness**3/(12*(1-nu**2));
+  close(shellHigh.shell.mobility,1/(8*Math.sqrt(shellD*rho*shellThickness)),1e-14);
+  close(shellLow.shell.beamEquivalentArea,2*Math.PI*shellRadius*shellThickness,1e-14);
+  close(shellLow.shell.beamEquivalentSpeed,Math.sqrt((shellLow.frequency/ring)*cL**2/Math.sqrt(2)),1e-14);
+  const curvedPanel=infiniteMobilityAtlasState({focus:'cylindrical-shell',frequency:.5*lowRatio*ring,modulus:E,density:rho,poisson:nu,shellRadius,shellThickness,shellClosed:false,shellArcAngleDeg:120,shellAxialLength:2.4});
+  const arcLength=shellRadius*(120*Math.PI/180), stripArea=arcLength*shellThickness, stripInertia=arcLength*shellThickness**3/12;
+  const stripSpeed=(E*stripInertia*(2*Math.PI*curvedPanel.frequency)**2/(rho*stripArea))**.25;
+  close(curvedPanel.shell.arcLength,arcLength,1e-14);
+  close(curvedPanel.shell.beamEquivalentArea,stripArea,1e-14);
+  close(curvedPanel.shell.beamEquivalentSpeed,stripSpeed,1e-14);
+  close(curvedPanel.shell.mobility,1/(2*rho*stripArea*stripSpeed),1e-14);
+  assert.equal(curvedPanel.shell.regime,'strip-like curved panel');
+  assert.equal(shellLow.shell.regime,'beam-like');
+  assert.equal(shellMiddle.shell.regime,'curved-shell');
+  assert.equal(shellHigh.shell.regime,'plate-like');
+});
+
+test('infinite-mobility atlas material presets synchronize and convert for English display',()=>{
+  const calculator=registry['infinite-mobility-atlas'],base=defaults('infinite-mobility-atlas');
+  const materialInput=calculator.inputs.find(input=>input.key==='material');
+  assert.deepEqual(materialInput.options.map(option=>option.value),Object.keys(materials));
+  assert.equal(base.material,'aluminum');
+  assert.equal(base.modulus,materials.aluminum.E/1e9);
+  assert.equal(base.density,materials.aluminum.rho);
+  assert.equal(base.poisson,materials.aluminum.nu);
+
+  const steel=calculator.syncPreset({...base,material:'steel'});
+  assert.equal(steel.modulus,materials.steel.E/1e9);
+  assert.equal(steel.density,materials.steel.rho);
+  assert.equal(steel.poisson,materials.steel.nu);
+  const aluminumResult=calculator.compute(base);
+  const steelResult=calculator.compute(steel);
+  assert.notEqual(metric(aluminumResult,'Flat-plate limit mobility'),metric(steelResult,'Flat-plate limit mobility'));
+
+  close(toDisplayNumber(steel.modulus,'GPa','English'),materials.steel.E/1e9*0.1450377377,1e-12);
+  close(toDisplayNumber(steel.density,'kg/m³','English'),materials.steel.rho*0.06242796058,1e-12);
+  close(fromDisplayNumber(toDisplayNumber(steel.modulus,'GPa','English'),'GPa','English'),steel.modulus,1e-12);
+  close(fromDisplayNumber(toDisplayNumber(steel.density,'kg/m³','English'),'kg/m³','English'),steel.density,1e-12);
+
+  const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
+  assert.match(appSource,/form\.addEventListener\('change',handleFieldEdit\)/);
+  assert.match(appSource,/displayed=Number\(toDisplayNumber\(native,input\.dataset\.nativeUnit,next\)\)/);
+});
+
+test('infinite-mobility atlas guides family, material, specific geometry, then excitation',()=>{
+  const calculator=registry['infinite-mobility-atlas'],base=defaults('infinite-mobility-atlas');
+  const fields=calculator.inputs;
+  const position=key=>fields.findIndex(field=>field.key===key);
+  assert.ok(position('geometry')<position('material'));
+  assert.ok(position('material')<position('shell_geometry'));
+  assert.ok(position('shell_geometry')<position('frequency'));
+  assert.deepEqual(fields.find(field=>field.key==='geometry').options.map(option=>option.value),['cylindrical-shell','curved-panel','beam','flat-panel','sandwich-panel']);
+  assert.deepEqual(fields.find(field=>field.key==='beam_geometry').options.map(option=>option.value),['rod-axial','beam-flexural','beam-free-end']);
+  assert.deepEqual(fields.find(field=>field.key==='shell_geometry').visibleWhen,{geometry:'cylindrical-shell'});
+  assert.deepEqual(fields.find(field=>field.key==='beam_geometry').visibleWhen,{geometry:'beam'});
+  assert.deepEqual(fields.find(field=>field.key==='curved_panel_radius').visibleWhen,{geometry:'curved-panel'});
+  assert.deepEqual(fields.find(field=>field.key==='plate_thickness').visibleWhen,{geometry:'flat-panel'});
+  assert.deepEqual(fields.find(field=>field.key==='core_shear_modulus').visibleWhen,{geometry:'sandwich-panel'});
+  assert.equal(fields.find(field=>field.key==='frequency').group,'4. Excitation & plot');
+
+  const axial=calculator.compute({...base,geometry:'beam',beam_geometry:'rod-axial'});
+  const freeEnd=calculator.compute({...base,geometry:'beam',beam_geometry:'beam-free-end'});
+  const shell=calculator.compute(base);
+  const curved=calculator.compute({...base,geometry:'curved-panel',curved_panel_radius:1.8,curved_panel_arc_angle:120,curved_panel_axial_length:2.4,curved_panel_thickness:4});
+  assert.match(axial.interpretation.summary,/Axial rod/);
+  assert.match(freeEnd.interpretation.summary,/Semi-infinite flexural beam/);
+  assert.notEqual(metric(axial,'Highlighted real mobility'),metric(freeEnd,'Highlighted real mobility'));
+  assert.ok(shell.values.some(value=>value.label==='Beam-equivalent section area'));
+  assert.ok(shell.values.some(value=>value.label==='Flat-plate flexural rigidity'));
+  assert.equal(shell.tables[0].title,'Cylindrical-shell constituent mobility relations');
+  assert.deepEqual(shell.tables[0].rows.map(row=>row[0]),['Whole-circumference closed-shell beam equivalent','Curved-shell relation','Flat-plate limit',`Selected piecewise relation (${metric(shell,'Shell regime')})`]);
+  assert.deepEqual(shell.presentation.primaryEvidenceStack,[{type:'plot',index:0},{type:'schematic',index:0},{type:'table',index:0}]);
+  assert.equal(shell.presentation.primaryValueCount,11);
+  assert.equal(shell.schematics.length,1);
+  assert.match(shell.schematics[0].svg,/Closed cylindrical shell/);
+  assert.match(shell.schematics[0].svg,/circumference/);
+  assert.match(shell.schematics[0].svg,/Active: plate-like/);
+  assert.equal(shell.plots[0].title,'Cylindrical-shell constituent mobility response');
+  const shellActiveTraces=shell.plots[0].traces.filter(trace=>/active constituent/.test(trace.name));
+  assert.ok(shellActiveTraces.length>=1);
+  assert.ok(shellActiveTraces.every(trace=>trace.emphasis&&trace.x.length>0&&trace.x.length===trace.y.length));
+  assert.ok(shellActiveTraces.every(trace=>['#55b8ff','#ffcf66','#65d9a0'].includes(trace.color)));
+  assert.ok(shell.plots[0].traces.some(trace=>/Selected point/.test(trace.name)));
+  const englishShell=displayEngineeringResult(shell,'English');
+  assert.match(englishShell.schematics[0].svg,/ft/);
+  assert.match(englishShell.schematics[0].svg,/in/);
+  assert.match(curved.interpretation.summary,/Open curved cylindrical panel/);
+  assert.equal(curved.tables[0].title,'Curved-panel constituent mobility relations');
+  assert.equal(curved.tables[0].rows[0][0],'Open curved-panel strip proxy');
+  assert.ok(curved.values.some(value=>value.label==='Arc-strip proxy area'));
+  assert.match(curved.schematics[0].svg,/Open curved panel/);
+  assert.equal(curved.plots[0].title,'Curved-panel constituent mobility response');
+  assert.ok(curved.plots[0].traces.some(trace=>trace.name==='Arc-strip proxy extension'));
+  assert.match(curved.assumptions.limitations.join(' '),/open curved panel/i);
+
+  const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
+  assert.match(appSource,/data-visible-when/);
+  assert.match(appSource,/const syncConditionalFields=/);
+  assert.match(appSource,/syncConditionalFields\(\);run\(\);/);
+  assert.match(appSource,/data-schematic-svg/);
 });
 
 test('ESA Appendix A modal-density formulations reproduce their published relations',()=>{
@@ -1287,6 +1423,13 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   assert.match(html,/const __seaParameterData=\(\(\)=>\{/);
   assert.match(html,/const __seaParameterPhysics=\(\(\)=>\{/);
   assert.match(html,/id: 'sea-parameter-provenance'/);
+  assert.match(html,/id: 'infinite-structure-mobility'/);
+  assert.match(html,/function infiniteMobilityAtlasState\(input = \{\}\)/);
+  assert.match(html,/function infiniteMobilitySchematic\(values, state\)/);
+  assert.match(html,/Closed cylindrical shell/);
+  assert.match(html,/data-schematic-svg/);
+  assert.match(html,/function mountInfiniteMobility\(root\)/);
+  assert.match(html,/references\/In19_inf_panel\.pdf/);
   assert.match(html,/function seaParameterWorkbenchState\(input = \{\}\)/);
   assert.match(html,/function installedFairingSeaState\(input = \{\}\)/);
   assert.match(html,/function mountFairing\(root\)/);
@@ -1554,8 +1697,8 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
   assert.match(html,/#\/demos/);
   assert.match(html,/#\/tools/);
   assert.match(html,/#\/case-studies/);
-  assert.match(html,/113 tools/);
-  assert.match(html,/66 case studies/);
+  assert.match(html,/114 tools/);
+  assert.match(html,/67 case studies/);
   assert.doesNotMatch(html,/#\/hardware/);
   assert.doesNotMatch(html,/Guided workflows/);
   assert.match(appSource,/data-tools-menu/);

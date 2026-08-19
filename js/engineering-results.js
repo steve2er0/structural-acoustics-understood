@@ -21,6 +21,7 @@
  * @property {Array<Object>} [plots]
  * @property {Array<Object>} [rangeCharts]
  * @property {Array<Object>} [surfaces3d]
+ * @property {Array<{title?: string, svg: string, svgByUnit?: Record<string, string>}>} [schematics]
  * @property {Array<Object>} [heatmaps]
  * @property {Array<Object>} [tables]
  * @property {Object} [csv]
@@ -212,7 +213,7 @@ function buildPresentation(id, result, values) {
     else if (result.heatmaps?.length) primaryEvidence = { type: 'heatmap', index: 0 };
     else if (result.tables?.length) primaryEvidence = { type: 'table', index: 0 };
   }
-  const validEvidenceTypes = new Set(['plot', 'rangeChart', 'heatmap', 'surface3d', 'table']);
+  const validEvidenceTypes = new Set(['plot', 'rangeChart', 'heatmap', 'surface3d', 'schematic', 'table']);
   const requestedStack = Array.isArray(requested.primaryEvidenceStack)
     ? requested.primaryEvidenceStack.filter(item => item && validEvidenceTypes.has(item.type) && Number.isInteger(item.index) && item.index >= 0).map(item => ({ type: item.type, index: item.index, ...(Number.isInteger(item.count) ? { count: Math.max(1, Math.min(6, item.count)) } : {}) }))
     : [];

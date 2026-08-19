@@ -65,15 +65,16 @@ export const subjectWheel = [
     chapterIds: [
       'structures-waves', 'shell-acoustics-deep-dive', 'orthotropic-panels-deep-dive',
       'pipe-flow-noise-deep-dive', 'wave-matching-deep-dive', 'wet-tank-dynamics-deep-dive',
-      'hybrid-method-handoffs'
+      'hybrid-method-handoffs', 'infinite-structure-mobility'
     ],
-    demoIds: ['beam-wave', 'dispersion', 'ring', 'orthotropic-coincidence'],
-    toolIds: ['beam', 'bending-wave', 'plate-modes', 'shell-acoustics', 'wave-matching-atlas', 'wet-tank-dynamics'],
+    demoIds: ['beam-wave', 'dispersion', 'ring', 'orthotropic-coincidence', 'infinite-mobility-wave-atlas'],
+    toolIds: ['beam', 'bending-wave', 'plate-modes', 'shell-acoustics', 'wave-matching-atlas', 'wet-tank-dynamics', 'infinite-mobility-atlas'],
     caseStudyIds: [
       'bending-delay', 'ring-vs-critical', 'honeycomb-junctions-exp-sea',
       'acs519-shell-acoustics-deep-dive', 'acs519-orthotropic-panels-deep-dive',
       'acs519-pipe-flow-noise-deep-dive', 'acs519-wave-matching-deep-dive',
-      'acs519-wet-tank-dynamics-deep-dive', 'program-hybrid-method-handoffs'
+      'acs519-wet-tank-dynamics-deep-dive', 'program-hybrid-method-handoffs',
+      'sea-parameters-infinite-structure-mobility'
     ]
   },
   {

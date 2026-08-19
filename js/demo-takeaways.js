@@ -298,6 +298,10 @@ export const demoTakeawayRegistry = Object.freeze({
     const frequency = number(state, ['frequency'], 1000), loss = number(state, ['lossFactor'], 0.02), type = choice(state, ['type'], 'plate-bending');
     return `The ${type.replaceAll('-', ' ')} population at ${frequency.toFixed(0)} Hz must be judged using both modes per band and overlap with η=${loss.toFixed(3)}. A dense bending family does not make every wave family or connected subsystem statistical.`;
   },
+  'infinite-mobility-wave-atlas': state => {
+    const frequency = number(state, ['frequency'], 1000), focus = choice(state, ['focus'], 'cylindrical-shell'), radius = number(state, ['radius'], 1.8);
+    return `At ${frequency.toFixed(0)} Hz, the ${focus.replaceAll('-', ' ')} characteristic curve is a real propagating-wave mean, not an individual finite-structure peak. With shell radius ${radius.toFixed(2)} m, use the ring-frequency transition as a regime screen before treating barrel behavior as a flat plate.`;
+  },
   'sea-driving-point-mobility': state => {
     const model = choice(state, ['model'], 'plate-center'), force = number(state, ['forceRms'], 10);
     return `The ${model.replaceAll('-', ' ')} model converts the ${force.toFixed(1)} N RMS force into power through drive-point conductance. A transfer-FRF magnitude cannot replace this real local power input without phase and impedance evidence.`;

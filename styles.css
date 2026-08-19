@@ -318,6 +318,8 @@ h3 { font-size: 1.07rem; line-height: 1.2; letter-spacing: -.018em; }
 .field-help { color: var(--quiet); font-size: .68rem; }
 .calc-form-actions { display: flex; gap: .5rem; flex-wrap: wrap; padding-top: .2rem; }
 .calc-results { min-height: 440px; padding: 1.1rem; }
+.engineering-schematic { overflow: hidden; border: 1px solid var(--line); background: #061a2c; }
+.engineering-schematic svg { display: block; width: 100%; min-height: 320px; }
 .result-summary { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); border-top: 1px solid var(--line); border-left: 1px solid var(--line); margin-bottom: 1rem; }
 .result-summary-supporting { margin: .7rem 0 0; }
 .result-stat { padding: .85rem; background: rgba(255,255,255,.42); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
@@ -1845,6 +1847,7 @@ body.site-system-route .field-group select:focus,
 body.site-system-route .field-group textarea:focus { border-color: var(--site-color-cyan); box-shadow: 0 0 0 2px rgba(85, 184, 255, .12); }
 body.site-system-route .select-search-filter output { color: #7f96b0; }
 body.site-system-route .calc-results { background: rgba(3, 16, 30, .36); }
+body.site-system-route .engineering-schematic { border-color: var(--site-color-border); background: #061a2c; }
 body.site-system-route .result-summary { border-color: var(--site-color-border); }
 body.site-system-route .result-stat { border-color: var(--site-color-border); background: rgba(13, 41, 68, .58); }
 body.site-system-route .result-stat small { color: #7189a3; }
