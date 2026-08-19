@@ -81,7 +81,7 @@ import {
 import { jointAcceptance, spatialCoherence, supportedDemoIds } from '../js/demos.js';
 import { assertDemoTakeawayRegistry, buildDemoTakeaway, demoTakeawayRegistry } from '../js/demo-takeaways.js';
 import { assertEngineeringResult, engineeringResultToText } from '../js/engineering-results.js';
-import { axisUnitInfo, displayEngineeringResult, fromDisplayNumber, toDisplayNumber, toDisplayStep, unitConversion } from '../js/unit-system.js';
+import { axisUnitInfo, displayEngineeringResult, formatDisplayInputNumber, fromDisplayNumber, toDisplayNumber, toDisplayStep, unitConversion } from '../js/unit-system.js';
 import { heatmapSvg, harmonicPhase, lineChartSvg, rangeChartSvg, signedHeatColor, surface3dSvg } from '../js/charts.js';
 import {
   featuredItems,
@@ -295,20 +295,33 @@ test('Miles equation matches the standard narrowband expression',()=>{
   close(metric(registry.miles.compute(v),'Acceleration response'),expected,1e-10);
 });
 
-test('structural wave-speed tool compares elastic families and locates plate critical frequency',()=>{
-  const values=defaults('bending-wave'),result=registry['bending-wave'].compute(values),E=Number(values.E_gpa)*1e9,rho=Number(values.rho),nu=Number(values.nu),h=Number(values.thickness_mm)/1000,D=E*h**3/(12*(1-nu**2));
-  const longitudinal=Math.sqrt(E/rho),shear=Math.sqrt(E/(2*(1+nu))/rho),critical=Number(values.sound_speed)**2/(2*Math.PI)*Math.sqrt(rho*h/D);
-  close(metric(result,'Longitudinal extensional speed'),longitudinal,1e-10);
-  close(metric(result,'Shear wave speed'),shear,1e-10);
+test('plate wave tool compares speed and wavelength families at the selected frequency',()=>{
+  const values=defaults('bending-wave'),result=registry['bending-wave'].compute(values),E=Number(values.E_gpa)*1e9,rho=Number(values.rho),nu=Number(values.nu),h=Number(values.thickness_mm)/1000,D=E*h**3/(12*(1-nu**2)),frequency=Number(values.frequency),omega=2*Math.PI*frequency,bendingWavenumber=(rho*h*omega**2/D)**.25;
+  const longitudinal=Math.sqrt(E/(rho*(1-nu**2))),shear=Math.sqrt(E/(2*(1+nu))/rho),critical=Number(values.sound_speed)**2/(2*Math.PI)*Math.sqrt(rho*h/D);
+  close(metric(result,'Longitudinal plate speed'),longitudinal,1e-10);
+  close(metric(result,'In-plane shear speed'),shear,1e-10);
+  close(metric(result,`Bending wavelength at ${frequency.toFixed(1)} Hz`),2*Math.PI/bendingWavenumber,1e-10);
+  close(metric(result,`Longitudinal wavelength at ${frequency.toFixed(1)} Hz`),longitudinal/frequency,1e-10);
+  close(metric(result,`Shear wavelength at ${frequency.toFixed(1)} Hz`),shear/frequency,1e-10);
   close(metric(result,'Plate critical frequency'),critical,1e-10);
   const speedPlot=result.plots[0],traceNames=speedPlot.traces.map(item=>item.name);
   for(const name of ['Bending phase','Bending group'])assert.ok(traceNames.includes(name));
-  for(const name of ['Longitudinal','Shear','Fluid'])assert.ok(traceNames.some(traceName=>traceName.startsWith(name)));
+  for(const name of ['Plate longitudinal','In-plane shear','Fluid'])assert.ok(traceNames.some(traceName=>traceName.startsWith(name)));
   const criticalTrace=speedPlot.traces.find(item=>item.name.startsWith('Critical f'));
   assert.deepEqual(criticalTrace.x,[critical,critical]);
-  assert.match(result.interpretation.physicalMeaning,/critical frequency.*bending phase speed equals.*sound speed/i);
-  assert.match(result.interpretationByUnit.English.summary,/16573.*10162.*ft\/s/);
+  const wavelengthPlot=result.plots[1],wavelengthTraceNames=wavelengthPlot.traces.map(item=>item.name);
+  for(const name of ['Bending','Longitudinal','Shear'])assert.ok(wavelengthTraceNames.includes(name));
+  const selectedTrace=wavelengthPlot.traces.find(item=>item.name.startsWith('Selected f'));
+  assert.deepEqual(selectedTrace.x,[frequency,frequency]);
+  assert.ok(selectedTrace.y[1]>selectedTrace.y[0]);
+  assert.deepEqual(result.presentation.primaryEvidence,{type:'plot',index:1});
+  assert.match(result.interpretation.physicalMeaning,/wavelength.*phase speed.*group speed/i);
+  assert.match(result.interpretationByUnit.English.summary,/ft/);
   assert.ok(registry['bending-wave'].references.some(reference=>/Wave Motion in Elastic Solids/.test(reference.title)));
+});
+
+test('plate wave selected frequency must remain inside the plotted band',()=>{
+  assert.throws(()=>registry['bending-wave'].compute({...defaults('bending-wave'),frequency:6000}),/between the minimum and maximum plot frequencies/i);
 });
 
 test('material presets synchronize dependent properties and plate modal frequencies',()=>{
@@ -328,7 +341,7 @@ test('material presets synchronize dependent properties and plate modal frequenc
   const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
   assert.match(appSource,/function calc\.syncPreset|typeof calc\.syncPreset/);
   assert.match(appSource,/applyPresetDependencies\(e\.target\)/);
-  assert.match(appSource,/toDisplayNumber\(synced\[field\.key\],field\.unit,system\)/);
+  assert.match(appSource,/formatDisplayInputNumber\(synced\[field\.key\],field\.unit,system\)/);
 });
 
 test('plate boundary presets update frequencies and enforce the selected edge restraint in the mode shapes',()=>{
@@ -704,6 +717,13 @@ test('priority gap-analysis tools expose behavior plots and separate alerts from
 test('unit conversion uses conventional standard gravity',()=>{
   const r=extraCalculatorRegistry['unit-converter'].compute({value:1,from:'g',to:'m/s2'});
   close(metric(r,'Converted value'),9.80665,1e-12);
+});
+
+test('display-unit input formatting preserves non-convertible numeric fields',()=>{
+  assert.equal(formatDisplayInputNumber('1000','Hz','English'),'1000');
+  const thicknessEnglish=formatDisplayInputNumber(3,'mm','English');
+  close(Number(thicknessEnglish),3*0.03937007874,1e-10);
+  close(fromDisplayNumber(thicknessEnglish,'mm','English'),3,1e-10);
 });
 
 test('Welch PSD closes against time-domain RMS for generated data',()=>{
@@ -1582,7 +1602,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes current interactive runtimes',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v102'/);
+  assert.match(worker,/const CACHE = 'sau-v104'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);

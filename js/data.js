@@ -463,8 +463,8 @@ export const sections = [
     "concepts": [
       {
         "title": "Elastic wave families",
-        "equation": "c<sub>L</sub> ≈ √(E/ρ) &nbsp;&nbsp; · &nbsp;&nbsp; c<sub>S</sub> = √(G/ρ)",
-        "body": "Longitudinal and shear waves are approximately nondispersive in a homogeneous bulk solid. Thin structures also support flexural waves whose speed depends strongly on frequency.",
+        "equation": "c<sub>L,p</sub> = √[E/(ρ(1−ν²))] &nbsp;&nbsp; · &nbsp;&nbsp; c<sub>S</sub> = √(G/ρ)",
+        "body": "Longitudinal and shear waves are approximately nondispersive in a homogeneous isotropic plate under this thin-plate model. The plate also supports flexural waves whose speed depends strongly on frequency.",
         "interpretation": "Choose the wave family that matches the measured deformation and frequency-thickness range.",
         "mistake": "Using bulk longitudinal speed to locate a low-frequency bending-wave source on a panel.",
         "toolId": "bending-wave",
@@ -1615,9 +1615,9 @@ export const toolCatalog = [
   },
   {
     "id": "bending-wave",
-    "title": "Structural Wave Speeds",
+    "title": "Plate Wave Speed & Wavelength",
     "category": "Structures",
-    "description": "Compare longitudinal, shear, and dispersive bending-wave speeds, then locate the plate critical frequency set by material and thickness.",
+    "description": "Calculate bending, longitudinal, and shear wave speeds and wavelengths in a thin isotropic plate, compare wavelength versus frequency, and mark the selected frequency.",
     "complexity": "Core",
     "keywords": [
       "dispersion",
@@ -1625,6 +1625,7 @@ export const toolCatalog = [
       "plate",
       "longitudinal wave",
       "shear wave",
+      "wavelength",
       "critical frequency",
       "coincidence"
     ]

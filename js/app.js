@@ -18,7 +18,7 @@ import { renderPageShell, renderBreadcrumbs, renderSectionHeader, renderCallout,
 import { renderLaunchSeaCapstone, bindLaunchSeaCapstone } from './launch-sea-capstone.js';
 import { engineeringAnalysisRegistry, engineeringWorkbenchRegistry } from './engineering-workbenches.js';
 import { sorbothaneIsolationCalculator, sorbothaneIsolationWorkbench } from './sorbothane-isolation.js';
-import { displayEngineeringResult, fromDisplayNumber, toDisplayNumber, toDisplayStep, toDisplayUnit, unitConversion } from './unit-system.js';
+import { displayEngineeringResult, formatDisplayInputNumber, fromDisplayNumber, toDisplayNumber, toDisplayStep, toDisplayUnit, unitConversion } from './unit-system.js';
 import {
   addEngineeringArtifact,
   classifyTool,
@@ -447,14 +447,13 @@ function bindTool(route){
     for(const field of calc.inputs||[]){
       if(!(field.key in synced)||Object.is(synced[field.key],current[field.key]))continue;
       const input=form.querySelector(`[data-key="${CSS.escape(field.key)}"]`);if(!input)continue;
-      const displayValue=input.matches('input[type="number"],input[type="range"]')?toDisplayNumber(synced[field.key],field.unit,system):synced[field.key];
-      input.value=Number.isFinite(Number(displayValue))?String(Number(Number(displayValue).toPrecision(12))):String(displayValue??'');
+      input.value=input.matches('input[type="number"],input[type="range"]')?formatDisplayInputNumber(synced[field.key],field.unit,system):String(synced[field.key]??'');
     }
   };
   const syncUnitSystem=()=>{
     const next=unitSystem?.value||'SI';
     if(next===lastUnitSystem)return;
-    form.querySelectorAll('input[data-native-unit]').forEach(input=>{const native=fromDisplayNumber(input.value,input.dataset.nativeUnit,lastUnitSystem),field=fieldsByKey.get(input.dataset.key);input.value=String(Number(toDisplayNumber(native,input.dataset.nativeUnit,next).toPrecision(12)));if(field?.min!=null)input.min=String(toDisplayNumber(field.min,input.dataset.nativeUnit,next));if(field?.max!=null)input.max=String(toDisplayNumber(field.max,input.dataset.nativeUnit,next));input.step=input.matches('input[type="range"]')&&field?.step!=null?String(toDisplayStep(field.step,input.dataset.nativeUnit,next)):'any';});
+    form.querySelectorAll('input[data-native-unit]').forEach(input=>{const native=fromDisplayNumber(input.value,input.dataset.nativeUnit,lastUnitSystem),field=fieldsByKey.get(input.dataset.key);input.value=formatDisplayInputNumber(native,input.dataset.nativeUnit,next);if(field?.min!=null)input.min=String(toDisplayNumber(field.min,input.dataset.nativeUnit,next));if(field?.max!=null)input.max=String(toDisplayNumber(field.max,input.dataset.nativeUnit,next));input.step=input.matches('input[type="range"]')&&field?.step!=null?String(toDisplayStep(field.step,input.dataset.nativeUnit,next)):'any';});
     form.querySelectorAll('[data-field-unit]').forEach(label=>{label.textContent=toDisplayUnit(label.dataset.nativeUnit,next);});
     lastUnitSystem=next;run();
   };

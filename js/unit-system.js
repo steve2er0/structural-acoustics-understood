@@ -23,6 +23,7 @@ export const toDisplayUnit=(unit,system)=>system==='English'&&unitConversion(uni
 export const toDisplayNumber=(value,unit,system)=>{const x=Number(value),conversion=system==='English'?unitConversion(unit):null;return Number.isFinite(x)&&conversion?x*conversion.factor+(conversion.offset||0):value;};
 export const fromDisplayNumber=(value,unit,system)=>{const x=Number(value),conversion=system==='English'?unitConversion(unit):null;return Number.isFinite(x)&&conversion?(x-(conversion.offset||0))/conversion.factor:value;};
 export const toDisplayStep=(value,unit,system)=>{const x=Number(value),conversion=system==='English'?unitConversion(unit):null;return Number.isFinite(x)&&conversion?x*conversion.factor:value;};
+export const formatDisplayInputNumber=(value,unit,system)=>{const displayed=toDisplayNumber(value,unit,system),numeric=Number(displayed);return Number.isFinite(numeric)?String(Number(numeric.toPrecision(12))):String(displayed??'');};
 
 export function axisUnitInfo(label){
   const text=String(label||'');
