@@ -1593,6 +1593,7 @@ test('shared engineering-tool runtime exposes decision-centered wet-tank, modal-
   assert.match(mobilityHtml,/Closed cylindrical shell/);
   assert.match(mobilityHtml,/Hambric/);
   assert.match(mobilityHtml,/data-wb-trace-selector="infinite-mobility-atlas:0"/);
+  assert.match(mobilityHtml,/workbench-evidence-panel is-primary-evidence/);
   assert.match(mobilityHtml,/\/tool\/infinite-mobility-atlas\?mode=quick/);
   assert.ok(mobilityHtml.indexOf('Cylindrical-shell constituent mobility response')<mobilityHtml.indexOf('Closed cylindrical shell'),'the response evidence is shown before the geometry view');
   assert.ok(mobilityHtml.indexOf('Closed cylindrical shell')<mobilityHtml.indexOf('Selected shell mobility'),'the geometry view is shown before numerical summary cards');
