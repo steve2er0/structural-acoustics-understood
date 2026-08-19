@@ -292,7 +292,7 @@ const appPrelude = [
   'const {renderPageShell,renderBreadcrumbs,renderSectionHeader,renderCallout,renderLinkCollection}=__siteComponents;',
   `const {${engineeringSystemExports.join(',')}}=__engineeringSystem;`,
   'const {renderLaunchSeaCapstone,bindLaunchSeaCapstone}=__launchSeaCapstone;',
-  'const {engineeringAnalysisRegistry,engineeringWorkbenchRegistry}=__engineeringWorkbenches;',
+  'const {engineeringAnalysisIds,engineeringAnalysisRegistry,engineeringWorkbenchIds,engineeringWorkbenchRegistry}=__engineeringWorkbenches;',
   'const {sorbothaneIsolationCalculator,sorbothaneIsolationWorkbench}=__sorbothaneIsolation;',
   'const {createEngineeringRegistry,engineeringResultToText}=__engineeringResults;'
 ].join('\n');

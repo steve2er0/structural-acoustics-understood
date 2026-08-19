@@ -16,7 +16,7 @@ import { engineeringResultToText } from './engineering-results.js';
 import { homepageNavigation, homepageNavKey, renderHomepage, renderSubjectPage, bindHomepage, subjectWheel } from './homepage.js';
 import { renderPageShell, renderBreadcrumbs, renderSectionHeader, renderCallout, renderLinkCollection } from './site-components.js';
 import { renderLaunchSeaCapstone, bindLaunchSeaCapstone } from './launch-sea-capstone.js';
-import { engineeringAnalysisRegistry, engineeringWorkbenchRegistry } from './engineering-workbenches.js';
+import { engineeringAnalysisIds, engineeringAnalysisRegistry, engineeringWorkbenchIds, engineeringWorkbenchRegistry } from './engineering-workbenches.js';
 import { sorbothaneIsolationCalculator, sorbothaneIsolationWorkbench } from './sorbothane-isolation.js';
 import { displayEngineeringResult, fromDisplayNumber, toDisplayNumber, toDisplayStep, toDisplayUnit, unitConversion } from './unit-system.js';
 import {
@@ -58,6 +58,8 @@ const workbenchRegistry = {
   ...engineeringWorkbenchRegistry,
   ...engineeringAnalysisRegistry
 };
+const guidedWorkbenchIds = [...engineeringWorkbenchIds, LAUNCH_SEA_CAPSTONE_ID, 'sorbothane-isolation'];
+const toolProfile = tool => classifyTool(tool, guidedWorkbenchIds, engineeringAnalysisIds);
 const chapterRelatedLinks = [
   { title: 'Shell mode families', description: 'Interactive circumferential-order map', href: '#/demo/shell-wave-map' },
   { title: 'Cylindrical shell acoustics', description: 'Paired engineering calculator', href: '#/tool/shell-acoustics' },
@@ -205,9 +207,9 @@ function renderCheat(route){
   const page=`${breadcrumbs}<div class="focused-chapter-layout">${rail}<div class="cheat-content">${content}</div></div>`;
   return renderPageShell(page,{variant:'focused-chapter'});
 }
-function toolCard(t,index){const profile=classifyTool(t,Object.keys(workbenchRegistry)),subject=primaryToolSubject(t);return `<a class="tool-card site-tool-card" href="#/tool/${encodeURIComponent(t.id)}" data-subject="${esc(subject.id)}" data-task="${esc(profile.task)}" data-input="${esc(profile.input)}" data-level="${esc(profile.level)}" data-search="${esc(`${t.title} ${t.description} ${(t.keywords||[]).join(' ')} ${subject.label} ${profile.task} ${profile.input}`.toLowerCase())}"><span class="tool-index">${String(index+1).padStart(2,'0')}</span><div class="tool-type-row"><span>${esc(profile.level)}</span>${profile.workbench?'<b>GUIDED</b>':''}</div><h3>${esc(t.title)}</h3><p>${esc(t.description)}</p><footer><span>${esc(subject.label)} · ${esc(t.category)}</span><span class="arrow">→</span></footer></a>`;}
+function toolCard(t,index){const profile=toolProfile(t),subject=primaryToolSubject(t);return `<a class="tool-card site-tool-card" href="#/tool/${encodeURIComponent(t.id)}" data-subject="${esc(subject.id)}" data-task="${esc(profile.task)}" data-input="${esc(profile.input)}" data-level="${esc(profile.level)}" data-search="${esc(`${t.title} ${t.description} ${(t.keywords||[]).join(' ')} ${subject.label} ${profile.task} ${profile.input}`.toLowerCase())}"><span class="tool-index">${String(index+1).padStart(2,'0')}</span><div class="tool-type-row"><span>${esc(profile.level)}</span>${profile.workbench?'<b>GUIDED</b>':profile.analysis?'<b>ANALYSIS</b>':''}</div><h3>${esc(t.title)}</h3><p>${esc(t.description)}</p><footer><span>${esc(subject.label)} · ${esc(t.category)}</span><span class="arrow">→</span></footer></a>`;}
 function renderTools(route){
-  const profiles=toolCatalog.map(tool=>classifyTool(tool,Object.keys(workbenchRegistry)));
+  const profiles=toolCatalog.map(tool=>toolProfile(tool));
   const requestedSubject=route?.params?.get('subject');
   const legacyCategory=route?.params?.get('category');
   const legacySubject=legacyCategory?primaryToolSubject(toolCatalog.find(tool=>tool.category===legacyCategory)||{}).id:null;
@@ -220,7 +222,7 @@ function renderTools(route){
     ['I am planning a test','Test & validation','Build measurement, control, notching, and evidence.'],
     ['I need SEA parameters','SEA & energy','Inspect modal density, damping, coupling, and response recovery.']
   ];
-  const page=`${renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Engineering tools'}])}${intro({eyebrow:'Engineering tools',title:'Start with the subject.<br>Then choose the model.',lede:'Quick screens stay fast. Physics demos expose behavior. Guided workbenches preserve multi-step engineering decisions and evidence.',aside:'<p>Calculations run locally in the browser. Imported engineering data is not uploaded by this static application.</p>',metrics:[{value:toolCatalog.length,label:'tools'},{value:Object.keys(workbenchRegistry).length,label:'guided workbenches'},{value:subjectWheel.length,label:'subjects'}],buttons:[{label:'Browse subjects',href:'#/'},{label:'Explore demos',href:'#/demos',secondary:true}]})}<section class="tool-intents" aria-label="Common engineering starting points">${intents.map(([title,task,description])=>`<button type="button" data-tool-intent="${esc(task)}"><strong>${esc(title)}</strong><span>${esc(description)}</span><b aria-hidden="true">→</b></button>`).join('')}</section><div class="tool-discovery" aria-label="Tool decision filters"><label class="tool-filter-search"><span>Search</span><input id="tool-filter-search" type="search" placeholder="Method, output, subject, or input…"/></label>${subjectOptions}${options('Engineering task',profiles.map(profile=>profile.task),'task')}${options('Available input',profiles.map(profile=>profile.input),'input')}${options('Tool depth',profiles.map(profile=>profile.level),'level')}<button type="button" class="button-quiet" data-action="clear-tool-filters">Clear</button><span id="tool-count" class="filter-count">${toolCatalog.length} shown</span></div><div class="tool-grid">${toolCatalog.map(toolCard).join('')}</div>`;
+  const page=`${renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Engineering tools'}])}${intro({eyebrow:'Engineering tools',title:'Start with the subject.<br>Then choose the model.',lede:'Quick screens stay fast. Physics demos expose behavior. Guided workbenches preserve multi-step engineering decisions and evidence.',aside:'<p>Calculations run locally in the browser. Imported engineering data is not uploaded by this static application.</p>',metrics:[{value:toolCatalog.length,label:'tools'},{value:Object.keys(workbenchRegistry).length,label:'analysis workspaces'},{value:subjectWheel.length,label:'subjects'}],buttons:[{label:'Browse subjects',href:'#/'},{label:'Explore demos',href:'#/demos',secondary:true}]})}<section class="tool-intents" aria-label="Common engineering starting points">${intents.map(([title,task,description])=>`<button type="button" data-tool-intent="${esc(task)}"><strong>${esc(title)}</strong><span>${esc(description)}</span><b aria-hidden="true">→</b></button>`).join('')}</section><div class="tool-discovery" aria-label="Tool decision filters"><label class="tool-filter-search"><span>Search</span><input id="tool-filter-search" type="search" placeholder="Method, output, subject, or input…"/></label>${subjectOptions}${options('Engineering task',profiles.map(profile=>profile.task),'task')}${options('Available input',profiles.map(profile=>profile.input),'input')}${options('Tool depth',profiles.map(profile=>profile.level),'level')}<button type="button" class="button-quiet" data-action="clear-tool-filters">Clear</button><span id="tool-count" class="filter-count">${toolCatalog.length} shown</span></div><div class="tool-grid">${toolCatalog.map(toolCard).join('')}</div>`;
   return renderPageShell(page,{variant:'tool-library'});
 }
 function fieldHtml(field,value,unitSystem='SI'){
@@ -278,7 +280,7 @@ function renderTool(route){
   if(!meta||!calc)return renderNotFound('Calculator not found','The requested tool is not in this build.');
   if(workbenchRegistry[id]&&route.params.get('mode')!=='quick')return workbenchRegistry[id].render();
   const proof=isCalculatorDesignProof(route);
-  const profile=classifyTool(meta,Object.keys(workbenchRegistry));
+  const profile=toolProfile(meta);
   const subject=primaryToolSubject(meta);
   const project=loadEngineeringProject();
   const unitSystem=route.params.get('units')==='English'||(!route.params.has('units')&&/english|imperial/i.test(project.context?.units||''))?'English':'SI';

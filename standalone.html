@@ -27694,6 +27694,11 @@ const definitions = {
     syncPreset: syncInfiniteMobilityMaterial,
     theory: '<p>Characteristic mobility represents energy carried away by propagating structural waves. For a finite structure it is a mean-response reference—often near the geometric mean of resonant and antiresonant mobility—not a replacement for a complex measured or modal FRF.</p>',
     assumptions: ['Uniform, unbounded or weakly reflecting member, plate, sandwich panel, or shell.', 'Point drive is small relative to the active structural wavelength.', 'Curves show real propagating-wave conductance; finite boundaries, individual modes, joints, and attachment compliance are excluded.', 'The sandwich relation uses a symmetric face-sheet / shear-core approximation; the closed-shell relation is a thin, unstiffened-cylinder screen. An open curved panel retains the local cylindrical shell and plate relations but replaces the full-cylinder low-frequency branch with an arc-width strip proxy.'],
+    references: [
+      { title: 'Published relation — Hambric: To Infinity and Beyond', note: 'Authoritative published source for the real characteristic-mobility relations implemented here: rod, beam, thin plate, sandwich panel, and cylindrical shell. Local file: references/In19_inf_panel.pdf.' },
+      { title: 'Published corroboration — ACS 519 Combined: Cylindrical Shells', note: 'Course source reproducing the beam-like, curved-shell, and local flat-plate shell limits. Local file: references/ACS519_Combined.pdf.' },
+      { title: 'Engineering screening input — material preset library', note: 'Editable shared-library starting values. Confirm temperature, direction, heat treatment, fabrication, damping, and installed mass before consequential use.' }
+    ],
     example: 'Overlay an acquired drive-point mobility with the appropriate curve to check units and high-frequency mean level, then use the cylindrical-shell plot to identify beam-like, curved-shell, and plate-like regions.',
     compute(values) {
       const state = infiniteMobilityAtlasState({
@@ -27727,6 +27732,14 @@ const definitions = {
         ? `${state.shell.lowTransitionFrequency.toFixed(1)} Hz beam→shell; ${state.shell.plateTransitionFrequency.toFixed(1)} Hz shell→plate`
         : 'h/a compresses the source-model curved-shell interval; treat the result as a rough thin-shell screen.';
       const shellSelected = values.geometry === 'cylindrical-shell' || values.geometry === 'curved-panel';
+      const dynamicAlerts = [];
+      if (shellSelected && state.shell.thicknessToRadius > 0.1) dynamicAlerts.push('Shell h/R exceeds 0.1, outside the thin-shell screening range; use a shell model that includes thick-wall effects.');
+      const transitionFrequency = state.shell.normalizedFrequency < state.shell.plateTransitionRatio
+        ? state.shell.lowTransitionFrequency
+        : state.shell.plateTransitionFrequency;
+      if (shellSelected && transitionFrequency > 0 && Math.abs(Math.log2(state.frequency / transitionFrequency)) < 0.25) dynamicAlerts.push('Selected frequency is within one-quarter octave of a constituent-regime transition; bracket both neighboring relations or use finite/FE evidence.');
+      if (values.geometry === 'curved-panel') dynamicAlerts.push('Open curved panel uses an arc-width strip proxy at low frequency; validate boundaries, panel aspect ratio, and edge reflection with a finite curved-panel model or test.');
+      if (values.geometry === 'sandwich-panel' && state.frequency >= 0.7 * state.sandwich.transitionFrequency && state.frequency <= 1.4 * state.sandwich.transitionFrequency) dynamicAlerts.push('Selected sandwich-panel frequency lies near the flexural-to-shear transition; verify core shear properties and face-sheet construction.');
       const shellValues = [
         stat('Selected shell mobility', state.shell.mobility, 'm/(N·s)'),
         stat(state.shell.closed ? 'Beam-like shell mobility' : 'Curved-panel strip-proxy mobility', state.shell.beamMobility, 'm/(N·s)'),
@@ -27854,6 +27867,7 @@ const definitions = {
           'The reference input-power result uses ½F²Re{Y}; do not substitute transfer mobility for drive-point conductance.',
           ...(values.geometry === 'curved-panel' ? ['An open curved panel is not a closed cylinder: its low-frequency branch is an explicit arc-width strip proxy. Boundary restraints, panel aspect ratio, curvature coupling, and edge reflection require a finite-panel or shell model when they control the response.'] : [])
         ],
+        alerts: dynamicAlerts,
         plots: shellSelected ? [shellConstituentPlot, fullShellExtensionsPlot] : [generalAtlasPlot, fullShellExtensionsPlot],
         schematics: [geometrySchematic],
         tables: shellSelected ? [shellRelationTable, generalTable] : [generalTable],
@@ -31160,9 +31174,10 @@ const learningPathways = Object.freeze([
 
 const includesAny = (value, terms) => terms.some(term => value.includes(term));
 
-function classifyTool(tool, workbenchIds = []) {
+function classifyTool(tool, workbenchIds = [], analysisIds = []) {
   const text = `${tool.id} ${tool.title} ${tool.description} ${tool.category} ${(tool.keywords ?? []).join(' ')}`.toLowerCase();
-  const workbench = workbenchIds.includes(tool.id) || tool.id === 'launch-vibroacoustic-capstone';
+  const analysis = analysisIds.includes(tool.id);
+  const workbench = !analysis && (workbenchIds.includes(tool.id) || tool.id === 'launch-vibroacoustic-capstone');
   let task = 'Response & loads';
   if (includesAny(text, ['sea', 'energy', 'modal density', 'coupling loss'])) task = 'SEA & energy';
   else if (includesAny(text, ['test', 'measurement', 'signal', 'correlation', 'qualification', 'credibility'])) task = 'Test & validation';
@@ -31186,11 +31201,12 @@ function classifyTool(tool, workbenchIds = []) {
   else if (includesAny(text, ['source', 'propagation', 'field'])) input = 'Source and path data';
 
   return {
-    level: workbench ? 'Guided workbench' : tool.complexity === 'Advanced' ? 'Advanced calculator' : 'Quick screen',
+    level: analysis ? 'Interactive analysis' : workbench ? 'Guided workbench' : tool.complexity === 'Advanced' ? 'Advanced calculator' : 'Quick screen',
     task,
     hardware,
     input,
-    workbench
+    workbench,
+    analysis
   };
 }
 
@@ -31958,17 +31974,31 @@ function renderField(field, value, toolId, unitSystem) {
   return `<label class="capstone-field workbench-field">${label}${control}${field.help ? `<em>${workbenchEsc(field.help)}</em>` : ''}</label>`;
 }
 
+function fieldVisible(context, field) {
+  const condition = field?.visibleWhen;
+  if (!condition) return true;
+  if (typeof condition === 'function') return Boolean(condition(context));
+  if (typeof condition !== 'object') return true;
+  const inputs = context.project.inputs?.[context.step.toolId] ?? {};
+  return Object.entries(condition).every(([key, expected]) => {
+    const actual = String(inputs[key] ?? '');
+    const options = Array.isArray(expected) ? expected : [expected];
+    return options.some(option => String(option) === actual);
+  });
+}
+
 function inputGroupsHtml(context, fields) {
   const { definition, project, step } = context;
-  if (!definition.inputGroups?.length) return fields.map(field => renderField(field, project.inputs[step.toolId]?.[field.key], step.toolId, project.unitSystem)).join('');
+  const visibleFields = fields.filter(field => fieldVisible(context, field));
+  if (!definition.inputGroups?.length) return visibleFields.map(field => renderField(field, project.inputs[step.toolId]?.[field.key], step.toolId, project.unitSystem)).join('');
   const rendered = new Set();
   const groups = definition.inputGroups.map((group, index) => {
-    const groupFields = fields.filter(field => group.fieldKeys.includes(field.key));
+    const groupFields = visibleFields.filter(field => group.fieldKeys.includes(field.key));
     groupFields.forEach(field => rendered.add(field.key));
     if (!groupFields.length) return '';
     return `<details class="engineering-input-group"${group.open ?? index < 2 ? ' open' : ''}><summary><span>${workbenchEsc(group.title)}</span><small>${groupFields.length} controls</small></summary><div>${groupFields.map(field => renderField(field, project.inputs[step.toolId]?.[field.key], step.toolId, project.unitSystem)).join('')}</div></details>`;
   }).join('');
-  const remaining = fields.filter(field => !rendered.has(field.key));
+  const remaining = visibleFields.filter(field => !rendered.has(field.key));
   return `${groups}${remaining.length ? `<details class="engineering-input-group"><summary><span>Additional model inputs</span><small>${remaining.length} controls</small></summary><div>${remaining.map(field => renderField(field, project.inputs[step.toolId]?.[field.key], step.toolId, project.unitSystem)).join('')}</div></details>` : ''}`;
 }
 
@@ -32151,16 +32181,18 @@ function renderEngineeringAnalysis(definition, calculators, projectInput = null)
   const inspectorFields = step.fieldKeys?.length ? (calculator?.inputs ?? []).filter(field => step.fieldKeys.includes(field.key)) : calculator?.inputs ?? [];
   const diagram = definition.renderDiagram?.(context) ?? '';
   const diagramTakeaway = definition.diagramTakeaway?.(context) ?? result?.interpretation?.physicalMeaning ?? definition.defaultTakeaway;
+  const physicalEvidence = `<section class="workbench-domain-panel"><header><div><p class="eyebrow">${workbenchEsc(definition.visualLabel)}</p><h3>${workbenchEsc(definition.visualTitle)}</h3></div><span>${workbenchEsc(definition.visualLegend)}</span></header>${diagram}<p class="capstone-panel-takeaway"><strong>Engineering takeaway</strong>${workbenchEsc(diagramTakeaway)}</p></section>`;
+  const analysisEvidence = `<section class="capstone-analytics workbench-analytics engineering-analysis-evidence"><header><div><p class="eyebrow">Live engineering evidence</p><h2>${workbenchEsc(definition.evidenceTitle ?? `${definition.title} results`)}</h2></div><p>The physical view, metrics, curves, and source record share one persisted state.</p></header>${resultSummaryHtml(context)}${compareHtml(context)}<div class="workbench-evidence-grid">${evidenceHtml(context)}</div>${checksHtml(context)}${sourceHtml(context)}${relatedHtml(context)}</section>`;
+  const mainEvidence = definition.evidenceFirst ? `${analysisEvidence}${physicalEvidence}` : `${physicalEvidence}${analysisEvidence}`;
   return `<div class="page-shell site-page-shell site-page-shell-capstone site-page-shell-workbench site-page-shell-analysis" data-workbench-id="${workbenchEsc(definition.id)}" data-engineering-profile="analysis">
     <nav class="breadcrumbs site-breadcrumbs" aria-label="Breadcrumb"><a href="#/tools">Tools</a><span aria-hidden="true">›</span><span>${workbenchEsc(definition.category)}</span><span aria-hidden="true">›</span><span aria-current="page">${workbenchEsc(definition.title)}</span></nav>
     ${decisionHeroHtml(context)}
     <section class="engineering-analysis" id="engineering-analysis-${workbenchEsc(definition.id)}">
-      ${commandBarHtml(context)}
-      <aside class="capstone-inspector workbench-inspector engineering-analysis-inspector" aria-label="Analysis inputs"><div class="capstone-inspector-heading"><p class="eyebrow">Input inspector</p><h2>${workbenchEsc(definition.inputTitle ?? 'Define the physical case')}</h2><p>${workbenchEsc(definition.instruction ?? definition.summary)}</p><a href="#/tool/${encodeURIComponent(step.toolId)}?mode=quick">Open the focused quick screen →</a></div><div class="capstone-inspector-fields">${inputGroupsHtml(context, inspectorFields)}</div></aside>
-      <main class="engineering-analysis-main">
-        <section class="workbench-domain-panel"><header><div><p class="eyebrow">${workbenchEsc(definition.visualLabel)}</p><h3>${workbenchEsc(definition.visualTitle)}</h3></div><span>${workbenchEsc(definition.visualLegend)}</span></header>${diagram}<p class="capstone-panel-takeaway"><strong>Engineering takeaway</strong>${workbenchEsc(diagramTakeaway)}</p></section>
-        <section class="capstone-analytics workbench-analytics engineering-analysis-evidence"><header><div><p class="eyebrow">Live engineering evidence</p><h2>${workbenchEsc(definition.evidenceTitle ?? `${definition.title} results`)}</h2></div><p>The physical view, metrics, curves, and source record share one persisted state.</p></header>${resultSummaryHtml(context)}${compareHtml(context)}<div class="workbench-evidence-grid">${evidenceHtml(context)}</div>${checksHtml(context)}${sourceHtml(context)}${relatedHtml(context)}</section>
-      </main>
+       ${commandBarHtml(context)}
+       <aside class="capstone-inspector workbench-inspector engineering-analysis-inspector" aria-label="Analysis inputs"><div class="capstone-inspector-heading"><p class="eyebrow">Input inspector</p><h2>${workbenchEsc(definition.inputTitle ?? 'Define the physical case')}</h2><p>${workbenchEsc(definition.instruction ?? definition.summary)}</p><a href="#/tool/${encodeURIComponent(step.toolId)}?mode=quick">Open the focused quick screen →</a></div><div class="capstone-inspector-fields">${inputGroupsHtml(context, inspectorFields)}</div></aside>
+       <main class="engineering-analysis-main">
+         ${mainEvidence}
+       </main>
     </section>
   </div>`;
 }
@@ -32470,6 +32502,23 @@ function modalDensityDiagram(context) {
   return svg('wb-modal-density-svg', 'Modal-density wave-family and population atlas', 'The selected subsystem and wave family is paired with a frequency-band population view showing average resonance crowding, spacing, and overlap.', `${hardware}<g class="wb-modal-spectrum"><path class="wb-axis" d="M485 365V145M485 365H850"/><rect x="505" y="180" width="325" height="185"/><text x="667" y="125">SELECTED ANALYSIS BAND</text><text x="667" y="150">${workbenchEsc(band)}</text><g class="wb-modal-resonances">${resonances}</g><line class="wb-cursor" x1="667" x2="667" y1="170" y2="380"/><text x="667" y="405">${workbenchEsc(workbenchFmt(frequency))} Hz</text></g><g class="wb-modal-readout"><rect x="90" y="55" width="760" height="58"/><text x="245" y="82">${workbenchEsc(family)}</text><text x="500" y="82">${workbenchEsc(workbenchFmt(modes))} modes / band</text><text x="680" y="82">Δf ≈ ${workbenchEsc(workbenchFmt(spacing))} Hz</text><text x="805" y="82">M=${workbenchEsc(workbenchFmt(overlap))}</text></g><text x="235" y="465">${workbenchEsc(dimension)} WAVE FAMILY</text><text x="667" y="465">AVERAGE CROWDING · NOT EXACT EIGENFREQUENCIES</text>`);
 }
 
+function infiniteMobilityFamilyLabel(context) {
+  const geometry = String(context.inputs.geometry ?? 'cylindrical-shell');
+  if (geometry === 'beam') {
+    const drive = String(context.inputs.beam_geometry ?? 'beam-flexural');
+    return drive === 'rod-axial' ? 'axial rod' : drive === 'beam-free-end' ? 'semi-infinite flexural beam' : 'infinite flexural beam';
+  }
+  if (geometry === 'curved-panel') return 'open curved cylindrical panel';
+  if (geometry === 'flat-panel') return 'infinite thin plate';
+  if (geometry === 'sandwich-panel') return 'symmetric sandwich panel';
+  return 'closed cylindrical shell';
+}
+
+function infiniteMobilityDiagram(context) {
+  return context.result?.schematics?.[0]?.svg
+    ?? svg('wb-infinite-mobility-svg', 'Infinite-structure mobility geometry', 'The selected structural family has no geometry schematic available.', '<text x="460" y="260">Geometry view unavailable</text>');
+}
+
 function missionDiagram(context) {
   const scales = [numeric(context, 'acoustic_scale', 1), numeric(context, 'buffet_scale', 1), numeric(context, 'shock_scale', 1), numeric(context, 'thermal_scale', 1)];
   const labels = ['LIFTOFF', 'MAX-Q', 'SEPARATION', 'THERMAL / PRELOAD'];
@@ -32692,6 +32741,72 @@ const engineeringAnalysisDefinitions = [
       if (evidence.item?.title?.includes('formulation')) return 'The source-topic row identifies the implemented ESA relation and any specialization applied to the selected construction.';
       return context.result?.interpretation?.engineeringConsiderations?.[0] ?? context.result?.interpretation?.physicalMeaning;
     }
+  },
+  {
+    id: 'infinite-mobility-atlas',
+    toolId: 'infinite-mobility-atlas',
+    profile: 'analysis',
+    title: 'Infinite-Structure Mobility Analysis',
+    category: 'Structural Acoustics',
+    eyebrow: 'Characteristic response · Interactive analysis',
+    projectName: 'Infinite-mobility regime study',
+    summary: 'Explore which propagating-wave constituent governs the mean drive-point mobility of the selected beam, plate, sandwich panel, cylindrical shell, or curved panel at the decision frequency.',
+    instruction: 'Select the structural family, material, and physical geometry. Then inspect the active characteristic-mobility constituent, compare its neighboring branches, and record any transition or validity review before using it as a force-to-power screen.',
+    inputTitle: 'Define the structure and decision frequency',
+    evidenceTitle: 'Characteristic mobility and constituent evidence',
+    visualLabel: 'Current structural geometry',
+    visualTitle: 'Selected member, panel, shell, or curved-panel configuration',
+    visualLegend: 'live dimensions · drive direction · active regime',
+    defaultTakeaway: 'Characteristic mobility is a real mean-response conductance. It screens the level hidden by finite-structure resonances; it does not replace a measured complex FRF or finite-model response.',
+    evidenceFirst: true,
+    renderDiagram: infiniteMobilityDiagram,
+    inputGroups: [
+      { title: 'Structure family', fieldKeys: ['geometry'], open: true },
+      { title: 'Material definition', fieldKeys: ['material', 'modulus', 'density', 'poisson'], open: true },
+      { title: 'Specific geometry', fieldKeys: ['shell_geometry', 'shell_radius', 'shell_thickness', 'curved_panel_geometry', 'curved_panel_radius', 'curved_panel_arc_angle', 'curved_panel_axial_length', 'curved_panel_thickness', 'beam_geometry', 'member_width', 'member_height', 'panel_geometry', 'plate_thickness', 'sandwich_geometry', 'face_thickness', 'core_thickness', 'core_density', 'core_shear_modulus'], open: true },
+      { title: 'Decision frequency & forcing', fieldKeys: ['frequency', 'frequency_min', 'frequency_max', 'force'], open: true }
+    ],
+    decision: context => {
+      const family = infiniteMobilityFamilyLabel(context);
+      const selectedMobility = resultValue(context.nativeResult, 'Selected shell mobility', resultValue(context.nativeResult, 'Highlighted real mobility', 0));
+      const regime = valueText(context, 'Shell regime', 'selected characteristic relation');
+      const alerts = context.nativeResult?.assumptions?.alerts ?? [];
+      return {
+        question: 'Which characteristic constituent governs the mean drive-point mobility at this frequency?',
+        scope: `The selected ${family} is evaluated at ${workbenchFmt(numeric(context, 'frequency', 1000))} Hz. Use the active branch as a high-frequency mean-response and force-power screen, then retain finite or measured evidence where local resonances, boundaries, or interfaces control.`,
+        metric: { label: 'Selected Re{Y}', value: selectedMobility, unit: 'm/(N·s)' },
+        status: alerts.length ? 'review' : 'informational',
+        statusLabel: alerts.length ? 'Approximation boundary needs review' : `${regime} constituent active`,
+        keyLimitation: alerts[0] ?? 'Characteristic mobility predicts a real mean level between resonance and antiresonance envelopes; it is not a complex finite-structure FRF.'
+      };
+    },
+    metrics: context => [
+      { value: valueText(context, 'Selected shell mobility', valueText(context, 'Highlighted real mobility')), label: 'selected Re{Y}' },
+      { value: valueText(context, 'Shell ring frequency'), label: 'ring scale' },
+      { value: valueText(context, 'Shell regime', infiniteMobilityFamilyLabel(context)), label: 'active constituent' }
+    ],
+    diagramTakeaway: context => {
+      const family = infiniteMobilityFamilyLabel(context);
+      const regime = valueText(context, 'Shell regime', 'selected relation');
+      return `This view is the active ${family} configuration. The response plot identifies the constituent branch; ${regime} is the currently selected shell or curved-panel screen when curvature applies.`;
+    },
+    evidenceTakeaway: (context, evidence) => {
+      const family = infiniteMobilityFamilyLabel(context);
+      if (evidence.type === 'plot' && evidence.index === 0) return `The colored segments are the active constituent response for the ${family}; dashed extensions are intentionally secondary because they are outside their selected validity branch.`;
+      if (evidence.type === 'plot') return 'Use the full relation extensions only to bracket a transition or compare constituent slopes; do not splice them into an installed finite-structure FRF.';
+      if (evidence.type === 'table' && evidence.index === 0) return 'This table records the active branch, neighboring constituent relations, and normalized-frequency boundaries at the decision point.';
+      return context.result?.interpretation?.engineeringConsiderations?.[0] ?? context.result?.interpretation?.physicalMeaning;
+    },
+    sources: [
+      { title: 'Published relation — Hambric: To Infinity and Beyond', note: 'Published source for the implemented rod, beam, thin-plate, sandwich, and cylindrical-shell characteristic-mobility relations. Local file: references/In19_inf_panel.pdf.' },
+      { title: 'Published corroboration — ACS 519 Combined: Cylindrical Shells', note: 'Course source for the beam-like, curved-shell, and local flat-plate constituent limits. Local file: references/ACS519_Combined.pdf.' },
+      { title: 'Engineering screening input — material preset library', note: 'Editable shared-library starting values. Confirm temperature, direction, heat treatment, fabrication, damping, and installed mass before consequential use.' }
+    ],
+    relatedLinks: [
+      { title: 'Infinite-Mobility Lesson', description: 'Read the source-driven characteristic-mobility lesson and its engineering boundaries.', href: '#/case-study/sea-parameters-infinite-structure-mobility' },
+      { title: 'Cylindrical Shell Acoustics', description: 'Move from mean mobility screening to shell modal families, ring scales, and acoustic coupling.', href: '#/tool/shell-acoustics?mode=quick' },
+      { title: 'SEA Driving-Point Impedance Library', description: 'Convert a selected real drive-point conductance into point-force input power.', href: '#/tool/sea-impedance-library?mode=quick' }
+    ]
   }
 ];
 
@@ -32762,7 +32877,7 @@ const {homepageNavigation,homepageNavKey,renderHomepage,renderSubjectPage,bindHo
 const {renderPageShell,renderBreadcrumbs,renderSectionHeader,renderCallout,renderLinkCollection}=__siteComponents;
 const {engineeringSystemSchema,engineeringSystemVersion,engineeringProjectStorageKey,materialLibrary,environmentLibrary,projectTemplates,hardwareTopics,learningPathways,classifyTool,toolHandoffs,handoffInputs,validationBenchmarks,runValidationBenchmarks,createEngineeringProject,normalizeEngineeringProject,loadEngineeringProject,saveEngineeringProject,addEngineeringArtifact,engineeringProjectReport}=__engineeringSystem;
 const {renderLaunchSeaCapstone,bindLaunchSeaCapstone}=__launchSeaCapstone;
-const {engineeringAnalysisRegistry,engineeringWorkbenchRegistry}=__engineeringWorkbenches;
+const {engineeringAnalysisIds,engineeringAnalysisRegistry,engineeringWorkbenchIds,engineeringWorkbenchRegistry}=__engineeringWorkbenches;
 const {sorbothaneIsolationCalculator,sorbothaneIsolationWorkbench}=__sorbothaneIsolation;
 const {createEngineeringRegistry,engineeringResultToText}=__engineeringResults;
 
@@ -32791,6 +32906,8 @@ const workbenchRegistry = {
   ...engineeringWorkbenchRegistry,
   ...engineeringAnalysisRegistry
 };
+const guidedWorkbenchIds = [...engineeringWorkbenchIds, LAUNCH_SEA_CAPSTONE_ID, 'sorbothane-isolation'];
+const toolProfile = tool => classifyTool(tool, guidedWorkbenchIds, engineeringAnalysisIds);
 const chapterRelatedLinks = [
   { title: 'Shell mode families', description: 'Interactive circumferential-order map', href: '#/demo/shell-wave-map' },
   { title: 'Cylindrical shell acoustics', description: 'Paired engineering calculator', href: '#/tool/shell-acoustics' },
@@ -32938,9 +33055,9 @@ function renderCheat(route){
   const page=`${breadcrumbs}<div class="focused-chapter-layout">${rail}<div class="cheat-content">${content}</div></div>`;
   return renderPageShell(page,{variant:'focused-chapter'});
 }
-function toolCard(t,index){const profile=classifyTool(t,Object.keys(workbenchRegistry)),subject=primaryToolSubject(t);return `<a class="tool-card site-tool-card" href="#/tool/${encodeURIComponent(t.id)}" data-subject="${esc(subject.id)}" data-task="${esc(profile.task)}" data-input="${esc(profile.input)}" data-level="${esc(profile.level)}" data-search="${esc(`${t.title} ${t.description} ${(t.keywords||[]).join(' ')} ${subject.label} ${profile.task} ${profile.input}`.toLowerCase())}"><span class="tool-index">${String(index+1).padStart(2,'0')}</span><div class="tool-type-row"><span>${esc(profile.level)}</span>${profile.workbench?'<b>GUIDED</b>':''}</div><h3>${esc(t.title)}</h3><p>${esc(t.description)}</p><footer><span>${esc(subject.label)} · ${esc(t.category)}</span><span class="arrow">→</span></footer></a>`;}
+function toolCard(t,index){const profile=toolProfile(t),subject=primaryToolSubject(t);return `<a class="tool-card site-tool-card" href="#/tool/${encodeURIComponent(t.id)}" data-subject="${esc(subject.id)}" data-task="${esc(profile.task)}" data-input="${esc(profile.input)}" data-level="${esc(profile.level)}" data-search="${esc(`${t.title} ${t.description} ${(t.keywords||[]).join(' ')} ${subject.label} ${profile.task} ${profile.input}`.toLowerCase())}"><span class="tool-index">${String(index+1).padStart(2,'0')}</span><div class="tool-type-row"><span>${esc(profile.level)}</span>${profile.workbench?'<b>GUIDED</b>':profile.analysis?'<b>ANALYSIS</b>':''}</div><h3>${esc(t.title)}</h3><p>${esc(t.description)}</p><footer><span>${esc(subject.label)} · ${esc(t.category)}</span><span class="arrow">→</span></footer></a>`;}
 function renderTools(route){
-  const profiles=toolCatalog.map(tool=>classifyTool(tool,Object.keys(workbenchRegistry)));
+  const profiles=toolCatalog.map(tool=>toolProfile(tool));
   const requestedSubject=route?.params?.get('subject');
   const legacyCategory=route?.params?.get('category');
   const legacySubject=legacyCategory?primaryToolSubject(toolCatalog.find(tool=>tool.category===legacyCategory)||{}).id:null;
@@ -32953,7 +33070,7 @@ function renderTools(route){
     ['I am planning a test','Test & validation','Build measurement, control, notching, and evidence.'],
     ['I need SEA parameters','SEA & energy','Inspect modal density, damping, coupling, and response recovery.']
   ];
-  const page=`${renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Engineering tools'}])}${intro({eyebrow:'Engineering tools',title:'Start with the subject.<br>Then choose the model.',lede:'Quick screens stay fast. Physics demos expose behavior. Guided workbenches preserve multi-step engineering decisions and evidence.',aside:'<p>Calculations run locally in the browser. Imported engineering data is not uploaded by this static application.</p>',metrics:[{value:toolCatalog.length,label:'tools'},{value:Object.keys(workbenchRegistry).length,label:'guided workbenches'},{value:subjectWheel.length,label:'subjects'}],buttons:[{label:'Browse subjects',href:'#/'},{label:'Explore demos',href:'#/demos',secondary:true}]})}<section class="tool-intents" aria-label="Common engineering starting points">${intents.map(([title,task,description])=>`<button type="button" data-tool-intent="${esc(task)}"><strong>${esc(title)}</strong><span>${esc(description)}</span><b aria-hidden="true">→</b></button>`).join('')}</section><div class="tool-discovery" aria-label="Tool decision filters"><label class="tool-filter-search"><span>Search</span><input id="tool-filter-search" type="search" placeholder="Method, output, subject, or input…"/></label>${subjectOptions}${options('Engineering task',profiles.map(profile=>profile.task),'task')}${options('Available input',profiles.map(profile=>profile.input),'input')}${options('Tool depth',profiles.map(profile=>profile.level),'level')}<button type="button" class="button-quiet" data-action="clear-tool-filters">Clear</button><span id="tool-count" class="filter-count">${toolCatalog.length} shown</span></div><div class="tool-grid">${toolCatalog.map(toolCard).join('')}</div>`;
+  const page=`${renderBreadcrumbs([{label:'Home',href:'#/'},{label:'Engineering tools'}])}${intro({eyebrow:'Engineering tools',title:'Start with the subject.<br>Then choose the model.',lede:'Quick screens stay fast. Physics demos expose behavior. Guided workbenches preserve multi-step engineering decisions and evidence.',aside:'<p>Calculations run locally in the browser. Imported engineering data is not uploaded by this static application.</p>',metrics:[{value:toolCatalog.length,label:'tools'},{value:Object.keys(workbenchRegistry).length,label:'analysis workspaces'},{value:subjectWheel.length,label:'subjects'}],buttons:[{label:'Browse subjects',href:'#/'},{label:'Explore demos',href:'#/demos',secondary:true}]})}<section class="tool-intents" aria-label="Common engineering starting points">${intents.map(([title,task,description])=>`<button type="button" data-tool-intent="${esc(task)}"><strong>${esc(title)}</strong><span>${esc(description)}</span><b aria-hidden="true">→</b></button>`).join('')}</section><div class="tool-discovery" aria-label="Tool decision filters"><label class="tool-filter-search"><span>Search</span><input id="tool-filter-search" type="search" placeholder="Method, output, subject, or input…"/></label>${subjectOptions}${options('Engineering task',profiles.map(profile=>profile.task),'task')}${options('Available input',profiles.map(profile=>profile.input),'input')}${options('Tool depth',profiles.map(profile=>profile.level),'level')}<button type="button" class="button-quiet" data-action="clear-tool-filters">Clear</button><span id="tool-count" class="filter-count">${toolCatalog.length} shown</span></div><div class="tool-grid">${toolCatalog.map(toolCard).join('')}</div>`;
   return renderPageShell(page,{variant:'tool-library'});
 }
 function fieldHtml(field,value,unitSystem='SI'){
@@ -33011,7 +33128,7 @@ function renderTool(route){
   if(!meta||!calc)return renderNotFound('Calculator not found','The requested tool is not in this build.');
   if(workbenchRegistry[id]&&route.params.get('mode')!=='quick')return workbenchRegistry[id].render();
   const proof=isCalculatorDesignProof(route);
-  const profile=classifyTool(meta,Object.keys(workbenchRegistry));
+  const profile=toolProfile(meta);
   const subject=primaryToolSubject(meta);
   const project=loadEngineeringProject();
   const unitSystem=route.params.get('units')==='English'||(!route.params.has('units')&&/english|imperial/i.test(project.context?.units||''))?'English':'SI';

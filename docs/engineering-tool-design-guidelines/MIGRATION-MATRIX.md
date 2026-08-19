@@ -4,7 +4,7 @@ Inventory date: 2026-08-18
 
 Catalog source: the six tool catalogs assembled in `js/app.js`
 
-Current total: 113 tool routes
+Current total: 114 tool routes
 
 ## Baseline
 
@@ -13,7 +13,7 @@ Current total: 113 tool routes
 | Sorbothane reference implementation | 1 | Behavioral and visual reference; do not mechanically migrate |
 | Shared guided workbench | 10 | Already uses `engineeringWorkbenchDefinitions` and `workbench-runtime.js` |
 | Custom guided workbench | 1 | Launch SEA capstone; integrate after the shared runtime is proven |
-| Interactive analysis candidate | 47 | Advanced tools not currently registered as guided workbenches |
+| Interactive analysis candidate | 48 | Advanced tools not currently registered as guided workbenches |
 | Quick screen | 54 | Foundation, screening, and core tools |
 
 Complexity metadata is a starting classification, not a permanent UX decision. Confirm each tool against the profile decision test before implementation.
@@ -62,7 +62,7 @@ Do not migrate all 113 routes in one branch. Each subject cohort should remain i
 
 ## Interactive analysis candidates
 
-These 47 tools start in the interactive-analysis cohort. Reclassify to guided workbench only if the profile decision test demonstrates a real persistent workflow.
+These 48 tools start in the interactive-analysis cohort. Reclassify to guided workbench only if the profile decision test demonstrates a real persistent workflow.
 
 | Subject | Tool IDs |
 | --- | --- |
@@ -73,7 +73,7 @@ These 47 tools start in the interactive-analysis cohort. Reclassify to guided wo
 | Random & Shock | `extreme-response`, `fds`, `nonstationary-environment`, `pyroshock`, `srs`, `vibroacoustic-fatigue`, `vrs` |
 | SEA & Energy | `branching-sea-network`, `clf-identification-uncertainty`, `clf-mechanism-library`, `equivalent-power-injection`, `experimental-sea`, `honeycomb-wave`, `installed-fairing-sea`, `junction-transmission`, `modal-density`, `multi-subsystem-sea`, `sea-parameter-workbench`, `sea-response-recovery`, `sea-validity-confidence`, `two-subsystem-sea` |
 | Shock & Fatigue | `dynamic-stress-environment` |
-| Structural Acoustics | `driven-radiation`, `elastic-panel-tl`, `fairing-cavity`, `fe-be-planner`, `modal-radiation`, `radiation-efficiency-atlas`, `shell-acoustics` |
+| Structural Acoustics | `driven-radiation`, `elastic-panel-tl`, `fairing-cavity`, `fe-be-planner`, `infinite-mobility-atlas`, `modal-radiation`, `radiation-efficiency-atlas`, `shell-acoustics` |
 | Structures | `orthotropic-panel` |
 | Test & Signal | `inhomogeneous-energy`, `mimo-test-control`, `requirements-flowdown`, `source-identification-array`, `transfer-path-analysis`, `uncertainty-sensitivity` |
 
@@ -123,6 +123,12 @@ Add one row to the working migration tracker for each tool branch:
 | Automated verification | Unit, rendering, contract, routing, state tests |
 | Browser verification | Desktop, tablet/mobile, keyboard, print, diagnostics |
 | Standalone verification | Build, test, rebuild, matching hashes |
+
+## Active migration records
+
+| Tool ID / route | Assigned profile and rationale | Decision / controlling metric | State and evidence | Trust boundary |
+| --- | --- | --- | --- | --- |
+| `infinite-mobility-atlas` / `#/tool/infinite-mobility-atlas` | Interactive analysis: users compare structural families, constituent traces, curved-panel alternatives, and transition regions without a multi-step handoff workflow. Focused calculator remains at `?mode=quick`. | Which characteristic constituent governs mean drive-point mobility? Selected `Re{Y}` and active branch/regime. | Versioned browser-local study state, SI/English controls, trace selection, baseline, import/export, Add-to-Project, geometry view, constituent plot, and source-traceable tables. | Published Hambric/ACS 519 relations; explicit review for transition proximity, thick shell ratio, sandwich transition, and open curved-panel strip proxy. |
 
 ## Pilot acceptance criteria
 

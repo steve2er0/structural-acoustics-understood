@@ -316,6 +316,11 @@ const definitions = {
     syncPreset: syncInfiniteMobilityMaterial,
     theory: '<p>Characteristic mobility represents energy carried away by propagating structural waves. For a finite structure it is a mean-response reference—often near the geometric mean of resonant and antiresonant mobility—not a replacement for a complex measured or modal FRF.</p>',
     assumptions: ['Uniform, unbounded or weakly reflecting member, plate, sandwich panel, or shell.', 'Point drive is small relative to the active structural wavelength.', 'Curves show real propagating-wave conductance; finite boundaries, individual modes, joints, and attachment compliance are excluded.', 'The sandwich relation uses a symmetric face-sheet / shear-core approximation; the closed-shell relation is a thin, unstiffened-cylinder screen. An open curved panel retains the local cylindrical shell and plate relations but replaces the full-cylinder low-frequency branch with an arc-width strip proxy.'],
+    references: [
+      { title: 'Published relation — Hambric: To Infinity and Beyond', note: 'Authoritative published source for the real characteristic-mobility relations implemented here: rod, beam, thin plate, sandwich panel, and cylindrical shell. Local file: references/In19_inf_panel.pdf.' },
+      { title: 'Published corroboration — ACS 519 Combined: Cylindrical Shells', note: 'Course source reproducing the beam-like, curved-shell, and local flat-plate shell limits. Local file: references/ACS519_Combined.pdf.' },
+      { title: 'Engineering screening input — material preset library', note: 'Editable shared-library starting values. Confirm temperature, direction, heat treatment, fabrication, damping, and installed mass before consequential use.' }
+    ],
     example: 'Overlay an acquired drive-point mobility with the appropriate curve to check units and high-frequency mean level, then use the cylindrical-shell plot to identify beam-like, curved-shell, and plate-like regions.',
     compute(values) {
       const state = infiniteMobilityAtlasState({
@@ -349,6 +354,14 @@ const definitions = {
         ? `${state.shell.lowTransitionFrequency.toFixed(1)} Hz beam→shell; ${state.shell.plateTransitionFrequency.toFixed(1)} Hz shell→plate`
         : 'h/a compresses the source-model curved-shell interval; treat the result as a rough thin-shell screen.';
       const shellSelected = values.geometry === 'cylindrical-shell' || values.geometry === 'curved-panel';
+      const dynamicAlerts = [];
+      if (shellSelected && state.shell.thicknessToRadius > 0.1) dynamicAlerts.push('Shell h/R exceeds 0.1, outside the thin-shell screening range; use a shell model that includes thick-wall effects.');
+      const transitionFrequency = state.shell.normalizedFrequency < state.shell.plateTransitionRatio
+        ? state.shell.lowTransitionFrequency
+        : state.shell.plateTransitionFrequency;
+      if (shellSelected && transitionFrequency > 0 && Math.abs(Math.log2(state.frequency / transitionFrequency)) < 0.25) dynamicAlerts.push('Selected frequency is within one-quarter octave of a constituent-regime transition; bracket both neighboring relations or use finite/FE evidence.');
+      if (values.geometry === 'curved-panel') dynamicAlerts.push('Open curved panel uses an arc-width strip proxy at low frequency; validate boundaries, panel aspect ratio, and edge reflection with a finite curved-panel model or test.');
+      if (values.geometry === 'sandwich-panel' && state.frequency >= 0.7 * state.sandwich.transitionFrequency && state.frequency <= 1.4 * state.sandwich.transitionFrequency) dynamicAlerts.push('Selected sandwich-panel frequency lies near the flexural-to-shear transition; verify core shear properties and face-sheet construction.');
       const shellValues = [
         stat('Selected shell mobility', state.shell.mobility, 'm/(N·s)'),
         stat(state.shell.closed ? 'Beam-like shell mobility' : 'Curved-panel strip-proxy mobility', state.shell.beamMobility, 'm/(N·s)'),
@@ -476,6 +489,7 @@ const definitions = {
           'The reference input-power result uses ½F²Re{Y}; do not substitute transfer mobility for drive-point conductance.',
           ...(values.geometry === 'curved-panel' ? ['An open curved panel is not a closed cylinder: its low-frequency branch is an explicit arc-width strip proxy. Boundary restraints, panel aspect ratio, curvature coupling, and edge reflection require a finite-panel or shell model when they control the response.'] : [])
         ],
+        alerts: dynamicAlerts,
         plots: shellSelected ? [shellConstituentPlot, fullShellExtensionsPlot] : [generalAtlasPlot, fullShellExtensionsPlot],
         schematics: [geometrySchematic],
         tables: shellSelected ? [shellRelationTable, generalTable] : [generalTable],

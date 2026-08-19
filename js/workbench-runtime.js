@@ -151,17 +151,31 @@ function renderField(field, value, toolId, unitSystem) {
   return `<label class="capstone-field workbench-field">${label}${control}${field.help ? `<em>${workbenchEsc(field.help)}</em>` : ''}</label>`;
 }
 
+function fieldVisible(context, field) {
+  const condition = field?.visibleWhen;
+  if (!condition) return true;
+  if (typeof condition === 'function') return Boolean(condition(context));
+  if (typeof condition !== 'object') return true;
+  const inputs = context.project.inputs?.[context.step.toolId] ?? {};
+  return Object.entries(condition).every(([key, expected]) => {
+    const actual = String(inputs[key] ?? '');
+    const options = Array.isArray(expected) ? expected : [expected];
+    return options.some(option => String(option) === actual);
+  });
+}
+
 function inputGroupsHtml(context, fields) {
   const { definition, project, step } = context;
-  if (!definition.inputGroups?.length) return fields.map(field => renderField(field, project.inputs[step.toolId]?.[field.key], step.toolId, project.unitSystem)).join('');
+  const visibleFields = fields.filter(field => fieldVisible(context, field));
+  if (!definition.inputGroups?.length) return visibleFields.map(field => renderField(field, project.inputs[step.toolId]?.[field.key], step.toolId, project.unitSystem)).join('');
   const rendered = new Set();
   const groups = definition.inputGroups.map((group, index) => {
-    const groupFields = fields.filter(field => group.fieldKeys.includes(field.key));
+    const groupFields = visibleFields.filter(field => group.fieldKeys.includes(field.key));
     groupFields.forEach(field => rendered.add(field.key));
     if (!groupFields.length) return '';
     return `<details class="engineering-input-group"${group.open ?? index < 2 ? ' open' : ''}><summary><span>${workbenchEsc(group.title)}</span><small>${groupFields.length} controls</small></summary><div>${groupFields.map(field => renderField(field, project.inputs[step.toolId]?.[field.key], step.toolId, project.unitSystem)).join('')}</div></details>`;
   }).join('');
-  const remaining = fields.filter(field => !rendered.has(field.key));
+  const remaining = visibleFields.filter(field => !rendered.has(field.key));
   return `${groups}${remaining.length ? `<details class="engineering-input-group"><summary><span>Additional model inputs</span><small>${remaining.length} controls</small></summary><div>${remaining.map(field => renderField(field, project.inputs[step.toolId]?.[field.key], step.toolId, project.unitSystem)).join('')}</div></details>` : ''}`;
 }
 
@@ -344,16 +358,18 @@ export function renderEngineeringAnalysis(definition, calculators, projectInput 
   const inspectorFields = step.fieldKeys?.length ? (calculator?.inputs ?? []).filter(field => step.fieldKeys.includes(field.key)) : calculator?.inputs ?? [];
   const diagram = definition.renderDiagram?.(context) ?? '';
   const diagramTakeaway = definition.diagramTakeaway?.(context) ?? result?.interpretation?.physicalMeaning ?? definition.defaultTakeaway;
+  const physicalEvidence = `<section class="workbench-domain-panel"><header><div><p class="eyebrow">${workbenchEsc(definition.visualLabel)}</p><h3>${workbenchEsc(definition.visualTitle)}</h3></div><span>${workbenchEsc(definition.visualLegend)}</span></header>${diagram}<p class="capstone-panel-takeaway"><strong>Engineering takeaway</strong>${workbenchEsc(diagramTakeaway)}</p></section>`;
+  const analysisEvidence = `<section class="capstone-analytics workbench-analytics engineering-analysis-evidence"><header><div><p class="eyebrow">Live engineering evidence</p><h2>${workbenchEsc(definition.evidenceTitle ?? `${definition.title} results`)}</h2></div><p>The physical view, metrics, curves, and source record share one persisted state.</p></header>${resultSummaryHtml(context)}${compareHtml(context)}<div class="workbench-evidence-grid">${evidenceHtml(context)}</div>${checksHtml(context)}${sourceHtml(context)}${relatedHtml(context)}</section>`;
+  const mainEvidence = definition.evidenceFirst ? `${analysisEvidence}${physicalEvidence}` : `${physicalEvidence}${analysisEvidence}`;
   return `<div class="page-shell site-page-shell site-page-shell-capstone site-page-shell-workbench site-page-shell-analysis" data-workbench-id="${workbenchEsc(definition.id)}" data-engineering-profile="analysis">
     <nav class="breadcrumbs site-breadcrumbs" aria-label="Breadcrumb"><a href="#/tools">Tools</a><span aria-hidden="true">›</span><span>${workbenchEsc(definition.category)}</span><span aria-hidden="true">›</span><span aria-current="page">${workbenchEsc(definition.title)}</span></nav>
     ${decisionHeroHtml(context)}
     <section class="engineering-analysis" id="engineering-analysis-${workbenchEsc(definition.id)}">
-      ${commandBarHtml(context)}
-      <aside class="capstone-inspector workbench-inspector engineering-analysis-inspector" aria-label="Analysis inputs"><div class="capstone-inspector-heading"><p class="eyebrow">Input inspector</p><h2>${workbenchEsc(definition.inputTitle ?? 'Define the physical case')}</h2><p>${workbenchEsc(definition.instruction ?? definition.summary)}</p><a href="#/tool/${encodeURIComponent(step.toolId)}?mode=quick">Open the focused quick screen →</a></div><div class="capstone-inspector-fields">${inputGroupsHtml(context, inspectorFields)}</div></aside>
-      <main class="engineering-analysis-main">
-        <section class="workbench-domain-panel"><header><div><p class="eyebrow">${workbenchEsc(definition.visualLabel)}</p><h3>${workbenchEsc(definition.visualTitle)}</h3></div><span>${workbenchEsc(definition.visualLegend)}</span></header>${diagram}<p class="capstone-panel-takeaway"><strong>Engineering takeaway</strong>${workbenchEsc(diagramTakeaway)}</p></section>
-        <section class="capstone-analytics workbench-analytics engineering-analysis-evidence"><header><div><p class="eyebrow">Live engineering evidence</p><h2>${workbenchEsc(definition.evidenceTitle ?? `${definition.title} results`)}</h2></div><p>The physical view, metrics, curves, and source record share one persisted state.</p></header>${resultSummaryHtml(context)}${compareHtml(context)}<div class="workbench-evidence-grid">${evidenceHtml(context)}</div>${checksHtml(context)}${sourceHtml(context)}${relatedHtml(context)}</section>
-      </main>
+       ${commandBarHtml(context)}
+       <aside class="capstone-inspector workbench-inspector engineering-analysis-inspector" aria-label="Analysis inputs"><div class="capstone-inspector-heading"><p class="eyebrow">Input inspector</p><h2>${workbenchEsc(definition.inputTitle ?? 'Define the physical case')}</h2><p>${workbenchEsc(definition.instruction ?? definition.summary)}</p><a href="#/tool/${encodeURIComponent(step.toolId)}?mode=quick">Open the focused quick screen →</a></div><div class="capstone-inspector-fields">${inputGroupsHtml(context, inspectorFields)}</div></aside>
+       <main class="engineering-analysis-main">
+         ${mainEvidence}
+       </main>
     </section>
   </div>`;
 }

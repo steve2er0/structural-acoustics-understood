@@ -137,6 +137,23 @@ function modalDensityDiagram(context) {
   return svg('wb-modal-density-svg', 'Modal-density wave-family and population atlas', 'The selected subsystem and wave family is paired with a frequency-band population view showing average resonance crowding, spacing, and overlap.', `${hardware}<g class="wb-modal-spectrum"><path class="wb-axis" d="M485 365V145M485 365H850"/><rect x="505" y="180" width="325" height="185"/><text x="667" y="125">SELECTED ANALYSIS BAND</text><text x="667" y="150">${workbenchEsc(band)}</text><g class="wb-modal-resonances">${resonances}</g><line class="wb-cursor" x1="667" x2="667" y1="170" y2="380"/><text x="667" y="405">${workbenchEsc(workbenchFmt(frequency))} Hz</text></g><g class="wb-modal-readout"><rect x="90" y="55" width="760" height="58"/><text x="245" y="82">${workbenchEsc(family)}</text><text x="500" y="82">${workbenchEsc(workbenchFmt(modes))} modes / band</text><text x="680" y="82">Δf ≈ ${workbenchEsc(workbenchFmt(spacing))} Hz</text><text x="805" y="82">M=${workbenchEsc(workbenchFmt(overlap))}</text></g><text x="235" y="465">${workbenchEsc(dimension)} WAVE FAMILY</text><text x="667" y="465">AVERAGE CROWDING · NOT EXACT EIGENFREQUENCIES</text>`);
 }
 
+function infiniteMobilityFamilyLabel(context) {
+  const geometry = String(context.inputs.geometry ?? 'cylindrical-shell');
+  if (geometry === 'beam') {
+    const drive = String(context.inputs.beam_geometry ?? 'beam-flexural');
+    return drive === 'rod-axial' ? 'axial rod' : drive === 'beam-free-end' ? 'semi-infinite flexural beam' : 'infinite flexural beam';
+  }
+  if (geometry === 'curved-panel') return 'open curved cylindrical panel';
+  if (geometry === 'flat-panel') return 'infinite thin plate';
+  if (geometry === 'sandwich-panel') return 'symmetric sandwich panel';
+  return 'closed cylindrical shell';
+}
+
+function infiniteMobilityDiagram(context) {
+  return context.result?.schematics?.[0]?.svg
+    ?? svg('wb-infinite-mobility-svg', 'Infinite-structure mobility geometry', 'The selected structural family has no geometry schematic available.', '<text x="460" y="260">Geometry view unavailable</text>');
+}
+
 function missionDiagram(context) {
   const scales = [numeric(context, 'acoustic_scale', 1), numeric(context, 'buffet_scale', 1), numeric(context, 'shock_scale', 1), numeric(context, 'thermal_scale', 1)];
   const labels = ['LIFTOFF', 'MAX-Q', 'SEPARATION', 'THERMAL / PRELOAD'];
@@ -359,6 +376,72 @@ export const engineeringAnalysisDefinitions = [
       if (evidence.item?.title?.includes('formulation')) return 'The source-topic row identifies the implemented ESA relation and any specialization applied to the selected construction.';
       return context.result?.interpretation?.engineeringConsiderations?.[0] ?? context.result?.interpretation?.physicalMeaning;
     }
+  },
+  {
+    id: 'infinite-mobility-atlas',
+    toolId: 'infinite-mobility-atlas',
+    profile: 'analysis',
+    title: 'Infinite-Structure Mobility Analysis',
+    category: 'Structural Acoustics',
+    eyebrow: 'Characteristic response · Interactive analysis',
+    projectName: 'Infinite-mobility regime study',
+    summary: 'Explore which propagating-wave constituent governs the mean drive-point mobility of the selected beam, plate, sandwich panel, cylindrical shell, or curved panel at the decision frequency.',
+    instruction: 'Select the structural family, material, and physical geometry. Then inspect the active characteristic-mobility constituent, compare its neighboring branches, and record any transition or validity review before using it as a force-to-power screen.',
+    inputTitle: 'Define the structure and decision frequency',
+    evidenceTitle: 'Characteristic mobility and constituent evidence',
+    visualLabel: 'Current structural geometry',
+    visualTitle: 'Selected member, panel, shell, or curved-panel configuration',
+    visualLegend: 'live dimensions · drive direction · active regime',
+    defaultTakeaway: 'Characteristic mobility is a real mean-response conductance. It screens the level hidden by finite-structure resonances; it does not replace a measured complex FRF or finite-model response.',
+    evidenceFirst: true,
+    renderDiagram: infiniteMobilityDiagram,
+    inputGroups: [
+      { title: 'Structure family', fieldKeys: ['geometry'], open: true },
+      { title: 'Material definition', fieldKeys: ['material', 'modulus', 'density', 'poisson'], open: true },
+      { title: 'Specific geometry', fieldKeys: ['shell_geometry', 'shell_radius', 'shell_thickness', 'curved_panel_geometry', 'curved_panel_radius', 'curved_panel_arc_angle', 'curved_panel_axial_length', 'curved_panel_thickness', 'beam_geometry', 'member_width', 'member_height', 'panel_geometry', 'plate_thickness', 'sandwich_geometry', 'face_thickness', 'core_thickness', 'core_density', 'core_shear_modulus'], open: true },
+      { title: 'Decision frequency & forcing', fieldKeys: ['frequency', 'frequency_min', 'frequency_max', 'force'], open: true }
+    ],
+    decision: context => {
+      const family = infiniteMobilityFamilyLabel(context);
+      const selectedMobility = resultValue(context.nativeResult, 'Selected shell mobility', resultValue(context.nativeResult, 'Highlighted real mobility', 0));
+      const regime = valueText(context, 'Shell regime', 'selected characteristic relation');
+      const alerts = context.nativeResult?.assumptions?.alerts ?? [];
+      return {
+        question: 'Which characteristic constituent governs the mean drive-point mobility at this frequency?',
+        scope: `The selected ${family} is evaluated at ${workbenchFmt(numeric(context, 'frequency', 1000))} Hz. Use the active branch as a high-frequency mean-response and force-power screen, then retain finite or measured evidence where local resonances, boundaries, or interfaces control.`,
+        metric: { label: 'Selected Re{Y}', value: selectedMobility, unit: 'm/(N·s)' },
+        status: alerts.length ? 'review' : 'informational',
+        statusLabel: alerts.length ? 'Approximation boundary needs review' : `${regime} constituent active`,
+        keyLimitation: alerts[0] ?? 'Characteristic mobility predicts a real mean level between resonance and antiresonance envelopes; it is not a complex finite-structure FRF.'
+      };
+    },
+    metrics: context => [
+      { value: valueText(context, 'Selected shell mobility', valueText(context, 'Highlighted real mobility')), label: 'selected Re{Y}' },
+      { value: valueText(context, 'Shell ring frequency'), label: 'ring scale' },
+      { value: valueText(context, 'Shell regime', infiniteMobilityFamilyLabel(context)), label: 'active constituent' }
+    ],
+    diagramTakeaway: context => {
+      const family = infiniteMobilityFamilyLabel(context);
+      const regime = valueText(context, 'Shell regime', 'selected relation');
+      return `This view is the active ${family} configuration. The response plot identifies the constituent branch; ${regime} is the currently selected shell or curved-panel screen when curvature applies.`;
+    },
+    evidenceTakeaway: (context, evidence) => {
+      const family = infiniteMobilityFamilyLabel(context);
+      if (evidence.type === 'plot' && evidence.index === 0) return `The colored segments are the active constituent response for the ${family}; dashed extensions are intentionally secondary because they are outside their selected validity branch.`;
+      if (evidence.type === 'plot') return 'Use the full relation extensions only to bracket a transition or compare constituent slopes; do not splice them into an installed finite-structure FRF.';
+      if (evidence.type === 'table' && evidence.index === 0) return 'This table records the active branch, neighboring constituent relations, and normalized-frequency boundaries at the decision point.';
+      return context.result?.interpretation?.engineeringConsiderations?.[0] ?? context.result?.interpretation?.physicalMeaning;
+    },
+    sources: [
+      { title: 'Published relation — Hambric: To Infinity and Beyond', note: 'Published source for the implemented rod, beam, thin-plate, sandwich, and cylindrical-shell characteristic-mobility relations. Local file: references/In19_inf_panel.pdf.' },
+      { title: 'Published corroboration — ACS 519 Combined: Cylindrical Shells', note: 'Course source for the beam-like, curved-shell, and local flat-plate constituent limits. Local file: references/ACS519_Combined.pdf.' },
+      { title: 'Engineering screening input — material preset library', note: 'Editable shared-library starting values. Confirm temperature, direction, heat treatment, fabrication, damping, and installed mass before consequential use.' }
+    ],
+    relatedLinks: [
+      { title: 'Infinite-Mobility Lesson', description: 'Read the source-driven characteristic-mobility lesson and its engineering boundaries.', href: '#/case-study/sea-parameters-infinite-structure-mobility' },
+      { title: 'Cylindrical Shell Acoustics', description: 'Move from mean mobility screening to shell modal families, ring scales, and acoustic coupling.', href: '#/tool/shell-acoustics?mode=quick' },
+      { title: 'SEA Driving-Point Impedance Library', description: 'Convert a selected real drive-point conductance into point-force input power.', href: '#/tool/sea-impedance-library?mode=quick' }
+    ]
   }
 ];
 

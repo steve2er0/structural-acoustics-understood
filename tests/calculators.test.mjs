@@ -1446,6 +1446,7 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   assert.match(html,/const __launchSeaCapstone=\(\(\)=>\{/);
   assert.match(html,/const __workbenchRuntime=\(\(\)=>\{/);
   assert.match(html,/const __engineeringWorkbenches=\(\(\)=>\{/);
+  assert.match(html,/const \{engineeringAnalysisIds,engineeringAnalysisRegistry,engineeringWorkbenchIds,engineeringWorkbenchRegistry\}=__engineeringWorkbenches;/);
   assert.match(html,/const __nastranIsolationExport=\(\(\)=>\{/);
   assert.match(html,/function generateNastranIsolationBdf\(configInput, analysisInput = null\)/);
   assert.match(html,/data-sorbo-action="export-nastran-bdf"/);
@@ -1534,7 +1535,7 @@ test('engineering workbench registry upgrades ten real tools without replacing t
   assert.match(appSource,/site-system-workbench/);
 });
 
-test('shared engineering-tool runtime exposes decision-centered wet-tank and modal-density pilots',()=>{
+test('shared engineering-tool runtime exposes decision-centered wet-tank, modal-density, and infinite-mobility analyses',()=>{
   const wet=engineeringWorkbenchRegistry['wet-tank-dynamics'];
   const wetHtml=wet.render();
   assert.match(wetHtml,/engineering-decision-hero/);
@@ -1544,7 +1545,7 @@ test('shared engineering-tool runtime exposes decision-centered wet-tank and mod
   assert.match(wetHtml,/data-wb-unit-system/);
   assert.match(wetHtml,/Sources & validity/);
 
-  assert.deepEqual(engineeringAnalysisIds,['modal-density']);
+  assert.deepEqual(engineeringAnalysisIds,['modal-density','infinite-mobility-atlas']);
   assert.equal(engineeringAnalysisDefinitions[0].profile,'analysis');
   const definition=engineeringAnalysisDefinitions[0],entry=engineeringAnalysisRegistry['modal-density'];
   const html=entry.render();
@@ -1580,8 +1581,42 @@ test('shared engineering-tool runtime exposes decision-centered wet-tank and mod
   assert.equal(migrated.toolId,'modal-density');
   assert.throws(()=>normalizeEngineeringToolProject(definition,registry,{schema:'sau-engineering-tool',version:1,toolId:'wet-tank-dynamics'}),/cannot be imported/);
 
+  const mobilityDefinition=engineeringAnalysisDefinitions.find(item=>item.id==='infinite-mobility-atlas');
+  const mobilityEntry=engineeringAnalysisRegistry['infinite-mobility-atlas'];
+  assert.equal(mobilityDefinition.profile,'analysis');
+  assert.equal(mobilityDefinition.evidenceFirst,true);
+  assert.ok(mobilityDefinition.sources.length>=3);
+  const mobilityHtml=mobilityEntry.render();
+  assert.match(mobilityHtml,/Which characteristic constituent governs the mean drive-point mobility at this frequency/);
+  assert.match(mobilityHtml,/Cylindrical-shell constituent mobility response/);
+  assert.match(mobilityHtml,/Closed cylindrical shell/);
+  assert.match(mobilityHtml,/Hambric/);
+  assert.match(mobilityHtml,/data-wb-trace-selector="infinite-mobility-atlas:0"/);
+  assert.match(mobilityHtml,/\/tool\/infinite-mobility-atlas\?mode=quick/);
+  assert.ok(mobilityHtml.indexOf('Cylindrical-shell constituent mobility response')<mobilityHtml.indexOf('Closed cylindrical shell'),'the response evidence is shown before the geometry view');
+  assert.match(mobilityHtml,/Mean shell radius/);
+  assert.doesNotMatch(mobilityHtml,/Radius of curvature/);
+  const mobilityState=createEngineeringToolProject(mobilityDefinition,registry);
+  mobilityState.inputs['infinite-mobility-atlas'].geometry='curved-panel';
+  mobilityState.inputs['infinite-mobility-atlas'].curved_panel_arc_angle=120;
+  const curvedState=normalizeEngineeringToolProject(mobilityDefinition,registry,mobilityState);
+  const curvedHtml=mobilityEntry.render(curvedState);
+  assert.match(curvedHtml,/Open curved cylindrical panel/);
+  assert.match(curvedHtml,/Radius of curvature/);
+  assert.doesNotMatch(curvedHtml,/Mean shell radius/);
+  assert.match(curvedHtml,/engineering-decision-card is-review/);
+  assert.match(curvedHtml,/Open curved panel uses an arc-width strip proxy/);
+  curvedState.unitSystem='English';
+  const curvedEnglishHtml=mobilityEntry.render(curvedState);
+  assert.match(curvedEnglishHtml,/Radius of curvature<small>ft<\/small>/);
+  assert.match(curvedEnglishHtml,/Panel-wall thickness<small>in<\/small>/);
+  assert.throws(()=>normalizeEngineeringToolProject(mobilityDefinition,registry,{schema:'sau-engineering-tool',version:1,toolId:'modal-density'}),/cannot be imported/);
+
   const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
   assert.match(appSource,/\.\.\.engineeringAnalysisRegistry/);
+  const runtimeSource=readFileSync(new URL('../js/workbench-runtime.js',import.meta.url),'utf8');
+  assert.match(runtimeSource,/function fieldVisible\(context, field\)/);
+  assert.match(runtimeSource,/definition\.evidenceFirst/);
 });
 
 test('site visual system exposes reusable components and themes every non-home route',()=>{
@@ -1725,7 +1760,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes current interactive runtimes',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v102'/);
+  assert.match(worker,/const CACHE = 'sau-v103'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);
@@ -1777,10 +1812,14 @@ test('engineering system connects hardware, pathways, tool discovery, projects, 
     pathway.steps.forEach(step=>assert.match(step.href,/^#\//));
   }
   for(const tool of catalog){
-    const profile=classifyTool(tool,engineeringWorkbenchIds);
+    const profile=classifyTool(tool,engineeringWorkbenchIds,engineeringAnalysisIds);
     assert.ok(profile.level&&profile.task&&profile.hardware&&profile.input,`${tool.id} has an incomplete discovery profile`);
     assert.ok(toolHandoffs(tool,catalog).length>0,`${tool.id} has no engineering handoff`);
   }
+  const mobilityProfile=classifyTool(catalog.find(tool=>tool.id==='infinite-mobility-atlas'),engineeringWorkbenchIds,engineeringAnalysisIds);
+  assert.equal(mobilityProfile.level,'Interactive analysis');
+  assert.equal(mobilityProfile.analysis,true);
+  assert.equal(mobilityProfile.workbench,false);
   const benchmarkResults=runValidationBenchmarks(registry);
   assert.equal(benchmarkResults.length,5);
   assert.deepEqual(benchmarkResults.filter(result=>!result.pass).map(result=>result.id),[]);

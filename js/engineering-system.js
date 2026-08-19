@@ -193,9 +193,10 @@ export const learningPathways = Object.freeze([
 
 const includesAny = (value, terms) => terms.some(term => value.includes(term));
 
-export function classifyTool(tool, workbenchIds = []) {
+export function classifyTool(tool, workbenchIds = [], analysisIds = []) {
   const text = `${tool.id} ${tool.title} ${tool.description} ${tool.category} ${(tool.keywords ?? []).join(' ')}`.toLowerCase();
-  const workbench = workbenchIds.includes(tool.id) || tool.id === 'launch-vibroacoustic-capstone';
+  const analysis = analysisIds.includes(tool.id);
+  const workbench = !analysis && (workbenchIds.includes(tool.id) || tool.id === 'launch-vibroacoustic-capstone');
   let task = 'Response & loads';
   if (includesAny(text, ['sea', 'energy', 'modal density', 'coupling loss'])) task = 'SEA & energy';
   else if (includesAny(text, ['test', 'measurement', 'signal', 'correlation', 'qualification', 'credibility'])) task = 'Test & validation';
@@ -219,11 +220,12 @@ export function classifyTool(tool, workbenchIds = []) {
   else if (includesAny(text, ['source', 'propagation', 'field'])) input = 'Source and path data';
 
   return {
-    level: workbench ? 'Guided workbench' : tool.complexity === 'Advanced' ? 'Advanced calculator' : 'Quick screen',
+    level: analysis ? 'Interactive analysis' : workbench ? 'Guided workbench' : tool.complexity === 'Advanced' ? 'Advanced calculator' : 'Quick screen',
     task,
     hardware,
     input,
-    workbench
+    workbench,
+    analysis
   };
 }
 
