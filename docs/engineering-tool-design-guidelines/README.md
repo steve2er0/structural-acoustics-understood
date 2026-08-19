@@ -1,10 +1,18 @@
 # Engineering Tool Design Guidelines
 
-Status: Phase 1 reference standard
+Status: Shared foundation implemented; Wet-Tank Dynamics and Modal Density are the reference pilots
 
 Reference implementation: `#/tool/sorbothane-isolation`
 
 Audience: designers and agents extending Structural Acoustics, Understood
+
+## Implemented reference routes
+
+- `#/tool/wet-tank-dynamics` demonstrates the guided-workbench profile.
+- `#/tool/modal-density` demonstrates the interactive-analysis profile.
+- `#/tool/modal-density?mode=quick` preserves the focused calculator.
+
+The shared implementation lives in `js/workbench-runtime.js`; the two declarative adapters and their domain visuals live in `js/engineering-workbenches.js`. Use these pilots as executable examples alongside this written standard. Do not branch from the earlier documentation-only commit; use the migration commit named in the integration-owner handoff.
 
 ## Purpose
 

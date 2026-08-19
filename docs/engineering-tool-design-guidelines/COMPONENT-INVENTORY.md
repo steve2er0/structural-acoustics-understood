@@ -41,6 +41,15 @@ These patterns are valuable, but their present `.sorbo-*` implementation is tool
 
 ## Proposed shared components
 
+The shared runtime now implements the core shell under these public exports:
+
+- `createEngineeringToolProject()` and `normalizeEngineeringToolProject()` own the versioned state contract and legacy workbench-state normalization.
+- `engineeringDecisionState()` resolves the live question, controlling metric, semantic status, and key limitation.
+- `renderEngineeringAnalysis()` and `renderEngineeringWorkbench()` compose the analysis and guided-workbench profiles.
+- `bindEngineeringWorkbench()` owns route hydration, SI/English display conversion, persistence, trace state, baselines, import/export/reset, project capture, and focus-preserving live updates.
+
+The component names below remain the design responsibilities used to review and extend that runtime; they are not a requirement to create one exported function per row.
+
 Names below describe responsibilities, not final JavaScript identifiers. Implement them with small semantic renderers and a configuration contract rather than one large conditional renderer.
 
 | Component | Responsibility | Quick | Analysis | Workbench |
@@ -67,7 +76,7 @@ Names below describe responsibilities, not final JavaScript identifiers. Impleme
 | `ResponsiveTable` | Dense engineering tables with units and intentional overflow | As needed | As needed | As needed |
 | `AccessibleLiveStatus` | Concise completion/error announcements | Required | Required | Required |
 
-## Proposed definition contract
+## Implemented definition contract
 
 The evolved runtime should accept a declarative definition that is rich enough to compose the shell but leaves the physics in adapters.
 
@@ -124,7 +133,7 @@ The evolved runtime should accept a declarative definition that is rich enough t
 }
 ```
 
-The exact syntax can change during implementation. Preserve these separations:
+The reference pilots establish this shape. Preserve these separations when extending it:
 
 - The definition says what the tool contains.
 - The adapter maps existing inputs/results into shared contracts.
@@ -249,4 +258,3 @@ Shared tests should verify:
 - Current selection survives rerender.
 - Expensive studies expose progress and cancellation contracts.
 - Quick mode remains routable when a guided workbench wraps an existing calculator.
-

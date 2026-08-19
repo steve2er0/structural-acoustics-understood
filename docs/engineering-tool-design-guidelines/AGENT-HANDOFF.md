@@ -170,11 +170,11 @@ Reject or revise a migration when any answer is “no”:
 - Does the implementation primarily use shared components?
 - Are the original route and focused capability preserved?
 
-## First two assignments
+## Implemented reference pilots
 
-### Pilot 1: Wet-Tank Dynamics
+### Pilot 1: Wet-Tank Dynamics — implemented
 
-Goal: prove the full guided-workbench profile with an existing definition and physical diagram.
+This route proves the full guided-workbench profile with an existing definition and physical diagram.
 
 Focus on:
 
@@ -184,9 +184,9 @@ Focus on:
 - Dry/wet shell, slosh, and liquid-acoustic evidence
 - Explicit reduced-order limitations and higher-fidelity handoff
 
-### Pilot 2: Modal Density
+### Pilot 2: Modal Density — implemented
 
-Goal: prove the design system scales to an interactive analysis without artificial workflow steps.
+This route proves the design system scales to an interactive analysis without artificial workflow steps.
 
 Focus on:
 
@@ -196,7 +196,7 @@ Focus on:
 - Source-traceable comparison curves
 - A compact trust panel rather than the full workbench workflow
 
-Do not begin bulk migration until both pilots have been reviewed together.
+Review both pilots together before starting bulk migration. Branch from the exact migration commit supplied by the integration owner, not from the earlier documentation-only foundation commit.
 
 ## Copyable kickoff prompt
 
@@ -227,4 +227,3 @@ Standalone hashes:
 git diff --check:
 Known limitations/open decisions:
 ```
-

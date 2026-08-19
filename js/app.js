@@ -16,7 +16,7 @@ import { engineeringResultToText } from './engineering-results.js';
 import { homepageNavigation, homepageNavKey, renderHomepage, renderSubjectPage, bindHomepage, subjectWheel } from './homepage.js';
 import { renderPageShell, renderBreadcrumbs, renderSectionHeader, renderCallout, renderLinkCollection } from './site-components.js';
 import { renderLaunchSeaCapstone, bindLaunchSeaCapstone } from './launch-sea-capstone.js';
-import { engineeringWorkbenchRegistry } from './engineering-workbenches.js';
+import { engineeringAnalysisRegistry, engineeringWorkbenchRegistry } from './engineering-workbenches.js';
 import { sorbothaneIsolationCalculator, sorbothaneIsolationWorkbench } from './sorbothane-isolation.js';
 import { displayEngineeringResult, fromDisplayNumber, toDisplayNumber, toDisplayStep, toDisplayUnit, unitConversion } from './unit-system.js';
 import {
@@ -55,7 +55,8 @@ const LAUNCH_SEA_CAPSTONE_ID = 'launch-vibroacoustic-capstone';
 const workbenchRegistry = {
   [LAUNCH_SEA_CAPSTONE_ID]: { render: () => renderLaunchSeaCapstone(), bind: root => bindLaunchSeaCapstone(root) },
   'sorbothane-isolation': sorbothaneIsolationWorkbench,
-  ...engineeringWorkbenchRegistry
+  ...engineeringWorkbenchRegistry,
+  ...engineeringAnalysisRegistry
 };
 const chapterRelatedLinks = [
   { title: 'Shell mode families', description: 'Interactive circumferential-order map', href: '#/demo/shell-wave-map' },

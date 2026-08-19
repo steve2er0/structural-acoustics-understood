@@ -105,10 +105,14 @@ import {
   solveLaunchSeaProject
 } from '../js/launch-sea-capstone.js';
 import {
+  engineeringAnalysisDefinitions,
+  engineeringAnalysisIds,
+  engineeringAnalysisRegistry,
   engineeringWorkbenchDefinitions,
   engineeringWorkbenchIds,
   engineeringWorkbenchRegistry
 } from '../js/engineering-workbenches.js';
+import { createEngineeringToolProject, normalizeEngineeringToolProject } from '../js/workbench-runtime.js';
 import {
   classifyTool,
   createEngineeringProject,
@@ -1387,6 +1391,56 @@ test('engineering workbench registry upgrades ten real tools without replacing t
   assert.match(appSource,/site-system-workbench/);
 });
 
+test('shared engineering-tool runtime exposes decision-centered wet-tank and modal-density pilots',()=>{
+  const wet=engineeringWorkbenchRegistry['wet-tank-dynamics'];
+  const wetHtml=wet.render();
+  assert.match(wetHtml,/engineering-decision-hero/);
+  assert.match(wetHtml,/Are the wet-shell and liquid-acoustic families separated enough/);
+  assert.match(wetHtml,/Wet-shell \/ liquid-acoustic ratio/);
+  assert.match(wetHtml,/engineering-decision-card is-review/);
+  assert.match(wetHtml,/data-wb-unit-system/);
+  assert.match(wetHtml,/Sources & validity/);
+
+  assert.deepEqual(engineeringAnalysisIds,['modal-density']);
+  assert.equal(engineeringAnalysisDefinitions[0].profile,'analysis');
+  const definition=engineeringAnalysisDefinitions[0],entry=engineeringAnalysisRegistry['modal-density'];
+  const html=entry.render();
+  assert.match(html,/data-engineering-profile="analysis"/);
+  assert.match(html,/Is the selected band populated enough for a statistical modal treatment/);
+  assert.match(html,/Selected subsystem and resonance crowding/);
+  assert.match(html,/data-wb-trace-selector="modal-density:0"/);
+  assert.match(html,/Show all/);
+  assert.match(html,/Current only/);
+  assert.match(html,/ESA PSS-03-204/);
+  assert.match(html,/\/tool\/modal-density\?mode=quick/);
+  assert.doesNotMatch(html,/Engineering workflow/);
+  assert.doesNotMatch(html,/\bundefined\b/);
+  const traceInputs=[...html.matchAll(/data-wb-trace-option="\d+"([^>]*)/g)];
+  assert.ok(traceInputs.length>1);
+  assert.equal(traceInputs.filter(match=>match[1].includes('checked')).length,1,'the current modal-density curve starts selected by itself');
+
+  const state=createEngineeringToolProject(definition,registry);
+  assert.equal(state.schema,'sau-engineering-tool');
+  assert.equal(state.profile,'analysis');
+  assert.equal(state.toolId,'modal-density');
+  state.unitSystem='English';
+  state.selections.traces={'modal-density':{0:[0,1]}};
+  const normalized=normalizeEngineeringToolProject(definition,registry,state);
+  assert.deepEqual(normalized.selections.traces['modal-density'][0],[0,1]);
+  const englishHtml=entry.render(normalized);
+  assert.match(englishHtml,/Cylinder radius<small>ft<\/small>/);
+  assert.match(englishHtml,/Thickness<small>in<\/small>/);
+  assert.equal([...englishHtml.matchAll(/data-wb-trace-option="\d+"([^>]*)/g)].filter(match=>match[1].includes('checked')).length,2);
+  const legacyState={...state,schema:'sau-engineering-workbench',toolId:undefined,workbenchId:'modal-density'};
+  const migrated=normalizeEngineeringToolProject(definition,registry,legacyState);
+  assert.equal(migrated.schema,'sau-engineering-tool');
+  assert.equal(migrated.toolId,'modal-density');
+  assert.throws(()=>normalizeEngineeringToolProject(definition,registry,{schema:'sau-engineering-tool',version:1,toolId:'wet-tank-dynamics'}),/cannot be imported/);
+
+  const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
+  assert.match(appSource,/\.\.\.engineeringAnalysisRegistry/);
+});
+
 test('site visual system exposes reusable components and themes every non-home route',()=>{
   const expected=['page-shell','section-header','concept-card','tool-card','equation-panel','engineering-note','warning-callout','assumption-callout','breadcrumbs','related-concept-links','hardware-topic-links','demo-container','chart-container','calculator-container'];
   assert.deepEqual(siteComponentInventory,expected);
@@ -1528,7 +1582,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes current interactive runtimes',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v101'/);
+  assert.match(worker,/const CACHE = 'sau-v102'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);

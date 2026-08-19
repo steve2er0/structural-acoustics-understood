@@ -112,6 +112,31 @@ function tankDiagram(context) {
   return svg('wb-tank-svg', 'Wet-tank hydroacoustic mode atlas', 'A selectable liquid fill level controls shell added mass, gravity slosh, and liquid acoustic mode families.', `<defs><clipPath id="wb-tank-clip"><path d="M260 90Q455 20 650 90V420Q455 490 260 420Z"/></clipPath></defs><g class="wb-tank"><path d="M260 90Q455 20 650 90V420Q455 490 260 420Z"/><rect class="wb-liquid" x="245" y="${liquidTop}" width="425" height="${470 - liquidTop}" clip-path="url(#wb-tank-clip)"/><path class="wb-slosh" d="M270 ${liquidTop + 8}Q365 ${liquidTop - 16} 455 ${liquidTop + 8}T640 ${liquidTop + 8}"/><path class="wb-shell-mode" d="M275 120Q235 160 275 200T275 280T275 360"/><path class="wb-shell-mode" d="M635 120Q675 160 635 200T635 280T635 360"/><path class="wb-acoustic-mode" d="M325 140V410M390 110V440M455 95V455M520 110V440M585 140V410"/></g><text x="455" y="265">${workbenchEsc(workbenchFmt(fill))}% FILL</text><g class="wb-tank-legend"><text x="80" y="120">SHELL MODE</text><path class="wb-shell-mode" d="M80 145h110"/><text x="80" y="220">GRAVITY SLOSH</text><path class="wb-slosh" d="M80 245q55-25 110 0"/><text x="80" y="320">LIQUID ACOUSTIC</text><path class="wb-acoustic-mode" d="M80 345h110"/></g><g class="wb-tank-status"><rect x="700" y="160" width="165" height="150"/><text x="782" y="195">COUPLING SCREEN</text><text x="782" y="235">${workbenchEsc(coupling)}</text><text x="782" y="275">reduced-order</text></g>`);
 }
 
+function modalDensityDiagram(context) {
+  const type = context.inputs.type ?? 'plate-bending';
+  const typeField = context.calculator?.inputs?.find(field => field.key === 'type');
+  const selectedOption = typeField?.options?.map(option => Array.isArray(option) ? { value: option[0], label: option[1] } : option).find(option => option.value === type);
+  const family = selectedOption?.label ?? String(type).replaceAll('-', ' ');
+  const frequency = numeric(context, 'frequency', 1000);
+  const modes = resultValue(context.nativeResult ?? context.result, 'Modes in selected band', 0);
+  const spacing = resultValue(context.nativeResult ?? context.result, 'Average modal spacing', 0);
+  const overlap = resultValue(context.nativeResult ?? context.result, 'Modal overlap', 0);
+  const band = valueText(context, 'Band limits');
+  const dimension = valueText(context, 'Dimensionality');
+  const resonanceCount = Math.max(1, Math.min(16, Math.ceil(modes)));
+  const resonances = Array.from({ length: resonanceCount }, (_, index) => {
+    const x = 505 + (index + .65) / resonanceCount * 325;
+    const height = 45 + 55 * (.5 + .5 * Math.sin(index * 1.73));
+    return `<line x1="${x.toFixed(1)}" y1="${365 - height}" x2="${x.toFixed(1)}" y2="365"/>`;
+  }).join('');
+  let hardware;
+  if (String(type).includes('acoustic')) hardware = `<g class="wb-modal-hardware wb-modal-cavity"><rect x="85" y="145" width="300" height="210"/><path d="M105 250q45-95 90 0t90 0t90 0M105 285q45-70 90 0t90 0t90 0"/><text x="235" y="390">ACOUSTIC CAVITY</text></g>`;
+  else if (String(type).includes('cylinder') || String(type).includes('frame')) hardware = `<g class="wb-modal-hardware wb-modal-cylinder"><path d="M105 175Q235 115 365 175V330Q235 390 105 330Z"/><path d="M125 190q110 55 220 0M125 315q110-55 220 0M150 155v195M235 135v235M320 155v195"/><text x="235" y="410">CYLINDER / FRAME FAMILY</text></g>`;
+  else if (String(type).includes('beam') || String(type).includes('grid') || String(type).includes('stringer')) hardware = `<g class="wb-modal-hardware wb-modal-beam"><path d="M80 285Q155 175 230 285T380 285"/><line x1="80" y1="315" x2="380" y2="315"/><path d="M110 315v45m90-45v45m90-45v45m70-45v45"/><text x="230" y="405">BEAM / BUILT-UP FAMILY</text></g>`;
+  else hardware = `<g class="wb-modal-hardware wb-modal-panel"><path d="M95 185L335 135L385 325L145 375Z"/><path d="M120 205q65 75 130 0t110 0M140 270q60 65 120 0t105 0"/><text x="235" y="420">PANEL / SANDWICH FAMILY</text></g>`;
+  return svg('wb-modal-density-svg', 'Modal-density wave-family and population atlas', 'The selected subsystem and wave family is paired with a frequency-band population view showing average resonance crowding, spacing, and overlap.', `${hardware}<g class="wb-modal-spectrum"><path class="wb-axis" d="M485 365V145M485 365H850"/><rect x="505" y="180" width="325" height="185"/><text x="667" y="125">SELECTED ANALYSIS BAND</text><text x="667" y="150">${workbenchEsc(band)}</text><g class="wb-modal-resonances">${resonances}</g><line class="wb-cursor" x1="667" x2="667" y1="170" y2="380"/><text x="667" y="405">${workbenchEsc(workbenchFmt(frequency))} Hz</text></g><g class="wb-modal-readout"><rect x="90" y="55" width="760" height="58"/><text x="245" y="82">${workbenchEsc(family)}</text><text x="500" y="82">${workbenchEsc(workbenchFmt(modes))} modes / band</text><text x="680" y="82">Δf ≈ ${workbenchEsc(workbenchFmt(spacing))} Hz</text><text x="805" y="82">M=${workbenchEsc(workbenchFmt(overlap))}</text></g><text x="235" y="465">${workbenchEsc(dimension)} WAVE FAMILY</text><text x="667" y="465">AVERAGE CROWDING · NOT EXACT EIGENFREQUENCIES</text>`);
+}
+
 function missionDiagram(context) {
   const scales = [numeric(context, 'acoustic_scale', 1), numeric(context, 'buffet_scale', 1), numeric(context, 'shock_scale', 1), numeric(context, 'thermal_scale', 1)];
   const labels = ['LIFTOFF', 'MAX-Q', 'SEPARATION', 'THERMAL / PRELOAD'];
@@ -226,7 +251,25 @@ export const engineeringWorkbenchDefinitions = [
     syncGroups: [[link('launch-acoustic-source', 'frequency'), link('spatial-correlation', 'frequency'), link('fsp-generator', 'frequency'), link('tbl-convection-model', 'frequency'), link('equivalent-power-injection', 'frequency'), link('installed-fairing-sea', 'frequency')], [link('spatial-correlation', 'Uc'), link('fsp-generator', 'convection'), link('equivalent-power-injection', 'convection_velocity')], [link('spatial-correlation', 'alpha_x'), link('equivalent-power-injection', 'alpha_x')], [link('spatial-correlation', 'alpha_y'), link('equivalent-power-injection', 'alpha_z')]]
   },
   {
-    id: 'wet-tank-dynamics', title: 'Wet-Tank Hydroacoustic Atlas', category: 'Structures', eyebrow: 'Propellant tanks · Coupled mode-family atlas', projectName: 'Wet-tank reduced-order study', summary: 'Sweep fill level, shell orders, added mass, slosh, and liquid acoustics while keeping the reduced-order assumptions visible.', visualLabel: 'Tank hardware atlas', visualTitle: 'Shell, slosh, and liquid acoustic families', visualLegend: 'fill level · mode proximity · coupling screen', defaultTakeaway: 'Frequency proximity is a coupling screen; domes, baffles, ullage, feedlines, and full fluid-structure interaction require higher-fidelity treatment.', renderDiagram: tankDiagram,
+    id: 'wet-tank-dynamics', profile: 'workbench', title: 'Wet-Tank Hydroacoustic Atlas', category: 'Structures', eyebrow: 'Propellant tanks · Coupled mode-family atlas', projectName: 'Wet-tank reduced-order study', summary: 'Sweep fill level, shell orders, added mass, slosh, and liquid acoustics while keeping the reduced-order assumptions visible.', visualLabel: 'Tank hardware atlas', visualTitle: 'Shell, slosh, and liquid acoustic families', visualLegend: 'fill level · mode proximity · coupling screen', defaultTakeaway: 'Frequency proximity is a coupling screen; domes, baffles, ullage, feedlines, and full fluid-structure interaction require higher-fidelity treatment.', renderDiagram: tankDiagram,
+    decision: context => {
+      const ratio = resultValue(context.nativeResult, 'Wet shell / liquid acoustic', 0);
+      const addedMass = resultValue(context.nativeResult, 'Modal added-mass ratio', 0);
+      const close = ratio > 0 && Math.abs(Math.log(Math.max(ratio, 1e-12))) < .22;
+      return {
+        question: 'Are the wet-shell and liquid-acoustic families separated enough for an added-mass screen?',
+        scope: 'Track fill, shell family, liquid inertia, gravity slosh, and compressibility before selecting the fidelity of the tank model.',
+        metric: { label: 'Wet-shell / liquid-acoustic ratio', value: ratio, unit: '' },
+        status: close || addedMass > 1 ? 'review' : 'pass',
+        statusLabel: close ? 'Two-way fluid–structure model required' : addedMass > 1 ? 'Wet correlation model required' : 'Mode-family screen passes',
+        keyLimitation: 'Frequency proximity and local added mass do not represent domes, baffles, ullage, feedlines, damping, or a coupled compressible-fluid eigenproblem.'
+      };
+    },
+    metrics: context => [
+      { value: `${workbenchFmt(resultValue(context.result, 'Wet shell-mode estimate'))} Hz`, label: 'wet shell' },
+      { value: `${workbenchFmt(resultValue(context.result, 'First gravity-slosh scale'))} Hz`, label: 'gravity slosh' },
+      { value: `${workbenchFmt(resultValue(context.result, 'First liquid-acoustic scale'))} Hz`, label: 'liquid acoustic' }
+    ],
     steps: [
       step('geometry', 'Define tank geometry', 'wet-tank-dynamics', 'Set radius, barrel length, shell thickness, stiffness, and density.', ['radius', 'length', 'thickness', 'modulus', 'shell_density']),
       step('fluid', 'Define propellant state', 'wet-tank-dynamics', 'Set liquid density, sound speed, fill fraction, and effective acceleration.', ['liquid_density', 'liquid_speed', 'fill', 'acceleration']),
@@ -266,3 +309,58 @@ export const engineeringWorkbenchDefinitions = [
 
 export const engineeringWorkbenchRegistry = createEngineeringWorkbenchRegistry(engineeringWorkbenchDefinitions, calculators);
 export const engineeringWorkbenchIds = Object.freeze(engineeringWorkbenchDefinitions.map(definition => definition.id));
+
+export const engineeringAnalysisDefinitions = [
+  {
+    id: 'modal-density',
+    toolId: 'modal-density',
+    profile: 'analysis',
+    title: 'Modal Density & Wave-Family Atlas',
+    category: 'SEA & Energy',
+    eyebrow: 'Modal population · Interactive analysis',
+    projectName: 'Modal-density regime study',
+    summary: 'Compare source-traceable modal-density families while keeping local band population, overlap, dimensional transitions, and method validity physically connected.',
+    instruction: 'Choose the real subsystem construction, decision frequency, bandwidth, damping, geometry, and material definition. Use built-up constituent inputs only when the selected ESA relation calls for them.',
+    inputTitle: 'Define the wave family and decision band',
+    evidenceTitle: 'Population, overlap, and source evidence',
+    visualLabel: 'Wave-family population view',
+    visualTitle: 'Selected subsystem and resonance crowding',
+    visualLegend: 'wave family · band population · method screen',
+    defaultTakeaway: 'Modal density measures average spectral crowding; it does not locate individual resonances or predict their response amplitude.',
+    renderDiagram: modalDensityDiagram,
+    inputGroups: [
+      { title: 'Decision band & wave family', fieldKeys: ['type', 'frequency', 'band_fraction', 'loss_factor'], open: true },
+      { title: 'Primary geometry', fieldKeys: ['length', 'width', 'height', 'radius', 'thickness', 'sound_speed'], open: true },
+      { title: 'Material definition', fieldKeys: ['material', 'modulus', 'density', 'poisson'] },
+      { title: 'Built-up construction', fieldKeys: ['member_width', 'member_height', 'total_member_length', 'frame_count', 'face_thickness', 'core_thickness', 'core_shear', 'core_density'] }
+    ],
+    decision: context => {
+      const modes = resultValue(context.nativeResult, 'Modes in selected band', 0);
+      const transition = resultValue(context.nativeResult, 'Transition frequency', 0);
+      const frequency = numeric(context, 'frequency', 1000);
+      const nearTransition = transition > 0 && Math.abs(Math.log2(frequency / transition)) < .5;
+      return {
+        question: 'Is the selected band populated enough for a statistical modal treatment?',
+        scope: 'Compare the actual wave family with neighboring structural or acoustic formulations, then use population and overlap to choose deterministic, hybrid, or statistical evidence.',
+        metric: { label: 'Modes in selected band', value: modes, unit: 'modes' },
+        status: modes < 5 || nearTransition ? 'review' : 'pass',
+        statusLabel: modes < 5 ? 'Use exact-mode or hybrid evidence' : nearTransition ? 'Bracket adjacent formulations' : 'Population screen passes',
+        keyLimitation: 'Asymptotic mode counting predicts average crowding, not individual eigenfrequencies, local response, or diffuse-field validity by itself.'
+      };
+    },
+    diagramTakeaway: context => {
+      const modes = resultValue(context.result, 'Modes in selected band', 0);
+      const overlap = resultValue(context.result, 'Modal overlap', 0);
+      return `${workbenchFmt(modes)} modes occupy the selected band and the overlap is ${workbenchFmt(overlap)}. Treat the resonance marks as a population metaphor, not predicted eigenfrequencies.`;
+    },
+    evidenceTakeaway: (context, evidence) => {
+      if (evidence.type === 'plot' && evidence.index === 0) return 'Keep the current curve selected while adding only physically comparable families; the axes rescale to the visible traces.';
+      if (evidence.type === 'plot') return 'Cumulative mode count and local modes per band answer different questions: total population history versus crowding at the decision frequency.';
+      if (evidence.item?.title?.includes('formulation')) return 'The source-topic row identifies the implemented ESA relation and any specialization applied to the selected construction.';
+      return context.result?.interpretation?.engineeringConsiderations?.[0] ?? context.result?.interpretation?.physicalMeaning;
+    }
+  }
+];
+
+export const engineeringAnalysisRegistry = createEngineeringWorkbenchRegistry(engineeringAnalysisDefinitions, calculators);
+export const engineeringAnalysisIds = Object.freeze(engineeringAnalysisDefinitions.map(definition => definition.id));
