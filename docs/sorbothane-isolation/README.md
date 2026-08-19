@@ -2,6 +2,8 @@
 
 This workbench designs and screens a four-point, double-sided captured Sorbothane isolation system for a rigid aerospace component. It is available at `#/tool/sorbothane-isolation` in the modular site and in `standalone.html`.
 
+This workbench is also the behavioral and visual reference for the reusable [Engineering Tool Design Guidelines](../engineering-tool-design-guidelines/README.md). The guidelines extract shared decision, interaction, evidence, trust, and responsive patterns without treating isolation-specific tabs or physics as universal requirements.
+
 The baseline is a 10 lbm rectangular component on four custom 50 Shore 00 annular elements per side. Each element has a 1.25 in OD, 0.50 in ID, 0.25 in free thickness, and 15% nominal precompression. The result is calculated from the implemented model; no mode frequency or target transmissibility is hard-coded.
 
 ## Coordinate system
