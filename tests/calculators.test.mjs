@@ -15,6 +15,8 @@ import { programExpansionSections, programExpansionToolCatalog, programExpansion
 import { programExpansionCalculatorRegistry } from '../js/program-expansion-calculators.js';
 import { seaParameterSections, seaParameterToolCatalog, seaParameterDemos, seaParameterCaseNotes } from '../js/sea-parameters-data.js';
 import { seaParameterCalculatorRegistry } from '../js/sea-parameters-calculators.js';
+import { electronicsFatigueSections, electronicsFatigueToolCatalog, electronicsFatigueDemos, electronicsFatigueCaseNotes } from '../js/electronics-fatigue-data.js';
+import { electronicsFatigueCalculatorRegistry } from '../js/electronics-fatigue-calculators.js';
 import {
   clfMechanismState,
   equipmentLoadingState,
@@ -144,18 +146,18 @@ import {
   twoSubsystemEnergyBalance
 } from '../js/sea-coupling.js';
 
-const sections=[...baseSections,...acs519Sections,...workflowExpansionSections,...programExpansionSections,...seaParameterSections];
-const catalog=[...toolCatalog,...extraToolCatalog,...acs519ToolCatalog,...workflowExpansionToolCatalog,...programExpansionToolCatalog,...seaParameterToolCatalog];
-const registry={...calculatorRegistry,...extraCalculatorRegistry,...acs519CalculatorRegistry,...workflowExpansionCalculatorRegistry,...programExpansionCalculatorRegistry,...seaParameterCalculatorRegistry,'sorbothane-isolation':sorbothaneIsolationCalculator};
-const demos=[...baseDemos,...acs519Demos,...workflowExpansionDemos,...programExpansionDemos,...seaParameterDemos];
-const caseNotes=[...baseCaseNotes,...acs519CaseNotes,...workflowExpansionCaseNotes,...programExpansionCaseNotes,...seaParameterCaseNotes];
+const sections=[...baseSections,...acs519Sections,...workflowExpansionSections,...programExpansionSections,...seaParameterSections,...electronicsFatigueSections];
+const catalog=[...toolCatalog,...extraToolCatalog,...acs519ToolCatalog,...workflowExpansionToolCatalog,...programExpansionToolCatalog,...seaParameterToolCatalog,...electronicsFatigueToolCatalog];
+const registry={...calculatorRegistry,...extraCalculatorRegistry,...acs519CalculatorRegistry,...workflowExpansionCalculatorRegistry,...programExpansionCalculatorRegistry,...seaParameterCalculatorRegistry,...electronicsFatigueCalculatorRegistry,'sorbothane-isolation':sorbothaneIsolationCalculator};
+const demos=[...baseDemos,...acs519Demos,...workflowExpansionDemos,...programExpansionDemos,...seaParameterDemos,...electronicsFatigueDemos];
+const caseNotes=[...baseCaseNotes,...acs519CaseNotes,...workflowExpansionCaseNotes,...programExpansionCaseNotes,...seaParameterCaseNotes,...electronicsFatigueCaseNotes];
 const defaults=id=>Object.fromEntries(registry[id].inputs.map(f=>[f.key,f.default]));
 const metric=(result,label)=>result.values.find(x=>x.label===label)?.value;
 const close=(actual,expected,rel=1e-6)=>assert.ok(Math.abs(actual-expected)<=rel*Math.max(1,Math.abs(expected)),`${actual} ≠ ${expected}`);
-const evidenceCollection={plot:'plots',rangeChart:'rangeCharts',heatmap:'heatmaps',surface3d:'surfaces3d',table:'tables'};
+const evidenceCollection={visual:'visuals',plot:'plots',rangeChart:'rangeCharts',heatmap:'heatmaps',surface3d:'surfaces3d',table:'tables'};
 
 test('every catalog entry has a calculator and every default case runs',()=>{
-  assert.equal(catalog.length,113);
+  assert.equal(catalog.length,120);
   assert.deepEqual(catalog.filter(t=>!registry[t.id]),[]);
   assert.deepEqual(Object.keys(registry).filter(id=>!catalog.some(t=>t.id===id)),[]);
   for(const tool of catalog){
@@ -184,7 +186,7 @@ test('every calculator returns the complete engineering response schema',()=>{
     assert.ok(result.relatedConcepts.length>=2,`${tool.id} needs related concepts`);
     assert.ok(result.relatedConcepts.every(item=>item.title&&item.description&&item.href),`${tool.id} has an incomplete related concept`);
     assert.ok(result.presentation&&Number.isInteger(result.presentation.primaryValueCount),`${tool.id} needs presentation metadata`);
-    if(result.presentation.primaryEvidence){const {type,index}=result.presentation.primaryEvidence;assert.ok(['plot','rangeChart','heatmap','surface3d','table'].includes(type),`${tool.id} has an invalid primary evidence type`);assert.ok(result[evidenceCollection[type]]?.[index],`${tool.id} primary evidence does not exist`);}
+    if(result.presentation.primaryEvidence){const {type,index}=result.presentation.primaryEvidence;assert.ok(['visual','plot','rangeChart','heatmap','surface3d','table'].includes(type),`${tool.id} has an invalid primary evidence type`);assert.ok(result[evidenceCollection[type]]?.[index],`${tool.id} primary evidence does not exist`);}
     assert.ok(Array.isArray(result.presentation.primaryEvidenceStack),`${tool.id} needs a primary evidence stack`);
     result.presentation.primaryEvidenceStack.forEach(({type,index})=>assert.ok(result[evidenceCollection[type]]?.[index],`${tool.id} stacked primary evidence does not exist`));
     assert.doesNotMatch(result.interpretation.physicalMeaning,/^The reported\b/,`${tool.id} retained generic category commentary`);
@@ -746,10 +748,10 @@ test('zero correlation combines PSD RMS by root-sum-square',()=>{
 
 
 test('content architecture matches the approved full build',()=>{
-  assert.equal(sections.length,63);
-  assert.equal(sections.reduce((n,s)=>n+s.concepts.length,0),389);
-  assert.equal(demos.length,79);
-  assert.equal(caseNotes.length,66);
+  assert.equal(sections.length,71);
+  assert.equal(sections.reduce((n,s)=>n+s.concepts.length,0),437);
+  assert.equal(demos.length,86);
+  assert.equal(caseNotes.length,74);
   assert.deepEqual(demos.map(d=>d.id).sort(),[...supportedDemoIds].sort());
   assert.deepEqual(demos.filter(d=>!catalog.some(t=>t.id===d.toolId)),[]);
   assert.deepEqual(sections.flatMap(s=>s.concepts).filter(c=>c.toolId&&!catalog.some(t=>t.id===c.toolId)),[]);
@@ -757,6 +759,7 @@ test('content architecture matches the approved full build',()=>{
   assert.deepEqual(workflowExpansionSections.filter(section=>!workflowExpansionCaseNotes.some(note=>note.id===section.deepDiveId)),[]);
   assert.deepEqual(programExpansionSections.filter(section=>!programExpansionCaseNotes.some(note=>note.id===section.deepDiveId)),[]);
   assert.deepEqual(seaParameterSections.filter(section=>!seaParameterCaseNotes.some(note=>note.id===section.deepDiveId)),[]);
+  assert.deepEqual(electronicsFatigueSections.filter(section=>!electronicsFatigueCaseNotes.some(note=>note.id===section.deepDiveId)),[]);
   const embeddedDemos=caseNotes.flatMap(note=>[...note.body.matchAll(/data-embedded-demo="([^"]+)"/g)].map(match=>match[1]));
   assert.deepEqual(embeddedDemos.filter(id=>!supportedDemoIds.includes(id)),[]);
 });
@@ -1220,6 +1223,7 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   const html=readFileSync(new URL('../standalone.html',import.meta.url),'utf8');
   const syncSource=readFileSync(new URL('../scripts/sync-standalone.mjs',import.meta.url),'utf8');
   assert.match(syncSource,/const chartsModule = await read\('js\/charts\.js'\)/);
+  assert.match(syncSource,/const toolDiscoveryModule = await read\('js\/tool-discovery\.js'\)/);
   assert.match(syncSource,/const pcbAccelerometersModule = await read\('js\/pcb-accelerometers-data\.js'\)/);
   assert.match(syncSource,/const parkerLordIsolatorsModule = await read\('js\/parker-lord-isolators\.js'\)/);
   assert.match(syncSource,/const nastranIsolationExportModule = await read\('js\/nastran-isolation-export\.js'\)/);
@@ -1235,6 +1239,8 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   assert.match(html,/function rangeChartSvg\(chart/);
   assert.match(html,/function surface3dSvg\(surface/);
   assert.match(html,/data-chart-animation="harmonic"/);
+  assert.match(html,/sau-recent-tools-v1/);
+  assert.match(html,/data-tool-launcher-search/);
   assert.match(html,/data-heatmap-base-value/);
   assert.doesNotMatch(html,/Total mean square/);
   assert.match(html,/"title": "Spatial Correlation Fields"/);
@@ -1511,10 +1517,10 @@ test('site visual system exposes reusable components and themes every non-home r
 
 test('wheel homepage is data-driven, accessible, and linked to real content',()=>{
   const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
-  const allSections=[...baseSections,...acs519Sections,...workflowExpansionSections,...programExpansionSections,...seaParameterSections];
-  const allTools=[...toolCatalog,...extraToolCatalog,...acs519ToolCatalog,...workflowExpansionToolCatalog,...programExpansionToolCatalog,...seaParameterToolCatalog];
-  const allDemos=[...baseDemos,...acs519Demos,...workflowExpansionDemos,...programExpansionDemos,...seaParameterDemos];
-  const allCaseStudies=[...baseCaseNotes,...acs519CaseNotes,...workflowExpansionCaseNotes,...programExpansionCaseNotes,...seaParameterCaseNotes];
+  const allSections=[...baseSections,...acs519Sections,...workflowExpansionSections,...programExpansionSections,...seaParameterSections,...electronicsFatigueSections];
+  const allTools=[...toolCatalog,...extraToolCatalog,...acs519ToolCatalog,...workflowExpansionToolCatalog,...programExpansionToolCatalog,...seaParameterToolCatalog,...electronicsFatigueToolCatalog];
+  const allDemos=[...baseDemos,...acs519Demos,...workflowExpansionDemos,...programExpansionDemos,...seaParameterDemos,...electronicsFatigueDemos];
+  const allCaseStudies=[...baseCaseNotes,...acs519CaseNotes,...workflowExpansionCaseNotes,...programExpansionCaseNotes,...seaParameterCaseNotes,...electronicsFatigueCaseNotes];
   const sectionIds=new Set(allSections.map(section=>section.id));
   const toolIds=new Set(allTools.map(tool=>tool.id));
   const demoIds=new Set(allDemos.map(demo=>demo.id));
@@ -1574,12 +1580,17 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
   assert.match(html,/#\/demos/);
   assert.match(html,/#\/tools/);
   assert.match(html,/#\/case-studies/);
-  assert.match(html,/113 tools/);
-  assert.match(html,/66 case studies/);
+  assert.match(html,/120 tools/);
+  assert.match(html,/74 case studies/);
   assert.doesNotMatch(html,/#\/hardware/);
   assert.doesNotMatch(html,/Guided workflows/);
   assert.match(appSource,/data-tools-menu/);
-  assert.match(appSource,/tools\.slice\(0,3\)/);
+  assert.match(appSource,/data-tool-launcher-search/);
+  assert.match(appSource,/data-tool-launcher-mode="task"/);
+  assert.match(appSource,/data-tool-launcher-mode="subject"/);
+  assert.match(appSource,/data-tool-pin=/);
+  assert.match(appSource,/rankToolDiscoveryRecords/);
+  assert.match(appSource,/TOOL_HISTORY_STORAGE_KEY/);
   assert.match(appSource,/#\/tools\?subject=/);
   assert.match(appSource,/data-tool-filter="subject"/);
   assert.match(appSource,/first==='subject'.*renderSubjectPage/);
@@ -1602,10 +1613,11 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes current interactive runtimes',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v104'/);
+  assert.match(worker,/const CACHE = 'sau-v112'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);
+  assert.match(worker,/\.\/js\/tool-discovery\.js/);
   assert.match(worker,/\.\/js\/unit-system\.js/);
   assert.match(worker,/\.\/js\/site-components\.js/);
   assert.match(worker,/\.\/js\/engineering-system\.js/);
@@ -1626,6 +1638,11 @@ test('offline cache includes current interactive runtimes',()=>{
   assert.match(worker,/\.\/js\/sea-parameters-calculators\.js/);
   assert.match(worker,/\.\/js\/sea-parameters-data\.js/);
   assert.match(worker,/\.\/js\/sea-parameters-demos\.js/);
+  assert.match(worker,/\.\/js\/electronics-fatigue-physics\.js/);
+  assert.match(worker,/\.\/js\/electronics-fatigue-visuals\.js/);
+  assert.match(worker,/\.\/js\/electronics-fatigue-calculators\.js/);
+  assert.match(worker,/\.\/js\/electronics-fatigue-data\.js/);
+  assert.match(worker,/\.\/js\/electronics-fatigue-demos\.js/);
   assert.match(worker,/\.\/js\/launch-sea-capstone\.js/);
   assert.match(worker,/\.\/js\/workbench-runtime\.js/);
   assert.match(worker,/\.\/js\/engineering-workbenches\.js/);
@@ -1635,7 +1652,7 @@ test('engineering system connects hardware, pathways, tool discovery, projects, 
   const toolIds=new Set(catalog.map(tool=>tool.id));
   const sectionIds=new Set(sections.map(section=>section.id));
   assert.equal(hardwareTopics.length,7);
-  assert.equal(learningPathways.length,6);
+  assert.equal(learningPathways.length,7);
   assert.ok(materialLibrary.length>=6);
   assert.ok(environmentLibrary.length>=5);
   assert.ok(projectTemplates.length>=5);

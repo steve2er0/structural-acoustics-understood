@@ -1,7 +1,7 @@
-const CACHE = 'sau-v104';
+const CACHE = 'sau-v112';
 const CORE = [
   './', './index.html', './styles.css', './manifest.webmanifest', './assets/favicon.svg',
-  './js/app.js', './js/unit-system.js', './js/homepage.js', './js/site-components.js', './js/engineering-system.js', './js/data.js', './js/calculators.js', './js/pcb-accelerometers-data.js', './js/extra-calculators.js',
+  './js/app.js', './js/unit-system.js', './js/homepage.js', './js/tool-discovery.js', './js/site-components.js', './js/engineering-system.js', './js/data.js', './js/calculators.js', './js/pcb-accelerometers-data.js', './js/extra-calculators.js',
   './js/extra-data.js', './js/charts.js', './js/demos.js', './js/demo-takeaways.js', './js/engineering-results.js',
   './js/honeycomb-paper.js', './js/sea-coupling.js', './js/acs519-data.js',
   './js/acs519-physics.js', './js/acs519-calculators.js', './js/acs519-demos.js',
@@ -11,6 +11,8 @@ const CORE = [
   './js/program-expansion-data.js', './js/program-expansion-demos.js',
   './js/sea-parameters-physics.js', './js/sea-parameters-calculators.js',
   './js/sea-parameters-data.js', './js/sea-parameters-demos.js',
+  './js/electronics-fatigue-physics.js', './js/electronics-fatigue-visuals.js', './js/electronics-fatigue-calculators.js',
+  './js/electronics-fatigue-data.js', './js/electronics-fatigue-demos.js',
   './js/launch-sea-capstone.js', './js/workbench-runtime.js', './js/engineering-workbenches.js',
   './js/sorbothane-data.js', './js/parker-lord-isolators.js', './js/sorbothane-analysis.js', './js/nastran-isolation-export.js', './js/sorbothane-isolation.js'
 ];

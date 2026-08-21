@@ -8,12 +8,22 @@ import { workflowExpansionCalculatorRegistry } from './workflow-expansion-calcul
 import { workflowExpansionSections, workflowExpansionToolCatalog, workflowExpansionDemos, workflowExpansionCaseNotes, workflowExpansionReferenceGroups } from './workflow-expansion-data.js';
 import { programExpansionCalculatorRegistry } from './program-expansion-calculators.js';
 import { programExpansionSections, programExpansionToolCatalog, programExpansionDemos, programExpansionCaseNotes, programExpansionReferenceGroups } from './program-expansion-data.js';
+import { electronicsFatigueCalculatorRegistry } from './electronics-fatigue-calculators.js';
+import { electronicsFatigueSections, electronicsFatigueToolCatalog, electronicsFatigueDemos, electronicsFatigueCaseNotes, electronicsFatigueReferenceGroups } from './electronics-fatigue-data.js';
 import { seaParameterCalculatorRegistry } from './sea-parameters-calculators.js';
 import { seaParameterSections, seaParameterToolCatalog, seaParameterDemos, seaParameterCaseNotes, seaParameterReferenceGroups } from './sea-parameters-data.js';
 import { lineChartSvg, rangeChartSvg, heatmapSvg, surface3dSvg, harmonicPhase, signedHeatColor, downloadCsv, downloadSvg, downloadText } from './charts.js';
+import { electronicsFatigueVisualSvg } from './electronics-fatigue-visuals.js';
 import { demoPreviewSvg, mountDemo } from './demos.js';
 import { engineeringResultToText } from './engineering-results.js';
 import { homepageNavigation, homepageNavKey, renderHomepage, renderSubjectPage, bindHomepage, subjectWheel } from './homepage.js';
+import {
+  TOOL_HISTORY_STORAGE_KEY,
+  TOOL_PIN_STORAGE_KEY,
+  createToolDiscoveryRecord,
+  rankToolDiscoveryRecords,
+  validStoredToolIds
+} from './tool-discovery.js';
 import { renderPageShell, renderBreadcrumbs, renderSectionHeader, renderCallout, renderLinkCollection } from './site-components.js';
 import { renderLaunchSeaCapstone, bindLaunchSeaCapstone } from './launch-sea-capstone.js';
 import { engineeringAnalysisRegistry, engineeringWorkbenchRegistry } from './engineering-workbenches.js';
@@ -33,12 +43,12 @@ import {
   saveEngineeringProject
 } from './engineering-system.js';
 
-const sections = [...baseSections, ...acs519Sections, ...workflowExpansionSections, ...programExpansionSections, ...seaParameterSections];
-const calculatorRegistry = { ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator };
-const toolCatalog = [...baseToolCatalog, ...extraToolCatalog, ...acs519ToolCatalog, ...workflowExpansionToolCatalog, ...programExpansionToolCatalog, ...seaParameterToolCatalog];
-const demos = [...baseDemos, ...acs519Demos, ...workflowExpansionDemos, ...programExpansionDemos, ...seaParameterDemos];
-const caseNotes = [...baseCaseNotes, ...acs519CaseNotes, ...workflowExpansionCaseNotes, ...programExpansionCaseNotes, ...seaParameterCaseNotes];
-const referenceGroups = [...baseReferenceGroups, ...acs519ReferenceGroups, ...workflowExpansionReferenceGroups, ...programExpansionReferenceGroups, ...seaParameterReferenceGroups];
+const sections = [...baseSections, ...acs519Sections, ...workflowExpansionSections, ...programExpansionSections, ...seaParameterSections, ...electronicsFatigueSections];
+const calculatorRegistry = { ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, ...electronicsFatigueCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator };
+const toolCatalog = [...baseToolCatalog, ...extraToolCatalog, ...acs519ToolCatalog, ...workflowExpansionToolCatalog, ...programExpansionToolCatalog, ...seaParameterToolCatalog, ...electronicsFatigueToolCatalog];
+const demos = [...baseDemos, ...acs519Demos, ...workflowExpansionDemos, ...programExpansionDemos, ...seaParameterDemos, ...electronicsFatigueDemos];
+const caseNotes = [...baseCaseNotes, ...acs519CaseNotes, ...workflowExpansionCaseNotes, ...programExpansionCaseNotes, ...seaParameterCaseNotes, ...electronicsFatigueCaseNotes];
+const referenceGroups = [...baseReferenceGroups, ...acs519ReferenceGroups, ...workflowExpansionReferenceGroups, ...programExpansionReferenceGroups, ...seaParameterReferenceGroups, ...electronicsFatigueReferenceGroups];
 const toolById = new Map(toolCatalog.map(t => [t.id, t]));
 const sectionById = new Map(sections.map(section => [section.id, section]));
 const demoById = new Map(demos.map(demo => [demo.id, demo]));
@@ -58,6 +68,13 @@ const workbenchRegistry = {
   ...engineeringWorkbenchRegistry,
   ...engineeringAnalysisRegistry
 };
+const toolDiscoveryRecords = toolCatalog.map(tool => createToolDiscoveryRecord(
+  tool,
+  primaryToolSubject(tool),
+  classifyTool(tool, Object.keys(workbenchRegistry))
+));
+const toolDiscoveryById = new Map(toolDiscoveryRecords.map(record => [record.id, record]));
+const toolDiscoveryTasks = [...new Set(toolDiscoveryRecords.map(record => record.task))];
 const chapterRelatedLinks = [
   { title: 'Shell mode families', description: 'Interactive circumferential-order map', href: '#/demo/shell-wave-map' },
   { title: 'Cylindrical shell acoustics', description: 'Paired engineering calculator', href: '#/tool/shell-acoustics' },
@@ -134,8 +151,216 @@ function navKey(route){
   return homepageNavKey(route.segments[0]||'',route.params.get('section')||'');
 }
 function renderToolsMenu(active=false){
-  const groups=toolSubjects.map(subject=>({subject,tools:toolCatalog.filter(tool=>primaryToolSubject(tool).id===subject.id)})).filter(group=>group.tools.length);
-  return `<div class="tools-menu" data-tools-menu><button type="button" class="tools-menu-trigger ${active?'active':''}" data-tools-toggle aria-expanded="false" aria-controls="tools-menu-panel">${icon('tools')}<span>Tools<small>Calculators & workbenches</small></span><b aria-hidden="true">⌄</b></button><div class="tools-menu-panel" id="tools-menu-panel" hidden><header><div><p class="eyebrow">Engineering tools</p><h2>Choose a model by subject.</h2></div><a class="tools-menu-all" href="#/tools">Browse all ${toolCatalog.length} tools <span aria-hidden="true">→</span></a></header><div class="tools-menu-grid">${groups.map(({subject,tools})=>`<section style="--menu-subject-color:${subject.accent}"><a class="tools-menu-category" href="#/tools?subject=${encodeURIComponent(subject.id)}"><strong>${esc(subject.label)}</strong><span>${tools.length} tools</span></a><div>${tools.slice(0,3).map(tool=>`<a href="#/tool/${encodeURIComponent(tool.id)}">${esc(tool.title)}</a>`).join('')}</div>${tools.length>3?`<a class="tools-menu-more" href="#/tools?subject=${encodeURIComponent(subject.id)}">View all ${tools.length} →</a>`:''}</section>`).join('')}</div></div></div>`;
+  return `<div class="tools-menu" data-tools-menu><button type="button" class="tools-menu-trigger ${active?'active':''}" data-tools-toggle aria-expanded="false" aria-controls="tools-menu-panel">${icon('tools')}<span>Tools<small>Fast calculator launcher</small></span><kbd aria-hidden="true">T</kbd><b aria-hidden="true">⌄</b></button><div class="tools-menu-panel tool-launcher-panel" id="tools-menu-panel" hidden><header><div><p class="eyebrow">Engineering tool launcher</p><h2>Go directly to the right model.</h2></div><div><a class="tools-menu-all" href="#/tools">Browse all ${toolCatalog.length} tools <span aria-hidden="true">→</span></a><button type="button" class="tool-launcher-close" data-tools-close aria-label="Close tool launcher">×</button></div></header><label class="tool-launcher-search"><span class="sr-only">Find a calculator or workbench</span>${icon('search')}<input type="search" data-tool-launcher-search aria-controls="tool-launcher-results" placeholder="Panel TL, combine PSDs, SEA validity, accelerometer…" autocomplete="off"/><kbd aria-hidden="true">Esc</kbd></label><div class="tool-launcher-layout"><aside class="tool-launcher-sidebar"><section class="tool-launcher-saved" aria-labelledby="tool-launcher-pinned-label"><header><h3 id="tool-launcher-pinned-label">Pinned</h3><span data-tool-launcher-pinned-count></span></header><div data-tool-launcher-pinned></div></section><section class="tool-launcher-saved" aria-labelledby="tool-launcher-recent-label"><header><h3 id="tool-launcher-recent-label">Recent</h3><span data-tool-launcher-recent-count></span></header><div data-tool-launcher-recent></div></section><section class="tool-launcher-browse" aria-labelledby="tool-launcher-browse-label"><h3 id="tool-launcher-browse-label">Browse by</h3><div class="tool-launcher-tabs" role="tablist" aria-label="Tool browsing mode"><button type="button" class="active" data-tool-launcher-mode="task" role="tab" aria-selected="true">Task</button><button type="button" data-tool-launcher-mode="subject" role="tab" aria-selected="false">Subject</button></div><div class="tool-launcher-filters" data-tool-launcher-filters></div></section></aside><section class="tool-launcher-results" aria-labelledby="tool-launcher-results-label"><header><div><p class="eyebrow">Tool matches</p><h3 id="tool-launcher-results-label" data-tool-launcher-results-label>Recommended starting points</h3></div><output data-tool-launcher-status aria-live="polite"></output></header><div id="tool-launcher-results" data-tool-launcher-results role="list"></div></section></div><footer><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>Enter</kbd> open</span><span>Search understands common engineering abbreviations.</span></footer></div></div>`;
+}
+const availableToolIds = new Set(toolDiscoveryRecords.map(record => record.id));
+
+function loadStoredToolIds(key, limit=12) {
+  try {
+    return validStoredToolIds(JSON.parse(localStorage.getItem(key) || '[]'), availableToolIds, limit);
+  } catch {
+    return [];
+  }
+}
+
+function saveStoredToolIds(key, ids, limit=12) {
+  const valid = validStoredToolIds(ids, availableToolIds, limit);
+  try { localStorage.setItem(key, JSON.stringify(valid)); } catch {}
+  return valid;
+}
+
+function rememberRecentTool(id) {
+  if (!availableToolIds.has(id)) return [];
+  const recent = loadStoredToolIds(TOOL_HISTORY_STORAGE_KEY);
+  return saveStoredToolIds(TOOL_HISTORY_STORAGE_KEY, [id, ...recent.filter(item => item !== id)]);
+}
+
+function togglePinnedTool(id) {
+  const pinned = loadStoredToolIds(TOOL_PIN_STORAGE_KEY);
+  const next = pinned.includes(id) ? pinned.filter(item => item !== id) : [id, ...pinned];
+  return saveStoredToolIds(TOOL_PIN_STORAGE_KEY, next);
+}
+
+function savedToolLinks(ids, emptyText) {
+  const records = ids.map(id => toolDiscoveryById.get(id)).filter(Boolean);
+  if (!records.length) return `<p class="tool-launcher-empty">${esc(emptyText)}</p>`;
+  return records.slice(0, 6).map(record => `<a href="${record.href}"><span style="--tool-accent:${record.subjectAccent}"></span><strong>${esc(record.title)}</strong></a>`).join('');
+}
+
+function toolLauncherResult(record, pinnedIds) {
+  const pinned = pinnedIds.includes(record.id);
+  return `<div class="tool-launcher-result" role="listitem" style="--tool-accent:${record.subjectAccent}"><a href="${record.href}" data-tool-launcher-result-link><span class="tool-launcher-result-subject">${esc(record.subjectLabel)}</span><strong>${esc(record.title)}</strong><p>${esc(record.description)}</p><small><span>${esc(record.level)}</span><span>${esc(record.input)}</span></small></a><button type="button" data-tool-pin="${esc(record.id)}" aria-pressed="${pinned}" aria-label="${pinned?'Unpin':'Pin'} ${esc(record.title)}"><span aria-hidden="true">${pinned?'★':'☆'}</span></button></div>`;
+}
+
+function renderHomeQuickTools(pinnedIds, recentIds) {
+  const region = document.querySelector('[data-home-quick-tools]');
+  const list = region?.querySelector('[data-home-quick-tools-list]');
+  if (!region || !list) return;
+  const ids = [...new Set([...pinnedIds, ...recentIds])].slice(0, 5);
+  const records = ids.map(id => toolDiscoveryById.get(id)).filter(Boolean);
+  region.hidden = !records.length;
+  list.innerHTML = records.map(record => `<a href="${record.href}"><span>${esc(record.level)}</span><strong>${esc(record.title)}</strong></a>`).join('');
+}
+
+function bindToolLauncher() {
+  const menu = document.querySelector('[data-tools-menu]');
+  const toggle = menu?.querySelector('[data-tools-toggle]');
+  const panel = menu?.querySelector('#tools-menu-panel');
+  const input = panel?.querySelector('[data-tool-launcher-search]');
+  const results = panel?.querySelector('[data-tool-launcher-results]');
+  const filters = panel?.querySelector('[data-tool-launcher-filters]');
+  const status = panel?.querySelector('[data-tool-launcher-status]');
+  const resultLabel = panel?.querySelector('[data-tool-launcher-results-label]');
+  if (!menu || !toggle || !panel || !input || !results || !filters || !status || !resultLabel) {
+    return { setOpen: () => {}, cleanup: () => {} };
+  }
+
+  const state = { mode: 'task', task: 'All', subjectId: 'All' };
+  const primaryNav = menu.closest('.primary-nav');
+  const mobileToggle = document.querySelector('.menu-button');
+  let launcherOpenedMobileNav = false;
+  let pinnedIds = loadStoredToolIds(TOOL_PIN_STORAGE_KEY);
+  let recentIds = loadStoredToolIds(TOOL_HISTORY_STORAGE_KEY);
+
+  const renderSaved = () => {
+    const pinnedMount = panel.querySelector('[data-tool-launcher-pinned]');
+    const recentMount = panel.querySelector('[data-tool-launcher-recent]');
+    if (pinnedMount) pinnedMount.innerHTML = savedToolLinks(pinnedIds, 'Pin frequently used tools from the results.');
+    if (recentMount) recentMount.innerHTML = savedToolLinks(recentIds, 'Tools you open will appear here.');
+    const pinnedCount = panel.querySelector('[data-tool-launcher-pinned-count]');
+    const recentCount = panel.querySelector('[data-tool-launcher-recent-count]');
+    if (pinnedCount) pinnedCount.textContent = pinnedIds.length ? String(pinnedIds.length) : '';
+    if (recentCount) recentCount.textContent = recentIds.length ? String(recentIds.length) : '';
+    renderHomeQuickTools(pinnedIds, recentIds);
+  };
+
+  const renderFilters = () => {
+    const source = state.mode === 'task'
+      ? toolDiscoveryTasks.map(task => ({ id: task, label: task, count: toolDiscoveryRecords.filter(record => record.task === task).length }))
+      : toolSubjects.map(subject => ({ id: subject.id, label: subject.label, count: toolDiscoveryRecords.filter(record => record.subjectId === subject.id).length })).filter(item => item.count);
+    const selected = state.mode === 'task' ? state.task : state.subjectId;
+    filters.innerHTML = `<button type="button" class="${selected==='All'?'active':''}" data-tool-launcher-filter="All">All tools <span>${toolDiscoveryRecords.length}</span></button>${source.map(item => `<button type="button" class="${selected===item.id?'active':''}" data-tool-launcher-filter="${esc(item.id)}">${esc(item.label)} <span>${item.count}</span></button>`).join('')}`;
+  };
+
+  const updateResults = () => {
+    const query = input.value.trim();
+    const subjectId = state.mode === 'subject' ? state.subjectId : 'All';
+    const task = state.mode === 'task' ? state.task : 'All';
+    const matches = rankToolDiscoveryRecords(toolDiscoveryRecords, query, {
+      subjectId,
+      task,
+      pinnedIds,
+      recentIds,
+      limit: toolDiscoveryRecords.length
+    });
+    const shown = matches.slice(0, 12);
+    const browsing = subjectId !== 'All' || task !== 'All';
+    resultLabel.textContent = query ? 'Matching tools' : browsing ? 'Tools in this group' : 'Recommended starting points';
+    status.textContent = query || browsing ? `${matches.length} ${matches.length===1?'tool':'tools'}` : `${toolCatalog.length} available`;
+    results.innerHTML = shown.length
+      ? shown.map(record => toolLauncherResult(record, pinnedIds)).join('')
+      : '<div class="tool-launcher-no-results"><strong>No matching tool.</strong><p>Try a method, output, available input, or common abbreviation.</p></div>';
+  };
+
+  const setOpen = open => {
+    if (open && window.matchMedia('(max-width: 1180px)').matches && primaryNav && !primaryNav.classList.contains('open')) {
+      primaryNav.classList.add('open');
+      mobileToggle?.setAttribute('aria-expanded', 'true');
+      launcherOpenedMobileNav = true;
+    } else if (!open && launcherOpenedMobileNav) {
+      primaryNav?.classList.remove('open');
+      mobileToggle?.setAttribute('aria-expanded', 'false');
+      launcherOpenedMobileNav = false;
+    }
+    panel.hidden = !open;
+    toggle.setAttribute('aria-expanded', String(open));
+    menu.classList.toggle('open', open);
+    document.body.classList.toggle('tool-launcher-open', open);
+    if (open) {
+      pinnedIds = loadStoredToolIds(TOOL_PIN_STORAGE_KEY);
+      recentIds = loadStoredToolIds(TOOL_HISTORY_STORAGE_KEY);
+      renderSaved();
+      renderFilters();
+      updateResults();
+      requestAnimationFrame(() => input.focus());
+    }
+  };
+
+  const onToggle = () => setOpen(toggle.getAttribute('aria-expanded') !== 'true');
+  const onClose = () => { setOpen(false); toggle.focus(); };
+  const onOutsidePointer = event => { if (!menu.contains(event.target)) setOpen(false); };
+  const onEscape = event => {
+    if (event.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
+      event.preventDefault();
+      onClose();
+    }
+  };
+  const onInput = () => updateResults();
+  const onInputKeydown = event => {
+    if (event.key !== 'ArrowDown') return;
+    const first = results.querySelector('[data-tool-launcher-result-link]');
+    if (first) { event.preventDefault(); first.focus(); }
+  };
+  const onResultsKeydown = event => {
+    if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
+    const links = [...results.querySelectorAll('[data-tool-launcher-result-link]')];
+    const current = event.target.closest('[data-tool-launcher-result-link]');
+    const index = links.indexOf(current);
+    if (index < 0) return;
+    event.preventDefault();
+    const next = event.key === 'ArrowDown' ? (index + 1) % links.length : (index - 1 + links.length) % links.length;
+    links[next]?.focus();
+  };
+  const onPanelClick = event => {
+    const mode = event.target.closest('[data-tool-launcher-mode]');
+    if (mode) {
+      state.mode = mode.dataset.toolLauncherMode;
+      panel.querySelectorAll('[data-tool-launcher-mode]').forEach(button => {
+        const active = button === mode;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-selected', String(active));
+      });
+      renderFilters();
+      updateResults();
+      return;
+    }
+    const filter = event.target.closest('[data-tool-launcher-filter]');
+    if (filter) {
+      if (state.mode === 'task') state.task = filter.dataset.toolLauncherFilter;
+      else state.subjectId = filter.dataset.toolLauncherFilter;
+      renderFilters();
+      updateResults();
+      return;
+    }
+    const pin = event.target.closest('[data-tool-pin]');
+    if (pin) {
+      event.preventDefault();
+      pinnedIds = togglePinnedTool(pin.dataset.toolPin);
+      renderSaved();
+      updateResults();
+      return;
+    }
+    if (event.target.closest('a')) setOpen(false);
+  };
+
+  toggle.addEventListener('click', onToggle);
+  panel.querySelector('[data-tools-close]')?.addEventListener('click', onClose);
+  panel.addEventListener('click', onPanelClick);
+  input.addEventListener('input', onInput);
+  input.addEventListener('keydown', onInputKeydown);
+  results.addEventListener('keydown', onResultsKeydown);
+  document.addEventListener('pointerdown', onOutsidePointer);
+  document.addEventListener('keydown', onEscape);
+  renderSaved();
+
+  return {
+    setOpen,
+    cleanup: () => {
+      document.body.classList.remove('tool-launcher-open');
+      document.removeEventListener('pointerdown', onOutsidePointer);
+      document.removeEventListener('keydown', onEscape);
+    }
+  };
 }
 function shell(main, route) {
   const active=navKey(route);
@@ -387,6 +612,7 @@ function renderResult(result,meta){
   const renderRangeChart=(chart,i,primary=false)=>`<div class="result-block result-range-chart${primary?' result-block-primary':''}" data-result-section="range-chart"><div class="chart-toolbar"><button data-range-chart-svg="${i}">Download SVG</button><button data-range-chart-png="${i}">Download PNG</button></div><div class="chart-shell site-chart-container" data-range-chart="${i}">${rangeChartSvg(chart)}</div></div>`;
   const renderHeatmap=(h,i,primary=false)=>`<div class="result-block${primary?' result-block-primary':''}" data-result-section="heatmap"><div class="chart-toolbar"><button data-heatmap-svg="${i}">Download SVG</button><button data-heatmap-png="${i}">Download PNG</button></div><div class="chart-shell site-chart-container" data-heatmap="${i}">${heatmapSvg(h)}</div></div>`;
   const renderSurface3d=(surface,i,primary=false)=>`<div class="result-block${primary?' result-block-primary':''}" data-result-section="surface3d"><div class="chart-toolbar"><button data-surface3d-svg="${i}">Download SVG</button><button data-surface3d-png="${i}">Download PNG</button></div><div class="chart-shell surface3d-shell site-chart-container" data-surface3d="${i}">${surface3dSvg(surface)}</div></div>`;
+  const renderVisual=(visual,i,primary=false)=>`<div class="result-block result-engineering-visual${primary?' result-block-primary':''}" data-result-section="visual"><div class="engineering-visual-heading"><div><p class="eyebrow">Decision visual</p><h3>${esc(visual.title||'Engineering visualization')}</h3></div><div class="chart-toolbar"><button data-visual-svg="${i}">Download SVG</button><button data-visual-png="${i}">Download PNG</button></div></div><div class="chart-shell engineering-visual-shell site-chart-container" data-visual="${i}">${electronicsFatigueVisualSvg(visual)}</div></div>`;
   const evidence=result.presentation?.primaryEvidence;
   const explicitEvidenceStack=Array.isArray(result.presentation?.primaryEvidenceStack)&&result.presentation.primaryEvidenceStack.length>1;
   const evidenceStack=explicitEvidenceStack?result.presentation.primaryEvidenceStack:(evidence?[evidence]:[]);
@@ -397,6 +623,7 @@ function renderResult(result,meta){
   const primaryPlotIndices=new Set();
   const primaryRangeChartIndices=new Set();
   const primaryTableIndices=new Set();
+  const primaryVisualIndices=new Set();
   const renderPrimarySelection=(selection,selectionIndex)=>{
     const defaultCount=!explicitEvidenceStack&&selectionIndex===0?result.presentation?.primaryEvidenceCount||1:1;
     const count=Math.max(1,selection.count||defaultCount);
@@ -411,6 +638,7 @@ function renderResult(result,meta){
       const surfaces=indices.map(index=>renderSurface3d(result.surfaces3d[index],index,true)).join('');return indices.length>1?`<div class="result-evidence-grid result-evidence-grid-3d" aria-label="Primary 3D mode shapes">${surfaces}</div>`:surfaces;
     }
     if(selection.type==='table'&&result.tables?.[selection.index]){primaryTableIndices.add(selection.index);return renderTable(result.tables[selection.index],{primary:true,index:selection.index});}
+    if(selection.type==='visual'&&result.visuals?.[selection.index]){primaryVisualIndices.add(selection.index);return renderVisual(result.visuals[selection.index],selection.index,true);}
     return'';
   };
   const primaryEvidenceParts=evidenceStack.map(renderPrimarySelection);
@@ -420,12 +648,13 @@ function renderResult(result,meta){
   const supportingHeatmaps=(result.heatmaps||[]).map((heatmap,index)=>primaryHeatmapIndices.has(index)?'':renderHeatmap(heatmap,index)).join('');
   const supportingSurfaces=(result.surfaces3d||[]).map((surface,index)=>primarySurfaceIndices.has(index)?'':renderSurface3d(surface,index)).join('');
   const supportingTables=(result.tables||[]).map((table,index)=>primaryTableIndices.has(index)?'':renderTable(table,{index})).join('');
-  const supportingEvidence=`${supportingSurfaces}${supportingPlots}${supportingRangeCharts}${supportingHeatmaps}${supportingTables}`;
+  const supportingVisuals=(result.visuals||[]).map((visual,index)=>primaryVisualIndices.has(index)?'':renderVisual(visual,index)).join('');
+  const supportingEvidence=`${supportingVisuals}${supportingSurfaces}${supportingPlots}${supportingRangeCharts}${supportingHeatmaps}${supportingTables}`;
   const csv=result.csv?`<div class="result-block"><button class="button-secondary" data-action="download-csv">Download result CSV</button></div>`:'';
   const secondaryValues=supportingValues?`<details class="supporting-values"><summary>Supporting values <span>${result.values.length-primaryValueCount}</span></summary><div class="result-summary result-summary-supporting">${supportingValues}</div></details>`:'';
   const numericalResults=`<section class="numerical-results-section" data-result-section="numerical"><h3 class="result-section-title">Numerical results</h3><div class="result-summary">${primaryValues}</div>${secondaryValues}</section>`;
   const supportingSection=supportingEvidence?`<details class="supporting-evidence"><summary>Supporting plots, maps, and tables</summary><div class="supporting-evidence-body">${supportingEvidence}</div></details>`:'';
-  const hasVisualPrimary=evidenceStack.some(item=>item.type==='plot'||item.type==='rangeChart'||item.type==='heatmap'||item.type==='surface3d');
+  const hasVisualPrimary=evidenceStack.some(item=>item.type==='visual'||item.type==='plot'||item.type==='rangeChart'||item.type==='heatmap'||item.type==='surface3d');
   const hasTablePrimary=evidenceStack.some(item=>item.type==='table');
   const resultBody=hasVisualPrimary?`${animationControls}${primaryEvidence}${numericalResults}${commentary}`:hasTablePrimary?`${numericalResults}${primaryEvidence}${commentary}`:`${numericalResults}${commentary}`;
   return `${resultBody}${supportingSection}${csv}`;
@@ -529,6 +758,7 @@ function bindResultActions(result,meta){
   (result.rangeCharts||[]).forEach((chart,i)=>{const svg=rangeChartSvg(chart);document.querySelector(`[data-range-chart-svg="${i}"]`)?.addEventListener('click',()=>downloadSvg(`${slug(meta.title)}-range-${i+1}.svg`,svg));document.querySelector(`[data-range-chart-png="${i}"]`)?.addEventListener('click',()=>svgToPng(svg,`${slug(meta.title)}-range-${i+1}.png`));});
   (result.heatmaps||[]).forEach((h,i)=>{const svg=heatmapSvg(h);document.querySelector(`[data-heatmap-svg="${i}"]`)?.addEventListener('click',()=>downloadSvg(`${slug(meta.title)}-heatmap-${i+1}.svg`,svg));document.querySelector(`[data-heatmap-png="${i}"]`)?.addEventListener('click',()=>svgToPng(svg,`${slug(meta.title)}-heatmap-${i+1}.png`));});
   (result.surfaces3d||[]).forEach((surface,i)=>{const svg=surface3dSvg(surface);document.querySelector(`[data-surface3d-svg="${i}"]`)?.addEventListener('click',()=>downloadSvg(`${slug(meta.title)}-3d-mode-${i+1}.svg`,svg));document.querySelector(`[data-surface3d-png="${i}"]`)?.addEventListener('click',()=>svgToPng(svg,`${slug(meta.title)}-3d-mode-${i+1}.png`));});
+  (result.visuals||[]).forEach((visual,i)=>{const svg=electronicsFatigueVisualSvg(visual);document.querySelector(`[data-visual-svg="${i}"]`)?.addEventListener('click',()=>downloadSvg(`${slug(meta.title)}-visual-${i+1}.svg`,svg));document.querySelector(`[data-visual-png="${i}"]`)?.addEventListener('click',()=>svgToPng(svg,`${slug(meta.title)}-visual-${i+1}.png`));});
   return bindHarmonicAnimation(result);
 }
 
@@ -553,16 +783,13 @@ function bindEmbeddedDemos(){
   routeCleanup=()=>{old();cleanups.forEach(cleanup=>cleanup?.());};
 }
 function bindGlobal(route){
-  const primaryNav=document.querySelector('.primary-nav'),mobileToggle=document.querySelector('.menu-button'),toolsMenu=document.querySelector('[data-tools-menu]'),toolsToggle=document.querySelector('[data-tools-toggle]'),toolsPanel=document.querySelector('#tools-menu-panel');
-  const setToolsOpen=open=>{if(!toolsPanel||!toolsToggle)return;toolsPanel.hidden=!open;toolsToggle.setAttribute('aria-expanded',String(open));toolsMenu?.classList.toggle('open',open);};
-  mobileToggle?.addEventListener('click',e=>{const open=primaryNav.classList.toggle('open');e.currentTarget.setAttribute('aria-expanded',open);if(!open)setToolsOpen(false);});
-  toolsToggle?.addEventListener('click',()=>setToolsOpen(toolsToggle.getAttribute('aria-expanded')!=='true'));
-  document.querySelectorAll('.primary-nav a').forEach(link=>link.addEventListener('click',()=>{setToolsOpen(false);primaryNav?.classList.remove('open');mobileToggle?.setAttribute('aria-expanded','false');}));
-  const dismissTools=event=>{if(toolsMenu&&!toolsMenu.contains(event.target))setToolsOpen(false);};
-  const escapeTools=event=>{if(event.key==='Escape'&&toolsToggle?.getAttribute('aria-expanded')==='true'){setToolsOpen(false);toolsToggle.focus();}};
-  document.addEventListener('pointerdown',dismissTools);
-  document.addEventListener('keydown',escapeTools);
-  const globalCleanup=routeCleanup;routeCleanup=()=>{globalCleanup();document.removeEventListener('pointerdown',dismissTools);document.removeEventListener('keydown',escapeTools);};
+  const activeToolId=route.segments[0]==='tool'?decodeURIComponent(route.segments[1]||''):'';
+  if(activeToolId&&toolById.has(activeToolId))rememberRecentTool(activeToolId);
+  const primaryNav=document.querySelector('.primary-nav'),mobileToggle=document.querySelector('.menu-button'),toolLauncher=bindToolLauncher();
+  mobileToggle?.addEventListener('click',e=>{const open=primaryNav.classList.toggle('open');e.currentTarget.setAttribute('aria-expanded',open);if(!open)toolLauncher.setOpen(false);});
+  document.querySelectorAll('.primary-nav > a').forEach(link=>link.addEventListener('click',()=>{toolLauncher.setOpen(false);primaryNav?.classList.remove('open');mobileToggle?.setAttribute('aria-expanded','false');}));
+  document.querySelectorAll('[data-action="tool-launcher"]').forEach(button=>button.addEventListener('click',()=>toolLauncher.setOpen(true)));
+  const globalCleanup=routeCleanup;routeCleanup=()=>{globalCleanup();toolLauncher.cleanup();};
   document.querySelectorAll('[data-action="search"]').forEach(b=>b.addEventListener('click',openSearch));
   document.querySelectorAll('[data-action="print"]').forEach(b=>b.addEventListener('click',()=>window.print()));
   document.querySelector('[data-action="close-search"]')?.addEventListener('click',()=>document.querySelector('.search-dialog')?.close());
@@ -695,6 +922,7 @@ window.addEventListener('keydown',e=>{
   const typing=['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName);
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openSearch();}
   else if(e.key==='/'&&!typing){e.preventDefault();openSearch();}
+  else if(e.key.toLowerCase()==='t'&&!typing&&!e.metaKey&&!e.ctrlKey&&!e.altKey){const toggle=document.querySelector('[data-tools-toggle]');if(toggle){e.preventDefault();toggle.click();}}
   else if(e.key==='Escape')document.querySelector('.search-dialog[open]')?.close();
 });
 window.addEventListener('sau:add-artifact',event=>{addEngineeringArtifact(event.detail||{});showToast('Workbench evidence added to engineering project');const badge=document.querySelector('.project-pill b');if(badge)badge.textContent=loadEngineeringProject().artifacts.length;});

@@ -329,6 +329,34 @@ export const demoTakeawayRegistry = Object.freeze({
   'fairing-blanket-network': state => {
     const coverage = number(state, ['blanketCoverage'], 80), insertion = number(state, ['blanketInsertionLoss'], 18), leak = number(state, ['leakAreaPercent'], 0.05);
     return `${coverage.toFixed(0)}% blanket coverage at ${insertion.toFixed(1)} dB IL still competes with ${leak.toFixed(2)}% opening area and the resonant shell path. Improve the largest solved power share; coupon IL and component TL are not installed payload-cavity reduction.`;
+  },
+  'electronics-relative-motion': state => {
+    const response = number(state, ['response'], 0.28), x = number(state, ['x_fraction', 'position'], 0.5), y = number(state, ['y_fraction'], 0.5), thickness = number(state, ['thickness'], 1.6), packageName = choice(state, ['package'], 'bga');
+    return `The ${response.toFixed(2)} mm board-center 3σ response is mapped once to the ${packageName.toUpperCase()} at (${x.toFixed(2)}, ${y.toFixed(2)}) on a ${thickness.toFixed(1)} mm board. Relative board motion—not fixture GRMS—is the quantity screened against the attachment.`;
+  },
+  'electronics-psd-response-chain': state => {
+    const frequency = number(state, ['natural_frequency'], 320), q = number(state, ['quality_factor'], 10), level = number(state, ['level'], 1);
+    return `The ${frequency.toFixed(0)} Hz PCB mode with Q=${q.toFixed(1)} filters a ${level.toFixed(2)}× shaped input PSD. Preserve the local spectral shape and use numerical relative displacement when Miles' flat-spectrum assumption is not credible.`;
+  },
+  'electronics-component-map': state => {
+    const x = number(state, ['x_fraction'], 0.5), y = number(state, ['y_fraction'], 0.5), packageName = choice(state, ['package'], 'lccc'), mode = choice(state, ['mode'], '1,1'), field = choice(state, ['field'], 'surface-strain');
+    return `The selected ${packageName.toUpperCase()} at (${x.toFixed(2)}, ${y.toFixed(2)}) is shown against mode ${mode.replace(',', '×')} and its ${field.replaceAll('-', ' ')} field. Displacement placement is only the first screen; curvature and surface strain identify where the board actually flexes the attachment.`;
+  },
+  'electronics-three-sigma-duration': state => {
+    const duration = number(state, ['duration'], 60), rate = number(state, ['peak_rate'], 300), bandwidth = number(state, ['bandwidth'], .2);
+    return `${duration.toFixed(0)} s at ${rate.toFixed(0)} Hz and ${(100 * bandwidth).toFixed(0)}% fractional bandwidth creates many peak opportunities and rainflow cycles. Three sigma is a distribution level; the linked synthesis shows which counted amplitudes actually consume S–N damage.`;
+  },
+  'electronics-fatigue-ledger': state => {
+    const qualification = number(state, ['qualification_response'], 0.31), flight = number(state, ['flight_response'], 0.18), exponent = number(state, ['fatigue_exponent'], 6.4);
+    return `With response-life exponent b=${exponent.toFixed(1)}, the ${qualification.toFixed(3)} mm qualification event can outweigh repeated ${flight.toFixed(3)} mm flights. Keep level, duration, cycle rate, repeats, and configuration visible in the damage ledger.`;
+  },
+  'electronics-thickness-support-trade': state => {
+    const thickness = number(state, ['thickness'], 2), span = number(state, ['effective_span'], 180), slope = number(state, ['psd_slope'], 0);
+    return `The ${thickness.toFixed(1)} mm board and ${span.toFixed(0)} mm effective span move modal frequency, response, and allowable simultaneously. With local PSD slope ${slope.toFixed(1)}, a stiffer design can still move its mode into a harsher spectral region.`;
+  },
+  'electronics-test-correlation': state => {
+    const frequency = number(state, ['measured_frequency'], 295), q = number(state, ['measured_q'], 7), response = number(state, ['measured_response'], 0.29), channel = choice(state, ['channel'], 'SG-1');
+    return `${channel} is highlighted in the evidence chain while the measured mode sits at ${frequency.toFixed(0)} Hz, Q=${q.toFixed(2)}, and ${response.toFixed(3)} mm. Correlation must connect fixture input, board dynamics, local deformation, and functional evidence—not merely match one response ordinate.`;
   }
 });
 

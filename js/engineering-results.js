@@ -19,6 +19,7 @@
  * @property {RelatedConcept[]} relatedConcepts
  * @property {{primaryEvidence: {type: string, index: number}|null, primaryEvidenceStack: Array<{type: string, index: number, count?: number}>, primaryEvidenceCount: number, primaryValueCount: number, animation: Object|null}} presentation
  * @property {Array<Object>} [plots]
+ * @property {Array<Object>} [visuals]
  * @property {Array<Object>} [rangeCharts]
  * @property {Array<Object>} [surfaces3d]
  * @property {Array<Object>} [heatmaps]
@@ -206,13 +207,14 @@ function buildPresentation(id, result, values) {
   const requested = result.presentation || {};
   let primaryEvidence = requested.primaryEvidence || PRIMARY_EVIDENCE_OVERRIDES[id] || null;
   if (!primaryEvidence) {
-    if (result.surfaces3d?.length) primaryEvidence = { type: 'surface3d', index: 0 };
+    if (result.visuals?.length) primaryEvidence = { type: 'visual', index: 0 };
+    else if (result.surfaces3d?.length) primaryEvidence = { type: 'surface3d', index: 0 };
     else if (result.rangeCharts?.length) primaryEvidence = { type: 'rangeChart', index: 0 };
     else if (result.plots?.length) primaryEvidence = { type: 'plot', index: 0 };
     else if (result.heatmaps?.length) primaryEvidence = { type: 'heatmap', index: 0 };
     else if (result.tables?.length) primaryEvidence = { type: 'table', index: 0 };
   }
-  const validEvidenceTypes = new Set(['plot', 'rangeChart', 'heatmap', 'surface3d', 'table']);
+  const validEvidenceTypes = new Set(['visual', 'plot', 'rangeChart', 'heatmap', 'surface3d', 'table']);
   const requestedStack = Array.isArray(requested.primaryEvidenceStack)
     ? requested.primaryEvidenceStack.filter(item => item && validEvidenceTypes.has(item.type) && Number.isInteger(item.index) && item.index >= 0).map(item => ({ type: item.type, index: item.index, ...(Number.isInteger(item.count) ? { count: Math.max(1, Math.min(6, item.count)) } : {}) }))
     : [];
@@ -346,6 +348,7 @@ export function assertEngineeringResult(result, id = 'Calculator') {
   if (!result.validity || typeof result.validity.regime !== 'string' || typeof result.validity.confidence !== 'string') fail('validity is incomplete.');
   if (!Array.isArray(result.relatedConcepts) || result.relatedConcepts.length === 0) fail('related concepts are required.');
   if (!result.presentation || !Number.isInteger(result.presentation.primaryValueCount)) fail('presentation metadata is incomplete.');
+  if (result.visuals && (!Array.isArray(result.visuals) || !result.visuals.every(visual => visual && typeof visual.kind === 'string'))) fail('visuals must be an array with a kind for every visual.');
 }
 
 /** Wrap a calculator definition so every compute call returns an EngineeringResult. */

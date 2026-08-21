@@ -16,6 +16,7 @@ let standalone = await read('standalone.html');
 const styles = await read('styles.css');
 const app = await read('js/app.js');
 const unitSystemModule = await read('js/unit-system.js');
+const toolDiscoveryModule = await read('js/tool-discovery.js');
 const frameworkModule = await read('js/engineering-results.js');
 const dataModule = await read('js/data.js');
 const pcbAccelerometersModule = await read('js/pcb-accelerometers-data.js');
@@ -42,6 +43,11 @@ const programExpansionDataModule = await read('js/program-expansion-data.js');
 const programExpansionPhysicsModule = await read('js/program-expansion-physics.js');
 const programExpansionCalculatorsModule = await read('js/program-expansion-calculators.js');
 const programExpansionDemosModule = await read('js/program-expansion-demos.js');
+const electronicsFatigueDataModule = await read('js/electronics-fatigue-data.js');
+const electronicsFatiguePhysicsModule = await read('js/electronics-fatigue-physics.js');
+const electronicsFatigueVisualsModule = await read('js/electronics-fatigue-visuals.js');
+const electronicsFatigueCalculatorsModule = await read('js/electronics-fatigue-calculators.js');
+const electronicsFatigueDemosModule = await read('js/electronics-fatigue-demos.js');
 const seaParameterDataModule = await read('js/sea-parameters-data.js');
 const seaParameterPhysicsModule = await read('js/sea-parameters-physics.js');
 const seaParameterCalculatorsModule = await read('js/sea-parameters-calculators.js');
@@ -90,9 +96,10 @@ const sorbothaneAnalysisBlock = `const __sorbothaneAnalysis=(()=>{\nconst {SORBO
 const nastranIsolationExportBlock = `const __nastranIsolationExport=(()=>{\nconst {isParkerLordConfig,mountDynamicStiffness,normalizeSorbothaneConfig,rigidBodyMassMatrix,solveRigidBodyModes}=__sorbothaneAnalysis;\n${moduleSource(nastranIsolationExportModule)}\nreturn {NASTRAN_IPS_UNITS,nastranExportSettings,generateNastranIsolationBdf};\n})();\n\n`;
 const workflowExpansionDataBlock = 'const __workflowExpansionData=(()=>{\n'+moduleSource(workflowExpansionDataModule)+'\nreturn {workflowExpansionSections,workflowExpansionToolCatalog,workflowExpansionDemos,workflowExpansionCaseNotes,workflowExpansionReferenceGroups};\n})();\n\n';
 const programExpansionDataBlock = 'const __programExpansionData=(()=>{\n'+moduleSource(programExpansionDataModule)+'\nreturn {programExpansionSections,programExpansionToolCatalog,programExpansionDemos,programExpansionCaseNotes,programExpansionReferenceGroups};\n})();\n\n';
+const electronicsFatigueDataBlock = 'const __electronicsFatigueData=(()=>{\n'+moduleSource(electronicsFatigueDataModule)+'\nreturn {electronicsFatigueSections,electronicsFatigueToolCatalog,electronicsFatigueDemos,electronicsFatigueCaseNotes,electronicsFatigueReferenceGroups};\n})();\n\n';
 const seaParameterDataBlock = 'const __seaParameterData=(()=>{\n'+moduleSource(seaParameterDataModule)+'\nreturn {seaParameterSections,seaParameterToolCatalog,seaParameterDemos,seaParameterCaseNotes,seaParameterReferenceGroups};\n})();\n\n';
 const sorbothaneIsolationBlock = `const __sorbothaneIsolation=(()=>{\nconst {SORBOTHANE_CATALOG,SORBOTHANE_DATA_VERSION,SORBOTHANE_REFERENCES,sorbothaneCatalogItem,sorbothaneMaterial}=__sorbothaneData;\nconst {PARKER_LORD_AM_CATALOG,PARKER_LORD_AM_FAMILIES,PARKER_LORD_SOURCE,parkerLordCatalogItem}=__parkerLordIsolators;\nconst {${sorbothaneAnalysisImports.join(',')}}=__sorbothaneAnalysis;\nconst {generateNastranIsolationBdf}=__nastranIsolationExport;\n${moduleSource(sorbothaneIsolationModule)}\nreturn {renderSorbothaneIsolationWorkbench,bindSorbothaneIsolationWorkbench,sorbothaneIsolationCalculator,sorbothaneIsolationWorkbench};\n})();\n\n`;
-standalone = replaceRange(standalone, 'const __data=(()=>{', 'const __calculators=(()=>{', dataBlock + workflowExpansionDataBlock + programExpansionDataBlock + seaParameterDataBlock + pcbAccelerometersBlock + sorbothaneDataBlock + parkerLordIsolatorsBlock + sorbothaneAnalysisBlock + nastranIsolationExportBlock + sorbothaneIsolationBlock);
+standalone = replaceRange(standalone, 'const __data=(()=>{', 'const __calculators=(()=>{', dataBlock + workflowExpansionDataBlock + programExpansionDataBlock + electronicsFatigueDataBlock + seaParameterDataBlock + pcbAccelerometersBlock + sorbothaneDataBlock + parkerLordIsolatorsBlock + sorbothaneAnalysisBlock + nastranIsolationExportBlock + sorbothaneIsolationBlock);
 
 const calculatorsSource = moduleSource(calculatorsModule).replace(
   'const calculatorRegistry = createEngineeringRegistry(calculatorDefinitions);',
@@ -189,6 +196,22 @@ let programExpansionCalculatorsSource = moduleSource(programExpansionCalculators
 );
 const programExpansionCalculatorsBlock = `const __programExpansionCalculators=(()=>{\n${programExpansionPhysicsImports}\n${programExpansionCalculatorsSource}\nreturn {programExpansionCalculatorRegistry};\n})();\n\n`;
 const programExpansionDemosBlock = `const __programExpansionDemos=(()=>{\n${programExpansionPhysicsImports}\n${moduleSource(programExpansionDemosModule)}\nreturn {programExpansionPreviewSvg,mountProgramExpansionDemo,programExpansionSupportedDemoIds};\n})();\n\n`;
+const electronicsFatiguePhysicsExports = [
+  'ELECTRONICS_G0', 'STEINBERG_REFERENCE_CYCLES', 'STEINBERG_COMPONENTS',
+  'steinbergLocationFactor', 'steinbergAllowableDisplacement', 'steinbergDisplacementState',
+  'parsePsdSpectrum', 'pcbRandomResponseState', 'componentPlacementState', 'pcbModeCurvatureState', 'parseComponentTable',
+  'spectralFatigueComparisonState', 'synthesizedRainflowState', 'parseDamageLedger', 'steinbergDamageLedgerState',
+  'threeSigmaDurationState', 'pcbDesignTradeState', 'pcbTestCorrelationState', 'pcbTestLayoutState'
+];
+const electronicsFatiguePhysicsBlock = `const __electronicsFatiguePhysics=(()=>{\n${moduleSource(electronicsFatiguePhysicsModule)}\nreturn {${electronicsFatiguePhysicsExports.join(',')}};\n})();\n\n`;
+const electronicsFatiguePhysicsImports = `const {${electronicsFatiguePhysicsExports.join(',')}}=__electronicsFatiguePhysics;`;
+const electronicsFatigueVisualsBlock = `const __electronicsFatigueVisuals=(()=>{\n${moduleSource(electronicsFatigueVisualsModule)}\nreturn {electronicsFatigueVisualKinds,electronicsFatigueVisualSvg};\n})();\n\n`;
+let electronicsFatigueCalculatorsSource = moduleSource(electronicsFatigueCalculatorsModule).replace(
+  'const electronicsFatigueCalculatorRegistry = createEngineeringRegistry(definitions);',
+  'const electronicsFatigueCalculatorRegistry = definitions;'
+);
+const electronicsFatigueCalculatorsBlock = `const __electronicsFatigueCalculators=(()=>{\n${electronicsFatiguePhysicsImports}\n${electronicsFatigueCalculatorsSource}\nreturn {electronicsFatigueCalculatorRegistry};\n})();\n\n`;
+const electronicsFatigueDemosBlock = `const __electronicsFatigueDemos=(()=>{\n${electronicsFatiguePhysicsImports}\nconst {electronicsFatigueVisualSvg}=__electronicsFatigueVisuals;\n${moduleSource(electronicsFatigueDemosModule)}\nreturn {electronicsFatiguePreviewSvg,mountElectronicsFatigueDemo,electronicsFatigueSupportedDemoIds};\n})();\n\n`;
 const seaParameterPhysicsExports = [
   'SEA_PARAMETER_PRESETS', 'empiricalLossFactorState', 'modalDensityAtlasState',
   'radiationEfficiencyAtlasState', 'drivingPointImpedanceState', 'clfMechanismState',
@@ -206,9 +229,9 @@ const seaParameterCalculatorsBlock = `const __seaParameterCalculators=(()=>{\n${
 const seaParameterDemosBlock = `const __seaParameterDemos=(()=>{\n${seaParameterPhysicsImports}\n${moduleSource(seaParameterDemosModule)}\nreturn {seaParameterPreviewSvg,mountSeaParameterDemo,seaParameterSupportedDemoIds};\n})();\n\n`;
 const extraCalculatorsStart = 'const __extraCalculators=(()=>{';
 if (standalone.includes(honeycombStart)) {
-  standalone = replaceRange(standalone, honeycombStart, extraCalculatorsStart, honeycombBlock + acs519PhysicsBlock + seaParameterPhysicsBlock + launchSeaCapstoneBlock + acs519CalculatorsBlock + acs519DemosBlock + workflowExpansionPhysicsBlock + workflowExpansionCalculatorsBlock + workflowExpansionDemosBlock + programExpansionPhysicsBlock + programExpansionCalculatorsBlock + programExpansionDemosBlock + seaParameterCalculatorsBlock + seaParameterDemosBlock);
+  standalone = replaceRange(standalone, honeycombStart, extraCalculatorsStart, honeycombBlock + acs519PhysicsBlock + seaParameterPhysicsBlock + launchSeaCapstoneBlock + acs519CalculatorsBlock + acs519DemosBlock + workflowExpansionPhysicsBlock + workflowExpansionCalculatorsBlock + workflowExpansionDemosBlock + programExpansionPhysicsBlock + programExpansionCalculatorsBlock + programExpansionDemosBlock + electronicsFatiguePhysicsBlock + electronicsFatigueVisualsBlock + electronicsFatigueCalculatorsBlock + electronicsFatigueDemosBlock + seaParameterCalculatorsBlock + seaParameterDemosBlock);
 } else {
-  standalone = standalone.replace(extraCalculatorsStart, honeycombBlock + acs519PhysicsBlock + seaParameterPhysicsBlock + launchSeaCapstoneBlock + acs519CalculatorsBlock + acs519DemosBlock + workflowExpansionPhysicsBlock + workflowExpansionCalculatorsBlock + workflowExpansionDemosBlock + programExpansionPhysicsBlock + programExpansionCalculatorsBlock + programExpansionDemosBlock + seaParameterCalculatorsBlock + seaParameterDemosBlock + extraCalculatorsStart);
+  standalone = standalone.replace(extraCalculatorsStart, honeycombBlock + acs519PhysicsBlock + seaParameterPhysicsBlock + launchSeaCapstoneBlock + acs519CalculatorsBlock + acs519DemosBlock + workflowExpansionPhysicsBlock + workflowExpansionCalculatorsBlock + workflowExpansionDemosBlock + programExpansionPhysicsBlock + programExpansionCalculatorsBlock + programExpansionDemosBlock + electronicsFatiguePhysicsBlock + electronicsFatigueVisualsBlock + electronicsFatigueCalculatorsBlock + electronicsFatigueDemosBlock + seaParameterCalculatorsBlock + seaParameterDemosBlock + extraCalculatorsStart);
 }
 
 const honeycombImportNames = 'const {' + honeycombExports.join(',') + '}=__honeycomb;';
@@ -241,7 +264,7 @@ const demoTakeawaysBlock = `const __demoTakeaways=(()=>{\n${moduleSource(demoTak
 const demosBlock = `const __demosModule=(()=>{\nconst {${demoHoneycombNames.join(',')}}=__honeycomb;\nconst {twoSubsystemEnergyBalance}=__seaCoupling;\nconst {mountDemoTakeaway}=__demoTakeaways;\n${moduleSource(demosModule)}\nreturn {demoPreviewSvg,mountDemo,supportedDemoIds,spatialCoherence,jointAcceptance};\n})();\n\n`;
 const demosWithAcs519Block = demosBlock.replace(
   'const {twoSubsystemEnergyBalance}=__seaCoupling;',
-  'const {twoSubsystemEnergyBalance}=__seaCoupling;\nconst {acs519PreviewSvg,mountAcs519Demo,acs519SupportedDemoIds}=__acs519Demos;\nconst {workflowExpansionPreviewSvg,mountWorkflowExpansionDemo,workflowExpansionSupportedDemoIds}=__workflowExpansionDemos;\nconst {programExpansionPreviewSvg,mountProgramExpansionDemo,programExpansionSupportedDemoIds}=__programExpansionDemos;\nconst {seaParameterPreviewSvg,mountSeaParameterDemo,seaParameterSupportedDemoIds}=__seaParameterDemos;'
+  'const {twoSubsystemEnergyBalance}=__seaCoupling;\nconst {acs519PreviewSvg,mountAcs519Demo,acs519SupportedDemoIds}=__acs519Demos;\nconst {workflowExpansionPreviewSvg,mountWorkflowExpansionDemo,workflowExpansionSupportedDemoIds}=__workflowExpansionDemos;\nconst {programExpansionPreviewSvg,mountProgramExpansionDemo,programExpansionSupportedDemoIds}=__programExpansionDemos;\nconst {seaParameterPreviewSvg,mountSeaParameterDemo,seaParameterSupportedDemoIds}=__seaParameterDemos;\nconst {electronicsFatiguePreviewSvg,mountElectronicsFatigueDemo,electronicsFatigueSupportedDemoIds}=__electronicsFatigueDemos;'
 );
 const homepageBlock = `const __homepage=(()=>{\n${moduleSource(homepageModule)}\nreturn {homepageNavigation,homepageNavKey,subjectWheel,featuredItems,renderHomepage,renderSubjectPage,bindHomepage};\n})();\n\n`;
 const siteComponentsBlock = `const __siteComponents=(()=>{\n${moduleSource(siteComponentsModule)}\nreturn {renderPageShell,renderBreadcrumbs,renderSectionHeader,renderCallout,renderLinkCollection,siteComponentInventory};\n})();\n\n`;
@@ -270,21 +293,25 @@ if (standalone.includes(frameworkStart)) {
   standalone = standalone.replace(appStartMarker, frameworkBlock + workbenchRuntimeBlock + engineeringWorkbenchesBlock + appStartMarker);
 }
 
-const oldRegistry = "const calculatorRegistry = { ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator };";
-const newRegistry = "const calculatorRegistry = createEngineeringRegistry({ ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator });";
+const oldRegistry = "const calculatorRegistry = { ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, ...electronicsFatigueCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator };";
+const newRegistry = "const calculatorRegistry = createEngineeringRegistry({ ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, ...electronicsFatigueCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator });";
 const appPrelude = [
   moduleSource(unitSystemModule),
+  moduleSource(toolDiscoveryModule),
   appImports,
   'const {acs519Sections,acs519ToolCatalog,acs519Demos,acs519CaseNotes,acs519ReferenceGroups}=__acs519Data;',
   'const {workflowExpansionSections,workflowExpansionToolCatalog,workflowExpansionDemos,workflowExpansionCaseNotes,workflowExpansionReferenceGroups}=__workflowExpansionData;',
   'const {programExpansionSections,programExpansionToolCatalog,programExpansionDemos,programExpansionCaseNotes,programExpansionReferenceGroups}=__programExpansionData;',
   'const {seaParameterSections,seaParameterToolCatalog,seaParameterDemos,seaParameterCaseNotes,seaParameterReferenceGroups}=__seaParameterData;',
+  'const {electronicsFatigueSections,electronicsFatigueToolCatalog,electronicsFatigueDemos,electronicsFatigueCaseNotes,electronicsFatigueReferenceGroups}=__electronicsFatigueData;',
   'const {calculatorRegistry:baseCalculatorRegistry}=__calculators;',
   'const {extraCalculatorRegistry}=__extraCalculators;',
   'const {acs519CalculatorRegistry}=__acs519Calculators;',
   'const {workflowExpansionCalculatorRegistry}=__workflowExpansionCalculators;',
   'const {programExpansionCalculatorRegistry}=__programExpansionCalculators;',
   'const {seaParameterCalculatorRegistry}=__seaParameterCalculators;',
+  'const {electronicsFatigueCalculatorRegistry}=__electronicsFatigueCalculators;',
+  'const {electronicsFatigueVisualSvg}=__electronicsFatigueVisuals;',
   'const {extraToolCatalog}=__extraData;',
   'const {lineChartSvg,rangeChartSvg,heatmapSvg,surface3dSvg,harmonicPhase,signedHeatColor,downloadCsv,downloadSvg,downloadText}=__charts;',
   'const {demoPreviewSvg,mountDemo}=__demosModule;',

@@ -168,6 +168,14 @@ export const learningPathways = Object.freeze([
     pathStep('Dynamic stress environment', 'Tool', '#/tool/dynamic-stress-environment', 'Combine dynamic response, preload, temperature, and fatigue.'),
     pathStep('Model–test correlation', 'Workbench', '#/tool/model-test-correlation', 'Close the loop with test evidence.')
   ] },
+  { id: 'electronics-fatigue', title: 'Electronics vibration-fatigue analyst', role: 'PCB response, strain, and life', summary: 'Follow a vibration environment through board modes, component-local motion, fatigue screening, evidence, and mission damage.', steps: [
+    pathStep('Electronics failure chain', 'Chapter', '#/cheat-sheet?section=electronics-vibration-failure-chain', 'Name the physical failure mechanism and required local observable.'),
+    pathStep('PCB random-response chain', 'Tool', '#/tool/pcb-random-response', 'Convert shaped base PSD into modal acceleration and relative displacement.'),
+    pathStep('Steinberg displacement screen', 'Tool', '#/tool/steinberg-displacement', 'Apply package, location, direction, response-statistic, and reference-life basis.'),
+    pathStep('Component placement map', 'Tool', '#/tool/pcb-component-placement', 'Rank local component risk and select strain-correlation locations.'),
+    pathStep('PCB model-to-test correlation', 'Tool', '#/tool/pcb-test-correlation', 'Compare mode frequency, damping, response shape, peak error, and fatigue leverage.'),
+    pathStep('Mission damage ledger', 'Tool', '#/tool/electronics-fatigue-ledger', 'Keep test, retest, transport, and flight exposure traceable.')
+  ] },
   { id: 'test-engineer', title: 'Acoustic & vibration test engineer', role: 'Measurement and qualification', summary: 'Plan measurements, preserve signal integrity, control tests, and defend model-to-test evidence.', steps: [
     pathStep('Signal and testing', 'Chapter', '#/cheat-sheet?section=signal-testing', 'Establish sampling, windows, resolution, and calibration.'),
     pathStep('Time-to-PSD workbench', 'Workbench', '#/tool/time-psd', 'Preserve processing provenance and closure.'),
@@ -205,6 +213,7 @@ export function classifyTool(tool, workbenchIds = []) {
 
   let hardware = 'General system';
   if (includesAny(text, ['tank', 'shell', 'cylinder', 'slosh'])) hardware = 'Tanks & shells';
+  else if (includesAny(text, ['pcb', 'printed circuit', 'electronics', 'solder', 'package', 'bga', 'lccc'])) hardware = 'Electronics & PCBs';
   else if (includesAny(text, ['fairing', 'panel', 'plate', 'cavity', 'transmission loss'])) hardware = 'Fairing & panels';
   else if (includesAny(text, ['pipe', 'duct', 'fan', 'flow noise'])) hardware = 'Ducts & feedlines';
   else if (includesAny(text, ['joint', 'junction', 'interface', 'mobility', 'isolation'])) hardware = 'Joints & interfaces';
@@ -239,6 +248,13 @@ const explicitHandoffs = Object.freeze({
   'sea-validity-confidence': ['launch-vibroacoustic-capstone', 'experimental-sea', 'model-test-correlation'],
   'model-test-correlation': ['uncertainty-sensitivity', 'credibility-scorecard', 'mission-environment-timeline'],
   'qualification-test-planner': ['mimo-test-control', 'model-test-correlation', 'credibility-scorecard'],
+  'pcb-random-response': ['steinberg-displacement', 'pcb-component-placement', 'pcb-test-correlation'],
+  'steinberg-displacement': ['pcb-component-placement', 'electronics-fatigue-ledger', 'pcb-design-trade'],
+  'pcb-component-placement': ['electronics-fatigue-methods', 'pcb-design-trade', 'pcb-test-correlation'],
+  'electronics-fatigue-methods': ['electronics-fatigue-ledger', 'pcb-test-correlation', 'pcb-design-trade'],
+  'electronics-fatigue-ledger': ['pcb-design-trade', 'qualification-test-planner', 'pcb-test-correlation'],
+  'pcb-design-trade': ['pcb-random-response', 'steinberg-displacement', 'pcb-test-correlation'],
+  'pcb-test-correlation': ['pcb-random-response', 'steinberg-displacement', 'electronics-fatigue-ledger'],
   'noise-control-path': ['acoustic-treatment', 'enclosure-design', 'acoustic-measurement-planner']
 });
 

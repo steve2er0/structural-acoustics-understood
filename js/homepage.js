@@ -109,11 +109,20 @@ export const subjectWheel = [
     symbol: 'D',
     accent: '#f2c663',
     question: 'When does repeated vibroacoustic stress become accumulated damage?',
-    summary: 'Translate stress spectra, bandwidth, duration, non-Gaussian peaks, mission repeats, and S–N assumptions into a defensible damage screen.',
-    chapterIds: ['vibroacoustic-fatigue'],
-    demoIds: ['vibroacoustic-fatigue-lab', 'stress-environment-map', 'mission-environment-timeline'],
-    toolIds: ['vibroacoustic-fatigue', 'fds', 'duration-scaling', 'dynamic-stress-environment', 'mission-environment-timeline'],
-    caseStudyIds: ['program-vibroacoustic-fatigue', 'workflow-mitigation-trade-studies', 'program-nonstationary-nongaussian-environments', 'workflow-extreme-response-spectrum']
+    summary: 'Follow vibration into PCB relative motion, component strain, Steinberg screening, statistical fatigue, mission damage, test correlation, and mitigation.',
+    chapterIds: [
+      'vibroacoustic-fatigue', 'electronics-vibration-failure-chain', 'pcb-modal-random-response',
+      'steinberg-displacement-criterion', 'component-location-curvature-strain', 'steinberg-three-band-fatigue',
+      'electronics-mission-damage-ledger', 'electronics-test-correlation', 'electronics-vibration-mitigation'
+    ],
+    demoIds: ['vibroacoustic-fatigue-lab', 'electronics-relative-motion', 'electronics-psd-response-chain', 'electronics-component-map', 'electronics-three-sigma-duration', 'electronics-fatigue-ledger', 'electronics-thickness-support-trade', 'electronics-test-correlation'],
+    toolIds: ['vibroacoustic-fatigue', 'steinberg-displacement', 'pcb-random-response', 'pcb-component-placement', 'electronics-fatigue-methods', 'electronics-fatigue-ledger', 'pcb-design-trade', 'pcb-test-correlation', 'fds', 'duration-scaling', 'dynamic-stress-environment'],
+    caseStudyIds: [
+      'program-vibroacoustic-fatigue', 'electronics-electronics-vibration-failure-chain', 'electronics-pcb-modal-random-response',
+      'electronics-steinberg-displacement-criterion', 'electronics-component-location-curvature-strain', 'electronics-steinberg-three-band-fatigue',
+      'electronics-electronics-mission-damage-ledger', 'electronics-electronics-test-correlation', 'electronics-electronics-vibration-mitigation',
+      'workflow-mitigation-trade-studies', 'program-nonstationary-nongaussian-environments'
+    ]
   },
   {
     id: 'structural-acoustics',
@@ -362,7 +371,7 @@ export function renderHomepage(stats = {}) {
   ];
   return `<div class="atlas-home wheel-home">
     <section class="subject-home-hero" id="subjects" aria-labelledby="homepage-title">
-      <header class="subject-home-copy"><p class="home-kicker">Structural acoustics · subject-first navigation</p><h1 id="homepage-title">Navigate the wheel of acoustics.</h1><p class="home-lede">Choose the physical subject first. Then learn the concepts, explore interactive demos, use engineering tools, and read applied case studies.</p><div class="home-actions"><button type="button" class="home-primary-action" data-action="search">Search the knowledge base <span aria-hidden="true">⌘K</span></button><a class="home-search-action" href="#/cheat-sheet">Browse every chapter</a></div><p class="home-counts">${counts.map(count => `<span>${esc(count)}</span>`).join('')}</p></header>
+      <header class="subject-home-copy"><p class="home-kicker">Structural acoustics · subject-first navigation</p><h1 id="homepage-title">Navigate the wheel of acoustics.</h1><p class="home-lede">Choose the physical subject first. Then learn the concepts, explore interactive demos, use engineering tools, and read applied case studies.</p><div class="home-actions"><button type="button" class="home-primary-action" data-action="tool-launcher">Open a tool <span aria-hidden="true">T</span></button><button type="button" class="home-search-action" data-action="search">Search the knowledge base <span aria-hidden="true">⌘K</span></button><a class="home-chapter-action" href="#/cheat-sheet">Browse every chapter →</a></div><p class="home-counts">${counts.map(count => `<span>${esc(count)}</span>`).join('')}</p><section class="home-quick-tools" data-home-quick-tools hidden aria-labelledby="home-quick-tools-label"><span id="home-quick-tools-label">Pinned & recent tools</span><div data-home-quick-tools-list></div></section></header>
       ${renderSubjectWheel(sectionMap, demoMap)}
     </section>
     <section class="home-entry-strip" aria-label="Explore the library"><a href="#/demos"><span>Explore</span><strong>Interactive demos</strong><p>Form a hypothesis, move the variables, and see the controlling physics respond.</p></a><a href="#/tools"><span>Calculate</span><strong>Engineering tools</strong><p>Use quick screens and guided workbenches organized by the same subject taxonomy.</p></a><a href="#/case-studies"><span>Apply judgment</span><strong>Case studies & articles</strong><p>See where assumptions, shortcuts, measurements, and model boundaries change the conclusion.</p></a></section>
