@@ -2179,6 +2179,8 @@ body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [stroke
 body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [stroke="#ada497"],
 body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [stroke="#d9d4ca"],
 body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [stroke="#eeeae3"] { stroke: #294660; }
+body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [data-axis-grid$="-major"] { stroke: #3f6685; stroke-opacity: .9; }
+body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [data-axis-grid$="-minor"] { stroke: #173149; stroke-opacity: .5; }
 body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [stroke="#657176"],
 body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [stroke="#899296"] { stroke: #7189a3; }
 body.site-system-route :is(.demo-preview, .demo-stage, .chart-shell) svg [stroke="#1e6077"] { stroke: #55b8ff; }

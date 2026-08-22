@@ -5,7 +5,7 @@ import { sections as baseSections, toolCatalog, demos as baseDemos, caseNotes as
 import { extraToolCatalog } from '../js/extra-data.js';
 import { calculatorRegistry, materials } from '../js/calculators.js';
 import { PCB_ACCELEROMETER_CATALOG_META, pcbAccelerometers, pcbAccelerometerOptions } from '../js/pcb-accelerometers-data.js';
-import { extraCalculatorRegistry } from '../js/extra-calculators.js';
+import { extraCalculatorRegistry, fatigueDamageSpectrumState, spectralFatigueDamageFromMoments, synthesizeDamageEquivalentPsd } from '../js/extra-calculators.js';
 import { sorbothaneIsolationCalculator } from '../js/sorbothane-isolation.js';
 import { acs519Sections, acs519ToolCatalog, acs519Demos, acs519CaseNotes } from '../js/acs519-data.js';
 import { acs519CalculatorRegistry } from '../js/acs519-calculators.js';
@@ -84,7 +84,7 @@ import { jointAcceptance, spatialCoherence, supportedDemoIds } from '../js/demos
 import { assertDemoTakeawayRegistry, buildDemoTakeaway, demoTakeawayRegistry } from '../js/demo-takeaways.js';
 import { assertEngineeringResult, engineeringResultToText } from '../js/engineering-results.js';
 import { axisUnitInfo, displayEngineeringResult, formatDisplayInputNumber, fromDisplayNumber, toDisplayNumber, toDisplayStep, unitConversion } from '../js/unit-system.js';
-import { heatmapSvg, harmonicPhase, lineChartSvg, rangeChartSvg, signedHeatColor, surface3dSvg } from '../js/charts.js';
+import { formatLogTick, heatmapSvg, harmonicPhase, lineChartSvg, logTicks, rangeChartSvg, signedHeatColor, surface3dSvg } from '../js/charts.js';
 import {
   featuredItems,
   homepageNavigation,
@@ -213,6 +213,38 @@ test('PCB accelerometer catalog is normalized, grouped, and source traceable',()
   const model=pcbAccelerometers.find(sensor=>sensor.model==='352C04');
   assert.deepEqual({sensitivity:model.sensitivityValue,unit:model.sensitivityUnit,range:model.measurementRangeGPeak,frequency:[model.frequencyMinHz,model.frequencyMaxHz],temperature:[model.temperatureMinC,model.temperatureMaxC]},
     {sensitivity:10,unit:'mV/g',range:500,frequency:[.5,10000],temperature:[-54,121]});
+});
+
+test('shared logarithmic axes use decade labels, complete minor grids, and fixed comparison domains',()=>{
+  const expectedMajorLabels=['0.0001','0.001','0.01','0.1','1','10','100'];
+  const ticks=logTicks(1e-4,1e2);
+  assert.deepEqual(ticks.filter(tick=>tick.major).map(tick=>formatLogTick(tick.value)),expectedMajorLabels);
+  for(let exponent=-4;exponent<2;exponent++){
+    assert.deepEqual(ticks.filter(tick=>tick.exponent===exponent&&!tick.major).map(tick=>tick.multiplier),[2,3,4,5,6,7,8,9]);
+  }
+
+  const traces=[
+    {name:'Current',x:[1,10,100],y:[1e-4,1,100],emphasis:true},
+    {name:'Comparison with a deliberately long legend label',x:[.1,10,1000],y:[1e-3,.1,10]}
+  ];
+  const plot={title:'Stable logarithmic comparison',xLabel:'Frequency',yLabel:'Response',xScale:'log',yScale:'log',traces};
+  const fullSvg=lineChartSvg(plot),selectedSvg=lineChartSvg({...plot,domainTraces:traces,traces:[{...traces[0],sourceIndex:0}]});
+  const gridSignature=svg=>svg.match(/<line data-axis-grid="[xy]-(?:major|minor)"[^>]+>/g);
+  const labelValues=(svg,axis)=>[...svg.matchAll(new RegExp(`<text data-axis-label="${axis}-major" data-axis-value="[^"]+"[^>]*>([^<]+)<\\/text>`,'g'))].map(match=>match[1]);
+  assert.deepEqual(gridSignature(selectedSvg),gridSignature(fullSvg),'selection must not change logarithmic grid positions or plot geometry');
+  assert.match(selectedSvg,/data-chart-x-domain="0.1,1000"/);
+  assert.match(selectedSvg,/data-chart-y-domain="0.0001,100"/);
+  assert.deepEqual(labelValues(selectedSvg,'y'),expectedMajorLabels);
+  assert.doesNotMatch(selectedSvg,/data-axis-label="[xy]-minor"/);
+  assert.equal((selectedSvg.match(/data-axis-grid="y-minor"/g)||[]).length,48);
+
+  const rangeSvg=rangeChartSvg({title:'Log range',scale:'log',min:1e-4,max:100,lanes:[{label:'Capability',start:1e-4,end:100}]});
+  assert.deepEqual(labelValues(rangeSvg,'x'),expectedMajorLabels);
+  assert.equal((rangeSvg.match(/data-axis-grid="x-minor"/g)||[]).length,48);
+  assert.doesNotMatch(rangeSvg,/data-axis-label="x-minor"/);
+  const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+  assert.match(css,/\[data-axis-grid\$="-major"\]\s*\{[^}]*stroke:\s*#3f6685;[^}]*stroke-opacity:\s*\.9;/);
+  assert.match(css,/\[data-axis-grid\$="-minor"\]\s*\{[^}]*stroke:\s*#173149;[^}]*stroke-opacity:\s*\.5;/);
 });
 
 test('PCB accelerometer explorer exposes specification ranges and DAQ-limited dynamic range',()=>{
@@ -699,6 +731,9 @@ test('modal density combines population screening with the structural and acoust
   const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
   assert.match(appSource,/function initialChartTraceIndices/);
   assert.match(appSource,/data-chart-trace-option/);
+  assert.match(appSource,/const domainTraces=.*plot\.domainTraces/);
+  assert.match(appSource,/fixed axes retain the full comparison range/);
+  assert.doesNotMatch(appSource,/axes rescale to the visible/i);
   const indexedSvg=lineChartSvg({...plate.plots[0],traces:[{...plate.plots[0].traces[2],sourceIndex:2}]});
   assert.match(indexedSvg,/data-legend-trace="2"/);
   assert.match(indexedSvg,/data-chart-trace="2"/);
@@ -797,6 +832,127 @@ test('zero correlation combines PSD RMS by root-sum-square',()=>{
   const r=extraCalculatorRegistry['psd-combination'].compute(v);
   const r1=metric(r,'PSD 1 RMS'),r2=metric(r,'PSD 2 RMS'),rt=metric(r,'Combined RMS');
   close(rt,Math.sqrt(r1*r1+r2*r2),2e-4);
+});
+
+test('FDS pseudo-damage scales with duration and PSD amplitude',()=>{
+  const psd=[[20,.005],[80,.005],[200,.03],[500,.03],[1000,.008],[2000,.008]],frequencies=[40,100,250,630,1600];
+  const base=fatigueDamageSpectrumState({psdPoints:psd,q:10,duration:10,b:6,frequencies,responseBasis:'pseudo-velocity'});
+  const longer=fatigueDamageSpectrumState({psdPoints:psd,q:10,duration:60,b:6,frequencies,responseBasis:'pseudo-velocity'});
+  const raised=fatigueDamageSpectrumState({psdPoints:psd.map(([f,g])=>[f,4*g]),q:10,duration:10,b:6,frequencies,responseBasis:'pseudo-velocity'});
+  base.damage.forEach((damage,index)=>{
+    close(longer.damage[index]/damage,6,1e-10);
+    close(raised.damage[index]/damage,4**3,1e-9);
+    close(raised.rmsResponse[index]/base.rmsResponse[index],2,1e-10);
+    close(base.spectralM0[index],base.rmsResponse[index]**2,1e-10);
+    close(base.zeroCrossingRate[index],Math.sqrt(base.spectralM2[index]/base.spectralM0[index])/(2*Math.PI),1e-10);
+    close(base.peakRate[index],Math.sqrt(base.spectralM4[index]/base.spectralM2[index])/(2*Math.PI),1e-10);
+    assert.ok(base.peakRate[index]>=base.zeroCrossingRate[index]);
+    assert.ok(base.irregularityFactor[index]>0&&base.irregularityFactor[index]<=1);
+    close(base.irregularityFactor[index],base.zeroCrossingRate[index]/base.peakRate[index],1e-10);
+  });
+  assert.equal(base.responseUnit,'m/s');
+});
+
+test('Dirlik spectral damage recovers the narrowband Rayleigh limit',()=>{
+  const frequency=100,w=2*Math.PI*frequency,m0=4,m1=m0*w,m2=m0*w*w,m4=m0*w**4;
+  const narrowband=spectralFatigueDamageFromMoments({m0,m1,m2,m4,duration:10,b:6,method:'narrowband'});
+  const dirlik=spectralFatigueDamageFromMoments({m0,m1,m2,m4,duration:10,b:6,method:'dirlik'});
+  close(dirlik.damage,narrowband.damage,1e-12);
+  assert.equal(dirlik.dirlikParameters.narrowbandLimit,true);
+  assert.equal(dirlik.dirlikParameters.valid,true);
+});
+
+test('FDS exposes finite narrowband, Dirlik, and deterministic synthesized-rainflow damage',()=>{
+  const psd=[[20,.005],[80,.005],[200,.03],[500,.03],[1000,.008],[2000,.008]],frequencies=[40,100,250,630,1600],args={psdPoints:psd,q:10,duration:45,b:6,frequencies,responseBasis:'pseudo-velocity',includeRainflow:true,rainflowSeed:537,rainflowSamples:1024};
+  const state=fatigueDamageSpectrumState({...args,damageMethod:'dirlik'}),repeat=fatigueDamageSpectrumState({...args,damageMethod:'rainflow'}),raised=fatigueDamageSpectrumState({...args,psdPoints:psd.map(([f,g])=>[f,4*g]),damageMethod:'rainflow'});
+  for(let index=0;index<frequencies.length;index++){
+    assert.ok(Number.isFinite(state.narrowbandDamage[index])&&state.narrowbandDamage[index]>0);
+    assert.ok(Number.isFinite(state.dirlikDamage[index])&&state.dirlikDamage[index]>0);
+    assert.ok(Number.isFinite(state.rainflowDamage[index])&&state.rainflowDamage[index]>0);
+    close(repeat.damage[index],state.rainflowDamage[index],1e-12);
+    close(raised.damage[index]/repeat.damage[index],4**3,1e-9);
+  }
+  assert.ok(state.dirlikDamage.some((damage,index)=>Math.abs(damage/state.narrowbandDamage[index]-1)>1e-3));
+});
+
+test('each selectable FDS damage method drives equal-damage duration synthesis',()=>{
+  const psd=[[20,.01],[2000,.01]],frequencies=[20,40,100,250,630,1200,2000],expected=4**(-1/3);
+  for(const damageMethod of ['narrowband','dirlik','rainflow']){
+    const state=synthesizeDamageEquivalentPsd({referencePsdPoints:psd,seedPsdPoints:psd,referenceDuration:45,testDuration:180,q:10,b:6,frequencies,damageMethod,rainflowSeed:537,rainflowSamples:1024,maxSlopeDbPerOctave:12,toleranceDb:.01,maxIterations:10});
+    assert.equal(state.damageMethod,damageMethod);
+    assert.equal(state.converged,true);
+    state.equivalentLevels.forEach((level,index)=>close(level/state.seedLevels[index],expected,1e-8));
+  }
+});
+
+test('resonance-resolved FDS is insensitive to sparse flat-PSD breakpoints',()=>{
+  const frequencies=[100,500,1000],sparse=[[20,.01],[2000,.01]],dense=Array.from({length:80},(_,index)=>[20*100**(index/79),.01]);
+  dense[0][0]=20;dense.at(-1)[0]=2000;
+  const a=fatigueDamageSpectrumState({psdPoints:sparse,q:50,duration:10,b:6,frequencies});
+  const b=fatigueDamageSpectrumState({psdPoints:dense,q:50,duration:10,b:6,frequencies});
+  a.damage.forEach((damage,index)=>close(b.damage[index]/damage,1,2e-4));
+});
+
+test('damage-equivalent PSD synthesis converges and reports achieved FDS evidence',()=>{
+  const psd=[[20,.005],[80,.005],[200,.03],[500,.03],[1000,.008],[2000,.008]],frequencies=Array.from({length:80},(_,index)=>20*100**(index/79));
+  frequencies[0]=20;frequencies[frequencies.length-1]=2000;
+  const state=synthesizeDamageEquivalentPsd({referencePsdPoints:psd,referenceDuration:60,testDuration:10,q:10,b:6,frequencies,responseBasis:'pseudo-velocity',objective:'match',maxSlopeDbPerOctave:12,toleranceDb:.25,maxIterations:30});
+  assert.equal(state.converged,true);
+  assert.ok(state.iterations>=0&&state.iterations<30);
+  assert.ok(state.maxAbsErrorDb<=.25);
+  assert.ok(state.minimumCoverageDb>=-.25);
+  assert.ok(state.equivalentGrms>state.referenceGrms);
+  assert.equal(state.equivalentPsdPoints.length,frequencies.length);
+});
+
+test('damage-equivalent synthesis uses test/flight FDS ratio in either duration direction',()=>{
+  const psd=[[20,.01],[2000,.01]],frequencies=Array.from({length:60},(_,index)=>20*100**(index/59));
+  frequencies[0]=20;frequencies[frequencies.length-1]=2000;
+  const testAtFlight=synthesizeDamageEquivalentPsd({referencePsdPoints:psd,seedPsdPoints:psd,referenceDuration:180,testDuration:45,q:10,b:6,frequencies,maxSlopeDbPerOctave:12,toleranceDb:.01,maxIterations:10});
+  const flightAtTest=synthesizeDamageEquivalentPsd({referencePsdPoints:psd,seedPsdPoints:psd,referenceDuration:45,testDuration:180,q:10,b:6,frequencies,maxSlopeDbPerOctave:12,toleranceDb:.01,maxIterations:10});
+  assert.equal(testAtFlight.converged,true);
+  assert.equal(flightAtTest.converged,true);
+  testAtFlight.equivalentLevels.forEach((level,index)=>close(level/testAtFlight.seedLevels[index],4**(1/3),1e-8));
+  flightAtTest.equivalentLevels.forEach((level,index)=>close(level/flightAtTest.seedLevels[index],4**(-1/3),1e-8));
+});
+
+test('FDS calculator includes exposure duration in the reported test/flight damage ratio',()=>{
+  const values=defaults('fds'),flat='20, 0.01\n2000, 0.01';
+  values.psd=flat;values.test_psd=flat;values.reference_duration=45;values.test_duration=180;
+  const result=extraCalculatorRegistry.fds.compute(values),expectedDb=10*Math.log10(4);
+  assert.equal(values.equivalence_direction,'flight-to-test');
+  close(metric(result,'Minimum test / flight damage'),expectedDb,1e-10);
+  close(metric(result,'Maximum test / flight damage'),expectedDb,1e-10);
+  assert.ok(metric(result,'Equivalent-damage PSD RMS')<metric(result,'Flight PSD RMS'));
+  result.csv.rows.forEach(row=>close(row[6],4,1e-10));
+});
+
+test('FDS calculator accepts pasted flight and test PSDs and exposes coverage and equivalence evidence',()=>{
+  const values=defaults('fds');
+  values.psd='frequency_hz\tpsd_g2_per_hz\n20\t0.005\n80\t0.005\n200\t0.03\n500\t0.03\n1000\t0.008\n2000\t0.008';
+  values.test_psd='frequency_hz,test_psd_g2_per_hz\n20,0.008\n80,0.008\n200,0.04\n500,0.04\n1000,0.012\n2000,0.012';
+  const result=extraCalculatorRegistry.fds.compute(values);
+  assert.equal(values.damage_method,'dirlik');
+  assert.match(metric(result,'Selected damage method'),/Dirlik/i);
+  assert.equal(metric(result,'Convergence'),'WITHIN TOLERANCE');
+  assert.match(result.plots[0].title,/flight, test, and .* equivalent base acceleration PSD/i);
+  assert.match(result.plots[1].title,/actual durations/i);
+  assert.match(result.plots[2].title,/test \/ flight fatigue-damage coverage ratio/i);
+  assert.match(result.plots[3].title,/target and achieved equivalent FDS/i);
+  assert.match(result.plots[5].title,/zero-crossing and peak-occurrence rates/i);
+  assert.match(result.plots[6].title,/damage method comparison/i);
+  assert.equal(result.plots[6].traces.length,3);
+  assert.match(extraCalculatorRegistry.fds.theory,/m<sub>4<\/sub>/i);
+  assert.match(extraCalculatorRegistry.fds.theory,/D<sub>1<\/sub> =/i);
+  assert.match(extraCalculatorRegistry.fds.theory,/synthesized-response rainflow/i);
+  assert.match(extraCalculatorRegistry.fds.theory,/T<sub>flight<\/sub>\/T<sub>test<\/sub>/i);
+  assert.equal(result.csv.columns[3],'equivalent_psd_g2_per_hz');
+  assert.equal(result.csv.columns[6],'test_over_flight_damage_ratio');
+  assert.equal(result.csv.columns[12],'flight_peak_rate_hz');
+  assert.ok(result.csv.columns.includes('flight_dirlik_damage'));
+  assert.ok(result.csv.columns.includes('flight_synthesized_rainflow_damage'));
+  assert.ok(result.tables.some(table=>/damage-method comparison/i.test(table.title)));
+  assert.equal(result.assumptions.alerts.length,0);
 });
 
 
@@ -1290,6 +1446,9 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   assert.match(html,/const __pcbAccelerometers=\(\(\)=>\{[\s\S]*"model": "352C04"/);
   assert.match(html,/const __charts=\(\(\)=>\{[\s\S]*function harmonicPhase/);
   assert.match(html,/function rangeChartSvg\(chart/);
+  assert.match(html,/function logTicks\(min, max\)/);
+  assert.match(html,/data-axis-grid=/);
+  assert.match(html,/domainTraces/);
   assert.match(html,/function surface3dSvg\(surface/);
   assert.match(html,/data-chart-animation="harmonic"/);
   assert.match(html,/sau-recent-tools-v1/);
@@ -1490,6 +1649,7 @@ test('shared engineering-tool runtime exposes decision-centered wet-tank and mod
   assert.match(html,/data-wb-trace-selector="modal-density:0"/);
   assert.match(html,/Show all/);
   assert.match(html,/Current only/);
+  assert.match(html,/fixed axes retain the full comparison range/);
   assert.match(html,/ESA PSS-03-204/);
   assert.match(html,/\/tool\/modal-density\?mode=quick/);
   assert.doesNotMatch(html,/Engineering workflow/);
@@ -1669,7 +1829,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes current interactive runtimes',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v116'/);
+  assert.match(worker,/const CACHE = 'sau-v118'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);

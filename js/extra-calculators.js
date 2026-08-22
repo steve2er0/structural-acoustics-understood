@@ -66,7 +66,9 @@ function linspace(a, b, count = 100) {
 function logspace(a, b, count = 100) {
   if (!(a > 0 && b > a)) return [];
   const la = Math.log10(a), lb = Math.log10(b);
-  return Array.from({length: count}, (_,i)=>10 ** (la + (lb-la)*i/(count-1)));
+  const values=Array.from({length: count}, (_,i)=>10 ** (la + (lb-la)*i/(count-1)));
+  values[0]=a;values[values.length-1]=b;
+  return values;
 }
 function trapz(x, y) {
   let s = 0;
@@ -169,13 +171,211 @@ function gamma(z){
   z-=1;let x=p[0];for(let i=1;i<p.length;i++)x+=p[i]/(z+i);const t=z+p.length-1.5;return Math.sqrt(TWO_PI)*t**(z+0.5)*Math.exp(-t)*x;
 }
 function responsePsd(points, fn, zeta){
-  const f=points.map(p=>p[0]), g=points.map(p=>p[1]), wn=rad(fn);
-  const response=g.map((G,i)=>{const w=rad(f[i]),r=w/wn;const H2=(1+(2*zeta*r)**2)/((1-r*r)**2+(2*zeta*r)**2);return G*H2;});
-  return {f,response};
+  return sdofResponsePsd(points,fn,zeta,'absolute-acceleration');
 }
 function spectralMoments(f,g){
-  const m0=trapz(f,g),m2=trapz(f,g.map((x,i)=>x*rad(f[i])**2));
-  return {m0,m2};
+  const m0=trapz(f,g),m1=trapz(f,g.map((x,i)=>x*rad(f[i]))),m2=trapz(f,g.map((x,i)=>x*rad(f[i])**2)),m4=trapz(f,g.map((x,i)=>x*rad(f[i])**4));
+  return {m0,m1,m2,m4};
+}
+
+const FDS_DAMAGE_METHODS=Object.freeze({
+  narrowband:{label:'Narrowband Rayleigh'},
+  dirlik:{label:'Dirlik spectral rainflow approximation'},
+  rainflow:{label:'Synthesized response + rainflow'}
+});
+
+function dirlikParameters(m0,m1,m2,m4){
+  const alpha=m0>0&&m4>0?clamp(m2/Math.sqrt(m0*m4),0,1):0,xm=m0>0&&m4>0?(m1/m0)*Math.sqrt(Math.max(0,m2/m4)):0;
+  const narrowbandLimit=alpha>.999999;
+  if(narrowbandLimit)return {d1:0,d2:0,d3:1,q:1,r:1,alpha,xm,valid:true,narrowbandLimit:true};
+  const d1=2*(xm-alpha*alpha)/(1+alpha*alpha),den=1-alpha-d1+d1*d1;
+  const r=Math.abs(den)>1e-12?(alpha-xm-d1*d1)/den:NaN,d2=Number.isFinite(r)&&Math.abs(1-r)>1e-12?den/(1-r):NaN,d3=1-d1-d2,q=Math.abs(d1)>1e-12?1.25*(alpha-d3-d2*r)/d1:NaN;
+  const valid=[d1,d2,d3,q,r].every(Number.isFinite)&&d1>=-1e-8&&d2>=-1e-8&&d3>=-1e-8&&q>0&&Math.abs(r)>1e-10;
+  return valid?{d1:Math.max(0,d1),d2:Math.max(0,d2),d3:Math.max(0,d3),q,r,alpha,xm,valid:true,narrowbandLimit:false}:{d1:0,d2:0,d3:1,q:1,r:1,alpha,xm,valid:false,narrowbandLimit:false};
+}
+
+export function spectralFatigueDamageFromMoments({m0,m1,m2,m4,duration=1,b=6,method='narrowband'}={}){
+  const T=positive(duration,'Duration'),exponent=positive(b,'S–N exponent'),M0=Math.max(0,n(m0)),M1=Math.max(0,n(m1)),M2=Math.max(0,n(m2)),M4=Math.max(0,n(m4)),sigma=Math.sqrt(M0);
+  const zeroCrossingRate=M0>0?Math.sqrt(M2/M0)/TWO_PI:0,peakRate=M2>0?Math.sqrt(M4/M2)/TWO_PI:0,peakMoment=2**(exponent/2)*gamma(1+exponent/2),narrowbandAmplitudeMoment=peakMoment*sigma**exponent,narrowbandDamage=T*zeroCrossingRate*narrowbandAmplitudeMoment;
+  const parameters=dirlikParameters(M0,M1,M2,M4),dirlikAmplitudeMoment=parameters.valid?sigma**exponent*(parameters.d1*parameters.q**exponent*gamma(1+exponent)+peakMoment*(parameters.d2*Math.abs(parameters.r)**exponent+parameters.d3)):narrowbandAmplitudeMoment;
+  const dirlikDamage=parameters.valid?T*peakRate*Math.max(0,dirlikAmplitudeMoment):narrowbandDamage,selectedMethod=method==='dirlik'?'dirlik':'narrowband';
+  return {damage:selectedMethod==='dirlik'?dirlikDamage:narrowbandDamage,narrowbandDamage,dirlikDamage,narrowbandAmplitudeMoment,dirlikAmplitudeMoment,zeroCrossingRate,peakRate,irregularityFactor:parameters.alpha,dirlikParameters:parameters,sigma,duration:T,b:exponent,method:selectedMethod};
+}
+
+function normalizeRainflowSamples(value){
+  const requested=Math.round(n(value,2048));
+  return [1024,2048,4096].reduce((best,candidate)=>Math.abs(candidate-requested)<Math.abs(best-requested)?candidate:best,2048);
+}
+
+function deterministicPhaseRandom(seed=537){
+  let value=Math.max(1,Math.floor(Math.abs(n(seed,537))))>>>0;
+  return ()=>{value=(Math.imul(1664525,value)+1013904223)>>>0;return value/4294967296;};
+}
+
+function inverseFft(reInput,imInput){
+  const N=reInput.length,re=Float64Array.from(reInput),im=Float64Array.from(imInput);
+  for(let i=1,j=0;i<N;i++){
+    let bit=N>>1;for(;j&bit;bit>>=1)j^=bit;j^=bit;
+    if(i<j){[re[i],re[j]]=[re[j],re[i]];[im[i],im[j]]=[im[j],im[i]];}
+  }
+  for(let len=2;len<=N;len<<=1){
+    const ang=TWO_PI/len,wr0=Math.cos(ang),wi0=Math.sin(ang);
+    for(let i=0;i<N;i+=len){
+      let wr=1,wi=0;
+      for(let j=0;j<len/2;j++){
+        const u=i+j,v=i+j+len/2,tr=wr*re[v]-wi*im[v],ti=wr*im[v]+wi*re[v];
+        re[v]=re[u]-tr;im[v]=im[u]-ti;re[u]+=tr;im[u]+=ti;
+        const tmp=wr*wr0-wi*wi0;wi=wr*wi0+wi*wr0;wr=tmp;
+      }
+    }
+  }
+  return Array.from(re,value=>value/N);
+}
+
+function fdsTurningPoints(values){
+  if(values.length<3)return values.map((value,index)=>({index,value}));
+  const points=[{index:0,value:values[0]}];
+  for(let index=1;index<values.length-1;index++){
+    const left=values[index]-values[index-1],right=values[index+1]-values[index];
+    if((left>=0&&right<0)||(left<=0&&right>0))points.push({index,value:values[index]});
+  }
+  points.push({index:values.length-1,value:values.at(-1)});return points;
+}
+
+function fdsRainflowCycles(points){
+  const stack=[],cycles=[];
+  for(const point of points){
+    stack.push(point);
+    while(stack.length>=3){
+      const a=stack.at(-3),b=stack.at(-2),c=stack.at(-1),firstRange=Math.abs(b.value-a.value),secondRange=Math.abs(c.value-b.value);
+      if(secondRange<firstRange)break;
+      const cycle={amplitude:firstRange/2,count:stack.length===3?.5:1};cycles.push(cycle);
+      if(stack.length===3)stack.shift();else stack.splice(stack.length-3,2);
+    }
+  }
+  for(let index=0;index<stack.length-1;index++)cycles.push({amplitude:Math.abs(stack[index+1].value-stack[index].value)/2,count:.5});
+  return cycles.filter(cycle=>cycle.amplitude>Number.EPSILON);
+}
+
+function synthesizedRainflowPseudoDamage({responseFrequencies,responsePsd,m0,duration,b,seed=537,sampleCount=2048,oscillatorFrequency=1}={}){
+  const N=normalizeRainflowSamples(sampleCount),fmin=responseFrequencies[0],fmax=responseFrequencies.at(-1),sampleRate=2.56*fmax,df=sampleRate/N,re=new Float64Array(N),im=new Float64Array(N),random=deterministicPhaseRandom((Math.round(n(seed,537))^Math.round(oscillatorFrequency*1000))>>>0),points=responseFrequencies.map((f,index)=>[f,responsePsd[index]]);
+  for(let k=1;k<N/2;k++){
+    const f=k*df;if(f<fmin||f>fmax)continue;
+    const amplitude=Math.sqrt(Math.max(0,2*interpLogLog(points,f)*df)),phase=TWO_PI*random(),scale=N*amplitude/2;
+    re[k]=scale*Math.cos(phase);im[k]=scale*Math.sin(phase);re[N-k]=re[k];im[N-k]=-im[k];
+  }
+  const raw=inverseFft(re,im),mean=raw.reduce((sum,value)=>sum+value,0)/N,rawRms=Math.sqrt(raw.reduce((sum,value)=>sum+(value-mean)**2,0)/N),targetRms=Math.sqrt(Math.max(0,m0)),history=raw.map(value=>(value-mean)*targetRms/Math.max(rawRms,1e-300)),windowDuration=N/sampleRate,cycles=fdsRainflowCycles(fdsTurningPoints([...history,history[0]])),cycleScale=positive(duration,'Duration')/windowDuration,exponent=positive(b,'S–N exponent'),damage=cycles.reduce((sum,cycle)=>sum+cycle.count*cycleScale*cycle.amplitude**exponent,0);
+  return {damage,history,cycles,windowDuration,cycleScale,sampleRate,sampleCount:N,synthesizedRms:Math.sqrt(history.reduce((sum,value)=>sum+value*value,0)/N),cycleCount:cycles.reduce((sum,cycle)=>sum+cycle.count,0)*cycleScale};
+}
+
+const FDS_RESPONSE_BASES=Object.freeze({
+  'pseudo-velocity':{label:'Pseudo velocity',unit:'m/s'},
+  'relative-displacement':{label:'Relative displacement',unit:'m'},
+  'absolute-acceleration':{label:'Absolute acceleration',unit:'g'}
+});
+
+function uniqueSorted(values){
+  return [...new Set(values.filter(Number.isFinite))].sort((a,b)=>a-b);
+}
+
+function validatePsdPoints(points,name='PSD'){
+  if(!Array.isArray(points)||points.length<2)throw new Error(`Enter at least two valid ${name} rows.`);
+  const sorted=points.map(row=>[Number(row[0]),Number(row[1])]).sort((a,b)=>a[0]-b[0]);
+  if(sorted.some(([f,g])=>!(f>0)||!(g>=0)))throw new Error(`${name} frequencies must be positive and PSD levels cannot be negative.`);
+  if(sorted.some((row,index)=>index>0&&row[0]===sorted[index-1][0]))throw new Error(`${name} frequencies must be unique.`);
+  if(!sorted.some(([,g])=>g>0))throw new Error(`${name} must contain at least one positive PSD level.`);
+  return sorted;
+}
+
+function sdofIntegrationGrid(points,fn,zeta){
+  const fmin=points[0][0],fmax=points.at(-1)[0],decades=Math.log10(fmax/fmin);
+  const base=logspace(fmin,fmax,Math.max(401,Math.ceil(240*decades)+1));
+  const span=Math.min(.8,Math.max(.015,12*Math.max(zeta,1e-5)));
+  const localMin=Math.max(fmin,fn*(1-span)),localMax=Math.min(fmax,fn*(1+span));
+  const local=localMax>localMin?logspace(localMin,localMax,161):[];
+  return uniqueSorted([...base,...local,...points.map(row=>row[0]),...(fn>=fmin&&fn<=fmax?[fn]:[])]);
+}
+
+function responseTransferSquared(f,fn,zeta,responseBasis){
+  const r=f/fn,den=(1-r*r)**2+(2*zeta*r)**2,wn=rad(fn);
+  if(responseBasis==='relative-displacement')return (G0/(wn*wn))**2/den;
+  if(responseBasis==='absolute-acceleration')return (1+(2*zeta*r)**2)/den;
+  return (G0/wn)**2/den;
+}
+
+function sdofResponsePsd(points,fn,zeta,responseBasis='pseudo-velocity'){
+  const basis=FDS_RESPONSE_BASES[responseBasis]?responseBasis:'pseudo-velocity';
+  const f=sdofIntegrationGrid(points,fn,zeta);
+  const response=f.map(freq=>interpLogLog(points,freq)*responseTransferSquared(freq,fn,zeta,basis));
+  return {f,response};
+}
+
+export function fatigueDamageSpectrumState({
+  psdPoints,q=10,duration=60,b=6,frequencies,responseBasis='pseudo-velocity',damageMethod='narrowband',includeRainflow=false,rainflowSeed=537,rainflowSamples=2048
+}={}){
+  const points=validatePsdPoints(psdPoints,'base acceleration PSD'),Q=positive(q,'Q'),zeta=1/(2*Q),T=positive(duration,'Duration'),exponent=positive(b,'S–N exponent');
+  const fns=uniqueSorted((frequencies?.length?frequencies:logspace(points[0][0],points.at(-1)[0],100)).map(Number).filter(f=>f>=points[0][0]&&f<=points.at(-1)[0]));
+  if(fns.length<2)throw new Error('The oscillator frequency grid must contain at least two frequencies inside the PSD band.');
+  const basis=FDS_RESPONSE_BASES[responseBasis]?responseBasis:'pseudo-velocity',method=FDS_DAMAGE_METHODS[damageMethod]?damageMethod:'narrowband',calculateRainflow=includeRainflow||method==='rainflow';
+  const peakMoment=2**(exponent/2)*gamma(exponent/2+1),damage=[],narrowbandDamage=[],dirlikDamage=[],rainflowDamage=[],rmsResponse=[],cycleRate=[],peakRate=[],irregularityFactor=[],spectralM0=[],spectralM1=[],spectralM2=[],spectralM4=[],dirlikFallback=[],rainflowWindowDuration=[],rainflowCycleCount=[];
+  for(const fn of fns){
+    const {f,response}=sdofResponsePsd(points,fn,zeta,basis),{m0,m1,m2,m4}=spectralMoments(f,response),spectral=spectralFatigueDamageFromMoments({m0,m1,m2,m4,duration:T,b:exponent,method:method==='dirlik'?'dirlik':'narrowband'}),rainflow=calculateRainflow?synthesizedRainflowPseudoDamage({responseFrequencies:f,responsePsd:response,m0,duration:T,b:exponent,seed:rainflowSeed,sampleCount:rainflowSamples,oscillatorFrequency:fn}):null;
+    const rainflowValue=rainflow?.damage??NaN,selectedDamage=method==='rainflow'?rainflowValue:method==='dirlik'?spectral.dirlikDamage:spectral.narrowbandDamage;
+    rmsResponse.push(spectral.sigma);cycleRate.push(spectral.zeroCrossingRate);peakRate.push(spectral.peakRate);irregularityFactor.push(spectral.irregularityFactor);spectralM0.push(m0);spectralM1.push(m1);spectralM2.push(m2);spectralM4.push(m4);narrowbandDamage.push(spectral.narrowbandDamage);dirlikDamage.push(spectral.dirlikDamage);rainflowDamage.push(rainflowValue);dirlikFallback.push(!spectral.dirlikParameters.valid);rainflowWindowDuration.push(rainflow?.windowDuration??NaN);rainflowCycleCount.push(rainflow?.cycleCount??NaN);damage.push(selectedDamage);
+  }
+  const maxDamage=Math.max(...damage,Number.MIN_VALUE);
+  return {frequencies:fns,damage,narrowbandDamage,dirlikDamage,rainflowDamage,relativeDamage:damage.map(value=>value/maxDamage),rmsResponse,cycleRate,zeroCrossingRate:cycleRate,peakRate,irregularityFactor,spectralM0,spectralM1,spectralM2,spectralM4,dirlikFallback,rainflowWindowDuration,rainflowCycleCount,damageMethod:method,damageMethodLabel:FDS_DAMAGE_METHODS[method].label,rainflowSeed:Math.round(n(rainflowSeed,537)),rainflowSamples:normalizeRainflowSamples(rainflowSamples),responseBasis:basis,responseLabel:FDS_RESPONSE_BASES[basis].label,responseUnit:FDS_RESPONSE_BASES[basis].unit,q:Q,zeta,duration:T,b:exponent,peakMoment};
+}
+
+function enforcePsdSlope(frequencies,levels,maxSlopeDbPerOctave){
+  const slope=Math.max(0,Number(maxSlopeDbPerOctave));
+  if(!(slope>0))return levels.map(level=>Math.max(level,1e-16));
+  const out=levels.map(level=>Math.max(level,1e-16));
+  for(let pass=0;pass<3;pass++){
+    for(let i=1;i<out.length;i++){
+      const maxRatio=10**((slope*Math.log2(frequencies[i]/frequencies[i-1]))/10);
+      out[i]=clamp(out[i],out[i-1]/maxRatio,out[i-1]*maxRatio);
+    }
+    for(let i=out.length-2;i>=0;i--){
+      const maxRatio=10**((slope*Math.log2(frequencies[i+1]/frequencies[i]))/10);
+      out[i]=clamp(out[i],out[i+1]/maxRatio,out[i+1]*maxRatio);
+    }
+  }
+  return out;
+}
+
+export function synthesizeDamageEquivalentPsd({
+  referencePsdPoints,seedPsdPoints,referenceDuration=60,testDuration=10,q=10,b=6,frequencies,responseBasis='pseudo-velocity',damageMethod='narrowband',rainflowSeed=537,rainflowSamples=2048,objective='match',maxSlopeDbPerOctave=12,toleranceDb=.25,maxIterations=30,relaxation=.65
+}={}){
+  const reference=validatePsdPoints(referencePsdPoints,'reference PSD'),seed=validatePsdPoints(seedPsdPoints??referencePsdPoints,'seed PSD'),Tref=positive(referenceDuration,'Reference duration'),Ttest=positive(testDuration,'Test duration'),Q=positive(q,'Q'),exponent=positive(b,'S–N exponent');
+  const commonMin=Math.max(reference[0][0],seed[0][0]),commonMax=Math.min(reference.at(-1)[0],seed.at(-1)[0]);
+  if(commonMax<=commonMin)throw new Error('The target and seed PSDs do not overlap in frequency.');
+  const fns=uniqueSorted((frequencies?.length?frequencies:logspace(commonMin,commonMax,100)).map(Number).filter(f=>f>=commonMin&&f<=commonMax));
+  if(fns.length<2)throw new Error('At least two synthesis frequencies are required inside the common target/seed PSD band.');
+  const target=fatigueDamageSpectrumState({psdPoints:reference,q:Q,duration:Tref,b:exponent,frequencies:fns,responseBasis,damageMethod,rainflowSeed,rainflowSamples});
+  const seedState=fatigueDamageSpectrumState({psdPoints:seed,q:Q,duration:Ttest,b:exponent,frequencies:fns,responseBasis,damageMethod,rainflowSeed,rainflowSamples}),seedLevels=fns.map(f=>interpLogLog(seed,f));
+  let levels=target.damage.map((damage,index)=>damage>0&&seedState.damage[index]>0?seedLevels[index]*(damage/seedState.damage[index])**(2/exponent):Math.max(seedLevels[index],1e-16));
+  levels=enforcePsdSlope(fns,levels,maxSlopeDbPerOctave);
+  const limit=Math.max(1,Math.min(100,Math.round(Number(maxIterations)||30))),tol=Math.max(.001,Number(toleranceDb)||.25),alpha=clamp(Number(relaxation)||.65,.05,1),mode=objective==='envelope'?'envelope':'match';
+  let achieved,coverageDb=[],iterations=0,converged=false;
+  for(let iteration=0;iteration<=limit;iteration++){
+    achieved=fatigueDamageSpectrumState({psdPoints:fns.map((f,index)=>[f,levels[index]]),q:Q,duration:Ttest,b:exponent,frequencies:fns,responseBasis,damageMethod,rainflowSeed,rainflowSamples});
+    coverageDb=target.damage.map((damage,index)=>damage>0?10*Math.log10(Math.max(achieved.damage[index],1e-300)/damage):0);
+    const error=mode==='envelope'?Math.max(0,-Math.min(...coverageDb)):Math.max(...coverageDb.map(Math.abs));
+    iterations=iteration;
+    if(error<=tol){converged=true;break;}
+    if(iteration===limit)break;
+    levels=levels.map((level,index)=>{
+      if(!(target.damage[index]>0&&achieved.damage[index]>0))return level;
+      const ratio=target.damage[index]/achieved.damage[index];
+      const correction=mode==='envelope'?Math.max(1,ratio):ratio;
+      return clamp(level*correction**(2*alpha/exponent),1e-16,1e4);
+    });
+    levels=enforcePsdSlope(fns,levels,maxSlopeDbPerOctave);
+  }
+  const equivalentPsdPoints=fns.map((f,index)=>[f,levels[index]]),referenceLevels=fns.map(f=>interpLogLog(reference,f));
+  const maxAbsErrorDb=Math.max(...coverageDb.map(Math.abs)),minimumCoverageDb=Math.min(...coverageDb),meanSquareLogError=coverageDb.reduce((sum,value)=>sum+value*value,0)/coverageDb.length;
+  return {reference,seed,target,seedState,achieved,frequencies:fns,referenceLevels,seedLevels,equivalentLevels:levels,equivalentPsdPoints,coverageDb,iterations,converged,objective:mode,toleranceDb:tol,maxAbsErrorDb,minimumCoverageDb,rmsErrorDb:Math.sqrt(meanSquareLogError),referenceGrms:Math.sqrt(integrateLogLog(reference)),seedGrms:Math.sqrt(integrateLogLog(seed)),equivalentGrms:Math.sqrt(integrateLogLog(equivalentPsdPoints)),referenceDuration:Tref,testDuration:Ttest,maxSlopeDbPerOctave:Number(maxSlopeDbPerOctave),damageMethod:target.damageMethod,damageMethodLabel:target.damageMethodLabel,rainflowSeed:target.rainflowSeed,rainflowSamples:target.rainflowSamples,responseBasis:target.responseBasis,responseLabel:target.responseLabel,responseUnit:target.responseUnit};
 }
 function newmarkSrs(signal, dt, frequencies, zeta){
   const beta=.25,gammaN=.5;
@@ -310,10 +510,77 @@ const extraCalculatorDefinitions = {
   },
 
   fds: {
-    category:'Random & Shock',basis:'Narrowband Gaussian relative fatigue damage spectrum',confidence:'Relative screening index',
-    inputs:[{key:'psd',label:'Base acceleration PSD',unit:'Hz, g²/Hz',type:'textarea',default:'20, 0.005\n80, 0.005\n200, 0.03\n500, 0.03\n1000, 0.008\n2000, 0.008'},{key:'q',label:'Oscillator Q',type:'number',default:10,min:.1},{key:'duration',label:'Duration',unit:'s',type:'number',default:60,min:.001},{key:'b',label:'S–N inverse-slope exponent b',type:'number',default:6,min:.1},{key:'points',label:'Oscillator count',type:'number',default:100,min:20,max:300,step:1}],
-    theory:'<p>For each SDOF response, the relative damage index is duration × peak rate × E{|x|ᵇ}. Gaussian absolute moments are evaluated analytically.</p>',assumptions:['Response quantity is proportional to damaging stress.','Stationary Gaussian narrowband response and linear Miner damage.','The output is relative unless a calibrated stress transfer and S–N intercept are supplied.'],example:'Increasing b makes the FDS increasingly dominated by the highest response resonances.',
-    compute(v){const p=parsePairs(v.psd,'PSD'),Q=positive(v.q,'Q'),z=1/(2*Q),T=positive(v.duration,'Duration'),b=positive(v.b,'S–N exponent'),count=clamp(Math.round(n(v.points,100)),20,300),fns=logspace(Math.max(p[0][0],1),p.at(-1)[0],count),damage=[],sigmas=[];const gm=2**(b/2)*gamma((b+1)/2)/Math.sqrt(Math.PI);for(const fn of fns){const {f,response}=responsePsd(p,fn,z),{m0,m2}=spectralMoments(f,response),sigma=Math.sqrt(Math.max(0,m0)),rate=m0>0?Math.sqrt(m2/m0)/TWO_PI:fn;sigmas.push(sigma);damage.push(T*rate*gm*sigma**b);}const maxD=Math.max(...damage,1e-300),rel=damage.map(x=>x/maxD);return{summary:[stat('Peak relative damage',1),stat('Frequency of peak FDS',fns[damage.indexOf(Math.max(...damage))],'Hz'),stat('Peak response RMS',Math.max(...sigmas),'g'),stat('S–N exponent',b),stat('Duration',T,'s')],interpretation:`The relative FDS is normalized to its maximum. It compares where this environment is most damaging for an idealized Q=${Q} oscillator and b=${b}.`,warnings:['A relative FDS does not predict life without stress transfer, mean-stress treatment, material S–N data, and a defined cycle-counting convention.'],plots:[{title:'Relative fatigue damage spectrum',xLabel:'Oscillator natural frequency (Hz)',yLabel:'Relative damage',xScale:'log',yScale:'log',traces:[trace('Relative FDS',fns,rel,{emphasis:true})]},{title:'Oscillator response RMS',xLabel:'Oscillator natural frequency (Hz)',yLabel:'RMS acceleration (g)',xScale:'log',yScale:'log',traces:[trace('RMS',fns,sigmas)]}],csv:{filename:'relative-fds.csv',columns:['fn_hz','response_rms_g','damage_index','relative_damage'],rows:fns.map((f,i)=>[f,sigmas[i],damage[i],rel[i]])}};}
+    category:'Random & Shock',basis:'Selectable narrowband, Dirlik, or synthesized-rainflow pseudo-damage FDS with iterative damage-equivalent PSD synthesis',confidence:'Frequency-domain test-tailoring screen with explicit method and convergence evidence',
+    inputs:[
+      {key:'psd',label:'Flight / mission base acceleration PSD',unit:'Hz, g²/Hz',type:'textarea',group:'Flight and test environments',default:'20, 0.005\n80, 0.005\n200, 0.03\n500, 0.03\n1000, 0.008\n2000, 0.008',help:'Paste spreadsheet columns, load CSV/text, or enter one frequency and PSD breakpoint per row. Commas, tabs, spaces, and optional header rows are accepted.'},
+      {key:'reference_duration',label:'Flight exposure duration',unit:'s',type:'number',group:'Flight and test environments',default:45,min:.001},
+      {key:'test_psd',label:'Test base acceleration PSD',unit:'Hz, g²/Hz',type:'textarea',group:'Flight and test environments',default:'20, 0.008\n80, 0.008\n200, 0.04\n500, 0.04\n1000, 0.012\n2000, 0.012',help:'Enter the controlled test curve using the same frequency and PSD units as the flight environment.'},
+      {key:'test_duration',label:'Test duration',unit:'s',type:'number',group:'Flight and test environments',default:180,min:.001},
+      {key:'equivalence_direction',label:'Equivalent-damage PSD direction',type:'select',group:'Flight and test environments',default:'flight-to-test',options:[{value:'flight-to-test',label:'Flight damage represented over test duration'},{value:'test-to-flight',label:'Test severity represented over flight duration'}],help:'The default produces the lower, longer-duration test PSD whose FDS matches the shorter flight exposure. The reverse option expresses completed-test severity over the flight duration.'},
+      {key:'response_basis',label:'Fatigue response basis',type:'select',group:'FDS model',default:'pseudo-velocity',options:[{value:'pseudo-velocity',label:'Pseudo velocity · conventional FDS screen'},{value:'relative-displacement',label:'Relative displacement'},{value:'absolute-acceleration',label:'Absolute acceleration · legacy screen'}]},
+      {key:'q',label:'Oscillator Q',type:'number',group:'FDS model',default:10,min:.5,max:100},
+      {key:'b',label:'S–N inverse-slope exponent b',type:'number',group:'FDS model',default:6,min:1,max:20},
+      {key:'damage_method',label:'Damage calculation method',type:'select',group:'FDS model',default:'dirlik',options:[{value:'dirlik',label:'Dirlik · PSD-domain rainflow approximation'},{value:'narrowband',label:'Narrowband Rayleigh · conventional FDS'},{value:'rainflow',label:'Synthesized response + rainflow · deterministic cross-check'}],help:'The selected method drives the target FDS and equivalent-PSD iteration. All three methods remain visible for comparison.'},
+      {key:'objective',label:'Synthesis objective',type:'select',group:'FDS model',default:'match',options:[{value:'match',label:'Match target FDS'},{value:'envelope',label:'Conservative FDS envelope'}]},
+      {key:'rainflow_seed',label:'Rainflow synthesis seed',type:'number',group:'Rainflow cross-check',default:537,min:1,max:2147483647,step:1},
+      {key:'rainflow_samples',label:'Samples per synthesized response window',type:'select',group:'Rainflow cross-check',default:2048,options:[{value:1024,label:'1,024 · quick'},{value:2048,label:'2,048 · balanced'},{value:4096,label:'4,096 · higher resolution'}],help:'A deterministic stationary Gaussian response window is synthesized from each oscillator response PSD, RMS-normalized, rainflow-counted, and duration-scaled.'},
+      {key:'max_slope',label:'Maximum PSD slope',unit:'dB/oct',type:'number',group:'Synthesis controls',default:12,min:0,max:48},
+      {key:'tolerance',label:'FDS convergence tolerance',unit:'dB',type:'number',group:'Synthesis controls',default:.25,min:.01,max:3},
+      {key:'iterations',label:'Maximum synthesis iterations',type:'number',group:'Synthesis controls',default:30,min:1,max:100,step:1},
+      {key:'points',label:'Oscillator / synthesis points',type:'number',group:'Synthesis controls',default:100,min:30,max:180,step:1}
+    ],
+    theory:'<p>The flight PSD is the default damage target. Each oscillator in the FDS bank filters the base-acceleration PSD into a response PSD, from which the spectral moments and expected event rates are calculated.</p><h3>Response PSD and spectral moments</h3><div class="equation">S<sub>r</sub>(f; f<sub>n</sub>,Q) = |H<sub>r</sub>(f; f<sub>n</sub>,Q)|<sup>2</sup> G<sub>a</sub>(f)</div><div class="equation">m<sub>j</sub>(f<sub>n</sub>) = ∫<sub>0</sub><sup>∞</sup> (2πf)<sup>j</sup> S<sub>r</sub>(f; f<sub>n</sub>) df, &nbsp; j = 0, 1, 2, 4</div><div class="equation">σ<sub>r</sub> = √m<sub>0</sub>, &nbsp; ν<sub>0</sub><sup>+</sup> = (1/2π)√(m<sub>2</sub>/m<sub>0</sub>), &nbsp; ν<sub>p</sub> = (1/2π)√(m<sub>4</sub>/m<sub>2</sub>)</div><div class="equation">α = ν<sub>0</sub><sup>+</sup>/ν<sub>p</sub> = m<sub>2</sub>/√(m<sub>0</sub>m<sub>4</sub>)</div><p>Here ν<sub>0</sub><sup>+</sup> is the positive-slope zero-crossing rate, ν<sub>p</sub> is the expected peak-occurrence rate, and α approaches one for a narrowband response.</p><h3>Narrowband Rayleigh pseudo-damage</h3><div class="equation">D*<sub>NB</sub> = T ν<sub>0</sub><sup>+</sup> 2<sup>b/2</sup> Γ(1+b/2) σ<sub>r</sub><sup>b</sup></div><h3>Dirlik spectral rainflow approximation</h3><div class="equation">x<sub>m</sub> = (m<sub>1</sub>/m<sub>0</sub>)√(m<sub>2</sub>/m<sub>4</sub>), &nbsp; Z = A/σ<sub>r</sub></div><div class="equation">D<sub>1</sub> = 2(x<sub>m</sub>−α²)/(1+α²), &nbsp; R = (α−x<sub>m</sub>−D<sub>1</sub>²)/(1−α−D<sub>1</sub>+D<sub>1</sub>²)</div><div class="equation">D<sub>2</sub> = (1−α−D<sub>1</sub>+D<sub>1</sub>²)/(1−R), &nbsp; D<sub>3</sub> = 1−D<sub>1</sub>−D<sub>2</sub></div><div class="equation">q<sub>D</sub> = 1.25(α−D<sub>3</sub>−D<sub>2</sub>R)/D<sub>1</sub></div><div class="equation">p<sub>D</sub>(Z) = (D<sub>1</sub>/q<sub>D</sub>)e<sup>−Z/q<sub>D</sub></sup> + (D<sub>2</sub>Z/R²)e<sup>−Z²/(2R²)</sup> + D<sub>3</sub>Ze<sup>−Z²/2</sup></div><div class="equation">D*<sub>D</sub> = T ν<sub>p</sub> σ<sub>r</sub><sup>b</sup>{D<sub>1</sub>q<sub>D</sub><sup>b</sup>Γ(1+b) + 2<sup>b/2</sup>Γ(1+b/2)[D<sub>2</sub>|R|<sup>b</sup>+D<sub>3</sub>]}</div><p>The Dirlik scale q<sub>D</sub> is distinct from oscillator Q. The tool uses the narrowband result as a numerical fallback if a degenerate moment combination cannot form admissible coefficients; Dirlik approaches the Rayleigh result as α→1.</p><h3>Deterministic synthesized-response rainflow</h3><div class="equation">r(t) = Σ<sub>k</sub>√[2S<sub>r</sub>(f<sub>k</sub>)Δf] cos(2πf<sub>k</sub>t+φ<sub>k</sub>)</div><div class="equation">D*<sub>RF</sub> = (T/T<sub>w</sub>) Σ<sub>i</sub> n<sub>i</sub>A<sub>i</sub><sup>b</sup></div><p>The phases φ<sub>k</sub> come from the retained deterministic seed. The representative window is RMS-normalized, closed periodically, rainflow-counted, and scaled from window duration T<sub>w</sub> to exposure T. It is synthesized evidence, not a measured time history.</p><p>All three methods use proportional damage for an S–N relation N∝A<sup>−b</sup>. The S–N intercept and any common peak-to-range convention cancel in FDS ratios.</p><h3>Equivalent-damage PSD</h3><div class="equation">G<sub>eq</sub>/G<sub>flight</sub> = (T<sub>flight</sub>/T<sub>test</sub>)<sup>2/b</sup> &nbsp; (same spectral shape)</div><div class="equation">G<sub>k+1</sub>(f<sub>n</sub>) = G<sub>k</sub>(f<sub>n</sub>) [D<sub>target</sub>(f<sub>n</sub>)/D<sub>k</sub>(f<sub>n</sub>)]<sup>2β/b</sup></div><p>The first relation proves that a longer test has a lower equal-damage PSD when shape and response transfer are unchanged. For unlike shapes, the selected damage method drives the iterative update because adjacent PSD frequencies contribute to each oscillator response; β is the relaxation factor and the slope limit is reapplied after every update.</p>',
+    assumptions:['Stationary Gaussian base acceleration and linear SDOF responses over both exposures.','The narrowband option uses Rayleigh amplitudes and zero-crossing cycles; Dirlik uses its empirical four-moment rainflow-range distribution; synthesized rainflow uses a finite deterministic Gaussian response window.','All methods use a common Basquin exponent and linear Miner-type accumulation.','Flight, test, and equivalent spectra use the same oscillator Q, response basis, exponent, overlapping frequency band, and damage convention.'],
+    example:'A component sees 45 s of flight vibration and is tested for 180 s. For the same spectral shape and b=6, the equal-damage test PSD factor is (45/180)^(2/6)=0.630; its GRMS factor is √0.630=0.794.',
+    references:[
+      {title:'Lalanne — Mechanical Vibration and Shock Analysis, Vol. 5: Specification Development',note:'Primary handbook basis for FDS construction, mission synthesis, pseudo-velocity response, and damage-equivalent test specification development.'},
+      {title:'Xu et al. — Optimization of Damage Equivalent Accelerated Test Spectrum Derivation Using Multiple Non-Gaussian Vibration Data (2021)',note:'Documents initial FDS inversion, numerical recalculation, iterative PSD updating, convergence error, and ERS cross-checking.'},
+      {title:'Larsen and Irvine — A Review of Spectral Methods for Variable Amplitude Fatigue Prediction and New Results (NASA, 2015)',note:'Reviews narrowband and broadband spectral fatigue estimates against time-domain rainflow results and identifies their applicability limits.'}
+    ],
+    compute(v){
+      const flight=parsePairs(v.psd,'flight PSD'),test=parsePairs(v.test_psd,'test PSD'),Q=positive(v.q,'Q'),Tflight=positive(v.reference_duration,'Flight duration'),Ttest=positive(v.test_duration,'Test duration'),b=positive(v.b,'S–N exponent'),method=FDS_DAMAGE_METHODS[v.damage_method]?v.damage_method:'dirlik',rainflowSeed=Math.max(1,Math.round(n(v.rainflow_seed,537))),rainflowSamples=normalizeRainflowSamples(v.rainflow_samples),count=clamp(Math.round(n(v.points,100)),30,180),fmin=Math.max(flight[0][0],test[0][0]),fmax=Math.min(flight.at(-1)[0],test.at(-1)[0]);
+      if(fmax<=fmin)throw new Error('The flight and test PSDs do not overlap in frequency.');
+      const fns=logspace(Math.max(fmin,1e-6),fmax,count),direction=v.equivalence_direction==='test-to-flight'?'test-to-flight':'flight-to-test';
+      const comparisonArgs={q:Q,b,frequencies:fns,responseBasis:v.response_basis,damageMethod:method,includeRainflow:true,rainflowSeed,rainflowSamples},flightFds=fatigueDamageSpectrumState({psdPoints:flight,duration:Tflight,...comparisonArgs}),testFds=fatigueDamageSpectrumState({psdPoints:test,duration:Ttest,...comparisonArgs});
+      const testFlightRatio=testFds.damage.map((damage,index)=>damage/Math.max(flightFds.damage[index],1e-300)),testFlightDb=testFlightRatio.map(ratio=>10*Math.log10(Math.max(ratio,1e-300))),minimumTestCoverageDb=Math.min(...testFlightDb),maximumTestCoverageDb=Math.max(...testFlightDb),coveredPercent=100*testFlightRatio.filter(ratio=>ratio>=1).length/testFlightRatio.length;
+      const targetPsd=direction==='test-to-flight'?test:flight,seedPsd=direction==='test-to-flight'?flight:test,targetDuration=direction==='test-to-flight'?Ttest:Tflight,equivalentDuration=direction==='test-to-flight'?Tflight:Ttest,targetName=direction==='test-to-flight'?'Test':'Flight',seedName=direction==='test-to-flight'?'Flight':'Test',equivalentName=direction==='test-to-flight'?'Test-damage-equivalent flight-duration PSD':'Flight-damage-equivalent test PSD';
+      const state=synthesizeDamageEquivalentPsd({referencePsdPoints:targetPsd,seedPsdPoints:seedPsd,referenceDuration:targetDuration,testDuration:equivalentDuration,q:Q,b,frequencies:fns,responseBasis:v.response_basis,damageMethod:method,rainflowSeed,rainflowSamples,objective:v.objective,maxSlopeDbPerOctave:Math.max(0,n(v.max_slope,12)),toleranceDb:positive(v.tolerance,'Convergence tolerance'),maxIterations:clamp(Math.round(n(v.iterations,30)),1,100)}),equivalentFds=fatigueDamageSpectrumState({psdPoints:state.equivalentPsdPoints,duration:equivalentDuration,...comparisonArgs});
+      const flightLevels=fns.map(f=>interpLogLog(flight,f)),testLevels=fns.map(f=>interpLogLog(test,f)),damageUnit=`(${state.responseUnit})^${b}·cycles`,flightGrms=Math.sqrt(integrateLogLog(flight)),testGrms=Math.sqrt(integrateLogLog(test)),minimumIrregularity=Math.min(...flightFds.irregularityFactor,...testFds.irregularityFactor),dirlikFallbackCount=flightFds.dirlikFallback.filter(Boolean).length+testFds.dirlikFallback.filter(Boolean).length+equivalentFds.dirlikFallback.filter(Boolean).length,alerts=[];
+      if(!state.converged)alerts.push(`The synthesis stopped after ${state.iterations} iterations with ${state.maxAbsErrorDb.toFixed(2)} dB maximum FDS error; relax the slope limit, increase iterations, or review the target spectrum.`);
+      if(state.minimumCoverageDb<-state.toleranceDb)alerts.push(`The achieved FDS is as much as ${Math.abs(state.minimumCoverageDb).toFixed(2)} dB below the target.`);
+      if(minimumTestCoverageDb<0)alerts.push(`The test FDS falls as much as ${Math.abs(minimumTestCoverageDb).toFixed(2)} dB below the flight FDS over the common analysis band.`);
+      if(method==='narrowband'&&minimumIrregularity<.9)alerts.push(`The selected narrowband model is weak where the response irregularity factor falls to ${minimumIrregularity.toFixed(3)}; compare the Dirlik and synthesized-rainflow curves.`);
+      if(dirlikFallbackCount)alerts.push(`Dirlik coefficients reached their narrowband numerical fallback at ${dirlikFallbackCount} method-comparison points; inspect the method ledger before using those ordinates.`);
+      if(method==='rainflow')alerts.push(`The equivalent PSD is driven by deterministic synthesized-response rainflow using seed ${rainflowSeed} and ${rainflowSamples} samples per oscillator. Repeat with another seed and higher resolution before release.`);
+      if(flight[0][0]!==test[0][0]||flight.at(-1)[0]!==test.at(-1)[0])alerts.push(`The comparison and synthesized PSD are limited to the common ${fmin.toFixed(3)}–${fmax.toFixed(3)} Hz band; unmatched input bands are excluded from the displayed coverage ratio.`);
+      if(state.responseBasis==='absolute-acceleration')alerts.push('Absolute acceleration is only a fatigue-driving surrogate when an inertial-force or measured stress relationship justifies it.');
+      return{
+        summary:[stat('Selected damage method',FDS_DAMAGE_METHODS[method].label),stat('Flight PSD RMS',flightGrms,'g'),stat('Entered test PSD RMS',testGrms,'g'),stat('Flight duration',Tflight,'s'),stat('Test duration',Ttest,'s'),stat('Minimum test / flight damage',minimumTestCoverageDb,'dB',minimumTestCoverageDb>=0?'good':'warn'),stat('Maximum test / flight damage',maximumTestCoverageDb,'dB'),stat('Oscillator frequencies with test coverage',coveredPercent,'%',coveredPercent===100?'good':'warn'),stat('Equivalent-damage PSD RMS',state.equivalentGrms,'g'),stat('Minimum irregularity factor α',minimumIrregularity,'',minimumIrregularity>=.9?'good':'warn'),stat('FDS RMS error',state.rmsErrorDb,'dB',state.converged?'good':'warn'),stat('Convergence',state.converged?'WITHIN TOLERANCE':'REVIEW REQUIRED','',state.converged?'good':'warn')],
+        interpretation:`Using ${FDS_DAMAGE_METHODS[method].label.toLowerCase()}, the ${Ttest.toFixed(3)} s entered-test FDS is above or equal to the ${Tflight.toFixed(3)} s flight FDS at ${coveredPercent.toFixed(1)}% of the analyzed oscillator frequencies. The ${equivalentName.toLowerCase()} ${state.converged?'meets':'does not yet meet'} the selected ${targetName.toLowerCase()} FDS within the ${state.toleranceDb.toFixed(2)} dB ${state.objective} criterion.`,
+        physicalMeaning:`The PSD plot separates what was flown, the entered test curve, and the equivalent-damage curve. With flight damage represented over a longer test duration, equal damage requires less PSD energy. The selected ${FDS_DAMAGE_METHODS[method].label.toLowerCase()} model drives the test/flight ratio and equivalent-PSD iteration: 0 dB means equal pseudo-damage, positive values mean test coverage, and negative values identify oscillator frequencies where modeled flight exposure is more damaging.`,
+        engineeringConsiderations:['Use the actual test-versus-flight FDS ratio to assess qualification coverage; use the selected target-versus-achieved plot only to validate the synthesized equivalent-damage curve.','Compare narrowband, Dirlik, and synthesized-rainflow damage. Agreement supports the stationary-Gaussian spectral approximation; divergence is a sensitivity flag, not proof that one curve is measured truth.','Inspect ν₀⁺, νₚ, and α. Their separation measures response bandwidth and warns when the narrowband Rayleigh cycle model is a weak rainflow surrogate.','Convert the selected oscillator response to local stress or strain and use controlled S–N data before interpreting pseudo-damage as hardware life.','Check shaker force, displacement, velocity, control-channel limits, notching, and an extreme-response spectrum before issuing an equivalent curve as a test specification.'],
+        alerts,
+        limitations:['Narrowband Rayleigh is a PSD-domain approximation; Dirlik is an empirical PSD-domain rainflow-range approximation; only the synthesized option actually counts cycles, and it counts a finite artificial response record rather than measured flight data.','Synthesized-rainflow damage depends on phase seed, FFT resolution, record length, periodic closure, and duration scaling. Repeat seed and resolution studies before using it as release evidence.','The inverse is not unique; the seed curve, slope constraint, duration, response basis, and selected objective determine which equivalent PSD is returned.','The test/flight result is a spectrum of ratios, not one universal damage ratio; a hardware stress-transfer model is needed to weight the oscillator frequencies for a specific component.','A Gaussian PSD cannot reproduce non-Gaussian peaks, deterministic tones, nonstationarity, multiaxial phase relationships, mean stress, or load-sequence effects.','The pseudo-damage ordinate has no absolute life meaning without a calibrated response-to-stress transfer and an S–N intercept.'],
+        validity:{regime:'Linear single-axis stationary random vibration with resonance-resolved numerical integration and a common flight/test FDS convention.',confidence:`Iterative screening result; actual coverage and achieved-versus-target error are calculated directly over ${state.frequencies.length} oscillator frequencies.`},
+        presentation:{primaryEvidence:{type:'plot',index:0},primaryEvidenceStack:[{type:'plot',index:0},{type:'plot',index:1},{type:'plot',index:2},{type:'plot',index:3},{type:'plot',index:4},{type:'plot',index:5},{type:'plot',index:6}],primaryEvidenceCount:7,primaryValueCount:12},
+        plots:[
+          {title:'Flight, test, and FDS-derived equivalent base acceleration PSD',xLabel:'Frequency (Hz)',yLabel:'Base acceleration PSD (g²/Hz)',xScale:'log',yScale:'log',traces:[trace(`Flight · ${Tflight.toFixed(3)} s`,state.frequencies,flightLevels),trace(`Test · ${Ttest.toFixed(3)} s`,state.frequencies,testLevels),trace(`${equivalentName} · ${equivalentDuration.toFixed(3)} s`,state.frequencies,state.equivalentLevels,{emphasis:true})]},
+          {title:'Flight and test fatigue damage spectra at their actual durations',xLabel:'Oscillator natural frequency (Hz)',yLabel:`Pseudo-damage index ${damageUnit}`,xScale:'log',yScale:'log',traces:[trace(`Flight FDS · ${Tflight.toFixed(3)} s`,state.frequencies,flightFds.damage),trace(`Test FDS · ${Ttest.toFixed(3)} s`,state.frequencies,testFds.damage,{emphasis:true})]},
+          {title:'Test / flight fatigue-damage coverage ratio',xLabel:'Oscillator natural frequency (Hz)',yLabel:'Test damage / flight damage (dB)',xScale:'log',traces:[trace('Test / flight damage',state.frequencies,testFlightDb,{emphasis:true}),trace('Equal damage',state.frequencies,state.frequencies.map(()=>0))]},
+          {title:`Selected ${targetName.toLowerCase()} target and achieved equivalent FDS`,xLabel:'Oscillator natural frequency (Hz)',yLabel:`Pseudo-damage index ${damageUnit}`,xScale:'log',yScale:'log',traces:[trace(`${targetName} target FDS`,state.frequencies,state.target.damage),trace('Equivalent PSD achieved FDS',state.frequencies,state.achieved.damage,{emphasis:true})]},
+          {title:'Equivalent-PSD FDS error',xLabel:'Oscillator natural frequency (Hz)',yLabel:'Achieved / selected target damage (dB)',xScale:'log',traces:[trace('FDS error',state.frequencies,state.coverageDb,{emphasis:true}),trace('Exact match',state.frequencies,state.frequencies.map(()=>0)),trace('+ tolerance',state.frequencies,state.frequencies.map(()=>state.toleranceDb)),trace('− tolerance',state.frequencies,state.frequencies.map(()=>-state.toleranceDb))]},
+          {title:'Zero-crossing and peak-occurrence rates from response spectral moments',xLabel:'Oscillator natural frequency (Hz)',yLabel:'Expected event rate (Hz)',xScale:'log',yScale:'log',traces:[trace('Flight ν₀⁺',state.frequencies,flightFds.zeroCrossingRate),trace('Flight νₚ',state.frequencies,flightFds.peakRate),trace('Test ν₀⁺',state.frequencies,testFds.zeroCrossingRate,{emphasis:true}),trace('Test νₚ',state.frequencies,testFds.peakRate)]},
+          {title:'Flight damage method comparison',xLabel:'Oscillator natural frequency (Hz)',yLabel:`Pseudo-damage index ${damageUnit}`,xScale:'log',yScale:'log',traces:[trace('Narrowband Rayleigh',state.frequencies,flightFds.narrowbandDamage,{emphasis:method==='narrowband'}),trace('Dirlik spectral',state.frequencies,flightFds.dirlikDamage,{emphasis:method==='dirlik'}),trace(`Synthesized rainflow · seed ${rainflowSeed}`,state.frequencies,flightFds.rainflowDamage,{emphasis:method==='rainflow'})]}
+        ],
+        tables:[
+          {title:'Flight, test, and synthesis verification ledger',columns:['Frequency (Hz)','Flight PSD (g²/Hz)','Test PSD (g²/Hz)','Equivalent PSD (g²/Hz)','Flight pseudo-damage','Test pseudo-damage','Test / flight damage','Test / flight (dB)','Selected target damage','Achieved equivalent damage','Equivalence error (dB)'],rows:state.frequencies.map((f,index)=>[f,flightLevels[index],testLevels[index],state.equivalentLevels[index],flightFds.damage[index],testFds.damage[index],testFlightRatio[index],testFlightDb[index],state.target.damage[index],state.achieved.damage[index],state.coverageDb[index]])},
+          {title:'Damage-method comparison',columns:['Frequency (Hz)','Flight narrowband','Flight Dirlik','Flight synthesized rainflow','Test narrowband','Test Dirlik','Test synthesized rainflow','Equivalent narrowband','Equivalent Dirlik','Equivalent synthesized rainflow'],rows:state.frequencies.map((f,index)=>[f,flightFds.narrowbandDamage[index],flightFds.dirlikDamage[index],flightFds.rainflowDamage[index],testFds.narrowbandDamage[index],testFds.dirlikDamage[index],testFds.rainflowDamage[index],equivalentFds.narrowbandDamage[index],equivalentFds.dirlikDamage[index],equivalentFds.rainflowDamage[index]])},
+          {title:'Response spectral moments and event rates',columns:['Frequency (Hz)','Flight m₀','Flight m₁','Flight m₂','Flight m₄','Flight ν₀⁺ (Hz)','Flight νₚ (Hz)','Flight α','Test m₀','Test m₁','Test m₂','Test m₄','Test ν₀⁺ (Hz)','Test νₚ (Hz)','Test α'],rows:state.frequencies.map((f,index)=>[f,flightFds.spectralM0[index],flightFds.spectralM1[index],flightFds.spectralM2[index],flightFds.spectralM4[index],flightFds.zeroCrossingRate[index],flightFds.peakRate[index],flightFds.irregularityFactor[index],testFds.spectralM0[index],testFds.spectralM1[index],testFds.spectralM2[index],testFds.spectralM4[index],testFds.zeroCrossingRate[index],testFds.peakRate[index],testFds.irregularityFactor[index]])},
+          {title:'FDS basis ledger',columns:['Quantity','Applied basis'],rows:[['Input','Two one-sided base acceleration PSDs in g²/Hz'],['Flight duration',`${Tflight} s`],['Test duration',`${Ttest} s`],['Equivalent-damage direction',`${targetName} FDS represented over ${equivalentDuration} s, seeded by the ${seedName.toLowerCase()} PSD`],['Response quantity',`${state.responseLabel} in ${state.responseUnit}`],['Oscillator damping',`Q=${Q}; ζ=${state.target.zeta}`],['Fatigue exponent',b],['Selected damage method',FDS_DAMAGE_METHODS[method].label],['Narrowband basis','Positive-slope zero crossings from m₀,m₂ with Rayleigh amplitudes'],['Dirlik basis','Empirical rainflow-amplitude PDF from m₀,m₁,m₂,m₄ and peak rate νₚ'],['Rainflow cross-check',`Deterministic seed ${rainflowSeed}; ${rainflowSamples} samples; representative window ${flightFds.rainflowWindowDuration[0].toPrecision(5)} s`],['Bandwidth diagnostic','Peak-occurrence rate from m₂ and m₄; α=ν₀⁺/νₚ'],['Synthesis objective',state.objective],['PSD slope limit',`${state.maxSlopeDbPerOctave} dB/oct`],['Convergence tolerance',`${state.toleranceDb} dB`]]}
+        ],
+        csv:{filename:'flight-test-fds-equivalent-psd.csv',columns:['frequency_hz','flight_psd_g2_per_hz','test_psd_g2_per_hz','equivalent_psd_g2_per_hz','flight_pseudo_damage','test_pseudo_damage','test_over_flight_damage_ratio','test_over_flight_db','selected_target_pseudo_damage','achieved_equivalent_pseudo_damage','equivalence_error_db','flight_zero_crossing_rate_hz','flight_peak_rate_hz','flight_irregularity_factor','test_zero_crossing_rate_hz','test_peak_rate_hz','test_irregularity_factor','selected_damage_method','flight_narrowband_damage','flight_dirlik_damage','flight_synthesized_rainflow_damage','test_narrowband_damage','test_dirlik_damage','test_synthesized_rainflow_damage','equivalent_narrowband_damage','equivalent_dirlik_damage','equivalent_synthesized_rainflow_damage','flight_m0','flight_m1','flight_m2','flight_m4','test_m0','test_m1','test_m2','test_m4'],rows:state.frequencies.map((f,index)=>[f,flightLevels[index],testLevels[index],state.equivalentLevels[index],flightFds.damage[index],testFds.damage[index],testFlightRatio[index],testFlightDb[index],state.target.damage[index],state.achieved.damage[index],state.coverageDb[index],flightFds.zeroCrossingRate[index],flightFds.peakRate[index],flightFds.irregularityFactor[index],testFds.zeroCrossingRate[index],testFds.peakRate[index],testFds.irregularityFactor[index],method,flightFds.narrowbandDamage[index],flightFds.dirlikDamage[index],flightFds.rainflowDamage[index],testFds.narrowbandDamage[index],testFds.dirlikDamage[index],testFds.rainflowDamage[index],equivalentFds.narrowbandDamage[index],equivalentFds.dirlikDamage[index],equivalentFds.rainflowDamage[index],flightFds.spectralM0[index],flightFds.spectralM1[index],flightFds.spectralM2[index],flightFds.spectralM4[index],testFds.spectralM0[index],testFds.spectralM1[index],testFds.spectralM2[index],testFds.spectralM4[index]])}
+      };
+    }
   },
 
   pyroshock: {

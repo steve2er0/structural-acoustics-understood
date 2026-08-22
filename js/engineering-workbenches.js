@@ -354,7 +354,7 @@ export const engineeringAnalysisDefinitions = [
       return `${workbenchFmt(modes)} modes occupy the selected band and the overlap is ${workbenchFmt(overlap)}. Treat the resonance marks as a population metaphor, not predicted eigenfrequencies.`;
     },
     evidenceTakeaway: (context, evidence) => {
-      if (evidence.type === 'plot' && evidence.index === 0) return 'Keep the current curve selected while adding only physically comparable families; the axes rescale to the visible traces.';
+      if (evidence.type === 'plot' && evidence.index === 0) return 'Keep the current curve selected while adding only physically comparable families; the fixed axes preserve an honest visual comparison.';
       if (evidence.type === 'plot') return 'Cumulative mode count and local modes per band answer different questions: total population history versus crowding at the decision frequency.';
       if (evidence.item?.title?.includes('formulation')) return 'The source-topic row identifies the implemented ESA relation and any specialization applied to the selected construction.';
       return context.result?.interpretation?.engineeringConsiderations?.[0] ?? context.result?.interpretation?.physicalMeaning;

@@ -34,15 +34,30 @@ function linearTicks(min, max, count = 6) {
   return out;
 }
 
-function logTicks(min, max) {
-  min = Math.max(min, 1e-300);
-  const lo = Math.floor(Math.log10(min));
-  const hi = Math.ceil(Math.log10(max));
+export function formatLogTick(value) {
+  const numeric = Number(value);
+  if (!(numeric > 0) || !Number.isFinite(numeric)) return formatNumber(numeric, 3);
+  const exponent = Math.round(Math.log10(numeric));
+  const power = 10 ** exponent;
+  if (Math.abs(numeric / power - 1) > 1e-10) return formatNumber(numeric, 3);
+  if (exponent >= 0 && exponent <= 6) return `1${'0'.repeat(exponent)}`;
+  if (exponent < 0 && exponent >= -6) return `0.${'0'.repeat(-exponent - 1)}1`;
+  return `1e${exponent}`;
+}
+
+export function logTicks(min, max) {
+  const lower = Math.max(Number(min), 1e-300), upper = Number(max);
+  if (!(upper >= lower) || !Number.isFinite(upper)) return [];
+  const lo = Math.max(-300, Math.floor(Math.log10(lower)));
+  const hi = Math.min(308, Math.floor(Math.log10(upper)));
   const ticks = [];
-  for (let p = lo; p <= hi; p++) {
-    for (const m of [1,2,5]) {
-      const v = m * 10 ** p;
-      if (v >= min * .999 && v <= max * 1.001) ticks.push({ value: v, major: m === 1 });
+  for (let exponent = lo; exponent <= hi; exponent++) {
+    const decade = 10 ** exponent;
+    for (let multiplier = 1; multiplier <= 9; multiplier++) {
+      const value = multiplier * decade;
+      if (!Number.isFinite(value)) continue;
+      const tolerance = Math.max(Number.EPSILON * Math.abs(value) * 8, Math.abs(value) * 1e-12);
+      if (value + tolerance >= lower && value - tolerance <= upper) ticks.push({ value, major: multiplier === 1, exponent, multiplier });
     }
   }
   return ticks;
@@ -50,7 +65,8 @@ function logTicks(min, max) {
 
 function extent(plot, axis) {
   const vals = [];
-  for (const t of plot.traces ?? []) {
+  const domainTraces = Array.isArray(plot.domainTraces) && plot.domainTraces.length ? plot.domainTraces : plot.traces;
+  for (const t of domainTraces ?? []) {
     const arr = axis === 'x' ? t.x : t.y;
     for (const v of arr ?? []) if (Number.isFinite(Number(v))) vals.push(Number(v));
   }
@@ -96,7 +112,8 @@ function pathFromTrace(t, sx, sy, xLog, yLog) {
 
 export function lineChartSvg(plot, { width = 840, height = 390 } = {}) {
   const legendWidth=width-72-24-16;let legendRows=1,legendCursor=0;
-  for(const trace of plot.traces??[]){const itemWidth=Math.max(90,String(trace.name||'Trace').length*6.3+36);if(legendCursor&&legendCursor+itemWidth>legendWidth){legendRows++;legendCursor=0;}legendCursor+=itemWidth;}
+  const layoutTraces=Array.isArray(plot.domainTraces)&&plot.domainTraces.length?plot.domainTraces:plot.traces;
+  for(const trace of layoutTraces??[]){const itemWidth=Math.max(90,String(trace.name||'Trace').length*6.3+36);if(legendCursor&&legendCursor+itemWidth>legendWidth){legendRows++;legendCursor=0;}legendCursor+=itemWidth;}
   const m = { left: 72, right: 24, top: 55+(legendRows-1)*19, bottom: 60 };
   const innerW = width - m.left - m.right, innerH = height - m.top - m.bottom;
   const [xmin, xmax] = extent(plot, 'x'), [ymin, ymax] = extent(plot, 'y');
@@ -107,18 +124,18 @@ export function lineChartSvg(plot, { width = 840, height = 390 } = {}) {
   const yTicks = yLog ? logTicks(ymin, ymax) : linearTicks(ymin, ymax).map(value => ({ value, major: true }));
   const clipId = `clip-${Math.random().toString(36).slice(2)}`;
   const harmonic=plot.animation?.type==='harmonic';
-  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(plot.title || 'Engineering chart')}"${harmonic?` data-chart-animation="harmonic" data-chart-zero-y="${sy(0).toFixed(3)}"`:''}>`;
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(plot.title || 'Engineering chart')}" data-chart-x-domain="${xmin},${xmax}" data-chart-y-domain="${ymin},${ymax}"${harmonic?` data-chart-animation="harmonic" data-chart-zero-y="${sy(0).toFixed(3)}"`:''}>`;
   s += `<rect width="${width}" height="${height}" fill="#fff"/><defs><clipPath id="${clipId}"><rect x="${m.left}" y="${m.top}" width="${innerW}" height="${innerH}"/></clipPath></defs>`;
   s += `<text x="${m.left}" y="22" font-family="ui-sans-serif,system-ui" font-size="13" font-weight="700" fill="#172027">${escapeHtml(plot.title || '')}</text>`;
   for (const t of xTicks) {
     const x = sx(t.value);
-    s += `<line x1="${x}" x2="${x}" y1="${m.top}" y2="${m.top + innerH}" stroke="${t.major ? '#d9d4ca' : '#eeeae3'}" stroke-width="${t.major ? 1 : .7}"/>`;
-    if (t.major || !xLog) s += `<text x="${x}" y="${m.top + innerH + 20}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#667176">${escapeHtml(formatNumber(t.value,3))}</text>`;
+    s += `<line data-axis-grid="x-${t.major?'major':'minor'}" data-axis-value="${t.value}" x1="${x}" x2="${x}" y1="${m.top}" y2="${m.top + innerH}" stroke="${t.major ? '#d9d4ca' : '#f1eee8'}" stroke-width="${t.major ? 1 : .55}"/>`;
+    if (t.major || !xLog) s += `<text data-axis-label="x-major" data-axis-value="${t.value}" x="${x}" y="${m.top + innerH + 20}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#667176">${escapeHtml(xLog?formatLogTick(t.value):formatNumber(t.value,3))}</text>`;
   }
   for (const t of yTicks) {
     const y = sy(t.value);
-    s += `<line x1="${m.left}" x2="${m.left + innerW}" y1="${y}" y2="${y}" stroke="${t.major ? '#d9d4ca' : '#eeeae3'}" stroke-width="${t.major ? 1 : .7}"/>`;
-    if (t.major || !yLog) s += `<text x="${m.left - 10}" y="${y + 3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="10" fill="#667176">${escapeHtml(formatNumber(t.value,3))}</text>`;
+    s += `<line data-axis-grid="y-${t.major?'major':'minor'}" data-axis-value="${t.value}" x1="${m.left}" x2="${m.left + innerW}" y1="${y}" y2="${y}" stroke="${t.major ? '#d9d4ca' : '#f1eee8'}" stroke-width="${t.major ? 1 : .55}"/>`;
+    if (t.major || !yLog) s += `<text data-axis-label="y-major" data-axis-value="${t.value}" x="${m.left - 10}" y="${y + 3}" text-anchor="end" font-family="ui-monospace,monospace" font-size="10" fill="#667176">${escapeHtml(yLog?formatLogTick(t.value):formatNumber(t.value,3))}</text>`;
   }
   s += `<line x1="${m.left}" x2="${m.left+innerW}" y1="${m.top+innerH}" y2="${m.top+innerH}" stroke="#172027"/><line x1="${m.left}" x2="${m.left}" y1="${m.top}" y2="${m.top+innerH}" stroke="#172027"/>`;
   s += `<g clip-path="url(#${clipId})">`;
@@ -159,7 +176,7 @@ export function rangeChartSvg(chart, { width = 840 } = {}) {
   const labelValue=value=>`${formatNumber(value,3)}${chart.unit?` ${chart.unit}`:''}`;
   let s=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(chart.title||'Engineering capability range')}"><title>${escapeHtml(chart.title||'Engineering capability range')}</title><desc>${escapeHtml(chart.description||'Ranges and limiting values shown on a shared engineering scale.')}</desc><rect width="${width}" height="${height}" fill="#fff"/>`;
   s+=`<text x="${m.left}" y="22" font-family="ui-sans-serif,system-ui" font-size="13" font-weight="700" fill="#172027">${escapeHtml(chart.title||'')}</text>`;
-  for(const tick of ticks){const x=sx(tick.value);s+=`<line x1="${x}" x2="${x}" y1="${m.top-8}" y2="${m.top+innerH}" stroke="${tick.major?'#d9d4ca':'#eeeae3'}" stroke-width="${tick.major?1:.7}"/>`;if(tick.major||!log)s+=`<text x="${x}" y="${height-25}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#667176">${escapeHtml(formatNumber(tick.value,3))}</text>`;}
+  for(const tick of ticks){const x=sx(tick.value);s+=`<line data-axis-grid="x-${tick.major?'major':'minor'}" data-axis-value="${tick.value}" x1="${x}" x2="${x}" y1="${m.top-8}" y2="${m.top+innerH}" stroke="${tick.major?'#d9d4ca':'#f1eee8'}" stroke-width="${tick.major?1:.55}"/>`;if(tick.major||!log)s+=`<text data-axis-label="x-major" data-axis-value="${tick.value}" x="${x}" y="${height-25}" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#667176">${escapeHtml(log?formatLogTick(tick.value):formatNumber(tick.value,3))}</text>`;}
   lanes.forEach((lane,index)=>{const y=m.top+26+index*54,startKnown=lane.start!=null&&Number.isFinite(Number(lane.start))&&(!log||Number(lane.start)>0),start=startKnown?Number(lane.start):min,end=Number(lane.end),x1=sx(Math.max(min,start)),x2=sx(Math.min(max,end)),color=lane.color||laneColor[lane.tone]||palette[index%palette.length],open=!startKnown;
     s+=`<text x="${m.left-12}" y="${y-2}" text-anchor="end" font-family="ui-sans-serif,system-ui" font-size="11" font-weight="700" fill="#344047">${escapeHtml(lane.label||`Range ${index+1}`)}</text>`;
     if(lane.note)s+=`<text x="${m.left-12}" y="${y+14}" text-anchor="end" font-family="ui-sans-serif,system-ui" font-size="9" fill="#667176">${escapeHtml(lane.note)}</text>`;

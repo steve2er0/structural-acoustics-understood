@@ -255,14 +255,15 @@ function selectedTraceIndices(context, plot, plotIndex) {
 
 function plotForIndices(plot, indices) {
   const active = new Set(indices);
-  return { ...plot, traces: (plot.traces ?? []).map((trace, index) => ({ ...trace, sourceIndex: index })).filter(trace => active.has(trace.sourceIndex)) };
+  const domainTraces = Array.isArray(plot.domainTraces) && plot.domainTraces.length ? plot.domainTraces : plot.traces ?? [];
+  return { ...plot, domainTraces, traces: (plot.traces ?? []).map((trace, index) => ({ ...trace, sourceIndex: index })).filter(trace => active.has(trace.sourceIndex)) };
 }
 
 function traceSelectorHtml(context, plot, plotIndex) {
   if (!plot.traceSelector || (plot.traces?.length ?? 0) < 2) return '';
   const selected = selectedTraceIndices(context, plot, plotIndex);
   const key = `${context.step.toolId}:${plotIndex}`;
-  return `<fieldset class="chart-trace-selector workbench-trace-selector" data-wb-trace-selector="${workbenchEsc(key)}"><legend>${workbenchEsc(plot.traceSelector.label ?? 'Curves to display')}</legend><div class="chart-trace-options">${plot.traces.map((trace, index) => `<label><input type="checkbox" data-wb-trace-option="${index}"${selected.includes(index) ? ' checked' : ''}/><span>${workbenchEsc(trace.name ?? `Trace ${index + 1}`)}</span></label>`).join('')}</div><div class="chart-trace-actions"><button type="button" class="button-quiet" data-wb-trace-action="all" data-wb-trace-key="${workbenchEsc(key)}">Show all</button><button type="button" class="button-quiet" data-wb-trace-action="current" data-wb-trace-key="${workbenchEsc(key)}">Current only</button></div><small>Choose one or more curves. Axes rescale to the visible evidence.</small></fieldset>`;
+  return `<fieldset class="chart-trace-selector workbench-trace-selector" data-wb-trace-selector="${workbenchEsc(key)}"><legend>${workbenchEsc(plot.traceSelector.label ?? 'Curves to display')}</legend><div class="chart-trace-options">${plot.traces.map((trace, index) => `<label><input type="checkbox" data-wb-trace-option="${index}"${selected.includes(index) ? ' checked' : ''}/><span>${workbenchEsc(trace.name ?? `Trace ${index + 1}`)}</span></label>`).join('')}</div><div class="chart-trace-actions"><button type="button" class="button-quiet" data-wb-trace-action="all" data-wb-trace-key="${workbenchEsc(key)}">Show all</button><button type="button" class="button-quiet" data-wb-trace-action="current" data-wb-trace-key="${workbenchEsc(key)}">Current only</button></div><small>Choose one or more curves. The fixed axes retain the full comparison range.</small></fieldset>`;
 }
 
 function evidenceTakeaway(context, type, index, item) {
