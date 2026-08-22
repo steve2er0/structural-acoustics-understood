@@ -671,8 +671,9 @@ function bindTool(route){
   let latest=null,lastUnitSystem=unitSystem?.value||'SI',resultCleanup=()=>{};
   const run=()=>{resultCleanup();resultCleanup=()=>{};try{latest=displayEngineeringResult(calc.compute(collectForm(form)),unitSystem?.value||'SI');resultsEl.innerHTML=renderResult(latest,meta);resultCleanup=bindResultActions(latest,meta)||(()=>{});}catch(err){latest=null;resultsEl.innerHTML=`<div class="calc-error"><strong>Calculation could not be completed.</strong><br>${esc(err.message||String(err))}</div>`;}};
   const applyPresetDependencies=target=>{
-    if(target?.dataset.key!=='material'||typeof calc.syncPreset!=='function')return;
-    const current=collectForm(form),synced=calc.syncPreset(current),system=unitSystem?.value||'SI';
+    const presetKeys=Array.isArray(calc.presetKeys)?calc.presetKeys:['material'];
+    if(!presetKeys.includes(target?.dataset.key)||typeof calc.syncPreset!=='function')return;
+    const current=collectForm(form),synced=calc.syncPreset(current,target.dataset.key),system=unitSystem?.value||'SI';
     for(const field of calc.inputs||[]){
       if(!(field.key in synced)||Object.is(synced[field.key],current[field.key]))continue;
       const input=form.querySelector(`[data-key="${CSS.escape(field.key)}"]`);if(!input)continue;

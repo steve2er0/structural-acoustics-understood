@@ -5764,13 +5764,16 @@ const toolCatalog = [
   },
   {
     "id": "critical-frequency",
-    "title": "Plate Critical Frequency",
+    "title": "Plate Critical Frequency & TL",
     "category": "Structural Acoustics",
-    "description": "Calculate coincidence frequency from material, thickness, fluid sound speed, and plate bending stiffness.",
+    "description": "Plot size-aware finite-plate transmission loss with modal, mass-controlled, and coincidence context.",
     "complexity": "Core",
     "keywords": [
       "coincidence",
-      "critical frequency"
+      "critical frequency",
+      "transmission loss",
+      "finite plate",
+      "plate modes"
     ]
   },
   {
@@ -18626,6 +18629,12 @@ const materials = {
 };
 
 const materialOptions = Object.entries(materials).map(([value, m]) => ({ value, label: m.label }));
+const criticalFrequencyFluids = {
+  air: { label: 'Air · 20 °C screening', density: AIR_RHO, soundSpeed: AIR_C },
+  freshwater: { label: 'Freshwater · 20 °C screening', density: 998.2, soundSpeed: 1482 },
+  seawater: { label: 'Seawater · representative screening', density: 1025, soundSpeed: 1500 },
+};
+const criticalFrequencyFluidOptions = [...Object.entries(criticalFrequencyFluids).map(([value, fluid]) => ({ value, label: fluid.label })), { value: 'custom', label: 'Custom fluid properties' }];
 const pcbSensorOptions = [...pcbAccelerometerOptions, { value: 'custom', label: 'Custom / non-catalog sensor', group: 'Custom' }];
 
 function n(v, fallback = 0) {
@@ -18792,6 +18801,13 @@ function syncMaterialDefaults(values) {
   const m = materials[values.material];
   if (!m) return values;
   return { ...values, E_gpa: m.E / 1e9, rho: m.rho, nu: m.nu };
+}
+
+function syncCriticalFrequencyPresets(values, presetKey = 'material') {
+  const synced = syncMaterialDefaults(values);
+  if (presetKey !== 'fluid') return synced;
+  const fluid = criticalFrequencyFluids[values.fluid];
+  return fluid ? { ...synced, fluid_density: fluid.density, sound_speed: fluid.soundSpeed } : synced;
 }
 
 function aWeight(f) {
@@ -19433,25 +19449,72 @@ const calculatorDefinitions = {
   },
 
   'critical-frequency': {
-    category:'Structural Acoustics', basis:'Thin isotropic plate coincidence', confidence:'Exact within ideal plate model',
+    category:'Structural Acoustics', basis:'Thin-plate coincidence plus finite SSSS modal mobility and elastic-panel impedance', confidence:'Screening model—ideal boundaries and acoustic fields',
     inputs:[
-      ...commonMaterialInputs,
+      ...commonMaterialInputs.map(field=>({...field,group:'Geometry & material'})),
       {key:'thickness_mm',label:'Plate thickness',unit:'mm',type:'number',default:3,min:0.001},
-      {key:'sound_speed',label:'Fluid sound speed',unit:'m/s',type:'number',default:AIR_C,min:1},
-      {key:'f_check',label:'Frequency to classify',unit:'Hz',type:'number',default:2000,min:0.001}
+      {key:'length',label:'Plate length',unit:'m',type:'number',default:1,min:0.001,help:'Sets the finite-panel modal frequencies for the TL screening trace.'},
+      {key:'width',label:'Plate width',unit:'m',type:'number',default:0.6,min:0.001,help:'Sets the finite-panel modal frequencies for the TL screening trace.'},
+      {key:'fluid',label:'Surrounding fluid preset',type:'select',default:'air',options:criticalFrequencyFluidOptions,group:'Excitation & environment',help:'Representative screening values; choose Custom to enter a specific temperature, salinity, or pressure state.'},
+      {key:'sound_speed',label:'Fluid sound speed (coincidence + TL)',unit:'m/s',type:'number',default:AIR_C,min:1,group:'Excitation & environment',help:'Sets the light-fluid critical frequency and the acoustic impedance used by both TL traces.'},
+      {key:'fluid_density',label:'Fluid density (TL impedance only)',unit:'kg/m³',type:'number',default:AIR_RHO,min:0.001,group:'Excitation & environment',help:'Changes acoustic impedance and TL; it does not change the light-fluid critical frequency.'},
+      {key:'f_check',label:'Selected frequency',unit:'Hz',type:'number',default:2000,min:0.001,group:'Excitation & environment',help:'Sets the reported TL values and the vertical cursor on the plot.'},
+      {key:'fmin',label:'Minimum plot frequency',unit:'Hz',type:'number',default:20,min:0.001,group:'Excitation & environment'},
+      {key:'fmax',label:'Maximum plot frequency',unit:'Hz',type:'number',default:10000,min:0.002,group:'Excitation & environment'},
+      {key:'loss_factor',label:'Structural loss factor',type:'number',default:0.02,min:0.0001,max:0.5,step:0.005,group:'Model parameters'}
     ],
-    syncPreset:syncMaterialDefaults,
-    theory:'<p>Coincidence occurs when the flexural phase speed equals fluid sound speed. For a Kirchhoff plate, f<sub>c</sub>=c₀²/(2π)√(ρh/D).</p>',
-    assumptions:['Infinite thin isotropic plate for the coincidence relation.','No curvature or orthotropy.','Fluid loading does not strongly modify structural dispersion.'],
-    example:'Increasing an isotropic plate thickness lowers critical frequency because bending stiffness grows faster than surface mass.',
+    presetKeys:['material','fluid'],
+    syncPreset:syncCriticalFrequencyPresets,
+    theory:'<p>Coincidence occurs when the flexural phase speed equals fluid sound speed. For a light-fluid or structurally unloaded Kirchhoff plate, f<sub>c</sub>=c₀²/(2π)√(ρh/D). Plate length and width do not change this infinite-plate coincidence scale, but they set the discrete finite-panel frequencies. Fluid density enters the TL traces through acoustic impedance Z₀=ρ₀c₀; it does not enter this light-fluid critical-frequency relation. The size-aware TL trace expands the spatially averaged mobility of an ideal simply supported plate in odd–odd modes. The diffuse comparison integrates the infinite elastic-panel transmission coefficient over incidence angle, so it shows the coincidence trough without claiming finite-edge detail.</p>',
+    assumptions:['Flat, homogeneous, isotropic Kirchhoff plate with ideal simply supported edges for the finite-panel TL trace.','Spatially uniform normal-incidence pressure excites the odd–odd finite-panel modes; the comparison trace is an infinite-panel diffuse-field result truncated at 78° incidence.','Identical fluids on both sides; no curvature, orthotropy, stiffeners, cutouts, seals, leakage, flanking, or structural bridges.','Fluid loading enters through plane-wave impedance but does not modify the in-vacuo plate mode shapes or frequencies.'],
+    example:'Changing plate length or width moves the low-frequency modal TL structure while leaving the material-and-thickness critical frequency unchanged.',
+    references:[
+      {title:'Leissa — Vibration of Plates (NASA SP-160)',note:'Classical thin-plate modes and simply supported rectangular-plate frequencies.'},
+      {title:'Fahy & Gardonio — Sound and Structural Vibration',note:'Panel mobility, acoustic loading, coincidence, and elastic-panel sound transmission.'},
+      {title:'Cremer, Heckl & Petersson — Structure-Borne Sound',note:'Flexural waves, modal response, radiation, and transmission through elastic structures.'},
+      {title:'NIST Chemistry WebBook — Thermophysical Properties of Fluid Systems',note:'Water density and sound speed vary with thermodynamic state; the freshwater preset uses representative 20 °C screening values.'},
+      {title:'NOAA Ocean Service — Sound in the Ocean',note:'Seawater sound speed is approximately 1500 m/s and varies with temperature, salinity, and pressure.'}
+    ],
     compute(v){
-      const {E,rho,nu}=materialFrom(v),h=positive(v.thickness_mm,'Thickness')/1000,c0=positive(v.sound_speed,'Sound speed'),f=positive(v.f_check,'Check frequency'),D=plateD(E,h,nu),fc=c0*c0/(2*Math.PI)*Math.sqrt(rho*h/D);
-      const w=rad(f),k=(rho*h*w*w/D)**0.25,cp=w/k,ratio=f/fc;
-      const regime=ratio<0.8?'Subcritical':ratio<1.25?'Near coincidence':'Supercritical';
+      const {E,rho,nu}=materialFrom(v),h=positive(v.thickness_mm,'Thickness')/1000,L=positive(v.length,'Length'),W=positive(v.width,'Width'),eta=positive(v.loss_factor,'Loss factor'),rho0=positive(v.fluid_density,'Fluid density'),c0=positive(v.sound_speed,'Sound speed'),f=positive(v.f_check,'Selected frequency'),fmin=positive(v.fmin,'Minimum frequency'),fmax=positive(v.fmax,'Maximum frequency');
+      if(fmax<=fmin) throw new Error('Maximum frequency must exceed minimum.');
+      if(f<fmin||f>fmax) throw new Error('Selected frequency must lie between the minimum and maximum plot frequencies.');
+      const D=plateD(E,h,nu),surfaceMass=rho*h,fc=c0*c0/(2*Math.PI)*Math.sqrt(surfaceMass/D),modalScale=Math.PI/2*Math.sqrt(D/surfaceMass),f11=modalScale*(1/L**2+1/W**2),area=L*W,Z0=rho0*c0;
+      const mMax=Math.min(81,Math.max(9,Math.ceil(1.2*L*Math.sqrt(fmax/modalScale)))),nMax=Math.min(81,Math.max(9,Math.ceil(1.2*W*Math.sqrt(fmax/modalScale)))),participatingModes=[];
+      for(let m=1;m<=mMax;m+=2)for(let orderN=1;orderN<=nMax;orderN+=2){
+        const frequency=modalScale*((m/L)**2+(orderN/W)**2),omega=rad(frequency),weight=64/(Math.PI**4*m*m*orderN*orderN);
+        participatingModes.push({m,n:orderN,frequency,omega2:omega*omega,weight});
+      }
+      const finiteTlAt=frequency=>{
+        const omega=rad(frequency);let admittanceReal=0,admittanceImaginary=0;
+        for(const mode of participatingModes){
+          const denominatorReal=mode.omega2-omega*omega,denominatorImaginary=eta*mode.omega2,denominatorMagnitude=denominatorReal**2+denominatorImaginary**2,factor=omega*mode.weight/(surfaceMass*denominatorMagnitude);
+          admittanceReal+=factor*denominatorImaginary;
+          admittanceImaginary+=factor*denominatorReal;
+        }
+        const coupledReal=2*Z0*admittanceReal,coupledImaginary=2*Z0*admittanceImaginary,tau=clamp((coupledReal**2+coupledImaginary**2)/((1+coupledReal)**2+coupledImaginary**2),1e-14,1);
+        return -10*Math.log10(tau);
+      };
+      const diffuseTlAt=frequency=>{
+        const omega=rad(frequency),cutoff=78*Math.PI/180,angles=linspace(0,cutoff,49),weightedTau=angles.map(angle=>{
+          const cosine=Math.max(1e-5,Math.cos(angle)),parallelWavenumber=omega/c0*Math.sin(angle),fluidImpedance=Z0/cosine,structuralReal=D*eta*parallelWavenumber**4/omega,structuralImaginary=(surfaceMass*omega**2-D*parallelWavenumber**4)/omega;
+          return clamp((2*fluidImpedance)**2/((2*fluidImpedance+structuralReal)**2+structuralImaginary**2),1e-14,1)*Math.sin(2*angle);
+        }),tau=clamp(trapz(angles,weightedTau)/Math.sin(cutoff)**2,1e-14,1);
+        return -10*Math.log10(tau);
+      };
+      const fs=[...new Set([...logspace(fmin,fmax,240),f,...([fc,f11].filter(value=>value>=fmin&&value<=fmax))])].sort((a,b)=>a-b),finiteTl=fs.map(finiteTlAt),diffuseTl=fs.map(diffuseTlAt),finiteSelected=finiteTlAt(f),diffuseSelected=diffuseTlAt(f),w=rad(f),k=(surfaceMass*w*w/D)**0.25,cp=w/k,ratio=f/fc;
+      const regime=f<0.8*f11?'Stiffness-controlled':ratio<0.8?'Finite-modal / mass-controlled':ratio<1.5?'Coincidence-sensitive':'Post-coincidence';
+      const lowModes=[];for(let m=1;m<=8;m++)for(let orderN=1;orderN<=8;orderN++)lowModes.push([m,orderN,modalScale*((m/L)**2+(orderN/W)**2),(m%2===1&&orderN%2===1)?'Yes':'No']);lowModes.sort((a,b)=>a[2]-b[2]);
+      const plotMin=0,plotMax=Math.max(10,Math.min(120,Math.max(...finiteTl,...diffuseTl)*1.05)),mToFt=3.280839895,characteristicTraces=[...(f11>=fmin&&f11<=fmax?[trace(`First mode = ${f11.toFixed(1)} Hz`,[f11,f11],[plotMin,plotMax],{dash:true})]:[]),...(fc>=fmin&&fc<=fmax?[trace(`Light-fluid fc = ${fc.toFixed(1)} Hz`,[fc,fc],[plotMin,plotMax],{dash:true})]:[])];
       return{
-        summary:[stat('Critical frequency',fc,'Hz'),stat('Bending stiffness D',D,'N·m'),stat('Flexural phase speed at check',cp,'m/s'),stat('f / fc',ratio),stat('Regime',regime,'',regime==='Near coincidence'?'warn':'')],
-        interpretation:`At ${f} Hz the ideal plate is ${regime.toLowerCase()}; its flexural phase speed is ${cp.toFixed(1)} m/s versus ${c0.toFixed(1)} m/s in the fluid.`,
-        warnings:['Finite-panel edges allow subcritical radiation, and orthotropic or curved structures require directional dispersion.']
+        summary:[stat('Light-fluid critical frequency',fc,'Hz'),stat('First SSSS plate mode',f11,'Hz'),stat(`Finite-panel TL at ${f.toFixed(1)} Hz`,finiteSelected,'dB'),stat(`Diffuse infinite-panel TL at ${f.toFixed(1)} Hz`,diffuseSelected,'dB'),stat('Surface mass',surfaceMass,'kg/m²'),stat('Panel area',area,'m²'),stat('Acoustic impedance ρ₀c₀',Z0,'Pa·s/m'),stat('Regime',regime,'',regime==='Coincidence-sensitive'?'warn':'')],
+        interpretation:{summary:`The ${L.toFixed(3)} × ${W.toFixed(3)} m SSSS plate has its first bending mode at ${f11.toFixed(1)} Hz and its light-fluid coincidence scale at ${fc.toFixed(1)} Hz. At ${f.toFixed(1)} Hz, the finite normal-incidence modal screen gives ${finiteSelected.toFixed(1)} dB TL, while the infinite-panel diffuse comparison gives ${diffuseSelected.toFixed(1)} dB.`,physicalMeaning:'Plate size controls the spacing and location of the low-frequency resonance structure, while material, thickness, and fluid sound speed control the light-fluid coincidence frequency. Fluid density changes the plotted TL through acoustic impedance but does not change that unloaded coincidence relation. The two curves deliberately answer different questions: the finite SSSS trace shows ideal size-dependent modal transmission under uniform pressure, and the diffuse infinite-panel trace shows angle-dependent coincidence without finite edges. Dense-fluid added mass is outside this model and requires a fluid-loaded dispersion solution.'},
+        interpretationByUnit:{English:{summary:`The ${(L*mToFt).toFixed(3)} × ${(W*mToFt).toFixed(3)} ft SSSS plate has its first bending mode at ${f11.toFixed(1)} Hz and its light-fluid coincidence scale at ${fc.toFixed(1)} Hz. At ${f.toFixed(1)} Hz, the finite normal-incidence modal screen gives ${finiteSelected.toFixed(1)} dB TL, while the infinite-panel diffuse comparison gives ${diffuseSelected.toFixed(1)} dB.`,physicalMeaning:'Plate size controls the spacing and location of the low-frequency resonance structure, while material, thickness, and fluid sound speed control the light-fluid coincidence frequency. Fluid density changes the plotted TL through acoustic impedance but does not change that unloaded coincidence relation. The two curves deliberately answer different questions: the finite SSSS trace shows ideal size-dependent modal transmission under uniform pressure, and the diffuse infinite-panel trace shows angle-dependent coincidence without finite edges. Dense-fluid added mass is outside this model and requires a fluid-loaded dispersion solution.'}},
+        warnings:['Treat both TL curves as ideal screening evidence, not a laboratory rating or installed insertion loss; edge compliance, frame motion, seals, penetrations, leakage, flanking, source field, and receiving-room absorption can dominate.',`The finite-panel curve uses ${participatingModes.length} odd–odd SSSS modes under spatially uniform pressure. Even-index modes appear in the table but do not couple to that ideal load.`,...(rho0>20?['This is a dense-fluid case. The reported light-fluid critical frequency and in-vacuo plate modes do not include reactive fluid added mass; use a fluid-loaded dispersion or coupled structural–acoustic model when those frequencies control the decision.']:[]),...(mMax===81||nMax===81?['The finite modal expansion reached its 81-by-81 order cap. Narrow high-frequency features may require a converged modal, finite-element, or boundary-element model.']:[]),...(2*Math.PI*(D/(surfaceMass*rad(fmax)**2))**0.25/h<10?['At the top of the plot band, check whether the bending wavelength remains long enough relative to thickness for Kirchhoff theory.']:[])],
+        plots:[{title:'Plate transmission loss: finite size and coincidence context',xLabel:'Frequency (Hz)',yLabel:'Transmission loss (dB)',xScale:'log',yMin:plotMin,yMax:plotMax,traces:[trace(`Finite SSSS · ${L.toFixed(2)} × ${W.toFixed(2)} m`,fs,finiteTl,{emphasis:true,displayNameByUnit:{English:`Finite SSSS · ${(L*mToFt).toFixed(2)} × ${(W*mToFt).toFixed(2)} ft`}}),trace('Infinite-panel diffuse',fs,diffuseTl),...characteristicTraces,trace(`Selected f = ${f.toFixed(1)} Hz`,[f,f],[plotMin,plotMax],{dash:true,color:'#8f423a'})]}],
+        tables:[{title:'Lowest ideal SSSS plate modes',columns:['m','n','Frequency (Hz)','Uniform-pressure participation'],rows:lowModes.slice(0,16)}],
+        presentation:{primaryEvidence:{type:'plot',index:0},primaryValueCount:6},
+        csv:{filename:'plate-critical-frequency-tl.csv',columns:['frequency_hz','finite_ssss_normal_incidence_tl_db','infinite_panel_diffuse_tl_db'],rows:fs.map((frequency,index)=>[frequency,finiteTl[index],diffuseTl[index]])}
       };
     }
   },
@@ -32402,7 +32465,7 @@ const validationBenchmarks = Object.freeze([
   },
   {
     id: 'coincidence-thickness', title: 'Plate coincidence thickness scaling', principle: 'For fixed isotropic material and fluid, critical frequency varies inversely with thickness.', toolId: 'critical-frequency', expected: 0.5, tolerance: 0.00001, unit: 'ratio',
-    evaluate(registry) { const calculator = registry['critical-frequency']; const base = defaults(calculator); const first = metric(calculator.compute({ ...base, thickness_mm: 3 }), 'Critical frequency'); const second = metric(calculator.compute({ ...base, thickness_mm: 6 }), 'Critical frequency'); return second / first; }
+    evaluate(registry) { const calculator = registry['critical-frequency']; const base = defaults(calculator); const first = metric(calculator.compute({ ...base, thickness_mm: 3 }), 'Light-fluid critical frequency'); const second = metric(calculator.compute({ ...base, thickness_mm: 6 }), 'Light-fluid critical frequency'); return second / first; }
   },
   {
     id: 'mass-law-octave', title: 'Mass-law octave slope', principle: 'Below coincidence, doubling frequency raises normal-incidence mass-law TL by approximately 6.0206 dB.', toolId: 'elastic-panel-tl', expected: 6.0206, tolerance: 0.08, unit: 'dB/octave',
@@ -34715,8 +34778,9 @@ function bindTool(route){
   let latest=null,lastUnitSystem=unitSystem?.value||'SI',resultCleanup=()=>{};
   const run=()=>{resultCleanup();resultCleanup=()=>{};try{latest=displayEngineeringResult(calc.compute(collectForm(form)),unitSystem?.value||'SI');resultsEl.innerHTML=renderResult(latest,meta);resultCleanup=bindResultActions(latest,meta)||(()=>{});}catch(err){latest=null;resultsEl.innerHTML=`<div class="calc-error"><strong>Calculation could not be completed.</strong><br>${esc(err.message||String(err))}</div>`;}};
   const applyPresetDependencies=target=>{
-    if(target?.dataset.key!=='material'||typeof calc.syncPreset!=='function')return;
-    const current=collectForm(form),synced=calc.syncPreset(current),system=unitSystem?.value||'SI';
+    const presetKeys=Array.isArray(calc.presetKeys)?calc.presetKeys:['material'];
+    if(!presetKeys.includes(target?.dataset.key)||typeof calc.syncPreset!=='function')return;
+    const current=collectForm(form),synced=calc.syncPreset(current,target.dataset.key),system=unitSystem?.value||'SI';
     for(const field of calc.inputs||[]){
       if(!(field.key in synced)||Object.is(synced[field.key],current[field.key]))continue;
       const input=form.querySelector(`[data-key="${CSS.escape(field.key)}"]`);if(!input)continue;

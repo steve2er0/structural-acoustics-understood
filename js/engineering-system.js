@@ -284,7 +284,7 @@ export const validationBenchmarks = Object.freeze([
   },
   {
     id: 'coincidence-thickness', title: 'Plate coincidence thickness scaling', principle: 'For fixed isotropic material and fluid, critical frequency varies inversely with thickness.', toolId: 'critical-frequency', expected: 0.5, tolerance: 0.00001, unit: 'ratio',
-    evaluate(registry) { const calculator = registry['critical-frequency']; const base = defaults(calculator); const first = metric(calculator.compute({ ...base, thickness_mm: 3 }), 'Critical frequency'); const second = metric(calculator.compute({ ...base, thickness_mm: 6 }), 'Critical frequency'); return second / first; }
+    evaluate(registry) { const calculator = registry['critical-frequency']; const base = defaults(calculator); const first = metric(calculator.compute({ ...base, thickness_mm: 3 }), 'Light-fluid critical frequency'); const second = metric(calculator.compute({ ...base, thickness_mm: 6 }), 'Light-fluid critical frequency'); return second / first; }
   },
   {
     id: 'mass-law-octave', title: 'Mass-law octave slope', principle: 'Below coincidence, doubling frequency raises normal-incidence mass-law TL by approximately 6.0206 dB.', toolId: 'elastic-panel-tl', expected: 6.0206, tolerance: 0.08, unit: 'dB/octave',

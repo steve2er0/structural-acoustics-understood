@@ -326,6 +326,58 @@ test('plate wave selected frequency must remain inside the plotted band',()=>{
   assert.throws(()=>registry['bending-wave'].compute({...defaults('bending-wave'),frequency:6000}),/between the minimum and maximum plot frequencies/i);
 });
 
+test('plate critical-frequency tool plots size-aware finite-panel TL with coincidence context',()=>{
+  const calculator=registry['critical-frequency'],values=defaults('critical-frequency'),result=calculator.compute(values),E=Number(values.E_gpa)*1e9,rho=Number(values.rho),nu=Number(values.nu),h=Number(values.thickness_mm)/1000,L=Number(values.length),W=Number(values.width),D=E*h**3/(12*(1-nu**2)),surfaceMass=rho*h;
+  const expectedFirst=Math.PI/2*Math.sqrt(D/surfaceMass)*(1/L**2+1/W**2),expectedCritical=Number(values.sound_speed)**2/(2*Math.PI)*Math.sqrt(surfaceMass/D);
+  close(metric(result,'First SSSS plate mode'),expectedFirst,1e-10);
+  close(metric(result,'Light-fluid critical frequency'),expectedCritical,1e-10);
+  const plot=result.plots[0],finite=plot.traces.find(item=>item.name.startsWith('Finite SSSS')),diffuse=plot.traces.find(item=>item.name==='Infinite-panel diffuse'),firstMode=plot.traces.find(item=>item.name.startsWith('First mode')),critical=plot.traces.find(item=>item.name.startsWith('Light-fluid fc')),selected=plot.traces.find(item=>item.name.startsWith('Selected f'));
+  assert.ok(finite.x.length>=240);
+  assert.equal(finite.x.length,finite.y.length);
+  assert.equal(diffuse.x.length,diffuse.y.length);
+  assert.ok(finite.y.every(Number.isFinite));
+  assert.ok(diffuse.y.every(Number.isFinite));
+  assert.deepEqual(firstMode.x,[expectedFirst,expectedFirst]);
+  assert.deepEqual(critical.x,[expectedCritical,expectedCritical]);
+  assert.deepEqual(selected.x,[Number(values.f_check),Number(values.f_check)]);
+  assert.deepEqual(result.presentation.primaryEvidence,{type:'plot',index:0});
+  assert.match(result.interpretation.physicalMeaning,/size controls.*resonance.*material.*thickness.*coincidence/i);
+  assert.match(result.interpretationByUnit.English.summary,/ft SSSS plate/);
+  assert.match(result.assumptions.limitations.join(' '),/screening evidence.*installed insertion loss/i);
+  assert.equal(result.csv.rows.length,finite.x.length);
+  const highBand=calculator.compute({...values,fmin:100,f_check:2000});
+  assert.equal(highBand.plots[0].traces.some(item=>item.name.startsWith('First mode')),false);
+});
+
+test('plate dimensions move finite-panel modes and TL without moving infinite-plate coincidence',()=>{
+  const calculator=registry['critical-frequency'],base=defaults('critical-frequency'),short=calculator.compute(base),long=calculator.compute({...base,length:Number(base.length)*2});
+  close(metric(short,'Light-fluid critical frequency'),metric(long,'Light-fluid critical frequency'),1e-12);
+  assert.ok(metric(long,'First SSSS plate mode')<metric(short,'First SSSS plate mode'));
+  assert.notDeepEqual(short.plots[0].traces[0].y,long.plots[0].traces[0].y);
+  assert.throws(()=>calculator.compute({...base,f_check:Number(base.fmax)+1}),/between the minimum and maximum plot frequencies/i);
+});
+
+test('plate critical-frequency fluid presets synchronize density and sound speed with clear model scope',()=>{
+  const calculator=registry['critical-frequency'],base=defaults('critical-frequency');
+  assert.deepEqual(calculator.presetKeys,['material','fluid']);
+  const freshwater=calculator.syncPreset({...base,fluid:'freshwater'},'fluid'),seawater=calculator.syncPreset({...base,fluid:'seawater'},'fluid'),custom=calculator.syncPreset({...base,fluid:'custom',fluid_density:777,sound_speed:1333},'fluid');
+  assert.equal(freshwater.fluid_density,998.2);
+  assert.equal(freshwater.sound_speed,1482);
+  assert.equal(seawater.fluid_density,1025);
+  assert.equal(seawater.sound_speed,1500);
+  assert.equal(custom.fluid_density,777);
+  assert.equal(custom.sound_speed,1333);
+  const airResult=calculator.compute(base),densityOnly=calculator.compute({...base,fluid:'custom',fluid_density:998.2}),soundOnly=calculator.compute({...base,fluid:'custom',sound_speed:1482});
+  close(metric(airResult,'Light-fluid critical frequency'),metric(densityOnly,'Light-fluid critical frequency'),1e-12);
+  assert.notEqual(metric(airResult,`Finite-panel TL at ${Number(base.f_check).toFixed(1)} Hz`),metric(densityOnly,`Finite-panel TL at ${Number(base.f_check).toFixed(1)} Hz`));
+  assert.notEqual(metric(airResult,'Light-fluid critical frequency'),metric(soundOnly,'Light-fluid critical frequency'));
+  const densityInput=calculator.inputs.find(input=>input.key==='fluid_density'),soundInput=calculator.inputs.find(input=>input.key==='sound_speed');
+  assert.equal(densityInput.group,'Excitation & environment');
+  assert.match(densityInput.label,/TL impedance only/);
+  assert.match(soundInput.label,/coincidence \+ TL/);
+  assert.match(calculator.compute(freshwater).assumptions.limitations.join(' '),/dense-fluid case.*added mass/i);
+});
+
 test('material presets synchronize dependent properties and plate modal frequencies',()=>{
   const plate=registry['plate-modes'],base=defaults('plate-modes'),frequencies=new Map();
   for(const [id,material] of Object.entries(materials)){
@@ -343,6 +395,7 @@ test('material presets synchronize dependent properties and plate modal frequenc
   const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
   assert.match(appSource,/function calc\.syncPreset|typeof calc\.syncPreset/);
   assert.match(appSource,/applyPresetDependencies\(e\.target\)/);
+  assert.match(appSource,/calc\.syncPreset\(current,target\.dataset\.key\)/);
   assert.match(appSource,/formatDisplayInputNumber\(synced\[field\.key\],field\.unit,system\)/);
 });
 
@@ -1613,7 +1666,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes current interactive runtimes',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v112'/);
+  assert.match(worker,/const CACHE = 'sau-v114'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);

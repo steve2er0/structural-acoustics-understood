@@ -1644,13 +1644,16 @@ export const toolCatalog = [
   },
   {
     "id": "critical-frequency",
-    "title": "Plate Critical Frequency",
+    "title": "Plate Critical Frequency & TL",
     "category": "Structural Acoustics",
-    "description": "Calculate coincidence frequency from material, thickness, fluid sound speed, and plate bending stiffness.",
+    "description": "Plot size-aware finite-plate transmission loss with modal, mass-controlled, and coincidence context.",
     "complexity": "Core",
     "keywords": [
       "coincidence",
-      "critical frequency"
+      "critical frequency",
+      "transmission loss",
+      "finite plate",
+      "plate modes"
     ]
   },
   {
