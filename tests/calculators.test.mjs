@@ -1570,6 +1570,7 @@ test('site visual system exposes reusable components and themes every non-home r
 
 test('wheel homepage is data-driven, accessible, and linked to real content',()=>{
   const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
+  const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
   const allSections=[...baseSections,...acs519Sections,...workflowExpansionSections,...programExpansionSections,...seaParameterSections,...electronicsFatigueSections];
   const allTools=[...toolCatalog,...extraToolCatalog,...acs519ToolCatalog,...workflowExpansionToolCatalog,...programExpansionToolCatalog,...seaParameterToolCatalog,...electronicsFatigueToolCatalog];
   const allDemos=[...baseDemos,...acs519Demos,...workflowExpansionDemos,...programExpansionDemos,...seaParameterDemos,...electronicsFatigueDemos];
@@ -1642,6 +1643,8 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
   assert.match(appSource,/data-tool-launcher-mode="task"/);
   assert.match(appSource,/data-tool-launcher-mode="subject"/);
   assert.match(appSource,/data-tool-pin=/);
+  assert.match(css,/\.tool-launcher-layout\s*\{[^}]*height:\s*min\(610px,[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\)/);
+  assert.match(css,/\.tool-launcher-results\s*\{[^}]*min-height:\s*0;[^}]*overflow:\s*auto;/);
   assert.match(appSource,/rankToolDiscoveryRecords/);
   assert.match(appSource,/TOOL_HISTORY_STORAGE_KEY/);
   assert.match(appSource,/#\/tools\?subject=/);
@@ -1666,7 +1669,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes current interactive runtimes',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v114'/);
+  assert.match(worker,/const CACHE = 'sau-v116'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);

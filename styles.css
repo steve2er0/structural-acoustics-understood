@@ -3665,8 +3665,8 @@ body.site-system-workbench .site-page-shell-workbench::before {
 .tool-launcher-search input::placeholder { color: #6f849c; }
 .tool-launcher-search > kbd,
 .tool-launcher-panel > footer kbd { padding: .18rem .3rem; color: #8499b1; font: 550 .52rem var(--mono); border: 1px solid rgba(145, 181, 222, .2); border-radius: 3px; background: rgba(3, 14, 27, .78); }
-.tool-launcher-layout { min-height: 450px; max-height: min(610px, calc(100vh - var(--header-height) - 190px)); display: grid; grid-template-columns: 260px minmax(0, 1fr); overflow: hidden; }
-.tool-launcher-sidebar { min-width: 0; padding: .85rem; border-right: 1px solid rgba(145, 181, 222, .16); background: rgba(5, 19, 34, .94); overflow: auto; }
+.tool-launcher-layout { height: min(610px, max(0px, calc(100vh - var(--header-height) - 190px))); min-height: 0; display: grid; grid-template-columns: 260px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); overflow: hidden; }
+.tool-launcher-sidebar { min-width: 0; min-height: 0; padding: .85rem; border-right: 1px solid rgba(145, 181, 222, .16); background: rgba(5, 19, 34, .94); overflow: auto; }
 .tool-launcher-saved + .tool-launcher-saved,
 .tool-launcher-browse { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(145, 181, 222, .13); }
 .tool-launcher-saved > header { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .35rem; }
@@ -3687,7 +3687,7 @@ body.site-system-workbench .site-page-shell-workbench::before {
 .tool-launcher-filters button span { color: #526c87; font: .5rem var(--mono); }
 .tool-launcher-filters button:hover,
 .tool-launcher-filters button.active { color: #eff6ff; border-color: rgba(111, 140, 255, .55); background: rgba(72, 99, 181, .18); }
-.tool-launcher-results { min-width: 0; padding: .9rem 1rem 1rem; overflow: auto; background: rgba(7, 23, 40, .98); }
+.tool-launcher-results { min-width: 0; min-height: 0; padding: .9rem 1rem 1rem; overflow: auto; background: rgba(7, 23, 40, .98); }
 .tool-launcher-results > header { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: .6rem; padding-bottom: .55rem; border-bottom: 1px solid rgba(145, 181, 222, .13); }
 .tool-launcher-results > header h3 { margin: .12rem 0 0; color: #dce8f7; font-size: .9rem; font-weight: 520; }
 .tool-launcher-results > header output { color: #7189a4; font: .55rem var(--mono); text-transform: uppercase; }
@@ -3824,7 +3824,7 @@ body.site-system-workbench .site-page-shell-workbench::before {
   .tool-launcher-panel > header h2 { font-size: 1rem; }
   .tool-launcher-panel .tools-menu-all { display: none; }
   .tool-launcher-search { position: sticky; top: 0; z-index: 3; }
-  .tool-launcher-layout { min-height: 0; max-height: none; display: block; overflow: visible; }
+  .tool-launcher-layout { height: auto; min-height: 0; max-height: none; display: block; overflow: visible; }
   .tool-launcher-sidebar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; border-right: 0; border-bottom: 1px solid rgba(145, 181, 222, .16); overflow: visible; }
   .tool-launcher-saved + .tool-launcher-saved { margin: 0; padding: 0; border: 0; }
   .tool-launcher-browse { grid-column: 1 / -1; margin-top: .15rem; }
