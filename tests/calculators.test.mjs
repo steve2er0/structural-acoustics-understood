@@ -1801,6 +1801,15 @@ test('light and dark themes are selectable, persistent, and standalone-safe',()=
   assert.match(css,/html\[data-theme="light"\]/);
   assert.match(css,/html\[data-theme="dark"\]/);
   assert.match(css,/\.theme-toggle/);
+  assert.match(css,/html\[data-theme="light"\] body\.site-system-demo \.demo-discovery\s*\{[^}]*background:\s*rgba\(255,\s*253,\s*248,\s*\.9\)/);
+  assert.match(css,/html\[data-theme="light"\] body\.site-system-demo \.lab-guide > div\s*\{[^}]*background:\s*#fffdf8/);
+  assert.match(css,/html\[data-theme="light"\] body\.site-system-demo :is\(\.demo-control label, \.spatial-control-group h2\)\s*\{[^}]*color:\s*#4f6067/);
+  assert.match(css,/body\.site-system-demo :is\(\.demo-preview, \.demo-stage, \.chart-shell\) svg \[fill="#1e6077"\]\s*\{\s*fill:\s*#176b8b/);
+  assert.match(css,/html\[data-theme="light"\] body\.site-system-calculator \.tool-discovery\s*\{[^}]*background:\s*#fffdf8/);
+  assert.match(css,/body\.site-system-route \.page-shell > \.tool-discovery\s*\{\s*z-index:\s*20/);
+  assert.match(css,/html\[data-theme="light"\] body\.site-system-calculator \.capstone-hero h1/);
+  assert.match(css,/html\[data-theme="light"\] :is\(\.capstone-workflow, \.capstone-commandbar, \.workbench-domain-panel/);
+  assert.match(css,/html\[data-theme="light"\] :is\(\.sorbo-sidebar, \.sorbo-sidebar > header, \.sorbo-sidebar-actions, \.sorbo-tabs\)/);
   assert.match(index,/<script data-theme-bootstrap>/);
   assert.match(index,/sau-color-theme-v1/);
   assert.match(sync,/const themeBootstrap = index\.match/);
@@ -1910,7 +1919,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes current interactive runtimes',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v120'/);
+  assert.match(worker,/const CACHE = 'sau-v122'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);
