@@ -13,6 +13,7 @@ function replaceRange(source, startMarker, endMarker, replacement) {
 }
 
 let standalone = await read('standalone.html');
+const index = await read('index.html');
 const styles = await read('styles.css');
 const app = await read('js/app.js');
 const unitSystemModule = await read('js/unit-system.js');
@@ -69,6 +70,13 @@ if (!standalone.includes('name="color-scheme"')) {
     '<meta name="theme-color" content="#04101f" />',
     '<meta name="theme-color" content="#04101f" />\n<meta name="color-scheme" content="dark light" />'
   );
+}
+const themeBootstrap = index.match(/<script data-theme-bootstrap>[\s\S]*?<\/script>/)?.[0];
+if (!themeBootstrap) throw new Error('Could not find theme bootstrap in index.html');
+if (standalone.includes('<script data-theme-bootstrap>')) {
+  standalone = standalone.replace(/<script data-theme-bootstrap>[\s\S]*?<\/script>/, themeBootstrap);
+} else {
+  standalone = standalone.replace(/(<meta name="color-scheme"[^>]*>)/, `$1\n${themeBootstrap}`);
 }
 
 standalone = replaceRange(standalone, '<style>\n', '</style>', `<style>\n${styles}`);

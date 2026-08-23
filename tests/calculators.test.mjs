@@ -916,15 +916,41 @@ test('damage-equivalent synthesis uses test/flight FDS ratio in either duration 
   flightAtTest.equivalentLevels.forEach((level,index)=>close(level/flightAtTest.seedLevels[index],4**(-1/3),1e-8));
 });
 
+test('qualification tailoring honors an explicit FDS damage margin and closes coverage',()=>{
+  const psd=[[20,.01],[2000,.01]],frequencies=[20,40,100,250,630,1200,2000],marginDb=1,expected=4**(-1/3)*10**((2*marginDb)/(10*6));
+  const state=synthesizeDamageEquivalentPsd({referencePsdPoints:psd,seedPsdPoints:psd,referenceDuration:45,testDuration:180,q:10,b:6,frequencies,objective:'qualification-tailoring',targetMarginDb:marginDb,maxSlopeDbPerOctave:12,toleranceDb:.01,maxIterations:10});
+  assert.equal(state.objective,'qualification-tailoring');
+  assert.equal(state.targetMarginDb,marginDb);
+  assert.equal(state.converged,true);
+  assert.ok(state.minimumCoverageDb>=-1e-8);
+  assert.ok(state.minimumTargetCoverageDb>=marginDb-1e-8);
+  state.equivalentLevels.forEach((level,index)=>close(level/state.seedLevels[index],expected,1e-7));
+  state.targetCoverageDb.forEach(value=>close(value,marginDb,1e-6));
+});
+
 test('FDS calculator includes exposure duration in the reported test/flight damage ratio',()=>{
   const values=defaults('fds'),flat='20, 0.01\n2000, 0.01';
   values.psd=flat;values.test_psd=flat;values.reference_duration=45;values.test_duration=180;
-  const result=extraCalculatorRegistry.fds.compute(values),expectedDb=10*Math.log10(4);
+  const result=extraCalculatorRegistry.fds.compute(values),expectedDb=10*Math.log10(4),expectedPsdRatio=4**(-1/3),expectedPsdDb=10*Math.log10(expectedPsdRatio),column=Object.fromEntries(result.csv.columns.map((name,index)=>[name,index]));
   assert.equal(values.equivalence_direction,'flight-to-test');
-  close(metric(result,'Minimum test / flight damage'),expectedDb,1e-10);
-  close(metric(result,'Maximum test / flight damage'),expectedDb,1e-10);
-  assert.ok(metric(result,'Equivalent-damage PSD RMS')<metric(result,'Flight PSD RMS'));
-  result.csv.rows.forEach(row=>close(row[6],4,1e-10));
+  assert.equal(values.objective,'qualification-tailoring');
+  close(metric(result,'Minimum entered qualification / flight damage'),expectedDb,1e-10);
+  close(metric(result,'Maximum entered qualification / flight damage'),expectedDb,1e-10);
+  assert.ok(metric(result,'Tailored qualification PSD RMS')<metric(result,'Flight PSD RMS'));
+  assert.equal(metric(result,'Convergence'),'COVERAGE VERIFIED');
+  result.csv.rows.forEach(row=>{
+    close(row[6],4,1e-10);
+    close(row[column.test_over_flight_psd_ratio],1,1e-12);
+    close(row[column.test_over_flight_psd_db],0,1e-12);
+    close(row[column.equivalent_over_selected_target_psd_ratio],expectedPsdRatio,2e-4);
+    close(row[column.equivalent_over_selected_target_psd_db],expectedPsdDb,1e-3);
+    close(row[column.same_shape_duration_only_psd_ratio],expectedPsdRatio,1e-12);
+    close(row[column.same_shape_duration_only_psd_db],expectedPsdDb,1e-12);
+    close(row[column.tailored_over_entered_qualification_psd_ratio],expectedPsdRatio,2e-4);
+    close(row[column.tailored_over_entered_qualification_psd_db],expectedPsdDb,1e-3);
+    assert.ok(row[column.tailored_over_flight_damage_ratio]>=1-1e-8&&row[column.tailored_over_flight_damage_ratio]<1.001);
+    assert.ok(row[column.tailored_over_flight_damage_db]>=-1e-8&&row[column.tailored_over_flight_damage_db]<.005);
+  });
 });
 
 test('FDS calculator accepts pasted flight and test PSDs and exposes coverage and equivalence evidence',()=>{
@@ -933,26 +959,60 @@ test('FDS calculator accepts pasted flight and test PSDs and exposes coverage an
   values.test_psd='frequency_hz,test_psd_g2_per_hz\n20,0.008\n80,0.008\n200,0.04\n500,0.04\n1000,0.012\n2000,0.012';
   const result=extraCalculatorRegistry.fds.compute(values);
   assert.equal(values.damage_method,'dirlik');
+  assert.equal(values.objective,'qualification-tailoring');
   assert.match(metric(result,'Selected damage method'),/Dirlik/i);
-  assert.equal(metric(result,'Convergence'),'WITHIN TOLERANCE');
-  assert.match(result.plots[0].title,/flight, test, and .* equivalent base acceleration PSD/i);
-  assert.match(result.plots[1].title,/actual durations/i);
-  assert.match(result.plots[2].title,/test \/ flight fatigue-damage coverage ratio/i);
-  assert.match(result.plots[3].title,/target and achieved equivalent FDS/i);
-  assert.match(result.plots[5].title,/zero-crossing and peak-occurrence rates/i);
-  assert.match(result.plots[6].title,/damage method comparison/i);
-  assert.equal(result.plots[6].traces.length,3);
+  assert.equal(metric(result,'Convergence'),'COVERAGE VERIFIED');
+  assert.match(result.plots[0].title,/flight, entered qualification, and FDS-tailored qualification PSD/i);
+  assert.match(result.plots[1].title,/band-by-band qualification PSD reduction/i);
+  assert.deepEqual(result.plots[1].traces.map(trace=>trace.name),['Entered qualification / flight PSD','Tailored / entered qualification PSD','Tailored / flight target PSD','Same-shape duration-only factor','Equal PSD level']);
+  assert.match(result.plots[2].title,/actual durations/i);
+  assert.match(result.plots[3].title,/entered and tailored qualification FDS coverage over flight/i);
+  assert.deepEqual(result.plots[3].traces.map(trace=>trace.name),['Entered qualification / flight damage','Tailored qualification / flight damage','Required damage margin','Equal damage']);
+  assert.match(result.plots[4].title,/required margin, and tailored qualification FDS/i);
+  assert.match(result.plots[6].title,/zero-crossing and peak-occurrence rates/i);
+  assert.match(result.plots[7].title,/damage method comparison/i);
+  assert.equal(result.plots[7].traces.length,3);
   assert.match(extraCalculatorRegistry.fds.theory,/m<sub>4<\/sub>/i);
   assert.match(extraCalculatorRegistry.fds.theory,/D<sub>1<\/sub> =/i);
   assert.match(extraCalculatorRegistry.fds.theory,/synthesized-response rainflow/i);
   assert.match(extraCalculatorRegistry.fds.theory,/T<sub>flight<\/sub>\/T<sub>test<\/sub>/i);
+  assert.match(extraCalculatorRegistry.fds.theory,/C<sub>qual\/flight<\/sub>/i);
+  assert.match(extraCalculatorRegistry.fds.theory,/D<sub>required<\/sub>/i);
+  assert.match(extraCalculatorRegistry.fds.theory,/G<sub>0<\/sub>\(f\) = G<sub>qual<\/sub>/i);
+  assert.match(extraCalculatorRegistry.fds.theory,/smallest uniform PSD uplift/i);
+  assert.equal(result.csv.filename,'fds-tailored-qualification-psd.csv');
   assert.equal(result.csv.columns[3],'equivalent_psd_g2_per_hz');
   assert.equal(result.csv.columns[6],'test_over_flight_damage_ratio');
   assert.equal(result.csv.columns[12],'flight_peak_rate_hz');
   assert.ok(result.csv.columns.includes('flight_dirlik_damage'));
   assert.ok(result.csv.columns.includes('flight_synthesized_rainflow_damage'));
+  assert.ok(result.csv.columns.includes('equivalent_over_selected_target_psd_db'));
+  assert.ok(result.csv.columns.includes('tailored_over_entered_qualification_psd_db'));
+  assert.ok(result.csv.columns.includes('tailored_over_flight_damage_db'));
+  const column=Object.fromEntries(result.csv.columns.map((name,index)=>[name,index])),tailoredQualificationDb=result.csv.rows.map(row=>row[column.tailored_over_entered_qualification_psd_db]),tailoredCoverageDb=result.csv.rows.map(row=>row[column.tailored_over_flight_damage_db]);
+  assert.ok(Math.max(...tailoredQualificationDb)-Math.min(...tailoredQualificationDb)>.5,'unlike flight and qualification shapes should produce frequency-dependent tailoring');
+  assert.ok(tailoredQualificationDb.every(value=>value<0),'the default over-test should be reduced throughout the common band');
+  assert.ok(Math.min(...tailoredCoverageDb)>=-1e-8,'the tailored qualification must retain flight-FDS coverage');
   assert.ok(result.tables.some(table=>/damage-method comparison/i.test(table.title)));
   assert.equal(result.assumptions.alerts.length,0);
+});
+
+test('qualification tailoring raises deficient bands while reducing excess bands',()=>{
+  const values=defaults('fds');
+  values.test_psd='20, 0.012\n80, 0.012\n200, 0.01\n500, 0.01\n1000, 0.016\n2000, 0.016';
+  values.coverage_margin=1;
+  const result=extraCalculatorRegistry.fds.compute(values),column=Object.fromEntries(result.csv.columns.map((name,index)=>[name,index])),relativePsdDb=result.csv.rows.map(row=>row[column.tailored_over_entered_qualification_psd_db]),coverageDb=result.csv.rows.map(row=>row[column.tailored_over_flight_damage_db]);
+  assert.ok(Math.min(...relativePsdDb)<0,'over-covered qualification regions should be reduced');
+  assert.ok(Math.max(...relativePsdDb)>0,'under-covered qualification regions should be raised');
+  assert.ok(Math.min(...coverageDb)>=1-1e-8,'the final FDS must meet the requested 1 dB damage margin');
+  assert.match(result.assumptions.alerts.join(' '),/raises .* ordinates/i);
+  assert.match(result.interpretation.summary,/while raising .* deficient ordinates/i);
+});
+
+test('qualification-tailoring objective rejects the reverse equivalence direction',()=>{
+  const values=defaults('fds');
+  values.equivalence_direction='test-to-flight';
+  assert.throws(()=>extraCalculatorRegistry.fds.compute(values),/qualification tailoring requires/i);
 });
 
 
@@ -1728,6 +1788,24 @@ test('site visual system exposes reusable components and themes every non-home r
   assert.doesNotMatch(css,/\.result-handoffs/);
 });
 
+test('light and dark themes are selectable, persistent, and standalone-safe',()=>{
+  const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
+  const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+  const index=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+  const sync=readFileSync(new URL('../scripts/sync-standalone.mjs',import.meta.url),'utf8');
+  assert.match(appSource,/const THEME_STORAGE_KEY = 'sau-color-theme-v1'/);
+  assert.match(appSource,/data-action="toggle-theme"/);
+  assert.match(appSource,/localStorage\.setItem\(THEME_STORAGE_KEY, activeTheme\)/);
+  assert.match(appSource,/prefers-color-scheme: light/);
+  assert.match(appSource,/meta\[name="theme-color"\]/);
+  assert.match(css,/html\[data-theme="light"\]/);
+  assert.match(css,/html\[data-theme="dark"\]/);
+  assert.match(css,/\.theme-toggle/);
+  assert.match(index,/<script data-theme-bootstrap>/);
+  assert.match(index,/sau-color-theme-v1/);
+  assert.match(sync,/const themeBootstrap = index\.match/);
+});
+
 test('wheel homepage is data-driven, accessible, and linked to real content',()=>{
   const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
   const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
@@ -1805,6 +1883,9 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
   assert.match(appSource,/data-tool-pin=/);
   assert.match(css,/\.tool-launcher-layout\s*\{[^}]*height:\s*min\(610px,[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\)/);
   assert.match(css,/\.tool-launcher-results\s*\{[^}]*min-height:\s*0;[^}]*overflow:\s*auto;/);
+  assert.match(css,/@media \(max-width:\s*1320px\)[\s\S]*?body\.tool-launcher-open \.site-header \.primary-nav\s*\{[^}]*display:\s*block;[^}]*background:\s*transparent;/);
+  assert.match(css,/html\[data-theme="light"\] \.tool-launcher-results\s*\{[^}]*background:\s*#faf8f2;/);
+  assert.match(css,/\.primary-nav \.tool-launcher-panel \.tools-menu-all\s*\{\s*display:\s*none;/);
   assert.match(appSource,/rankToolDiscoveryRecords/);
   assert.match(appSource,/TOOL_HISTORY_STORAGE_KEY/);
   assert.match(appSource,/#\/tools\?subject=/);
@@ -1829,7 +1910,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes current interactive runtimes',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v118'/);
+  assert.match(worker,/const CACHE = 'sau-v120'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);

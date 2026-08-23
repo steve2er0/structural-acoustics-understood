@@ -89,6 +89,39 @@ const app = document.querySelector('#app');
 let routeCleanup = () => {};
 let toastTimer = 0;
 let activeSearchType = 'All';
+const THEME_STORAGE_KEY = 'sau-color-theme-v1';
+const THEMES = new Set(['light', 'dark']);
+
+function preferredTheme() {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+    if (THEMES.has(stored)) return stored;
+  } catch {}
+  return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+
+let activeTheme = THEMES.has(document.documentElement.dataset.theme)
+  ? document.documentElement.dataset.theme
+  : preferredTheme();
+
+function applyTheme(theme, { persist = false } = {}) {
+  activeTheme = THEMES.has(theme) ? theme : 'dark';
+  document.documentElement.dataset.theme = activeTheme;
+  document.documentElement.style.colorScheme = activeTheme;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', activeTheme === 'dark' ? '#04101f' : '#f3efe6');
+  if (persist) {
+    try { localStorage.setItem(THEME_STORAGE_KEY, activeTheme); } catch {}
+  }
+  const toggle = document.querySelector('[data-action="toggle-theme"]');
+  if (toggle) {
+    const nextTheme = activeTheme === 'dark' ? 'light' : 'dark';
+    toggle.innerHTML = `${icon(nextTheme === 'light' ? 'sun' : 'moon')}<span>${nextTheme === 'light' ? 'Light' : 'Dark'} mode</span>`;
+    toggle.setAttribute('aria-label', `Switch to ${nextTheme} mode`);
+    toggle.setAttribute('title', `Switch to ${nextTheme} mode`);
+  }
+}
+
+applyTheme(activeTheme);
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const stripHtml = html => { const d=document.createElement('div'); d.innerHTML=html ?? ''; return d.textContent ?? ''; };
@@ -138,6 +171,8 @@ function icon(name) {
   if(name==='search')return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>';
   if(name==='print')return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V3h10v6M7 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-3"/><path d="M7 14h10v7H7z"/></svg>';
   if(name==='tools')return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4.6 4.6 0 0 0-5.8 5.8l-5.7 5.7a2.1 2.1 0 0 0 3 3l5.7-5.7a4.6 4.6 0 0 0 5.8-5.8l-2.5 2.5-3-3z"/></svg>';
+  if(name==='sun')return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2.2M12 19.8V22M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M2 12h2.2M19.8 12H22M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6"/></svg>';
+  if(name==='moon')return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15.2A8.2 8.2 0 0 1 8.8 4a8.2 8.2 0 1 0 11.2 11.2z"/></svg>';
   return '';
 }
 function brandMark(){return `<svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21"/><path d="M8 27c6-13 12-13 18 0s11 13 14 1"/><path d="M8 19c6 8 12 8 18 0s10-8 14-1"/></svg>`;}
@@ -365,10 +400,11 @@ function bindToolLauncher() {
 function shell(main, route) {
   const active=navKey(route);
   const project=loadEngineeringProject();
+  const nextTheme=activeTheme==='dark'?'light':'dark';
   return `<header class="site-header">
     <a class="brand" href="#/">${brandMark()}<span class="brand-copy"><strong>Structural Acoustics</strong><small>Understood</small></span></a>
     <nav class="primary-nav" aria-label="Primary">${homepageNavigation.map(item=>item.id==='tools'?renderToolsMenu(active==='tools'):`<a href="${item.href}" class="${active===item.id?'active':''}" ${active===item.id?'aria-current="page"':''}><span>${item.label}</span><small>${item.descriptor}</small></a>`).join('')}</nav>
-    <div class="header-actions"><a class="project-pill" href="#/workspace" aria-label="Open engineering project"><span>Project</span><b>${project.artifacts.length}</b></a><button class="icon-button header-search" data-action="search" aria-label="Search">${icon('search')}<span>Search</span></button><button class="icon-button header-print" data-action="print" aria-label="Print current page">${icon('print')}</button><button class="menu-button" aria-label="Toggle navigation" aria-expanded="false"><span></span><span></span><span></span></button></div>
+    <div class="header-actions"><a class="project-pill" href="#/workspace" aria-label="Open engineering project"><span>Project</span><b>${project.artifacts.length}</b></a><button class="theme-toggle" data-action="toggle-theme" type="button" aria-label="Switch to ${nextTheme} mode" title="Switch to ${nextTheme} mode">${icon(nextTheme==='light'?'sun':'moon')}<span>${nextTheme==='light'?'Light':'Dark'} mode</span></button><button class="icon-button header-search" data-action="search" aria-label="Search">${icon('search')}<span>Search</span></button><button class="icon-button header-print" data-action="print" aria-label="Print current page">${icon('print')}</button><button class="menu-button" aria-label="Toggle navigation" aria-expanded="false"><span></span><span></span><span></span></button></div>
   </header>
   <main id="main-content">${main}</main>
   <footer class="site-footer"><div><strong>Structural Acoustics, Understood</strong><p>Original engineering reference and browser-based screening tools. Verify controlled methods before design or qualification use.</p></div><div class="footer-links"><a href="#/">Subjects</a><a href="#/demos">${demos.length} demos</a><a href="#/tools">${toolCatalog.length} tools</a><a href="#/case-studies">${caseNotes.length} case studies</a><a href="#/references">References</a><a href="#/workspace">Project</a><a href="#/validation">Validation</a><button class="link-button" data-action="print">Print / PDF</button></div></footer>
@@ -793,6 +829,7 @@ function bindGlobal(route){
   document.querySelectorAll('[data-action="tool-launcher"]').forEach(button=>button.addEventListener('click',()=>toolLauncher.setOpen(true)));
   const globalCleanup=routeCleanup;routeCleanup=()=>{globalCleanup();toolLauncher.cleanup();};
   document.querySelectorAll('[data-action="search"]').forEach(b=>b.addEventListener('click',openSearch));
+  document.querySelector('[data-action="toggle-theme"]')?.addEventListener('click',()=>applyTheme(activeTheme==='dark'?'light':'dark',{persist:true}));
   document.querySelectorAll('[data-action="print"]').forEach(b=>b.addEventListener('click',()=>window.print()));
   document.querySelector('[data-action="close-search"]')?.addEventListener('click',()=>document.querySelector('.search-dialog')?.close());
   const searchInput=document.querySelector('#global-search');searchInput?.addEventListener('input',()=>renderSearchResults(searchInput.value));
