@@ -6,28 +6,36 @@ import {
   type AnchorHTMLAttributes,
   type ReactNode,
 } from "react";
+import { routeFromLocation, routeHref, usesHashRoutes } from "./route-location";
+const portable = import.meta.env.MODE === "portable";
 const RouterContext = createContext({
   path: "/",
+  hashRoutes: false,
   navigate: (_path: string) => {},
 });
 export function Router({ children }: { children: ReactNode }) {
-  const [path, setPath] = useState(
-    window.location.pathname.replace(/\/$/, "") || "/",
+  const hashRoutes = usesHashRoutes(window.location, portable);
+  const [path, setPath] = useState(() =>
+    routeFromLocation(window.location, portable),
   );
   useEffect(() => {
-    const update = () =>
-      setPath(window.location.pathname.replace(/\/$/, "") || "/");
+    const update = () => setPath(routeFromLocation(window.location, portable));
     window.addEventListener("popstate", update);
-    return () => window.removeEventListener("popstate", update);
+    window.addEventListener("hashchange", update);
+    return () => {
+      window.removeEventListener("popstate", update);
+      window.removeEventListener("hashchange", update);
+    };
   }, []);
   const navigate = (to: string) => {
     if (to === path) return;
-    history.pushState(null, "", to);
+    if (hashRoutes) window.location.hash = routeHref(to, true);
+    else history.pushState(null, "", to);
     setPath(to);
     window.scrollTo({ top: 0 });
   };
   return (
-    <RouterContext.Provider value={{ path, navigate }}>
+    <RouterContext.Provider value={{ path, hashRoutes, navigate }}>
       {children}
     </RouterContext.Provider>
   );
@@ -39,11 +47,11 @@ export function Link({
   onClick,
   ...props
 }: AnchorHTMLAttributes<HTMLAnchorElement>) {
-  const { navigate } = useRouter();
+  const { navigate, hashRoutes } = useRouter();
   return (
     <a
       {...props}
-      href={href}
+      href={routeHref(href, hashRoutes)}
       onClick={(event) => {
         onClick?.(event);
         if (

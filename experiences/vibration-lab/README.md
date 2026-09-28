@@ -2,6 +2,30 @@
 
 Interactive experiments in vibration, acoustics, structures, propulsion, and flow.
 
+## Open without installing anything
+
+Use the prebuilt [portable/Vibration-Lab.html](portable/Vibration-Lab.html).
+Save the HTML file, then open it in Edge or Chrome. It contains all seven
+experiments, fonts, styles, code and model data. No Node.js, npm, local server,
+account or package download is needed to view it. Source-reference links are
+optional and open external websites.
+
+The browser must allow local HTML with JavaScript and WebGL. If workplace policy
+blocks that too, ask IT to host the file on an approved internal web server.
+No browser security changes or admin-setting changes are part of this setup.
+
+To regenerate the file on a development machine with dependencies installed:
+
+```sh
+npm run build:portable
+```
+
+The build embeds all assets and uses fragment navigation (`#/labs/modal`), so
+navigation stays inside the same document. The regular development/web build
+continues to use pathname routes. Browser checks cover the portable file served
+through HTTP; direct `file://` launch and workplace-specific policies have not
+been verified on a Windows PC.
+
 ## Run locally
 
 Requires Node.js 22.12+ (tested with 22.22.1).
