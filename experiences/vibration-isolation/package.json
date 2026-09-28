@@ -1,0 +1,13 @@
+{
+  "name": "vibration-isolation-legacy-launcher",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm --prefix ../vibration-lab run dev",
+    "build": "npm --prefix ../vibration-lab run build",
+    "preview": "npm --prefix ../vibration-lab run preview",
+    "test": "npm --prefix ../vibration-lab run test",
+    "test:watch": "npm --prefix ../vibration-lab run test:watch"
+  }
+}

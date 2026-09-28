@@ -128,3 +128,9 @@ The calculators distinguish exact-within-model, numerical, empirical, and screen
 - Applicable controlled standards, handbooks, program methods, and uncertainty factors
 
 Program-specific implementations of named empirical methods must be checked against their controlled source equations rather than inferred from a similarly named public formula.
+
+## Vibration Lab
+
+The seven interactive 3D experiments share one application in [`experiences/vibration-lab`](experiences/vibration-lab/README.md). With Node.js 22.12+ installed, run `npm ci --prefix experiences/vibration-lab`, then `npm run lab`, and open http://127.0.0.1:5174/ . The home page links to Isolation, Electrodynamic Shaker, Experimental Modal Testing, Piezoelectric Accelerometer, Statistical Energy Analysis, Inside the RS-25, and Vortex Shedding. This React/WebGL application has its own build and does not alter the reference-book runtime above.
+
+See [architecture](experiences/vibration-lab/docs/ARCHITECTURE.md) and [creating a lab](experiences/vibration-lab/docs/CREATING_A_LAB.md).

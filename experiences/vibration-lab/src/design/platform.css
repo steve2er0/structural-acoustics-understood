@@ -1,0 +1,1030 @@
+:root {
+  --vl-bg: #101b20;
+  --vl-panel: #19292dcc;
+  --vl-text: #e6ebdf;
+  --vl-muted: #91aaa7;
+  --vl-line: #b3d2ca29;
+  --vl-green: #b6efbd;
+  --vl-amber: #efbf91;
+  --vl-blue: #8fd9f2;
+  --vl-sans: "Manrope Variable", sans-serif;
+  --vl-mono: "IBM Plex Mono", monospace;
+  --vl-fast: 140ms;
+  --vl-normal: 260ms;
+  --vl-camera: 900ms;
+  --vl-tour: 600ms;
+  --vl-ease: cubic-bezier(0.22, 0.68, 0, 1);
+  --vl-gap: 24px;
+  --vl-radius: 5px;
+  --vl-blur: 18px;
+  font-family: var(--vl-sans);
+  color: var(--vl-text);
+  background: var(--vl-bg);
+  color-scheme: dark;
+  font-synthesis: none;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select {
+  font: inherit;
+}
+button,
+a,
+input,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+a {
+  color: inherit;
+}
+button {
+  color: inherit;
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--vl-green);
+  outline-offset: 5px;
+}
+button svg {
+  flex: none;
+}
+html {
+  scroll-behavior: smooth;
+}
+::selection {
+  background: #b6efbd40;
+}
+.vl-wordmark {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  font-size: 11px;
+  line-height: 1.65;
+  font-weight: 750;
+  letter-spacing: 0.2em;
+  white-space: nowrap;
+}
+.vl-wordmark span {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.vl-wordmark svg {
+  color: var(--vl-green);
+}
+.vl-eyebrow {
+  font: 10px/1.7 var(--vl-mono);
+  letter-spacing: 0.16em;
+  color: var(--vl-muted);
+}
+.vl-status-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  background: var(--vl-green);
+  border-radius: 50%;
+  margin: 0 9px 2px 0;
+  box-shadow: 0 0 15px #b6efbd55;
+}
+.vl-nav {
+  position: relative;
+  z-index: 20;
+  height: 78px;
+  margin: 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--vl-line);
+  gap: 20px;
+}
+.vl-nav nav,
+.vl-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+}
+.vl-nav nav a {
+  font-size: 11px;
+  text-decoration: none;
+  color: var(--vl-muted);
+  padding: 8px 0;
+  transition: color var(--vl-fast);
+}
+.vl-nav nav a[aria-current] {
+  color: var(--vl-text);
+  box-shadow: 0 1px var(--vl-green);
+}
+.vl-nav nav a:hover {
+  color: white;
+}
+.vl-nav .vl-nav-actions {
+  gap: 8px;
+}
+.vl-nav button {
+  background: transparent;
+  border: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  gap: 9px;
+  color: var(--vl-muted);
+}
+.vl-nav button:hover {
+  color: var(--vl-text);
+  background: #e6ebdf09;
+}
+.vl-nav .vl-tour-start {
+  border: 1px solid #c7dfd33d;
+  border-radius: var(--vl-radius);
+  padding: 9px 13px;
+  font-size: 11px;
+  color: var(--vl-text);
+  margin-right: 7px;
+}
+.lab-isolation .vl-nav {
+  height: 93px;
+  margin: 0 34px;
+}
+.vl-nav a {
+  touch-action: manipulation;
+}
+.vl-readout {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-variant-numeric: tabular-nums;
+}
+.vl-readout > span:empty {
+  display: none;
+}
+.vl-readout > span {
+  font-size: 10px;
+  color: var(--vl-muted);
+}
+.vl-readout strong {
+  font: inherit;
+}
+.vl-readout small {
+  font-size: 0.6em;
+  color: var(--vl-muted);
+}
+.vl-parameter label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 14px;
+}
+.vl-parameter input {
+  width: 100%;
+  accent-color: var(--vl-green);
+}
+.vl-marks {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.vl-marks button {
+  border: 0;
+  background: none;
+  padding: 10px 0;
+  color: var(--vl-muted);
+  font: 10px var(--vl-mono);
+}
+.vl-segment {
+  display: flex;
+  gap: 3px;
+}
+.vl-segment button {
+  background: none;
+  border: 0;
+  border-radius: 3px;
+  padding: 9px 12px;
+  font-size: 11px;
+}
+.vl-segment button[aria-pressed="true"] {
+  background: #b6efbd20;
+  color: var(--vl-text);
+}
+.vl-tour {
+  position: absolute;
+  z-index: 25;
+  left: 50%;
+  bottom: 264px;
+  transform: translateX(-50%);
+  max-width: calc(100% - 48px);
+  min-width: 280px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 16px;
+  background: #122329ed;
+  border: 1px solid #b6efbd33;
+  border-radius: 4px;
+  box-shadow: 0 8px 24px #0003;
+  backdrop-filter: blur(var(--vl-blur));
+  overflow: hidden;
+}
+.vl-tour-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--vl-green);
+  transform-origin: left;
+}
+.vl-tour-copy {
+  display: grid;
+  gap: 5px;
+}
+.vl-tour-copy strong {
+  font-size: 13px;
+}
+.vl-tour-copy p {
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--vl-muted);
+  margin: 0;
+}
+.vl-tour-buttons {
+  display: flex;
+  gap: 3px;
+}
+.vl-tour-buttons button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  padding: 8px;
+  border-radius: 3px;
+}
+.vl-tour-buttons button:hover {
+  background: #b6efbd18;
+}
+.lab-isolation .vl-tour {
+  bottom: 275px;
+}
+.lab-isolation:has(.vl-tour) .scene-tools {
+  visibility: hidden;
+}
+.lab-isolation:has(.vl-tour) .regime-story p {
+  display: block !important;
+}
+.lab-shaker .vl-tour {
+  bottom: 270px;
+}
+.lab-shaker:has(.vl-tour) .animation-controls {
+  bottom: 55px;
+}
+.vl-scene-error {
+  position: absolute;
+  inset: 30%;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--vl-muted);
+}
+.vl-route-loading,
+.vl-not-found {
+  min-height: 100vh;
+  padding: 15vh 9vw;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+}
+.vl-route-loading p {
+  color: var(--vl-muted);
+}
+.vl-home {
+  max-width: 1800px;
+  margin: 0 auto;
+  background:
+    radial-gradient(ellipse at 83% 18%, #24404455, transparent 40%),
+    var(--vl-bg);
+}
+.vl-home-nav {
+  margin: 0 5.3%;
+  height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--vl-line);
+}
+.vl-home-nav > .vl-eyebrow {
+  font-size: 9px;
+}
+.vl-version {
+  font: 9px var(--vl-mono);
+  color: var(--vl-muted);
+  letter-spacing: 0.09em;
+}
+.vl-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 65px 5.3% 62px;
+  min-height: 570px;
+}
+.vl-hero > .vl-eyebrow {
+  margin: 0 0 25px;
+}
+.vl-hero h1 {
+  margin: 0;
+  font: 11px var(--vl-mono);
+  letter-spacing: 0.18em;
+  color: var(--vl-muted);
+}
+.vl-hero h1 > span {
+  display: block;
+  margin: 17px 0 26px;
+  font: 500 clamp(48px, 6.4vw, 100px) / 1.025 var(--vl-sans);
+  letter-spacing: -0.065em;
+  color: var(--vl-text);
+}
+.vl-hero h1 em {
+  font-style: normal;
+  color: #b9d6c2;
+}
+.vl-hero-description {
+  font-size: clamp(14px, 1.4vw, 20px);
+  line-height: 1.65;
+  letter-spacing: -0.015em;
+  color: #b5c8c4;
+  margin: 0;
+  max-width: 420px;
+}
+.vl-explore-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 32px;
+  font-size: 11px;
+  text-decoration: none;
+  margin-top: 32px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #c4deca55;
+}
+.vl-explore-link:hover {
+  color: var(--vl-green);
+}
+.vl-hero-note {
+  position: absolute;
+  right: 5.3%;
+  bottom: 64px;
+  font: 9px/1.8 var(--vl-mono);
+  letter-spacing: 0.13em;
+  color: var(--vl-muted);
+}
+.vl-hero-lines {
+  position: absolute;
+  z-index: -1;
+  inset: 90px -12% 80px 38%;
+  transform: rotate(-20deg);
+  opacity: 0.65;
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 17%,
+    #000 87%,
+    transparent
+  );
+}
+.vl-hero-lines svg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: calc((var(--i) - 8) * 8px);
+  overflow: visible;
+}
+.vl-hero-lines path {
+  stroke: #95bfa5;
+  stroke-width: 0.65;
+  fill: none;
+  opacity: calc(0.15 + var(--i) * 0.032);
+}
+.vl-experiments {
+  padding: 0 5.3% 70px;
+  scroll-margin-top: 25px;
+}
+.vl-section-heading {
+  border-top: 1px solid var(--vl-line);
+  padding: 26px 0 28px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.vl-section-heading p {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--vl-muted);
+  margin: 0;
+  text-align: right;
+}
+.vl-experiment-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+}
+.vl-experiment {
+  border: 1px solid #bdcfca26;
+  background: linear-gradient(145deg, #1a3035bb, #111e23);
+  border-radius: 7px;
+  overflow: hidden;
+  transition:
+    border-color var(--vl-normal),
+    transform var(--vl-normal);
+}
+.vl-experiment:hover {
+  border-color: #aecbb25e;
+  transform: translateY(-3px);
+}
+.vl-experiment-shaker {
+  background: linear-gradient(145deg, #243235aa, #141f24);
+}
+.vl-experiment-link {
+  display: block;
+  text-decoration: none;
+}
+.vl-card-top {
+  display: flex;
+  justify-content: space-between;
+  padding: 23px 26px 0;
+  gap: 12px;
+  font: 9px var(--vl-mono);
+  letter-spacing: 0.11em;
+  color: var(--vl-muted);
+}
+.vl-card-top > span:first-child {
+  color: var(--lab-accent);
+}
+.vl-card-top i {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--lab-accent);
+  margin-left: 7px;
+}
+.vl-preview {
+  height: 340px;
+  position: relative;
+  pointer-events: none;
+}
+.vl-preview canvas {
+  position: relative;
+  z-index: 2;
+}
+.vl-preview-grid {
+  position: absolute;
+  inset: 18% 8% 3%;
+  background:
+    linear-gradient(#a2c5b808 1px, transparent 1px),
+    linear-gradient(90deg, #a2c5b808 1px, transparent 1px);
+  background-size: 38px 38px;
+  transform: perspective(400px) rotateX(58deg);
+  mask-image: radial-gradient(ellipse, #000, transparent 67%);
+}
+.vl-preview-caption {
+  position: absolute;
+  left: 26px;
+  bottom: 4px;
+  font: 8px var(--vl-mono);
+  letter-spacing: 0.11em;
+  color: #91aaa779;
+}
+.vl-preview-loading {
+  position: absolute;
+  inset: 45% 15%;
+  text-align: center;
+  font: 9px var(--vl-mono);
+  color: var(--vl-muted);
+}
+.vl-card-copy {
+  padding: 28px 26px 25px;
+  border-top: 1px solid #acc5ba13;
+}
+.vl-card-subjects {
+  font: 9px var(--vl-mono);
+  color: var(--lab-accent);
+  letter-spacing: 0.045em;
+}
+.vl-card-copy h2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: clamp(20px, 2.15vw, 33px);
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  margin: 12px 0 14px;
+}
+.vl-card-copy h2 svg {
+  width: 21px;
+  opacity: 0.6;
+}
+.vl-card-copy p {
+  font-size: 12px;
+  line-height: 1.8;
+  max-width: 400px;
+  min-height: 44px;
+  color: var(--vl-muted);
+  margin: 0;
+}
+.vl-enter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  margin-top: 27px;
+  color: var(--lab-accent);
+}
+.vl-enter svg {
+  transition: transform var(--vl-normal);
+}
+.vl-experiment:hover .vl-enter svg {
+  transform: translateX(4px);
+}
+.vl-coming {
+  margin: 0 5.3%;
+  padding: 36px 0 55px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 35px;
+  border-top: 1px solid var(--vl-line);
+}
+.vl-coming h2 {
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  max-width: 250px;
+  line-height: 1.3;
+}
+.vl-coming ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.vl-coming li {
+  padding: 14px 0;
+  border-bottom: 1px solid #b3d2ca17;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 13px;
+  color: #b5c5c1;
+}
+.vl-coming li span {
+  font: 9px var(--vl-mono);
+  color: #6e8584;
+}
+.vl-coming li span:last-child {
+  margin-left: auto;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+}
+.vl-home-footer {
+  margin: 0 5.3%;
+  padding: 25px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--vl-line);
+  font: 9px var(--vl-mono);
+  letter-spacing: 0.07em;
+  color: var(--vl-muted);
+}
+.vl-home-footer p {
+  font: 11px var(--vl-sans);
+  letter-spacing: 0;
+}
+.vl-template {
+  min-height: 780px;
+  height: 100svh;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.vl-template-scene {
+  position: absolute;
+  inset: 78px 0 150px;
+  z-index: -1;
+}
+.vl-template-story {
+  position: absolute;
+  top: 130px;
+  left: 5%;
+  max-width: 310px;
+}
+.vl-template-story h1 {
+  font-size: 45px;
+  letter-spacing: -0.06em;
+  line-height: 1.1;
+  font-weight: 500;
+}
+.vl-template-story p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--vl-muted);
+}
+.vl-template-controls {
+  position: absolute;
+  bottom: 0;
+  left: 5%;
+  right: 5%;
+  height: 150px;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  align-items: center;
+  gap: 35px;
+  border-top: 1px solid var(--vl-line);
+}
+.vl-template-controls > button {
+  border: 1px solid var(--vl-line);
+  padding: 12px;
+  background: none;
+  border-radius: 4px;
+  font-size: 11px;
+}
+.vl-template-controls > button[aria-pressed="true"] {
+  background: #b6efbd1a;
+}
+.vl-template .vl-tour {
+  bottom: 165px;
+}
+.vl-annotation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 12px 15px;
+  background: var(--vl-panel);
+  border: 1px solid var(--vl-line);
+  border-radius: 4px;
+  font: 9px var(--vl-mono);
+  transition: opacity var(--vl-normal);
+  pointer-events: none;
+}
+.vl-annotation small {
+  display: block;
+  font: 10px var(--vl-sans);
+  color: var(--vl-muted);
+  margin-top: 6px;
+}
+.projected-label,
+.annotation {
+  transition: opacity var(--vl-normal);
+}
+@media (min-width: 1500px) {
+  .vl-preview {
+    height: 390px;
+  }
+  .vl-hero {
+    min-height: 630px;
+  }
+}
+@media (max-width: 1000px) {
+  .vl-nav {
+    margin: 0 25px;
+    gap: 15px;
+  }
+  .vl-nav nav {
+    gap: 18px;
+  }
+  .vl-home-nav > .vl-eyebrow {
+    display: none;
+  }
+  .vl-hero {
+    min-height: 540px;
+  }
+  .vl-preview {
+    height: 290px;
+  }
+  .vl-card-copy,
+  .vl-card-top {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .vl-card-copy p {
+    min-height: 65px;
+  }
+  .vl-hero-lines {
+    inset: 120px -23% 110px 33%;
+  }
+}
+@media (max-width: 800px) {
+  .vl-nav,
+  .lab-isolation .vl-nav {
+    height: 76px;
+    margin: 0 20px;
+    gap: 15px;
+  }
+  .vl-nav nav {
+    gap: 16px;
+  }
+  .vl-nav nav a {
+    font-size: 10px;
+  }
+  .vl-nav nav a:last-child {
+    display: none;
+  }
+  .vl-wordmark {
+    font-size: 9px;
+  }
+  .vl-nav .vl-tour-start {
+    margin: 0;
+    padding: 8px;
+    font-size: 10px;
+  }
+  .vl-nav-actions {
+    gap: 2px !important;
+  }
+  .vl-nav-actions > button {
+    padding: 8px;
+  }
+  .vl-nav-actions > button[title="Restart experiment"] {
+    display: none;
+  }
+  .vl-tour,
+  .lab-isolation .vl-tour,
+  .lab-shaker .vl-tour {
+    position: fixed;
+    bottom: 16px;
+    min-width: 0;
+    width: calc(100% - 32px);
+    max-width: 440px;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  .vl-tour .vl-eyebrow {
+    font-size: 8px;
+  }
+  .vl-tour-buttons {
+    margin-left: auto;
+  }
+  .vl-hero {
+    padding-top: 50px;
+    min-height: 530px;
+  }
+  .vl-hero-note {
+    bottom: 57px;
+    font-size: 8px;
+  }
+  .vl-preview {
+    height: 250px;
+  }
+  .vl-card-copy h2 {
+    font-size: 23px;
+  }
+  .vl-card-subjects {
+    font-size: 8px;
+  }
+  .vl-card-copy p {
+    font-size: 11px;
+  }
+  .vl-template-story {
+    top: 100px;
+    max-width: 230px;
+  }
+  .vl-template-story h1 {
+    font-size: 34px;
+  }
+  .vl-template-controls {
+    grid-template-columns: 2fr 1fr;
+    height: 230px;
+    gap: 20px;
+  }
+  .vl-template-scene {
+    bottom: 230px;
+  }
+  .vl-template .vl-tour {
+    bottom: 240px;
+  }
+}
+@media (max-width: 600px) {
+  .vl-nav,
+  .lab-isolation .vl-nav {
+    gap: 12px;
+    margin: 0 16px;
+  }
+  .vl-nav nav {
+    gap: 12px;
+  }
+  .vl-nav-actions > button:last-child {
+    padding: 5px;
+  }
+  .vl-nav .vl-tour-start {
+    padding: 7px;
+  }
+  .vl-nav .vl-tour-start svg {
+    display: none;
+  }
+  .vl-nav-actions > button:last-child svg {
+    width: 14px;
+  }
+  .vl-nav .vl-wordmark {
+    font-size: 8px;
+    letter-spacing: 0.12em;
+  }
+  .vl-home-nav {
+    height: 76px;
+    margin: 0 6%;
+  }
+  .vl-version {
+    font-size: 7px;
+    letter-spacing: 0.02em;
+  }
+  .vl-hero {
+    padding: 44px 6% 39px;
+    min-height: 510px;
+  }
+  .vl-hero > .vl-eyebrow {
+    font-size: 8px;
+    margin-bottom: 31px;
+  }
+  .vl-hero h1 {
+    font-size: 9px;
+  }
+  .vl-hero h1 > span {
+    font-size: 58px;
+    line-height: 1.06;
+    margin-top: 18px;
+  }
+  .vl-hero-description {
+    font-size: 14px;
+    max-width: 300px;
+  }
+  .vl-hero-lines {
+    inset: 165px -55% 80px 13%;
+    opacity: 0.23;
+  }
+  .vl-hero-note {
+    display: none;
+  }
+  .vl-explore-link {
+    margin-top: 30px;
+  }
+  .vl-experiments {
+    padding: 0 6% 40px;
+  }
+  .vl-section-heading {
+    padding: 23px 0;
+  }
+  .vl-section-heading .vl-eyebrow {
+    font-size: 8px;
+  }
+  .vl-section-heading p {
+    font-size: 10px;
+  }
+  .vl-experiment-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .vl-preview {
+    height: 290px;
+  }
+  .vl-card-top {
+    padding-top: 20px;
+    font-size: 8px;
+  }
+  .vl-card-copy {
+    padding: 23px 22px;
+  }
+  .vl-card-copy h2 {
+    font-size: 27px;
+  }
+  .vl-card-copy p {
+    min-height: 0;
+    font-size: 12px;
+  }
+  .vl-coming {
+    margin: 0 6%;
+    padding: 26px 0 35px;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .vl-coming h2 {
+    font-size: 22px;
+    max-width: none;
+  }
+  .vl-coming li {
+    font-size: 12px;
+  }
+  .vl-home-footer {
+    margin: 0 6%;
+    font-size: 8px;
+  }
+  .vl-home-footer p {
+    font-size: 9px;
+    max-width: 125px;
+    line-height: 1.6;
+    text-align: center;
+  }
+  .vl-template {
+    min-height: 850px;
+  }
+  .vl-template-story {
+    pointer-events: none;
+    top: 88px;
+    left: 6%;
+    max-width: 205px;
+  }
+  .vl-template-story h1 {
+    font-size: 32px;
+  }
+  .vl-template-controls {
+    left: 6%;
+    right: 6%;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+  }
+  .vl-template-controls .vl-segment {
+    gap: 0;
+  }
+  .vl-template-controls .vl-segment button {
+    padding: 9px;
+    font-size: 10px;
+  }
+  .vl-template .vl-tour {
+    bottom: 245px;
+  }
+  .vl-template .vl-annotation {
+    font-size: 8px;
+    max-width: 145px;
+  }
+  .vl-template .vl-annotation small {
+    font-size: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+  .vl-experiment:hover {
+    transform: none;
+  }
+}
+
+@media (min-width: 1250px) {
+  .vl-experiment-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .vl-card-copy h2 {
+    font-size: 26px;
+  }
+  .vl-preview {
+    height: 285px;
+  }
+}
+
+/* The growing lab index stays reachable on narrow screens. */
+@media (max-width: 1000px) {
+  .vl-nav nav {
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .vl-nav nav a {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .vl-nav .vl-nav-actions,
+  .vl-nav .vl-wordmark {
+    flex-shrink: 0;
+  }
+}
+
+.vl-nav-short {
+  display: none;
+}
+@media (max-width: 700px) {
+  .vl-nav-long {
+    display: none;
+  }
+  .vl-nav-short {
+    display: inline;
+  }
+}
+@media (max-width: 700px) {
+  .vl-nav nav {
+    gap: 8px;
+  }
+}

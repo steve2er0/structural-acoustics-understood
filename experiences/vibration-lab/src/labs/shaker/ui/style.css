@@ -1,0 +1,2137 @@
+.lab-shaker {
+  font-family: "Manrope Variable", sans-serif;
+  color: #e6ebdf;
+  background: #101b20;
+  font-synthesis: none;
+  font-weight: 400;
+  --muted: #8faaa8;
+  --green: #b6efbd;
+  --amber: #efb886;
+  --blue: #8fd9f2;
+  --line: rgba(179, 210, 202, 0.16);
+  color-scheme: dark;
+}
+:where(.lab-shaker) * {
+  box-sizing: border-box;
+}
+.lab-shaker {
+  margin: 0;
+}
+:where(.lab-shaker) button,
+:where(.lab-shaker) input,
+:where(.lab-shaker) select {
+  font: inherit;
+}
+:where(.lab-shaker) button,
+:where(.lab-shaker) a,
+:where(.lab-shaker) input,
+:where(.lab-shaker) select {
+  -webkit-tap-highlight-color: transparent;
+}
+:where(.lab-shaker) button {
+  color: inherit;
+  cursor: pointer;
+  border: 0;
+  background: none;
+}
+:where(.lab-shaker) button:focus-visible,
+:where(.lab-shaker) a:focus-visible,
+:where(.lab-shaker) select:focus-visible,
+:where(.lab-shaker) input:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 5px;
+}
+:where(.lab-shaker) button {
+  transition:
+    color 0.2s,
+    background 0.2s,
+    border-color 0.2s;
+}
+:where(.lab-shaker) button:hover {
+  color: #fff;
+}
+:where(.lab-shaker) button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+:where(.lab-shaker) a {
+  color: inherit;
+}
+:where(.lab-shaker) svg {
+  vertical-align: middle;
+}
+:where(.lab-shaker) button svg {
+  flex-shrink: 0;
+}
+:where(.lab-shaker) .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+:where(.lab-shaker) .exhibit {
+  height: 100svh;
+  min-height: 780px;
+  position: relative;
+  overflow: hidden;
+}
+:where(.lab-shaker) .scene {
+  position: absolute;
+  inset: 65px 0 251px;
+}
+:where(.lab-shaker) .scene canvas {
+  touch-action: none;
+}
+:where(.lab-shaker) .scene-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      90deg,
+      #101b20f5 0%,
+      #101b20de 19%,
+      #101b2070 30%,
+      transparent 43%
+    ),
+    linear-gradient(
+      0deg,
+      #101b20 0%,
+      transparent 19%,
+      transparent 91%,
+      #101b20 100%
+    );
+}
+:where(.lab-shaker) .masthead {
+  height: 78px;
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  margin: 0 40px;
+  border-bottom: 1px solid var(--line);
+  justify-content: space-between;
+}
+:where(.lab-shaker) .brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  text-decoration: none;
+  font:
+    9px/1.45 "IBM Plex Mono",
+    monospace;
+  letter-spacing: 1.2px;
+}
+:where(.lab-shaker) .brand-mark {
+  font:
+    700 31px "Manrope Variable",
+    sans-serif;
+  letter-spacing: -3px;
+  display: flex;
+  gap: 4px;
+  color: #e6ebdf;
+}
+:where(.lab-shaker) .brand-mark > span {
+  font-size: 23px;
+  letter-spacing: -1px;
+  color: #a1d7b6;
+}
+:where(.lab-shaker) .exhibit-title {
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 1.2px;
+  color: #b0c0b9;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+:where(.lab-shaker) .exhibit-title > span {
+  color: #6f918f;
+  margin-left: 10px;
+}
+:where(.lab-shaker) .exhibit-title i,
+:where(.lab-shaker) .primary-metric i,
+:where(.lab-shaker) .playback-controls i {
+  width: 3px;
+  height: 3px;
+  background: currentColor;
+  border-radius: 50%;
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 7px;
+}
+:where(.lab-shaker) .masthead nav {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+:where(.lab-shaker) .masthead nav button {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+  color: #9db1ac;
+  padding: 9px 12px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+}
+:where(.lab-shaker) .masthead nav button.active {
+  color: #d6f4d8;
+}
+:where(.lab-shaker) .masthead nav button.tour-start {
+  border-color: #496659;
+  color: #d5f0d3;
+}
+:where(.lab-shaker) .masthead nav button small {
+  font:
+    9px "IBM Plex Mono",
+    monospace;
+  color: #81a58f;
+}
+:where(.lab-shaker) .masthead nav button.notes-button {
+  margin-left: 9px;
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+  padding-left: 20px;
+}
+:where(.lab-shaker) .story {
+  position: absolute;
+  z-index: 3;
+  top: 122px;
+  left: 50px;
+  width: 320px;
+  pointer-events: none;
+}
+:where(.lab-shaker) .story button,
+:where(.lab-shaker) .story a,
+:where(.lab-shaker) .story .envelope-chart svg {
+  pointer-events: auto;
+}
+:where(.lab-shaker) .eyebrow {
+  font:
+    9px/1.5 "IBM Plex Mono",
+    monospace;
+  letter-spacing: 2px;
+  color: #aac6b3;
+  margin: 0 0 15px;
+}
+:where(.lab-shaker) .story h2 {
+  font-size: 43px;
+  line-height: 1.13;
+  letter-spacing: -1.9px;
+  font-weight: 500;
+  margin: 0 0 17px;
+  max-width: 335px;
+  animation: arrive 0.5s ease both;
+}
+:where(.lab-shaker) .story-copy {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #9db1ae;
+  margin: 0;
+  max-width: 305px;
+}
+:where(.lab-shaker) .primary-metric {
+  margin: 22px 0 18px;
+}
+:where(.lab-shaker) .primary-metric > span {
+  font-size: 47px;
+  letter-spacing: -2px;
+  font-weight: 350;
+  font-variant-numeric: tabular-nums;
+}
+:where(.lab-shaker) .primary-metric > span small {
+  font-size: 18px;
+  letter-spacing: -0.4px;
+  font-weight: 400;
+  margin-left: 10px;
+  color: #b7c8b9;
+}
+:where(.lab-shaker) .primary-metric > p {
+  font:
+    8px/1.7 "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.9px;
+  color: #8bab9d;
+  margin: 3px 0 0;
+}
+:where(.lab-shaker) .field-chain {
+  max-width: 275px;
+}
+:where(.lab-shaker) .field-chain > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #a8bcb4;
+}
+:where(.lab-shaker) .field-chain > span b {
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  color: #d4e7c9;
+}
+:where(.lab-shaker) .field-chain > i {
+  font: 11px monospace;
+  color: #5e8a72;
+  display: block;
+  margin: 6px 0;
+}
+:where(.lab-shaker) .chart-note {
+  font-size: 9px;
+  line-height: 1.7;
+  color: #7f9c96;
+  margin: 12px 0 0;
+}
+:where(.lab-shaker) .text-action {
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #caf1c7;
+  border-bottom: 1px solid #4d7563;
+  padding: 8px 0;
+  margin-top: 13px;
+}
+:where(.lab-shaker) .view-tools {
+  position: absolute;
+  right: 38px;
+  top: 104px;
+  z-index: 5;
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 13px;
+}
+:where(.lab-shaker) .segmented {
+  display: flex;
+  gap: 2px;
+  border: 1px solid var(--line);
+  background: rgba(17, 32, 36, 0.65);
+  padding: 4px;
+  border-radius: 7px;
+  backdrop-filter: blur(14px);
+}
+:where(.lab-shaker) .segmented button {
+  font-size: 10px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  color: #8ca8a1;
+}
+:where(.lab-shaker) .segmented button.selected {
+  color: #e2efdb;
+  background: #2e4643;
+}
+:where(.lab-shaker) .camera-select {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font:
+    9px "IBM Plex Mono",
+    monospace;
+  color: #718f89;
+}
+:where(.lab-shaker) .camera-select select {
+  font:
+    10px "Manrope Variable",
+    sans-serif;
+  padding: 6px 22px 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: #b9cdbd;
+  background: #182b2f;
+  min-width: 122px;
+}
+:where(.lab-shaker) .icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px;
+  color: #9eb6ae;
+}
+:where(.lab-shaker) .annotations {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+:where(.lab-shaker) .annotation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  color: var(--amber);
+  font:
+    8px "IBM Plex Mono",
+    monospace;
+  white-space: nowrap;
+  transition: opacity 0.25s;
+  will-change: transform;
+  filter: drop-shadow(0 1px 2px #09191d);
+}
+:where(.lab-shaker) .annotation > i {
+  width: 35px;
+  border-top: 1px solid currentColor;
+  opacity: 0.7;
+  position: relative;
+}
+:where(.lab-shaker) .annotation > i:before {
+  content: "";
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  top: -2.5px;
+  left: -2px;
+}
+:where(.lab-shaker) .annotation > span {
+  display: block;
+  padding: 6px 8px;
+  background: rgba(12, 26, 29, 0.86);
+  border: 1px solid #4c5146;
+  border-radius: 3px;
+}
+:where(.lab-shaker) .annotation b {
+  font-weight: 400;
+  margin-left: 8px;
+  letter-spacing: 0.9px;
+}
+:where(.lab-shaker) .annotation small {
+  display: block;
+  font-size: 6px;
+  letter-spacing: 1px;
+  opacity: 0.7;
+  margin-top: 5px;
+}
+:where(.lab-shaker) .drive-label {
+  color: var(--blue);
+}
+:where(.lab-shaker) .drive-label > span {
+  border-color: #365761;
+}
+:where(.lab-shaker) .drive-label > i {
+  width: 67px;
+}
+:where(.lab-shaker) .table-label {
+  color: #b0c3bb;
+  font-size: 7px;
+}
+:where(.lab-shaker) .table-label > i {
+  width: 35px;
+}
+:where(.lab-shaker) .table-label > span {
+  background: rgba(12, 26, 29, 0.67);
+  border-color: transparent;
+}
+:where(.lab-shaker) .scene-footer {
+  position: absolute;
+  left: 50px;
+  right: 40px;
+  bottom: 301px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 4;
+}
+:where(.lab-shaker) .machine-caption {
+  margin-left: 380px;
+}
+:where(.lab-shaker) .machine-caption,
+:where(.lab-shaker) .playback-controls {
+  padding: 6px 9px;
+  border-radius: 4px;
+  background: #101b20d6;
+}
+:where(.lab-shaker) .machine-caption > span {
+  font:
+    7px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 1.3px;
+  color: #a6bcb7;
+}
+:where(.lab-shaker) .machine-caption small {
+  display: block;
+  color: #90aaa6;
+  font-size: 8px;
+  margin-top: 7px;
+}
+:where(.lab-shaker) .playback-controls {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #8ca7a2;
+}
+:where(.lab-shaker) .playback-controls button {
+  pointer-events: auto;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+}
+:where(.lab-shaker) .playback-controls > span {
+  font:
+    8px "IBM Plex Mono",
+    monospace;
+  line-height: 1.6;
+}
+:where(.lab-shaker) .playback-controls small {
+  display: block;
+  color: #617e78;
+  font-size: 7px;
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+}
+:where(.lab-shaker) .lesson-navigation {
+  position: absolute;
+  z-index: 4;
+  bottom: 237px;
+  left: 40px;
+  right: 40px;
+  height: 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--line);
+}
+:where(.lab-shaker) .lesson-navigation > div {
+  display: flex;
+  gap: 13px;
+}
+:where(.lab-shaker) .lesson-navigation button {
+  padding: 12px 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: #88a59e;
+  position: relative;
+}
+:where(.lab-shaker) .lesson-navigation button small {
+  font:
+    7px "IBM Plex Mono",
+    monospace;
+  color: #587871;
+}
+:where(.lab-shaker) .lesson-navigation button.selected {
+  color: #dcead6;
+}
+:where(.lab-shaker) .lesson-navigation button.selected:before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 10px;
+  right: 10px;
+  height: 2px;
+  background: #b2ddbd;
+}
+:where(.lab-shaker) .lesson-navigation button.reset-button {
+  font-size: 9px;
+  color: #6d9188;
+}
+:where(.lab-shaker) .control-dock {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  min-height: 236px;
+  display: grid;
+  grid-template-columns: 0.95fr 1.55fr 1fr;
+  background: linear-gradient(180deg, #15292c, #112125);
+  border-top: 1px solid #304a46;
+  padding: 25px 40px 22px;
+  gap: 30px;
+}
+:where(.lab-shaker) .control-block {
+  min-width: 0;
+}
+:where(.lab-shaker) .control-block + .control-block {
+  border-left: 1px solid var(--line);
+  padding-left: 30px;
+}
+:where(.lab-shaker) .control-header {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 24px;
+  min-height: 34px;
+}
+:where(.lab-shaker) .coil-number {
+  font:
+    13px "IBM Plex Mono",
+    monospace;
+  color: var(--amber);
+  width: 30px;
+  height: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #655442;
+  border-radius: 4px;
+}
+:where(.lab-shaker) .drive-control .coil-number {
+  color: var(--blue);
+  border-color: #3a5f68;
+}
+:where(.lab-shaker) .control-header h3 {
+  font-size: 14px;
+  letter-spacing: -0.25px;
+  font-weight: 500;
+  margin: 0 0 4px;
+}
+:where(.lab-shaker) .control-header p {
+  font:
+    7px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 1px;
+  margin: 0;
+  color: #668d86;
+}
+:where(.lab-shaker) .control-header > output {
+  font:
+    23px "Manrope Variable",
+    sans-serif;
+  margin-left: auto;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+}
+:where(.lab-shaker) .control-header > output small {
+  font:
+    9px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0;
+  color: #95aea4;
+  margin-left: 6px;
+}
+:where(.lab-shaker) .range-label {
+  font-size: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  color: #94b1a8;
+  margin-bottom: 13px;
+}
+:where(.lab-shaker) .range-label > span {
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  color: #d1ddcd;
+}
+:where(.lab-shaker) .control-block input[type="range"] {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 3px;
+  border-radius: 4px;
+  background: linear-gradient(
+    to right,
+    var(--amber) var(--fill),
+    #35504a var(--fill)
+  );
+  margin: 0;
+  cursor: pointer;
+  outline-offset: 8px;
+}
+:where(.lab-shaker) .control-block input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #f0d5ac;
+  box-shadow: 0 0 0 4px #d4aa7220;
+}
+:where(.lab-shaker) .control-block input[type="range"]::-moz-range-thumb {
+  border: 0;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #f0d5ac;
+}
+:where(.lab-shaker) .drive-control input[type="range"] {
+  background: linear-gradient(
+    to right,
+    var(--blue) var(--fill),
+    #35504a var(--fill)
+  );
+}
+:where(.lab-shaker) .drive-control input[type="range"]::-webkit-slider-thumb {
+  background: #b2e4ed;
+  box-shadow: 0 0 0 4px #9acddb20;
+}
+:where(.lab-shaker) .payload-control input[type="range"] {
+  background: linear-gradient(
+    to right,
+    #b8d1ad var(--fill),
+    #35504a var(--fill)
+  );
+}
+:where(.lab-shaker) .payload-control input[type="range"]::-webkit-slider-thumb {
+  background: #cde4bd;
+  box-shadow: 0 0 0 4px #a6d99420;
+}
+:where(.lab-shaker) .range-ends {
+  display: flex;
+  justify-content: space-between;
+  font:
+    8px "IBM Plex Mono",
+    monospace;
+  color: #567b72;
+  align-items: center;
+  height: 25px;
+  margin-top: 4px;
+}
+:where(.lab-shaker) .range-ends button {
+  padding: 2px 7px;
+  font-size: 8px;
+  color: #8aafa0;
+}
+:where(.lab-shaker) .control-readings {
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #72988b;
+  margin-top: 7px;
+  min-height: 22px;
+}
+:where(.lab-shaker) .control-readings b {
+  margin-left: 6px;
+  font:
+    9px "IBM Plex Mono",
+    monospace;
+  font-weight: 400;
+  color: #b4caba;
+}
+:where(.lab-shaker) .control-readings .limit-active {
+  color: #e4bb8e;
+  font-size: 8px;
+}
+:where(.lab-shaker) .drive-switch {
+  margin-left: auto;
+  padding: 3px;
+}
+:where(.lab-shaker) .drive-switch button {
+  padding: 5px 10px;
+  font-size: 9px;
+}
+:where(.lab-shaker) .drive-controls.sine {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 23px;
+}
+:where(.lab-shaker) .reverse-button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  color: #a0c7c6;
+  font-size: 9px;
+}
+:where(.lab-shaker) .payload-symbol {
+  font-size: 22px;
+  font-style: italic;
+  color: #b2c9a5;
+  width: 29px;
+  text-align: center;
+}
+:where(.lab-shaker) .context-chart {
+  border-top: 1px solid var(--line);
+  padding-top: 11px;
+  width: 100%;
+  margin-top: 10px;
+}
+:where(.lab-shaker) .chart-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font:
+    7px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.65px;
+  color: #8caaa1;
+  margin-bottom: 8px;
+}
+:where(.lab-shaker) .context-chart > svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+:where(.lab-shaker) .chart-grid {
+  stroke: #38514d;
+  stroke-width: 0.6;
+}
+:where(.lab-shaker) .chart-grid.vertical {
+  opacity: 0.45;
+}
+:where(.lab-shaker) .context-chart svg text {
+  fill: #79988c;
+  font:
+    8px "IBM Plex Mono",
+    monospace;
+}
+:where(.lab-shaker) .context-chart svg text.chart-message {
+  font-size: 9px;
+  fill: #c0d7bc;
+}
+:where(.lab-shaker) .chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 13px;
+  font:
+    7px "IBM Plex Mono",
+    monospace;
+  color: #8da79c;
+}
+:where(.lab-shaker) .chart-legend span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+:where(.lab-shaker) .chart-legend i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+:where(.lab-shaker) .envelope-chart svg {
+  cursor: crosshair;
+}
+:where(.lab-shaker) .envelope-chart .chart-note {
+  font-size: 8px;
+}
+:where(.lab-shaker) .vector-key {
+  display: flex;
+  gap: 25px;
+  margin: 7px 0 17px;
+}
+:where(.lab-shaker) .vector-key > span {
+  font:
+    17px "IBM Plex Mono",
+    monospace;
+}
+:where(.lab-shaker) .vector-key small {
+  font-size: 8px;
+  margin-left: 5px;
+  color: #8fa89e;
+}
+:where(.lab-shaker) .vector-key .b {
+  color: #b6efbd;
+}
+:where(.lab-shaker) .vector-key .i {
+  color: #8fd9f2;
+}
+:where(.lab-shaker) .vector-key .f {
+  color: #ffc387;
+}
+:where(.lab-shaker) .force-balance {
+  border-top: 1px solid var(--line);
+  padding-top: 13px;
+  max-width: 285px;
+}
+:where(.lab-shaker) .force-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 10px 0;
+}
+:where(.lab-shaker) .force-row > i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+:where(.lab-shaker) .force-row > span {
+  font-size: 10px;
+  color: #9eb4a9;
+}
+:where(.lab-shaker) .force-row small {
+  font:
+    8px "IBM Plex Mono",
+    monospace;
+  color: #617f75;
+  margin-left: 7px;
+}
+:where(.lab-shaker) .force-row output {
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  margin-left: auto;
+  color: #c7d9c3;
+  min-width: 55px;
+  text-align: right;
+}
+:where(.lab-shaker) .force-balance .chart-note {
+  font-size: 8px;
+}
+:where(.lab-shaker) .phasor-content {
+  display: flex;
+  align-items: center;
+  margin-top: -6px;
+}
+:where(.lab-shaker) .phasor-content svg {
+  width: 46%;
+  overflow: visible;
+}
+:where(.lab-shaker) .voltage-values {
+  margin: 0 0 0 12px;
+  flex: 1;
+}
+:where(.lab-shaker) .voltage-values > div {
+  margin: 12px 0;
+}
+:where(.lab-shaker) .voltage-values dt {
+  font:
+    8px "IBM Plex Mono",
+    monospace;
+}
+:where(.lab-shaker) .voltage-values dd {
+  margin: 5px 0 0;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+:where(.lab-shaker) .voltage-values dd small {
+  font-size: 8px;
+  color: #718f83;
+}
+:where(.lab-shaker) .headroom {
+  height: 3px;
+  background: #38534a;
+  margin-top: 4px;
+}
+:where(.lab-shaker) .headroom > span {
+  height: 100%;
+  display: block;
+  background: #bdcbb7;
+  transition: width 0.2s;
+}
+:where(.lab-shaker) .voltage-chart .chart-note {
+  font-size: 8px;
+}
+:where(.lab-shaker) .context-prompt p {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #8aada0;
+}
+:where(.lab-shaker) .energy-path {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--amber);
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+}
+:where(.lab-shaker) .energy-path.blue {
+  color: var(--blue);
+}
+:where(.lab-shaker) .energy-path b {
+  font:
+    11px "IBM Plex Mono",
+    monospace;
+}
+:where(.lab-shaker) .energy-path small {
+  grid-column: 1/-1;
+  color: #789c90;
+  font-size: 8px;
+}
+:where(.lab-shaker) .energy-losses {
+  display: grid;
+  gap: 10px;
+  font-size: 9px;
+  color: #8baa9c;
+  margin-top: 13px;
+}
+:where(.lab-shaker) .energy-losses > span {
+  display: flex;
+  justify-content: space-between;
+}
+:where(.lab-shaker) .energy-losses b {
+  font:
+    9px "IBM Plex Mono",
+    monospace;
+  font-weight: 400;
+}
+:where(.lab-shaker) .tour-transport {
+  position: absolute;
+  right: 40px;
+  top: 206px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: #14272ced;
+  border: 1px solid var(--line);
+  padding: 9px 12px;
+  border-radius: 5px;
+}
+:where(.lab-shaker) .tour-transport > span {
+  font:
+    9px "IBM Plex Mono",
+    monospace;
+  color: #91b29f;
+}
+:where(.lab-shaker) .tour-transport button {
+  padding: 2px;
+}
+:where(.lab-shaker) .tour-progress {
+  width: 93px;
+  height: 2px;
+  background: #355247;
+  margin-right: 5px;
+}
+:where(.lab-shaker) .tour-progress span {
+  height: 100%;
+  display: block;
+  background: #bee9bd;
+}
+:where(.lab-shaker) .tour-complete {
+  position: absolute;
+  right: 40px;
+  top: 206px;
+  padding: 11px 15px;
+  color: #bde4b8;
+  font-size: 11px;
+  background: #162f2b;
+  border: 1px solid #375945;
+  border-radius: 5px;
+  z-index: 4;
+}
+:where(.lab-shaker) .tour-active .story h2 {
+  font-size: 35px;
+}
+:where(.lab-shaker) .tour-active .story {
+  top: 126px;
+}
+:where(.lab-shaker) .tour-active .primary-metric {
+  margin-top: 16px;
+  margin-bottom: 14px;
+}
+:where(.lab-shaker) .tour-active .story-copy {
+  font-size: 11px;
+}
+:where(.lab-shaker) .notes-dialog {
+  padding: 0;
+  background: #13262a;
+  color: #b9cbc1;
+  border: 1px solid #476157;
+  border-radius: 10px;
+  max-width: 760px;
+  width: calc(100% - 36px);
+  max-height: 85svh;
+  box-shadow: 0 20px 80px #0008;
+}
+:where(.lab-shaker) .notes-dialog::backdrop {
+  background: #071216c9;
+  backdrop-filter: blur(8px);
+}
+:where(.lab-shaker) .notes-dialog article {
+  padding: 47px 52px;
+  position: relative;
+}
+:where(.lab-shaker) .close-notes {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+}
+:where(.lab-shaker) .notes-dialog h2 {
+  font-size: 40px;
+  line-height: 1.1;
+  letter-spacing: -1px;
+  font-weight: 450;
+  color: #e7ecdc;
+  margin: 16px 0 24px;
+}
+:where(.lab-shaker) .notes-dialog h3 {
+  font-size: 15px;
+  color: #dae4d1;
+  margin: 29px 0 10px;
+}
+:where(.lab-shaker) .notes-dialog p {
+  font-size: 12px;
+  line-height: 1.9;
+  color: #9bb2a6;
+}
+:where(.lab-shaker) .notes-dialog b {
+  font-weight: 500;
+  color: #d0deca;
+}
+:where(.lab-shaker) .notes-dialog .eyebrow {
+  font-size: 9px;
+  letter-spacing: 1.4px;
+}
+:where(.lab-shaker) .parameter-list {
+  font-size: 11px;
+  margin: 14px 0;
+  line-height: 1.6;
+}
+:where(.lab-shaker) .parameter-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+:where(.lab-shaker) .parameter-list dt {
+  color: #829f90;
+}
+:where(.lab-shaker) .parameter-list dd {
+  margin: 0;
+  text-align: right;
+  color: #c3d1b9;
+}
+:where(.lab-shaker) .sources {
+  padding-left: 17px;
+}
+:where(.lab-shaker) .sources li {
+  margin: 17px 0;
+  font-size: 11px;
+}
+:where(.lab-shaker) .sources a {
+  color: #bddab8;
+  text-decoration-color: #66816c;
+  text-underline-offset: 4px;
+}
+:where(.lab-shaker) .sources span {
+  display: block;
+  color: #729482;
+  font-size: 10px;
+  line-height: 1.7;
+  margin-top: 6px;
+}
+:where(.lab-shaker) .notes-dialog p.notes-footer {
+  font-size: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+:where(.lab-shaker) .scene-loading,
+:where(.lab-shaker) .scene-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #819f93;
+  gap: 12px;
+}
+:where(.lab-shaker) .scene-loading i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #c1d9b9;
+  animation: pulse 1s infinite;
+}
+:where(.lab-shaker) .scene-error {
+  left: 40%;
+  right: 10%;
+  text-align: center;
+  line-height: 1.8;
+}
+:where(.lab-shaker) .lesson-field .primary-metric > span {
+  color: #d0e6c1;
+}
+:where(.lab-shaker) .lesson-force .primary-metric > span {
+  color: #e9c8a1;
+}
+:where(.lab-shaker) .lesson-emf .primary-metric > span {
+  color: #b7dfeb;
+}
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.2;
+  }
+}
+@media (min-width: 1600px) {
+  :where(.lab-shaker) .story {
+    left: 65px;
+    top: 145px;
+    width: 360px;
+  }
+  :where(.lab-shaker) .story h2 {
+    font-size: 51px;
+    max-width: 360px;
+  }
+  :where(.lab-shaker) .story-copy {
+    font-size: 14px;
+    max-width: 330px;
+  }
+  :where(.lab-shaker) .primary-metric {
+    margin-top: 28px;
+  }
+  :where(.lab-shaker) .primary-metric > span {
+    font-size: 56px;
+  }
+  :where(.lab-shaker) .chart-heading {
+    font-size: 8px;
+  }
+  :where(.lab-shaker) .chart-note {
+    font-size: 10px;
+  }
+  :where(.lab-shaker) .field-chain {
+    max-width: 310px;
+  }
+  :where(.lab-shaker) .field-chain > span {
+    font-size: 12px;
+  }
+  :where(.lab-shaker) .primary-metric > p {
+    font-size: 9px;
+  }
+  :where(.lab-shaker) .context-chart {
+    max-width: 345px;
+  }
+  :where(.lab-shaker) .control-dock {
+    padding-left: 52px;
+    padding-right: 52px;
+    gap: 44px;
+  }
+  :where(.lab-shaker) .control-block + .control-block {
+    padding-left: 44px;
+  }
+  :where(.lab-shaker) .control-header h3 {
+    font-size: 16px;
+  }
+  :where(.lab-shaker) .control-header p {
+    font-size: 8px;
+  }
+  :where(.lab-shaker) .range-label {
+    font-size: 11px;
+  }
+}
+@media (max-height: 840px) and (min-width: 1000px) {
+  :where(.lab-shaker) .story {
+    top: 106px;
+    width: 295px;
+    left: 40px;
+  }
+  :where(.lab-shaker) .story h2 {
+    font-size: 35px;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  :where(.lab-shaker) .story-copy {
+    font-size: 11px;
+    line-height: 1.65;
+  }
+  :where(.lab-shaker) .eyebrow {
+    margin-bottom: 10px;
+  }
+  :where(.lab-shaker) .primary-metric {
+    margin: 14px 0;
+  }
+  :where(.lab-shaker) .primary-metric > span {
+    font-size: 37px;
+  }
+  :where(.lab-shaker) .view-tools {
+    top: 96px;
+  }
+  :where(.lab-shaker) .control-dock {
+    min-height: 209px;
+    padding-top: 19px;
+    padding-bottom: 15px;
+  }
+  :where(.lab-shaker) .control-header {
+    margin-bottom: 17px;
+  }
+  :where(.lab-shaker) .scene {
+    bottom: 226px;
+  }
+  :where(.lab-shaker) .lesson-navigation {
+    bottom: 210px;
+  }
+  :where(.lab-shaker) .scene-footer {
+    bottom: 269px;
+  }
+  :where(.lab-shaker) .force-row {
+    margin: 8px 0;
+  }
+  :where(.lab-shaker) .context-chart {
+    max-width: 280px;
+  }
+  :where(.lab-shaker) .field-chain .chart-note {
+    max-width: 260px;
+  }
+  :where(.lab-shaker) .tour-active .story h2 {
+    font-size: 29px;
+  }
+  :where(.lab-shaker) .tour-active .story {
+    top: 105px;
+  }
+  :where(.lab-shaker) .tour-active .story-copy {
+    font-size: 10px;
+  }
+  :where(.lab-shaker) .tour-active .primary-metric {
+    margin: 10px 0;
+  }
+  :where(.lab-shaker) .tour-active .eyebrow {
+    font-size: 8px;
+  }
+}
+@media (max-width: 1150px) {
+  :where(.lab-shaker) .masthead {
+    margin: 0 25px;
+  }
+  :where(.lab-shaker) .exhibit-title > span {
+    display: none;
+  }
+  :where(.lab-shaker) .story {
+    left: 30px;
+    width: 270px;
+  }
+  :where(.lab-shaker) .story h2 {
+    font-size: 37px;
+  }
+  :where(.lab-shaker) .story-copy {
+    font-size: 11px;
+  }
+  :where(.lab-shaker) .view-tools {
+    right: 25px;
+  }
+  :where(.lab-shaker) .display-switch button {
+    font-size: 9px;
+    padding: 7px 8px;
+  }
+  :where(.lab-shaker) .control-dock {
+    padding-left: 25px;
+    padding-right: 25px;
+    gap: 20px;
+    grid-template-columns: 0.9fr 1.5fr 1fr;
+  }
+  :where(.lab-shaker) .control-block + .control-block {
+    padding-left: 20px;
+  }
+  :where(.lab-shaker) .control-header {
+    gap: 7px;
+  }
+  :where(.lab-shaker) .control-header h3 {
+    font-size: 12px;
+  }
+  :where(.lab-shaker) .control-header p {
+    font-size: 6px;
+    letter-spacing: 0.6px;
+  }
+  :where(.lab-shaker) .control-header > output {
+    font-size: 19px;
+  }
+  :where(.lab-shaker) .coil-number {
+    width: 24px;
+    font-size: 11px;
+  }
+  :where(.lab-shaker) .range-label,
+  :where(.lab-shaker) .range-label > span {
+    font-size: 9px;
+  }
+  :where(.lab-shaker) .drive-controls.sine {
+    gap: 17px;
+  }
+  :where(.lab-shaker) .drive-switch button {
+    padding: 5px 7px;
+  }
+  :where(.lab-shaker) .control-readings {
+    font-size: 8px;
+  }
+  :where(.lab-shaker) .control-readings b {
+    font-size: 8px;
+  }
+  :where(.lab-shaker) .lesson-navigation {
+    left: 25px;
+    right: 25px;
+  }
+  :where(.lab-shaker) .lesson-navigation > div {
+    gap: 2px;
+  }
+  :where(.lab-shaker) .machine-caption {
+    display: none;
+  }
+  :where(.lab-shaker) .scene-footer {
+    justify-content: flex-end;
+    right: 25px;
+  }
+  :where(.lab-shaker) .chart-heading {
+    font-size: 6px;
+  }
+  :where(.lab-shaker) .force-balance .force-row small {
+    font-size: 7px;
+  }
+  :where(.lab-shaker) .control-header > output small {
+    font-size: 8px;
+  }
+  :where(.lab-shaker) .tour-transport {
+    right: 25px;
+  }
+}
+@media (max-width: 760px) {
+  :where(.lab-shaker) .exhibit {
+    height: auto;
+    min-height: 1290px;
+    overflow: hidden;
+  }
+  :where(.lab-shaker) .masthead {
+    height: 67px;
+    margin: 0 18px;
+  }
+  :where(.lab-shaker) .brand {
+    font-size: 7px;
+    gap: 8px;
+  }
+  :where(.lab-shaker) .brand-mark {
+    font-size: 25px;
+  }
+  :where(.lab-shaker) .exhibit-title {
+    display: none;
+  }
+  :where(.lab-shaker) .masthead nav {
+    gap: 0;
+  }
+  :where(.lab-shaker) .masthead nav button {
+    font-size: 9px;
+    padding: 8px;
+  }
+  :where(.lab-shaker) .masthead nav button.notes-button {
+    padding-left: 12px;
+    margin-left: 4px;
+  }
+  :where(.lab-shaker) .masthead nav small {
+    display: none;
+  }
+  :where(.lab-shaker) .scene {
+    top: 185px;
+    bottom: auto;
+    height: 470px;
+  }
+  :where(.lab-shaker) .scene-vignette {
+    background: linear-gradient(
+      0deg,
+      #101b20 0%,
+      transparent 18%,
+      transparent 85%,
+      #101b20 100%
+    );
+  }
+  :where(.lab-shaker) .story {
+    top: 95px;
+    left: 22px;
+    width: calc(100% - 44px);
+    pointer-events: none;
+  }
+  :where(.lab-shaker) .story h2 {
+    font-size: 30px;
+    max-width: 275px;
+    margin-bottom: 9px;
+    letter-spacing: -1px;
+  }
+  :where(.lab-shaker) .story-copy {
+    font-size: 11px;
+    max-width: 270px;
+    line-height: 1.65;
+  }
+  :where(.lab-shaker) .story .eyebrow {
+    font-size: 8px;
+    margin-bottom: 10px;
+  }
+  :where(.lab-shaker) .story .primary-metric {
+    position: absolute;
+    top: 23px;
+    right: 0;
+    text-align: right;
+    margin: 0;
+  }
+  :where(.lab-shaker) .primary-metric > span {
+    font-size: 29px;
+    letter-spacing: -1px;
+  }
+  :where(.lab-shaker) .primary-metric > span small {
+    font-size: 11px;
+    margin-left: 5px;
+  }
+  :where(.lab-shaker) .primary-metric > p {
+    font-size: 6px;
+    max-width: 107px;
+    line-height: 1.8;
+    letter-spacing: 0.1px;
+  }
+  :where(.lab-shaker) .story h2,
+  :where(.lab-shaker) .story-copy {
+    max-width: calc(100% - 125px);
+  }
+  :where(.lab-shaker) .story .field-chain,
+  :where(.lab-shaker) .story .force-balance,
+  :where(.lab-shaker) .story .context-chart,
+  :where(.lab-shaker) .story .context-prompt,
+  :where(.lab-shaker) .story .energy-flow {
+    position: absolute;
+    top: 592px;
+    left: 0;
+    width: 100%;
+    max-width: none;
+    height: 193px;
+    overflow: auto;
+    padding-right: 4px;
+    border: 0;
+    margin: 0;
+  }
+  :where(.lab-shaker) .story .field-chain {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 30px;
+    height: 130px;
+  }
+  :where(.lab-shaker) .field-chain > i {
+    display: none;
+  }
+  :where(.lab-shaker) .field-chain > span {
+    grid-column: 1;
+    gap: 8px;
+    margin: 5px 0;
+    font-size: 10px;
+  }
+  :where(.lab-shaker) .field-chain > span b {
+    font-size: 9px;
+  }
+  :where(.lab-shaker) .field-chain .text-action {
+    grid-column: 2;
+    grid-row: 1/3;
+    align-self: center;
+    justify-self: start;
+    font-size: 9px;
+  }
+  :where(.lab-shaker) .field-chain .chart-note {
+    grid-column: 2;
+    grid-row: 3;
+    font-size: 8px;
+    margin: 0;
+  }
+  :where(.lab-shaker) .story .vector-key {
+    position: absolute;
+    top: 605px;
+    margin: 0;
+    gap: 17px;
+    font-size: 12px;
+  }
+  :where(.lab-shaker) .story .force-balance {
+    top: 638px;
+    height: 157px;
+  }
+  :where(.lab-shaker) .force-row {
+    display: inline-flex;
+    width: 48%;
+    padding-right: 14px;
+    margin: 7px 0;
+  }
+  :where(.lab-shaker) .force-row > span {
+    font-size: 8px;
+  }
+  :where(.lab-shaker) .force-row small {
+    display: none;
+  }
+  :where(.lab-shaker) .force-row output {
+    font-size: 8px;
+    min-width: 41px;
+  }
+  :where(.lab-shaker) .force-balance .chart-note {
+    font-size: 8px;
+  }
+  :where(.lab-shaker) .story .envelope-chart {
+    display: grid;
+    grid-template-columns: 1fr 130px;
+    gap: 0 13px;
+    height: 193px;
+    overflow: hidden;
+  }
+  :where(.lab-shaker) .envelope-chart .chart-heading {
+    grid-column: 1/-1;
+  }
+  :where(.lab-shaker) .envelope-chart svg {
+    width: 100%;
+  }
+  :where(.lab-shaker) .envelope-chart .chart-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+    font-size: 7px;
+    padding-top: 6px;
+  }
+  :where(.lab-shaker) .envelope-chart .chart-note {
+    grid-column: 1/-1;
+    margin: 0;
+    font-size: 7px;
+  }
+  :where(.lab-shaker) .story .voltage-chart {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 16px;
+    overflow: hidden;
+  }
+  :where(.lab-shaker) .voltage-chart .chart-heading {
+    grid-column: 1/-1;
+  }
+  :where(.lab-shaker) .phasor-content {
+    grid-column: 1;
+    grid-row: 2/4;
+  }
+  :where(.lab-shaker) .phasor-content svg {
+    width: 70px;
+  }
+  :where(.lab-shaker) .voltage-values {
+    margin-left: 4px;
+  }
+  :where(.lab-shaker) .voltage-values dt {
+    font-size: 6px;
+  }
+  :where(.lab-shaker) .voltage-values dd {
+    font-size: 14px;
+  }
+  :where(.lab-shaker) .voltage-values > div {
+    margin: 9px 0;
+  }
+  :where(.lab-shaker) .voltage-chart .headroom {
+    grid-column: 2;
+    align-self: end;
+    margin-bottom: 12px;
+  }
+  :where(.lab-shaker) .voltage-chart .chart-note {
+    grid-column: 2;
+    align-self: start;
+    font-size: 8px;
+    margin: 0;
+  }
+  :where(.lab-shaker) .story .voltage-chart + .text-action {
+    position: absolute;
+    top: 780px;
+    right: 0;
+    font-size: 8px;
+  }
+  :where(.lab-shaker) .story .waveform {
+    display: grid;
+    grid-template-columns: 1fr 110px;
+    gap: 8px 15px;
+  }
+  :where(.lab-shaker) .waveform .chart-heading {
+    grid-column: 1/-1;
+  }
+  :where(.lab-shaker) .waveform .chart-legend {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    font-size: 7px;
+  }
+  :where(.lab-shaker) .energy-flow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 20px;
+  }
+  :where(.lab-shaker) .energy-flow .chart-heading {
+    grid-column: 1/-1;
+  }
+  :where(.lab-shaker) .energy-flow .chart-note {
+    font-size: 8px;
+    margin: 5px 0;
+  }
+  :where(.lab-shaker) .energy-path {
+    padding-top: 0;
+    font-size: 9px;
+  }
+  :where(.lab-shaker) .energy-path small {
+    font-size: 7px;
+  }
+  :where(.lab-shaker) .energy-losses {
+    font-size: 8px;
+    line-height: 1.3;
+    gap: 6px;
+  }
+  :where(.lab-shaker) .view-tools {
+    top: 284px;
+    left: 22px;
+    right: 22px;
+    gap: 10px;
+    align-items: flex-end;
+    pointer-events: none;
+  }
+  :where(.lab-shaker) .view-tools > * {
+    pointer-events: auto;
+  }
+  :where(.lab-shaker) .view-tools .display-switch {
+    align-self: stretch;
+    justify-content: center;
+    background: #15292bc9;
+  }
+  :where(.lab-shaker) .view-tools .display-switch button {
+    flex: 1;
+    font-size: 9px;
+  }
+  :where(.lab-shaker) .camera-select span {
+    font-size: 7px;
+  }
+  :where(.lab-shaker) .camera-select select {
+    font-size: 9px;
+    min-width: 102px;
+    background: #182b2fe6;
+  }
+  :where(.lab-shaker) .scene-footer {
+    bottom: auto;
+    top: 620px;
+    left: 22px;
+    right: 22px;
+  }
+  :where(.lab-shaker) .playback-controls > span {
+    font-size: 7px;
+  }
+  :where(.lab-shaker) .playback-controls small {
+    font-size: 6px;
+  }
+  :where(.lab-shaker) .lesson-navigation {
+    top: 663px;
+    bottom: auto;
+    left: 22px;
+    right: 22px;
+    height: 32px;
+  }
+  :where(.lab-shaker) .lesson-navigation button {
+    font-size: 9px;
+    padding: 9px 7px;
+    gap: 0;
+  }
+  :where(.lab-shaker) .lesson-navigation button small {
+    display: none;
+  }
+  :where(.lab-shaker) .lesson-navigation > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1px;
+    width: 100%;
+  }
+  :where(.lab-shaker) .lesson-navigation button.reset-button {
+    position: absolute;
+    right: 0;
+    top: 215px;
+    font-size: 8px;
+  }
+  :where(.lab-shaker) .control-dock {
+    top: 936px;
+    bottom: auto;
+    min-height: 340px;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px 22px;
+    padding: 22px;
+  }
+  :where(.lab-shaker) .control-block + .control-block {
+    padding: 0;
+    border: 0;
+  }
+  :where(.lab-shaker) .drive-control {
+    grid-column: 1/-1;
+    grid-row: 2;
+    border-top: 1px solid var(--line) !important;
+    padding-top: 20px !important;
+  }
+  :where(.lab-shaker) .field-control {
+    grid-column: 1;
+  }
+  :where(.lab-shaker) .payload-control {
+    grid-column: 2;
+    grid-row: 1;
+    border-left: 1px solid var(--line) !important;
+    padding-left: 20px !important;
+  }
+  :where(.lab-shaker) .control-header {
+    margin-bottom: 19px;
+  }
+  :where(.lab-shaker) .control-header h3 {
+    font-size: 11px;
+  }
+  :where(.lab-shaker) .control-header p {
+    font-size: 5px;
+  }
+  :where(.lab-shaker) .control-header > output {
+    font-size: 17px;
+  }
+  :where(.lab-shaker) .control-header > output small {
+    font-size: 7px;
+    margin-left: 3px;
+  }
+  :where(.lab-shaker) .coil-number {
+    width: 22px;
+    height: 27px;
+    font-size: 10px;
+  }
+  :where(.lab-shaker) .payload-symbol {
+    display: none;
+  }
+  :where(.lab-shaker) .range-label,
+  :where(.lab-shaker) .range-label > span {
+    font-size: 8px;
+  }
+  :where(.lab-shaker) .control-readings {
+    font-size: 7px;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+  :where(.lab-shaker) .control-readings b {
+    font-size: 7px;
+  }
+  :where(.lab-shaker) .range-ends {
+    font-size: 7px;
+    height: 19px;
+  }
+  :where(.lab-shaker) .drive-switch button {
+    font-size: 9px;
+    padding: 6px 13px;
+  }
+  :where(.lab-shaker) .drive-control .control-header h3 {
+    font-size: 13px;
+  }
+  :where(.lab-shaker) .drive-control .control-header p {
+    font-size: 7px;
+  }
+  :where(.lab-shaker) .drive-control .coil-number {
+    height: 32px;
+    width: 29px;
+  }
+  :where(.lab-shaker) .drive-controls.sine {
+    gap: 28px;
+  }
+  :where(.lab-shaker) .drive-control .range-label,
+  :where(.lab-shaker) .drive-control .range-label > span {
+    font-size: 9px;
+  }
+  :where(.lab-shaker) .drive-control .control-readings {
+    font-size: 9px;
+  }
+  :where(.lab-shaker) .tour-active .story {
+    top: 95px;
+  }
+  :where(.lab-shaker) .tour-active .story h2 {
+    font-size: 25px;
+  }
+  :where(.lab-shaker) .tour-active .story-copy {
+    font-size: 10px;
+  }
+  :where(.lab-shaker) .tour-active .story .primary-metric {
+    margin: 0;
+  }
+  :where(.lab-shaker) .tour-transport,
+  :where(.lab-shaker) .tour-complete {
+    top: 882px;
+    right: auto;
+    left: 22px;
+    padding: 7px 10px;
+  }
+  :where(.lab-shaker) .tour-transport {
+    gap: 10px;
+  }
+  :where(.lab-shaker) .tour-progress {
+    width: 90px;
+  }
+  :where(.lab-shaker) .tour-complete {
+    font-size: 8px;
+  }
+  :where(.lab-shaker) .notes-dialog article {
+    padding: 36px 25px;
+  }
+  :where(.lab-shaker) .notes-dialog h2 {
+    font-size: 32px;
+  }
+  :where(.lab-shaker) .parameter-list {
+    font-size: 9px;
+  }
+  :where(.lab-shaker) .annotation {
+    font-size: 6px;
+  }
+  :where(.lab-shaker) .annotation small {
+    font-size: 5px;
+  }
+  :where(.lab-shaker) .annotation > i {
+    width: 18px;
+  }
+  :where(.lab-shaker) .drive-label > i {
+    width: 24px;
+  }
+  :where(.lab-shaker) .table-label {
+    font-size: 6px;
+  }
+  :where(.lab-shaker) .scene-error {
+    left: 20%;
+    right: 20%;
+    font-size: 11px;
+  }
+  :where(.lab-shaker) .chart-heading {
+    font-size: 7px;
+  }
+  :where(.lab-shaker) .exhibit .story > .text-action {
+    pointer-events: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :where(.lab-shaker) *,
+  :where(.lab-shaker) *:before,
+  :where(.lab-shaker) *:after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (min-width: 761px) {
+  :where(.lab-shaker) .lesson-force .story h2,
+  :where(.lab-shaker) .lesson-emf .story h2,
+  :where(.lab-shaker) .lesson-envelope .story h2,
+  :where(.lab-shaker) .lesson-energy .story h2 {
+    font-size: 36px;
+    line-height: 1.13;
+  }
+  :where(.lab-shaker) .lesson-force .primary-metric,
+  :where(.lab-shaker) .lesson-emf .primary-metric,
+  :where(.lab-shaker) .lesson-envelope .primary-metric,
+  :where(.lab-shaker) .lesson-energy .primary-metric {
+    margin: 16px 0 13px;
+  }
+  :where(.lab-shaker) .lesson-force .primary-metric > span,
+  :where(.lab-shaker) .lesson-emf .primary-metric > span,
+  :where(.lab-shaker) .lesson-envelope .primary-metric > span,
+  :where(.lab-shaker) .lesson-energy .primary-metric > span {
+    font-size: 41px;
+  }
+}
+
+:where(.lab-shaker) .webgl-stage {
+  position: absolute;
+  inset: 0;
+}
+
+:where(.lab-shaker) .drive-label {
+  flex-direction: row-reverse;
+}
+:where(.lab-shaker) .drive-label > i:before {
+  left: auto;
+  right: -2px;
+}
+@media (max-width: 760px) {
+  :where(.lab-shaker) .drive-label {
+    margin-left: 59px;
+  }
+}
+
+@media (min-width: 761px) {
+  :where(.lab-shaker) .envelope-chart {
+    max-width: 285px;
+  }
+  :where(.lab-shaker) .voltage-chart .phasor-content svg {
+    width: 39%;
+    max-height: 132px;
+  }
+  :where(.lab-shaker) .voltage-chart .chart-note {
+    margin-top: 8px;
+  }
+  :where(.lab-shaker) .lesson-emf .primary-metric {
+    margin: 12px 0 9px;
+  }
+}
+
+@media (min-width: 761px) {
+  :where(.lab-shaker) .voltage-values > div {
+    margin: 6px 0;
+  }
+  :where(.lab-shaker) .voltage-values dd {
+    font-size: 16px;
+    line-height: 1.25;
+    margin-top: 3px;
+  }
+  :where(.lab-shaker) .energy-flow .chart-note {
+    font-size: 8px;
+    line-height: 1.6;
+  }
+  :where(.lab-shaker) .lesson-energy .story-copy {
+    font-size: 11px;
+  }
+}
+@media (max-width: 760px) {
+  :where(.lab-shaker) .exhibit {
+    min-height: 1350px;
+  }
+  :where(.lab-shaker) .scene {
+    top: 215px;
+    height: 420px;
+  }
+  :where(.lab-shaker) .view-tools .camera-select {
+    position: absolute;
+    top: 302px;
+    left: 0;
+  }
+  :where(.lab-shaker) .story .field-chain,
+  :where(.lab-shaker) .story .force-balance,
+  :where(.lab-shaker) .story .context-chart,
+  :where(.lab-shaker) .story .context-prompt,
+  :where(.lab-shaker) .story .energy-flow {
+    margin-top: 14px;
+  }
+  :where(.lab-shaker) .story .force-balance {
+    margin-top: 14px;
+  }
+  :where(.lab-shaker) .lesson-navigation button.reset-button {
+    top: 224px;
+  }
+}
+:where(.lab-shaker) .control-header > output {
+  white-space: nowrap;
+}
+:where(.lab-shaker) .detail-label {
+  color: #bbd3ad;
+  font-size: 7px;
+}
+:where(.lab-shaker) .detail-label > span {
+  border-color: #40594b;
+}
+:where(.lab-shaker) .detail-label > i {
+  width: 40px;
+}
+@media (max-height: 840px) and (min-width: 1000px) {
+  :where(.lab-shaker) .story h2,
+  :where(.lab-shaker) .lesson-force .story h2,
+  :where(.lab-shaker) .lesson-emf .story h2,
+  :where(.lab-shaker) .lesson-envelope .story h2,
+  :where(.lab-shaker) .lesson-energy .story h2,
+  :where(.lab-shaker) .tour-active .story h2 {
+    font-size: 32px;
+  }
+  :where(.lab-shaker) .story .primary-metric > span {
+    font-size: 36px;
+  }
+  :where(.lab-shaker) .story .primary-metric {
+    margin: 10px 0 8px;
+  }
+  :where(.lab-shaker) .vector-key {
+    margin: 6px 0 11px;
+  }
+  :where(.lab-shaker) .force-balance {
+    padding-top: 10px;
+  }
+  :where(.lab-shaker) .force-balance .chart-note {
+    margin-top: 8px;
+  }
+  :where(.lab-shaker) .envelope-chart {
+    max-width: 260px;
+  }
+  :where(.lab-shaker) .energy-path {
+    padding: 9px 0;
+  }
+}
+@media (min-width: 761px) {
+  :where(.lab-shaker) .exhibit {
+    min-height: 720px;
+  }
+}
+@media (max-height: 760px) and (min-width: 761px) {
+  :where(.lab-shaker) .story,
+  :where(.lab-shaker) .tour-active .story {
+    top: 101px;
+    width: 285px;
+  }
+  :where(.lab-shaker) .story h2,
+  :where(.lab-shaker) .lesson-force .story h2,
+  :where(.lab-shaker) .lesson-emf .story h2,
+  :where(.lab-shaker) .lesson-envelope .story h2,
+  :where(.lab-shaker) .lesson-energy .story h2,
+  :where(.lab-shaker) .tour-active .story h2 {
+    font-size: 28px;
+    margin-bottom: 10px;
+  }
+  :where(.lab-shaker) .story-copy,
+  :where(.lab-shaker) .tour-active .story-copy {
+    font-size: 10px;
+    line-height: 1.65;
+  }
+  :where(.lab-shaker) .story .primary-metric > span {
+    font-size: 32px;
+  }
+  :where(.lab-shaker) .story .primary-metric {
+    margin: 8px 0 7px;
+  }
+  :where(.lab-shaker) .story .primary-metric > p {
+    font-size: 7px;
+  }
+  :where(.lab-shaker) .story .eyebrow {
+    margin-bottom: 9px;
+  }
+  :where(.lab-shaker) .force-balance .force-row {
+    display: inline-flex;
+    width: 49%;
+    padding-right: 10px;
+    margin: 4px 0;
+  }
+  :where(.lab-shaker) .force-balance .force-row > span {
+    font-size: 8px;
+  }
+  :where(.lab-shaker) .force-balance .force-row small {
+    display: none;
+  }
+  :where(.lab-shaker) .force-balance .force-row output {
+    font-size: 8px;
+    min-width: 41px;
+  }
+  :where(.lab-shaker) .force-balance .chart-note {
+    font-size: 7px;
+    line-height: 1.5;
+  }
+  :where(.lab-shaker) .envelope-chart {
+    max-width: 244px;
+  }
+  :where(.lab-shaker) .envelope-chart .chart-note,
+  :where(.lab-shaker) .energy-flow .chart-note {
+    font-size: 7px;
+    line-height: 1.5;
+    margin-top: 8px;
+  }
+  :where(.lab-shaker) .voltage-chart {
+    max-width: 270px;
+  }
+  :where(.lab-shaker) .voltage-values > div {
+    margin: 4px 0;
+  }
+  :where(.lab-shaker) .voltage-values dd {
+    font-size: 14px;
+  }
+  :where(.lab-shaker) .phasor-content svg {
+    max-height: 110px !important;
+  }
+  :where(.lab-shaker) .voltage-chart .chart-note {
+    font-size: 7px;
+  }
+  :where(.lab-shaker) .energy-path {
+    padding: 7px 0;
+  }
+  :where(.lab-shaker) .energy-losses {
+    gap: 7px;
+    margin-top: 10px;
+  }
+  :where(.lab-shaker) .field-chain .chart-note {
+    font-size: 8px;
+  }
+  :where(.lab-shaker) .field-chain > span {
+    font-size: 10px;
+  }
+  :where(.lab-shaker) .context-chart {
+    padding-top: 9px;
+  }
+  :where(.lab-shaker) .vector-key {
+    margin: 4px 0 9px;
+  }
+  :where(.lab-shaker) .scene-footer {
+    bottom: 265px;
+  }
+}

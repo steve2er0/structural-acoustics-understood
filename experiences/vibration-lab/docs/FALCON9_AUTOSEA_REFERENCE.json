@@ -1,0 +1,95 @@
+{
+  "schema": "autosea-validation-case-v1",
+  "id": "falcon-9-native-geometry",
+  "title": "Falcon 9-inspired native launch-vehicle geometry",
+  "units": "si",
+  "public_envelope": {
+    "vehicle_height_m": 70,
+    "vehicle_diameter_m": 3.7,
+    "fairing_height_m": 13.1,
+    "fairing_diameter_m": 5.2
+  },
+  "native_surfaces": [
+    {
+      "id": "aft-skirt",
+      "type": "cylinder",
+      "station_start_m": 0,
+      "station_end_m": 3.0
+    },
+    {
+      "id": "first-stage",
+      "type": "cylinder",
+      "station_start_m": 3.0,
+      "station_end_m": 42.6
+    },
+    {
+      "id": "interstage",
+      "type": "cylinder",
+      "station_start_m": 42.6,
+      "station_end_m": 47.1
+    },
+    {
+      "id": "second-stage",
+      "type": "cylinder",
+      "station_start_m": 47.1,
+      "station_end_m": 56.9
+    },
+    { "id": "payload-deck", "type": "disk", "station_m": 56.9 },
+    {
+      "id": "payload-fairing",
+      "type": "revolved-profile",
+      "station_start_m": 56.9,
+      "station_end_m": 70.0
+    }
+  ],
+  "acoustic_cavity": {
+    "id": "ac-payload-fairing",
+    "name": "Payload fairing interior",
+    "volume_m3_assumed": 190,
+    "surface_area_m2_assumed": 220,
+    "reverberation_time_s_assumed": 1.5,
+    "attachments": [
+      { "surface": "payload-fairing", "side": "negative" },
+      { "surface": "payload-deck", "side": "positive" }
+    ]
+  },
+  "acceptance_checks": [
+    "Native envelope height equals 70 m",
+    "Body diameter equals 3.7 m",
+    "Fairing height and maximum diameter equal 13.1 m and 5.2 m",
+    "Six parametric surfaces compile into six SEA regions",
+    "Shared parametric rings generate six SEA junctions including the deck T junction",
+    "Integrated midsurface area equals 875.843523040011 m2"
+  ],
+  "assumption_boundary": [
+    "Only the overall vehicle and fairing envelope dimensions are sourced from SpaceX public information",
+    "Internal stations, thicknesses, and equivalent material properties are conceptual editable assumptions and are not SpaceX design data",
+    "The fairing uses a smooth cubic radius-versus-station profile",
+    "Cylindrical barrels use isotropic reduced-order shell dynamics with ring and critical frequency transitions",
+    "Conical and doubly curved fairing skins remain equivalent-unrolled-plate approximations",
+    "Fairing interior volume, area, damping, and panel interfaces are conceptual editable acoustic assumptions"
+  ],
+  "references": [
+    {
+      "id": "spacex-falcon-9",
+      "url": "https://www.spacex.com/vehicles/falcon-9/",
+      "use": "Public vehicle and fairing envelope dimensions"
+    },
+    {
+      "id": "nasa-cr-161913",
+      "url": "https://ntrs.nasa.gov/citations/19820005891",
+      "use": "SEA subsystem and junction power-balance framework"
+    },
+    {
+      "id": "nasa-tm-2011-217171",
+      "url": "https://ntrs.nasa.gov/citations/20110014791",
+      "use": "Cylindrical-shell ring frequency, modal density, group speed, and radiation transitions"
+    },
+    {
+      "id": "irvine-sea-parameters-rev-ab",
+      "url": "https://blog.vibrationdata.com/2015/12/09/vibroacousticsstatistical-energy-analysis/",
+      "local_path": "references/SEA_parameters_revAB.pdf",
+      "use": "Finite acoustic-cavity modal density, damping, and panel coupling equations"
+    }
+  ]
+}
