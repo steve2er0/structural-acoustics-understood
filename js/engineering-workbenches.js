@@ -5,6 +5,7 @@ import { workflowExpansionCalculatorRegistry } from './workflow-expansion-calcul
 import { programExpansionCalculatorRegistry } from './program-expansion-calculators.js';
 import { seaParameterCalculatorRegistry } from './sea-parameters-calculators.js';
 import { createEngineeringWorkbenchRegistry, resultValue, workbenchEsc, workbenchFmt } from './workbench-runtime.js';
+import { twoStageIsolationCalculator, twoStageIsolationWorkbenchDefinition } from './two-stage-isolation.js';
 
 const calculators = {
   ...baseCalculatorRegistry,
@@ -12,7 +13,8 @@ const calculators = {
   ...acs519CalculatorRegistry,
   ...workflowExpansionCalculatorRegistry,
   ...programExpansionCalculatorRegistry,
-  ...seaParameterCalculatorRegistry
+  ...seaParameterCalculatorRegistry,
+  'two-stage-isolation': twoStageIsolationCalculator
 };
 
 const clamp = (value, low, high) => Math.max(low, Math.min(high, Number(value) || 0));
@@ -311,6 +313,7 @@ export const engineeringWorkbenchRegistry = createEngineeringWorkbenchRegistry(e
 export const engineeringWorkbenchIds = Object.freeze(engineeringWorkbenchDefinitions.map(definition => definition.id));
 
 export const engineeringAnalysisDefinitions = [
+  twoStageIsolationWorkbenchDefinition,
   {
     id: 'modal-density',
     toolId: 'modal-density',

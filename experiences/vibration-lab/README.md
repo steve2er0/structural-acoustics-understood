@@ -5,7 +5,7 @@ Interactive experiments in vibration, acoustics, structures, propulsion, and flo
 ## Open without installing anything
 
 Use the prebuilt [portable/Vibration-Lab.html](portable/Vibration-Lab.html).
-Save the HTML file, then open it in Edge or Chrome. It contains all seven
+Save the HTML file, then open it in Edge or Chrome. It contains all nine
 experiments, fonts, styles, code and model data. No Node.js, npm, local server,
 account or package download is needed to view it. Source-reference links are
 optional and open external websites.
@@ -36,7 +36,7 @@ npm ci
 npm run dev
 ```
 
-Open http://127.0.0.1:5174/ . All seven labs live in the same app:
+Open http://127.0.0.1:5174/ . All nine labs live in the same app:
 
 - `/` — visual experiment index
 - `/labs/isolation` — vibration isolation, including its original sweep and a guided lesson
@@ -46,6 +46,8 @@ Open http://127.0.0.1:5174/ . All seven labs live in the same app:
 - `/labs/sea` — Falcon 9-inspired autoSEA geometry, six structural states plus a fairing acoustic cavity, reciprocal junctions, transient power balance, and a guided tour
 - `/labs/rs25` — fuel-rich staged combustion, serial turbopumps, regenerative cooling, pogo suppression, pressure-dependent shock diamonds, and a 105-second tour
 - `/labs/vortex` — multi-body launch vehicle, Mach/angle-of-attack/sideslip controls, lengthwise vortex pairs, full nose-to-tail airflow, a midbody cross-section, separate Strouhal reference scales, geometry comparisons, and a 67-second tour
+- `/labs/tbl` — Corcos turbulent boundary layer, diffuse acoustic field and progressive plane wave on a simply supported panel; spatial coherence, convective scales, wavenumber matching and full cross-modal response, with a guided tour
+- `/labs/cryo` — domed aluminum tank with LOX/LH₂, volume fill, gauge ullage pressure, effective axial acceleration, coupled fluid inertia, barrel pressure prestress, and seven retained slosh eigenvectors
 - `/dev/lab-template` — development-only integration example
 
 ```sh
@@ -64,6 +66,8 @@ The two existing demos were migrated, not recreated. Original pure SI models and
 
 - [Accelerometer model, assumptions, and sources](docs/ACCELEROMETER_MODEL.md)
 - [Vortex shedding model, assumptions, and sources](docs/VORTEX_MODEL.md)
+- [Panel pressure fields, equations, numerical limits, and sources](docs/TBL_MODEL.md)
+- [Cryogenic tank reduction, pressure conventions, and limits](docs/CRYO_MODEL.md)
 - [Modal model and numerical provenance](docs/MODAL_MODEL.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Creating a lab](docs/CREATING_A_LAB.md)

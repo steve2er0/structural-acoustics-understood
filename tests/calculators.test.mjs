@@ -7,6 +7,7 @@ import { calculatorRegistry, materials } from '../js/calculators.js';
 import { PCB_ACCELEROMETER_CATALOG_META, pcbAccelerometers, pcbAccelerometerOptions } from '../js/pcb-accelerometers-data.js';
 import { extraCalculatorRegistry, fatigueDamageSpectrumState, spectralFatigueDamageFromMoments, synthesizeDamageEquivalentPsd } from '../js/extra-calculators.js';
 import { sorbothaneIsolationCalculator } from '../js/sorbothane-isolation.js';
+import { twoStageIsolationCalculator } from '../js/two-stage-isolation.js';
 import { acs519Sections, acs519ToolCatalog, acs519Demos, acs519CaseNotes } from '../js/acs519-data.js';
 import { acs519CalculatorRegistry } from '../js/acs519-calculators.js';
 import { workflowExpansionSections, workflowExpansionToolCatalog, workflowExpansionDemos, workflowExpansionCaseNotes } from '../js/workflow-expansion-data.js';
@@ -148,7 +149,7 @@ import {
 
 const sections=[...baseSections,...acs519Sections,...workflowExpansionSections,...programExpansionSections,...seaParameterSections,...electronicsFatigueSections];
 const catalog=[...toolCatalog,...extraToolCatalog,...acs519ToolCatalog,...workflowExpansionToolCatalog,...programExpansionToolCatalog,...seaParameterToolCatalog,...electronicsFatigueToolCatalog];
-const registry={...calculatorRegistry,...extraCalculatorRegistry,...acs519CalculatorRegistry,...workflowExpansionCalculatorRegistry,...programExpansionCalculatorRegistry,...seaParameterCalculatorRegistry,...electronicsFatigueCalculatorRegistry,'sorbothane-isolation':sorbothaneIsolationCalculator};
+const registry={...calculatorRegistry,...extraCalculatorRegistry,...acs519CalculatorRegistry,...workflowExpansionCalculatorRegistry,...programExpansionCalculatorRegistry,...seaParameterCalculatorRegistry,...electronicsFatigueCalculatorRegistry,'sorbothane-isolation':sorbothaneIsolationCalculator,'two-stage-isolation':twoStageIsolationCalculator};
 const demos=[...baseDemos,...acs519Demos,...workflowExpansionDemos,...programExpansionDemos,...seaParameterDemos,...electronicsFatigueDemos];
 const caseNotes=[...baseCaseNotes,...acs519CaseNotes,...workflowExpansionCaseNotes,...programExpansionCaseNotes,...seaParameterCaseNotes,...electronicsFatigueCaseNotes];
 const defaults=id=>Object.fromEntries(registry[id].inputs.map(f=>[f.key,f.default]));
@@ -157,7 +158,7 @@ const close=(actual,expected,rel=1e-6)=>assert.ok(Math.abs(actual-expected)<=rel
 const evidenceCollection={visual:'visuals',plot:'plots',rangeChart:'rangeCharts',heatmap:'heatmaps',surface3d:'surfaces3d',table:'tables'};
 
 test('every catalog entry has a calculator and every default case runs',()=>{
-  assert.equal(catalog.length,120);
+  assert.equal(catalog.length,121);
   assert.deepEqual(catalog.filter(t=>!registry[t.id]),[]);
   assert.deepEqual(Object.keys(registry).filter(id=>!catalog.some(t=>t.id===id)),[]);
   for(const tool of catalog){
@@ -1496,6 +1497,7 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   assert.match(syncSource,/const pcbAccelerometersModule = await read\('js\/pcb-accelerometers-data\.js'\)/);
   assert.match(syncSource,/const parkerLordIsolatorsModule = await read\('js\/parker-lord-isolators\.js'\)/);
   assert.match(syncSource,/const nastranIsolationExportModule = await read\('js\/nastran-isolation-export\.js'\)/);
+  assert.match(syncSource,/const compoundIsolationPhysicsModule = await read\('js\/compound-isolation-physics\.js'\)/);
   assert.match(syncSource,/const chartsBlock = `const __charts=/);
   assert.match(syncSource,/surface3dSvg/);
   assert.match(syncSource,/rangeChartSvg/);
@@ -1506,6 +1508,9 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   assert.match(html,/const __pcbAccelerometers=\(\(\)=>\{[\s\S]*"model": "352C04"/);
   assert.match(html,/const __charts=\(\(\)=>\{[\s\S]*function harmonicPhase/);
   assert.match(html,/function rangeChartSvg\(chart/);
+  assert.match(html,/const __compoundIsolationPhysics=\(\(\)=>\{/);
+  assert.match(html,/function assembleCompoundIsolationMatrices\(input\)/);
+  assert.match(html,/data-compound-case="mode-/);
   assert.match(html,/function logTicks\(min, max\)/);
   assert.match(html,/data-axis-grid=/);
   assert.match(html,/domainTraces/);
@@ -1699,9 +1704,9 @@ test('shared engineering-tool runtime exposes decision-centered wet-tank and mod
   assert.match(wetHtml,/data-wb-unit-system/);
   assert.match(wetHtml,/Sources & validity/);
 
-  assert.deepEqual(engineeringAnalysisIds,['modal-density']);
-  assert.equal(engineeringAnalysisDefinitions[0].profile,'analysis');
-  const definition=engineeringAnalysisDefinitions[0],entry=engineeringAnalysisRegistry['modal-density'];
+  assert.deepEqual(engineeringAnalysisIds,['two-stage-isolation','modal-density']);
+  assert.ok(engineeringAnalysisDefinitions.every(definition=>definition.profile==='analysis'));
+  const definition=engineeringAnalysisDefinitions.find(item=>item.id==='modal-density'),entry=engineeringAnalysisRegistry['modal-density'];
   const html=entry.render();
   assert.match(html,/data-engineering-profile="analysis"/);
   assert.match(html,/Is the selected band populated enough for a statistical modal treatment/);
@@ -1717,6 +1722,16 @@ test('shared engineering-tool runtime exposes decision-centered wet-tank and mod
   const traceInputs=[...html.matchAll(/data-wb-trace-option="\d+"([^>]*)/g)];
   assert.ok(traceInputs.length>1);
   assert.equal(traceInputs.filter(match=>match[1].includes('checked')).length,1,'the current modal-density curve starts selected by itself');
+
+  const compoundHtml=engineeringAnalysisRegistry['two-stage-isolation'].render();
+  assert.match(compoundHtml,/Does the intermediate inertia create useful two-stage filtering/);
+  assert.match(compoundHtml,/Rigid-body 12-DOF/);
+  assert.match(compoundHtml,/data-compound-case="mode-/);
+  assert.match(compoundHtml,/ASSEMBLED COORDINATES/);
+  assert.match(compoundHtml,/Animation frequency is scaled for visualization/);
+  assert.match(compoundHtml,/Rigid-body compound response/);
+  assert.match(compoundHtml,/Axis-aligned 2-DOF reference/);
+  assert.doesNotMatch(compoundHtml,/Open the focused quick screen/);
 
   const state=createEngineeringToolProject(definition,registry);
   assert.equal(state.schema,'sau-engineering-tool');
@@ -1881,7 +1896,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
   assert.match(html,/#\/demos/);
   assert.match(html,/#\/tools/);
   assert.match(html,/#\/case-studies/);
-  assert.match(html,/120 tools/);
+  assert.match(html,/121 tools/);
   assert.match(html,/74 case studies/);
   assert.doesNotMatch(html,/#\/hardware/);
   assert.doesNotMatch(html,/Guided workflows/);
@@ -1919,7 +1934,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes current interactive runtimes',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v122'/);
+  assert.match(worker,/const CACHE = 'sau-v124'/);
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);
@@ -1934,6 +1949,9 @@ test('offline cache includes current interactive runtimes',()=>{
   assert.match(worker,/\.\/js\/sorbothane-analysis\.js/);
   assert.match(worker,/\.\/js\/nastran-isolation-export\.js/);
   assert.match(worker,/\.\/js\/sorbothane-isolation\.js/);
+  assert.match(worker,/\.\/js\/two-stage-isolation-physics\.js/);
+  assert.match(worker,/\.\/js\/compound-isolation-physics\.js/);
+  assert.match(worker,/\.\/js\/two-stage-isolation\.js/);
   assert.match(worker,/\.\/js\/workflow-expansion-data\.js/);
   assert.match(worker,/\.\/js\/workflow-expansion-demos\.js/);
   assert.match(worker,/\.\/js\/program-expansion-physics\.js/);

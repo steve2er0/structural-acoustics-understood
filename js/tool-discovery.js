@@ -11,7 +11,8 @@ export const DEFAULT_TOOL_IDS = [
   'modal-density',
   'two-subsystem-sea',
   'accelerometer',
-  'sorbothane-isolation'
+  'sorbothane-isolation',
+  'two-stage-isolation'
 ];
 
 const aliasGroups = [
@@ -27,6 +28,7 @@ const aliasGroups = [
   ['dlf', 'damping loss factor'],
   ['frf', 'frequency response function', 'transfer function'],
   ['sdof', 'single degree of freedom', 'one degree of freedom'],
+  ['two stage isolation', 'compound isolation', 'multi stage isolation', 'mechanical filter', '12 dof isolation', 'rigid body compound mount'],
   ['mimo', 'multi input multi output', 'multiple input multiple output'],
   ['tbl', 'turbulent boundary layer'],
   ['spl', 'sound pressure level'],

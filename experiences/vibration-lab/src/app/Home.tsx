@@ -38,19 +38,23 @@ function Experiment({ lab }: { lab: LabDefinition }) {
             <Preview lab={lab.id} active={hover && !reduced} />
           </Suspense>
           <div className="vl-preview-caption">
-            {lab.id === "vortex"
-              ? "FOREBODY → LONGITUDINAL VORTICES → AFT WAKE"
-              : lab.id === "rs25"
-                ? "PROPELLANT → PUMP WORK → THRUST"
-                : lab.id === "sea"
-                  ? "POWER → ENERGY → FLOW → BALANCE"
-                  : lab.id === "isolation"
-                    ? "BASE EXCITATION → PAYLOAD RESPONSE"
-                    : lab.id === "modal"
-                      ? "IMPACT → RESONANCE → MODE SHAPE"
-                      : lab.id === "accelerometer"
-                        ? "ACCELERATION → CHARGE → VOLTAGE"
-                        : "FIELD → CURRENT → FORCE"}
+            {lab.id === "cryo"
+              ? "LIQUID INERTIA → PRESTRESS → COUPLED MODES"
+              : lab.id === "tbl"
+                ? "PRESSURE → COHERENCE → MODAL RESPONSE"
+                : lab.id === "vortex"
+                  ? "FOREBODY → LONGITUDINAL VORTICES → AFT WAKE"
+                  : lab.id === "rs25"
+                    ? "PROPELLANT → PUMP WORK → THRUST"
+                    : lab.id === "sea"
+                      ? "POWER → ENERGY → FLOW → BALANCE"
+                      : lab.id === "isolation"
+                        ? "BASE EXCITATION → PAYLOAD RESPONSE"
+                        : lab.id === "modal"
+                          ? "IMPACT → RESONANCE → MODE SHAPE"
+                          : lab.id === "accelerometer"
+                            ? "ACCELERATION → CHARGE → VOLTAGE"
+                            : "FIELD → CURRENT → FORCE"}
           </div>
         </div>
         <div className="vl-card-copy">
@@ -81,7 +85,7 @@ export default function Home() {
         <span className="vl-eyebrow">
           AN OPEN BENCH FOR ENGINEERING INTUITION
         </span>
-        <span className="vl-version">VOL. 01 / SEVEN EXPERIMENTS</span>
+        <span className="vl-version">VOL. 01 / NINE EXPERIMENTS</span>
       </header>
       <section className="vl-hero">
         <div className="vl-hero-lines" aria-hidden="true">
@@ -149,7 +153,7 @@ export default function Home() {
         <ul>
           {["SDOF Resonance", "Random Vibration"].map((name, i) => (
             <li key={name}>
-              <span>0{i + 8}</span>
+              <span>{String(LABS.length + i + 1).padStart(2, "0")}</span>
               {name}
               <span>IN VIEW</span>
             </li>

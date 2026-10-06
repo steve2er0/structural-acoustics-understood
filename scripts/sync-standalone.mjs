@@ -26,6 +26,9 @@ const parkerLordIsolatorsModule = await read('js/parker-lord-isolators.js');
 const sorbothaneAnalysisModule = await read('js/sorbothane-analysis.js');
 const nastranIsolationExportModule = await read('js/nastran-isolation-export.js');
 const sorbothaneIsolationModule = await read('js/sorbothane-isolation.js');
+const twoStageIsolationPhysicsModule = await read('js/two-stage-isolation-physics.js');
+const compoundIsolationPhysicsModule = await read('js/compound-isolation-physics.js');
+const twoStageIsolationModule = await read('js/two-stage-isolation.js');
 const calculatorsModule = await read('js/calculators.js');
 const seaCouplingModule = await read('js/sea-coupling.js');
 const honeycombModule = await read('js/honeycomb-paper.js');
@@ -107,7 +110,25 @@ const programExpansionDataBlock = 'const __programExpansionData=(()=>{\n'+module
 const electronicsFatigueDataBlock = 'const __electronicsFatigueData=(()=>{\n'+moduleSource(electronicsFatigueDataModule)+'\nreturn {electronicsFatigueSections,electronicsFatigueToolCatalog,electronicsFatigueDemos,electronicsFatigueCaseNotes,electronicsFatigueReferenceGroups};\n})();\n\n';
 const seaParameterDataBlock = 'const __seaParameterData=(()=>{\n'+moduleSource(seaParameterDataModule)+'\nreturn {seaParameterSections,seaParameterToolCatalog,seaParameterDemos,seaParameterCaseNotes,seaParameterReferenceGroups};\n})();\n\n';
 const sorbothaneIsolationBlock = `const __sorbothaneIsolation=(()=>{\nconst {SORBOTHANE_CATALOG,SORBOTHANE_DATA_VERSION,SORBOTHANE_REFERENCES,sorbothaneCatalogItem,sorbothaneMaterial}=__sorbothaneData;\nconst {PARKER_LORD_AM_CATALOG,PARKER_LORD_AM_FAMILIES,PARKER_LORD_SOURCE,parkerLordCatalogItem}=__parkerLordIsolators;\nconst {${sorbothaneAnalysisImports.join(',')}}=__sorbothaneAnalysis;\nconst {generateNastranIsolationBdf}=__nastranIsolationExport;\n${moduleSource(sorbothaneIsolationModule)}\nreturn {renderSorbothaneIsolationWorkbench,bindSorbothaneIsolationWorkbench,sorbothaneIsolationCalculator,sorbothaneIsolationWorkbench};\n})();\n\n`;
-standalone = replaceRange(standalone, 'const __data=(()=>{', 'const __calculators=(()=>{', dataBlock + workflowExpansionDataBlock + programExpansionDataBlock + electronicsFatigueDataBlock + seaParameterDataBlock + pcbAccelerometersBlock + sorbothaneDataBlock + parkerLordIsolatorsBlock + sorbothaneAnalysisBlock + nastranIsolationExportBlock + sorbothaneIsolationBlock);
+const twoStageIsolationPhysicsExports = [
+  'TWO_STAGE_G0', 'complex', 'complexAdd', 'complexSubtract', 'complexMultiply', 'complexScale', 'complexMagnitude', 'complexPhaseDeg', 'complexDivide',
+  'solveComplexLinearSystem', 'assembleTwoStageMatrices', 'stageDampingCoefficients', 'twoStageResponseAtFrequency', 'twoStageUndampedModes',
+  'equivalentSeriesStiffness', 'singleStageResponseAtFrequency', 'logarithmicFrequencyGrid', 'unwrapPhaseDegrees',
+  'estimateLogSlopeDbPerDecade', 'findLocalPeaks', 'sustainedThresholdFrequency', 'analyzeTwoStageIsolation'
+];
+const twoStageIsolationPhysicsBlock = `const __twoStageIsolationPhysics=(()=>{\n${moduleSource(twoStageIsolationPhysicsModule)}\nreturn {${twoStageIsolationPhysicsExports.join(',')}};\n})();\n\n`;
+const compoundIsolationPhysicsExports = [
+  'COMPOUND_G0', 'COMPOUND_BODY_DOF_NAMES', 'parseMountCoordinates', 'parametricMountPositions', 'mountKinematics',
+  'rigidBodyMassMatrix', 'assembleCompoundIsolationMatrices', 'compoundResponseAtFrequency', 'solveCompoundModes',
+  'solveCompoundStatic', 'analyzeCompoundIsolation'
+];
+const compoundIsolationPhysicsBlock = `const __compoundIsolationPhysics=(()=>{\nconst {${twoStageIsolationPhysicsExports.join(',')}}=__twoStageIsolationPhysics;\n${moduleSource(compoundIsolationPhysicsModule)}\nreturn {${compoundIsolationPhysicsExports.join(',')}};\n})();\n\n`;
+const twoStageIsolationBlock = `const __twoStageIsolation=(()=>{\nconst {${twoStageIsolationPhysicsExports.join(',')}}=__twoStageIsolationPhysics;\n${moduleSource(twoStageIsolationModule)}\nreturn {TWO_STAGE_ISOLATION_PRESETS,twoStageIsolationCalculator,renderTwoStageIsolationDiagram,bindTwoStageIsolationAnimation,twoStageIsolationWorkbenchDefinition};\n})();\n\n`;
+const twoStageIsolationBlockWithCompound = twoStageIsolationBlock.replace(
+  `const {${twoStageIsolationPhysicsExports.join(',')}}=__twoStageIsolationPhysics;`,
+  `const {${twoStageIsolationPhysicsExports.join(',')}}=__twoStageIsolationPhysics;\nconst {${compoundIsolationPhysicsExports.join(',')}}=__compoundIsolationPhysics;`
+);
+standalone = replaceRange(standalone, 'const __data=(()=>{', 'const __calculators=(()=>{', dataBlock + workflowExpansionDataBlock + programExpansionDataBlock + electronicsFatigueDataBlock + seaParameterDataBlock + pcbAccelerometersBlock + sorbothaneDataBlock + parkerLordIsolatorsBlock + sorbothaneAnalysisBlock + nastranIsolationExportBlock + sorbothaneIsolationBlock + twoStageIsolationPhysicsBlock + compoundIsolationPhysicsBlock + twoStageIsolationBlockWithCompound);
 
 const calculatorsSource = moduleSource(calculatorsModule).replace(
   'const calculatorRegistry = createEngineeringRegistry(calculatorDefinitions);',
@@ -291,18 +312,22 @@ const frameworkSource = frameworkModule.replace(/^export /gm, '');
 const frameworkBlock = `const __engineeringResults=(()=>{\n${frameworkSource}\nreturn {buildEngineeringResult,assertEngineeringResult,createEngineeringCalculator,createEngineeringRegistry,engineeringResultToText};\n})();\n\n`;
 const workbenchRuntimeBlock = `const __workbenchRuntime=(()=>{\nconst {lineChartSvg,heatmapSvg}=__charts;\n${moduleSource(unitSystemModule)}\n${moduleSource(workbenchRuntimeModule)}\nreturn {workbenchEsc,workbenchFmt,resultValue,createEngineeringToolProject,normalizeEngineeringToolProject,engineeringDecisionState,renderEngineeringAnalysis,renderEngineeringWorkbench,bindEngineeringWorkbench,createEngineeringWorkbenchRegistry};\n})();\n\n`;
 const engineeringWorkbenchesBlock = `const __engineeringWorkbenches=(()=>{\nconst baseCalculatorRegistry=__calculators.calculatorRegistry;\nconst extraCalculatorRegistry=__extraCalculators.extraCalculatorRegistry;\nconst acs519CalculatorRegistry=__acs519Calculators.acs519CalculatorRegistry;\nconst workflowExpansionCalculatorRegistry=__workflowExpansionCalculators.workflowExpansionCalculatorRegistry;\nconst programExpansionCalculatorRegistry=__programExpansionCalculators.programExpansionCalculatorRegistry;\nconst seaParameterCalculatorRegistry=__seaParameterCalculators.seaParameterCalculatorRegistry;\nconst {createEngineeringWorkbenchRegistry,resultValue,workbenchEsc,workbenchFmt}=__workbenchRuntime;\n${moduleSource(engineeringWorkbenchesModule)}\nreturn {engineeringWorkbenchDefinitions,engineeringWorkbenchRegistry,engineeringWorkbenchIds,engineeringAnalysisDefinitions,engineeringAnalysisRegistry,engineeringAnalysisIds};\n})();\n\n`;
+const engineeringWorkbenchesWithTwoStageBlock = engineeringWorkbenchesBlock.replace(
+  'const {createEngineeringWorkbenchRegistry,resultValue,workbenchEsc,workbenchFmt}=__workbenchRuntime;',
+  'const {createEngineeringWorkbenchRegistry,resultValue,workbenchEsc,workbenchFmt}=__workbenchRuntime;\nconst {twoStageIsolationCalculator,twoStageIsolationWorkbenchDefinition}=__twoStageIsolation;'
+);
 const frameworkStart = 'const __engineeringResults=(()=>{';
 const legacyAppImports = 'const {sections,toolCatalog:baseToolCatalog,demos,caseNotes,referenceGroups,glossary}=__data;';
 const appImports = 'const {sections:baseSections,toolCatalog:baseToolCatalog,demos:baseDemos,caseNotes:baseCaseNotes,referenceGroups:baseReferenceGroups,glossary}=__data;';
 const appStartMarker = standalone.includes(appImports) ? appImports : legacyAppImports;
 if (standalone.includes(frameworkStart)) {
-  standalone = replaceRange(standalone, frameworkStart, appStartMarker, frameworkBlock + workbenchRuntimeBlock + engineeringWorkbenchesBlock);
+  standalone = replaceRange(standalone, frameworkStart, appStartMarker, frameworkBlock + workbenchRuntimeBlock + engineeringWorkbenchesWithTwoStageBlock);
 } else {
-  standalone = standalone.replace(appStartMarker, frameworkBlock + workbenchRuntimeBlock + engineeringWorkbenchesBlock + appStartMarker);
+  standalone = standalone.replace(appStartMarker, frameworkBlock + workbenchRuntimeBlock + engineeringWorkbenchesWithTwoStageBlock + appStartMarker);
 }
 
-const oldRegistry = "const calculatorRegistry = { ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, ...electronicsFatigueCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator };";
-const newRegistry = "const calculatorRegistry = createEngineeringRegistry({ ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, ...electronicsFatigueCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator });";
+const oldRegistry = "const calculatorRegistry = { ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, ...electronicsFatigueCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator, 'two-stage-isolation': twoStageIsolationCalculator };";
+const newRegistry = "const calculatorRegistry = createEngineeringRegistry({ ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, ...electronicsFatigueCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator, 'two-stage-isolation': twoStageIsolationCalculator });";
 const appPrelude = [
   moduleSource(unitSystemModule),
   moduleSource(toolDiscoveryModule),
@@ -329,6 +354,7 @@ const appPrelude = [
   'const {renderLaunchSeaCapstone,bindLaunchSeaCapstone}=__launchSeaCapstone;',
   'const {engineeringAnalysisRegistry,engineeringWorkbenchRegistry}=__engineeringWorkbenches;',
   'const {sorbothaneIsolationCalculator,sorbothaneIsolationWorkbench}=__sorbothaneIsolation;',
+  'const {twoStageIsolationCalculator}=__twoStageIsolation;',
   'const {createEngineeringRegistry,engineeringResultToText}=__engineeringResults;'
 ].join('\n');
 let appSource = stripImports(app).trim();

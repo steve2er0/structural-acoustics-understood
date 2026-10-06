@@ -9,6 +9,10 @@ export function useWakeClock(model: Model, paused: boolean, playback: number) {
   const [snapshot, setSnapshot] = useState(live.current);
   const latest = useRef({ model, paused, playback });
   latest.current = { model, paused, playback };
+  // Flush the final shared instant so paused plots and the 3D surface agree exactly.
+  useEffect(() => {
+    if (paused) setSnapshot({ ...live.current });
+  }, [paused]);
   useEffect(() => {
     let id = 0,
       last = performance.now(),

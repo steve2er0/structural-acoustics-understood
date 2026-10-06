@@ -62,11 +62,13 @@ export function Vehicle({
   selected = -1,
   onSelect,
   slice = false,
+  showMarking = true,
 }: {
   model: Model;
   selected?: number;
   onSelect?: (index: number) => void;
   slice?: boolean;
+  showMarking?: boolean;
 }) {
   return (
     <group>
@@ -160,7 +162,7 @@ export function Vehicle({
                         metalness={0.22}
                       />
                     </mesh>
-                    <Marking />
+                    {showMarking && <Marking />}
                     {[0, 1, 2, 3].map((i) => (
                       <Bell
                         key={i}

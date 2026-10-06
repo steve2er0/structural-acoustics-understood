@@ -211,7 +211,8 @@ function decisionHeroHtml(context) {
   const { definition, project, profile, step, steps } = context;
   const decision = engineeringDecisionState(context);
   const workflowLabel = profile === 'analysis' ? 'Interactive analysis' : `${steps.length} linked analyses`;
-  return `<section class="capstone-hero site-page-header workbench-hero engineering-decision-hero"><div><p class="eyebrow">${workbenchEsc(definition.eyebrow)}</p><h1>${workbenchEsc(decision.question)}</h1><p class="engineering-tool-name">${workbenchEsc(definition.title)}</p><p>${workbenchEsc(decision.scope)}</p><div class="button-row"><a class="button-secondary" href="#/tool/${encodeURIComponent(definition.id)}?mode=quick">Open original quick screen</a><a class="button-secondary" href="#/tools">All engineering tools</a></div></div><aside class="engineering-decision-card is-${workbenchEsc(decision.status)}" aria-label="Current engineering decision"><p>${workbenchEsc(decision.metric.label)}</p><strong>${workbenchEsc(workbenchFmt(decision.metric.value))}${decision.metric.unit ? ` <small>${workbenchEsc(decision.metric.unit)}</small>` : ''}</strong><span class="engineering-status-pill">${workbenchEsc(decision.statusLabel)}</span><div class="engineering-decision-limit"><b>Key limitation</b><p>${workbenchEsc(decision.keyLimitation)}</p></div><dl><div><dt>Study</dt><dd>${workbenchEsc(project.name)}</dd></div><div><dt>Profile</dt><dd>${workbenchEsc(workflowLabel)}</dd></div><div><dt>Current model</dt><dd>${workbenchEsc(step.title)}</dd></div></dl></aside></section>`;
+  const quickLink = definition.quickRoute === false ? '' : `<a class="button-secondary" href="#/tool/${encodeURIComponent(definition.id)}?mode=quick">${workbenchEsc(definition.quickLinkLabel ?? 'Open original quick screen')}</a>`;
+  return `<section class="capstone-hero site-page-header workbench-hero engineering-decision-hero"><div><p class="eyebrow">${workbenchEsc(definition.eyebrow)}</p><h1>${workbenchEsc(decision.question)}</h1><p class="engineering-tool-name">${workbenchEsc(definition.title)}</p><p>${workbenchEsc(decision.scope)}</p><div class="button-row">${quickLink}<a class="button-secondary" href="#/tools">All engineering tools</a></div></div><aside class="engineering-decision-card is-${workbenchEsc(decision.status)}" aria-label="Current engineering decision"><p>${workbenchEsc(decision.metric.label)}</p><strong>${workbenchEsc(workbenchFmt(decision.metric.value))}${decision.metric.unit ? ` <small>${workbenchEsc(decision.metric.unit)}</small>` : ''}</strong><span class="engineering-status-pill">${workbenchEsc(decision.statusLabel)}</span><div class="engineering-decision-limit"><b>Key limitation</b><p>${workbenchEsc(decision.keyLimitation)}</p></div><dl><div><dt>Study</dt><dd>${workbenchEsc(project.name)}</dd></div><div><dt>Profile</dt><dd>${workbenchEsc(workflowLabel)}</dd></div><div><dt>Current model</dt><dd>${workbenchEsc(step.title)}</dd></div></dl></aside></section>`;
 }
 
 function resultSummaryHtml(context) {
@@ -345,12 +346,13 @@ export function renderEngineeringAnalysis(definition, calculators, projectInput 
   const inspectorFields = step.fieldKeys?.length ? (calculator?.inputs ?? []).filter(field => step.fieldKeys.includes(field.key)) : calculator?.inputs ?? [];
   const diagram = definition.renderDiagram?.(context) ?? '';
   const diagramTakeaway = definition.diagramTakeaway?.(context) ?? result?.interpretation?.physicalMeaning ?? definition.defaultTakeaway;
+  const quickLink = definition.quickRoute === false ? '' : `<a href="#/tool/${encodeURIComponent(step.toolId)}?mode=quick">${workbenchEsc(definition.quickLinkLabel ?? 'Open the focused quick screen')} →</a>`;
   return `<div class="page-shell site-page-shell site-page-shell-capstone site-page-shell-workbench site-page-shell-analysis" data-workbench-id="${workbenchEsc(definition.id)}" data-engineering-profile="analysis">
     <nav class="breadcrumbs site-breadcrumbs" aria-label="Breadcrumb"><a href="#/tools">Tools</a><span aria-hidden="true">›</span><span>${workbenchEsc(definition.category)}</span><span aria-hidden="true">›</span><span aria-current="page">${workbenchEsc(definition.title)}</span></nav>
     ${decisionHeroHtml(context)}
     <section class="engineering-analysis" id="engineering-analysis-${workbenchEsc(definition.id)}">
       ${commandBarHtml(context)}
-      <aside class="capstone-inspector workbench-inspector engineering-analysis-inspector" aria-label="Analysis inputs"><div class="capstone-inspector-heading"><p class="eyebrow">Input inspector</p><h2>${workbenchEsc(definition.inputTitle ?? 'Define the physical case')}</h2><p>${workbenchEsc(definition.instruction ?? definition.summary)}</p><a href="#/tool/${encodeURIComponent(step.toolId)}?mode=quick">Open the focused quick screen →</a></div><div class="capstone-inspector-fields">${inputGroupsHtml(context, inspectorFields)}</div></aside>
+      <aside class="capstone-inspector workbench-inspector engineering-analysis-inspector" aria-label="Analysis inputs"><div class="capstone-inspector-heading"><p class="eyebrow">Input inspector</p><h2>${workbenchEsc(definition.inputTitle ?? 'Define the physical case')}</h2><p>${workbenchEsc(definition.instruction ?? definition.summary)}</p>${quickLink}</div><div class="capstone-inspector-fields">${inputGroupsHtml(context, inspectorFields)}</div></aside>
       <main class="engineering-analysis-main">
         <section class="workbench-domain-panel"><header><div><p class="eyebrow">${workbenchEsc(definition.visualLabel)}</p><h3>${workbenchEsc(definition.visualTitle)}</h3></div><span>${workbenchEsc(definition.visualLegend)}</span></header>${diagram}<p class="capstone-panel-takeaway"><strong>Engineering takeaway</strong>${workbenchEsc(diagramTakeaway)}</p></section>
         <section class="capstone-analytics workbench-analytics engineering-analysis-evidence"><header><div><p class="eyebrow">Live engineering evidence</p><h2>${workbenchEsc(definition.evidenceTitle ?? `${definition.title} results`)}</h2></div><p>The physical view, metrics, curves, and source record share one persisted state.</p></header>${resultSummaryHtml(context)}${compareHtml(context)}<div class="workbench-evidence-grid">${evidenceHtml(context)}</div>${checksHtml(context)}${sourceHtml(context)}${relatedHtml(context)}</section>
@@ -402,6 +404,7 @@ export function bindEngineeringWorkbench(definition, calculators, root = documen
   }
   const host = root.querySelector ? root : document;
   let inputTimer = 0;
+  let interactiveCleanup = () => {};
   const render = () => {
     const shell = host.querySelector(`[data-workbench-id="${definition.id}"]`);
     if (!shell) return;
@@ -412,7 +415,10 @@ export function bindEngineeringWorkbench(definition, calculators, root = documen
     const selectionEnd = typeof active?.selectionEnd === 'number' ? active.selectionEnd : null;
     const wrapper = document.createElement('div');
     wrapper.innerHTML = renderEngineeringWorkbench(definition, calculators, project);
+    interactiveCleanup();
     shell.replaceWith(wrapper.firstElementChild);
+    const nextShell = host.querySelector(`[data-workbench-id="${definition.id}"]`);
+    interactiveCleanup = definition.bindInteractive?.(nextShell, currentContext(definition, calculators, project)) ?? (() => {});
     const restored = activeField
       ? host.querySelector(`[data-wb-field="${activeField}"]`)
       : restoreProjectName ? host.querySelector('[data-wb-project-name]') : null;
@@ -446,7 +452,8 @@ export function bindEngineeringWorkbench(definition, calculators, root = documen
         : field.value;
       project.inputs[toolId][key] = value;
       propagate(definition, project, toolId, key, value);
-      if (key === 'material' && typeof calculators[toolId]?.syncPreset === 'function') {
+      const presetKeys = Array.isArray(calculators[toolId]?.presetKeys) ? calculators[toolId].presetKeys : ['material'];
+      if (presetKeys.includes(key) && typeof calculators[toolId]?.syncPreset === 'function') {
         const prior = project.inputs[toolId];
         const synced = calculators[toolId].syncPreset(prior);
         project.inputs[toolId] = { ...prior, ...synced };
@@ -511,7 +518,7 @@ export function bindEngineeringWorkbench(definition, calculators, root = documen
   document.addEventListener('change', change);
   document.addEventListener('click', click);
   render();
-  return () => { clearTimeout(inputTimer); document.removeEventListener('input', input); document.removeEventListener('change', change); document.removeEventListener('click', click); };
+  return () => { clearTimeout(inputTimer); interactiveCleanup(); document.removeEventListener('input', input); document.removeEventListener('change', change); document.removeEventListener('click', click); };
 }
 
 export function createEngineeringWorkbenchRegistry(definitions, calculators) {

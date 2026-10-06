@@ -1,0 +1,201 @@
+.tbl-plots {
+  color: #dbe8e3;
+}
+.tbl-plots-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+}
+.tbl-plots-card {
+  min-width: 0;
+  padding: 17px 18px 15px;
+  border: 1px solid #98c6bc20;
+  border-radius: 10px;
+  background: linear-gradient(150deg, #1c3439aa, #11292e9c);
+}
+.tbl-plots-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 9px;
+  min-height: 27px;
+}
+.tbl-plots-heading h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.015em;
+  color: #dfebe3;
+}
+.tbl-plots-unit {
+  font:
+    9px "IBM Plex Mono",
+    monospace;
+  color: #9bb7b8;
+}
+.tbl-plots-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  margin-top: 5px;
+}
+.tbl-plots-svg text {
+  fill: #aac1c0;
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+}
+.tbl-plots-svg .tbl-plots-cursor-label {
+  fill: #e8ddbd;
+}
+.tbl-plots-gridline {
+  stroke: #9ac3c0;
+  stroke-opacity: 0.12;
+  stroke-width: 1;
+}
+.tbl-plots-panel-edge {
+  stroke: #c5d2bd;
+  stroke-opacity: 0.55;
+  stroke-width: 1;
+  fill: none;
+}
+.tbl-plots-curve {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.tbl-plots-tap circle {
+  fill: #0e242b;
+  stroke: #f0ecd4;
+  stroke-width: 1.7;
+}
+.tbl-plots-tap text {
+  fill: #fff9df;
+  stroke: #10262c;
+  stroke-width: 3px;
+  paint-order: stroke;
+  font-weight: 600;
+  font-size: 12px;
+}
+.tbl-plots-interactive {
+  cursor: crosshair;
+  touch-action: none;
+  border-radius: 5px;
+}
+.tbl-plots-interactive:focus-visible {
+  outline: 2px solid #8bd8c8;
+  outline-offset: 4px;
+}
+.tbl-plots-toggle {
+  display: inline-flex;
+  border: 1px solid #88b5ab3d;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.tbl-plots-toggle button {
+  border: 0;
+  background: #0d252b;
+  color: #92aaa9;
+  padding: 5px 9px;
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  cursor: pointer;
+}
+.tbl-plots-toggle button[aria-pressed="true"] {
+  background: #8ad6c820;
+  color: #b3ecd9;
+}
+.tbl-plots-toggle button:focus-visible {
+  outline: 2px solid #8bd8c8;
+  outline-offset: -2px;
+}
+.tbl-plots-key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  margin: 4px 0 10px;
+  color: #adc7c3;
+  font-size: 10px;
+}
+.tbl-plots-key > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.tbl-plots-key i {
+  display: inline-block;
+  width: 15px;
+  border-top: 2px solid;
+}
+.tbl-plots-readings {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  border-top: 1px solid #9bc8c51c;
+  padding-top: 11px;
+  margin-top: 11px;
+}
+.tbl-plots-readings span {
+  display: grid;
+  gap: 5px;
+  font-size: 9px;
+  color: #90aeab;
+}
+.tbl-plots-readings b {
+  font:
+    11px "IBM Plex Mono",
+    monospace;
+  color: #dfebd7;
+}
+.tbl-plots-card p,
+.tbl-plots-empty {
+  color: #9bb7b4;
+  font-size: 11px;
+  line-height: 1.65;
+  margin: 10px 0 0;
+}
+.tbl-plots-response .tbl-plots-svg {
+  min-height: 190px;
+}
+@media (max-width: 950px) {
+  .tbl-plots-grid {
+    gap: 12px;
+  }
+  .tbl-plots-card {
+    padding: 13px;
+  }
+  .tbl-plots-heading {
+    min-height: 44px;
+    align-content: start;
+  }
+}
+@media (max-width: 700px) {
+  .tbl-plots-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .tbl-plots-heading {
+    min-height: 28px;
+  }
+  .tbl-plots-response .tbl-plots-svg {
+    min-height: 0;
+  }
+  .tbl-plots-readings {
+    gap: 12px;
+  }
+  .tbl-plots-key {
+    font-size: 9px;
+    gap: 8px 12px;
+  }
+  .tbl-plots-svg text {
+    font-size: 14px;
+  }
+  .tbl-plots-tap text {
+    font-size: 17px;
+  }
+}

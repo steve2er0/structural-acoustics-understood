@@ -1,4 +1,4 @@
-const CACHE = 'sau-v122';
+const CACHE = 'sau-v124';
 const CORE = [
   './', './index.html', './styles.css', './manifest.webmanifest', './assets/favicon.svg',
   './js/app.js', './js/unit-system.js', './js/homepage.js', './js/tool-discovery.js', './js/site-components.js', './js/engineering-system.js', './js/data.js', './js/calculators.js', './js/pcb-accelerometers-data.js', './js/extra-calculators.js',
@@ -14,6 +14,7 @@ const CORE = [
   './js/electronics-fatigue-physics.js', './js/electronics-fatigue-visuals.js', './js/electronics-fatigue-calculators.js',
   './js/electronics-fatigue-data.js', './js/electronics-fatigue-demos.js',
   './js/launch-sea-capstone.js', './js/workbench-runtime.js', './js/engineering-workbenches.js',
+  './js/two-stage-isolation-physics.js', './js/compound-isolation-physics.js', './js/two-stage-isolation.js',
   './js/sorbothane-data.js', './js/parker-lord-isolators.js', './js/sorbothane-analysis.js', './js/nastran-isolation-export.js', './js/sorbothane-isolation.js'
 ];
 

@@ -784,3 +784,384 @@
   font: 9px var(--vl-mono);
   pointer-events: none;
 }
+.vx-scene-tools {
+  flex-wrap: wrap;
+}
+.vx-skin-legend {
+  position: absolute;
+  top: 55px;
+  left: 18px;
+  width: 225px;
+  padding: 10px 12px;
+  background: #10232aeb;
+  border: 1px solid #9db8c32b;
+  border-radius: 5px;
+  pointer-events: none;
+}
+.vx-skin-legend > b {
+  font: 7px var(--vl-mono);
+  color: #bad0d2;
+}
+.vx-skin-legend > span {
+  display: block;
+  margin-top: 8px;
+  font: 8px var(--vl-mono);
+  color: #c4d6d2;
+}
+.vx-pressure-legend {
+  display: grid;
+  grid-template-columns: auto minmax(40px, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  margin: 10px 0;
+  font: 9px var(--vl-mono);
+  color: #c5d7dc;
+}
+.vx-pressure-legend i {
+  height: 8px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #306fd1, #e7ece1, #db442e);
+}
+.vx-pressure-legend small {
+  grid-column: 1/-1;
+  text-align: center;
+  color: #94aeb9;
+  font: 8px var(--vl-mono);
+}
+.vx-tap-badge {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #10222b;
+  border-radius: 50%;
+  font: bold 12px var(--vl-mono);
+  color: #10222b;
+  box-shadow: 0 1px 7px #0005;
+  background: #ffc85e;
+}
+.vx-tap-1 {
+  background: #beadff;
+}
+.vx-attach-label {
+  display: block;
+  white-space: nowrap;
+  font: 7px var(--vl-mono);
+  letter-spacing: 0.06em;
+  padding: 3px 5px;
+  border-radius: 3px;
+  background: #14232de6;
+  color: #e9b75c;
+  border: 1px solid #e9b75c55;
+}
+.vx-pressure-panel {
+  margin: 24px 0;
+  padding: 26px;
+  border: 1px solid #87b5c23b;
+  border-radius: 8px;
+  background: linear-gradient(125deg, #182e38, #13252e);
+}
+.vx-pressure-panel > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+}
+.vx-pressure-panel .vl-eyebrow {
+  color: #9ed7cd;
+  font-size: 8px;
+  margin: 0 0 9px;
+}
+.vx-pressure-panel h2 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 450;
+  letter-spacing: -0.6px;
+}
+.vx-pressure-panel > header > span {
+  color: #8aa7b5;
+  font: 8px var(--vl-mono);
+  text-align: right;
+}
+.vx-pressure-intro {
+  color: #a8c0c9;
+  font-size: 11px;
+  line-height: 1.9;
+  max-width: 820px;
+}
+.vx-pressure-settings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+  margin: 24px 0;
+  padding: 20px 0;
+  border-top: 1px solid #91b7c021;
+  border-bottom: 1px solid #91b7c021;
+}
+.vx-pressure-settings .vl-parameter label {
+  font-size: 11px;
+}
+.vx-pressure-settings .vl-readout strong {
+  font: 18px var(--vl-mono);
+}
+.vx-pressure-map-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2.3fr) minmax(220px, 1fr);
+  gap: 24px;
+}
+.vx-pressure-panel h3 {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+  color: #d5e2df;
+}
+.vx-pressure-map {
+  min-width: 0;
+}
+.vx-pressure-map-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.vx-pressure-panel .vl-segment button {
+  font-size: 10px;
+  padding: 8px 12px;
+}
+.vx-pressure-map canvas {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  cursor: crosshair;
+  touch-action: none;
+}
+.vx-pressure-map > .vx-pressure-legend {
+  max-width: 400px;
+  margin: 7px auto;
+}
+.vx-pressure-map p,
+.vx-tap-controls p {
+  font-size: 10px;
+  line-height: 1.8;
+  color: #8facbb;
+}
+.vx-scale-select {
+  display: flex;
+  gap: 9px;
+  justify-content: center;
+  align-items: center;
+  font: 9px var(--vl-mono);
+  color: #a6c1cc;
+  margin: 15px 0;
+}
+.vx-scale-select select {
+  width: 110px;
+  font-size: 10px;
+  padding: 5px 8px;
+}
+.vx-tap-controls {
+  padding: 20px;
+  border-radius: 5px;
+  background: #0e222c;
+  border: 1px solid #9db9c125;
+}
+.vx-tap-controls .vl-segment {
+  margin: 14px 0;
+}
+.vx-tap-controls > label {
+  display: block;
+  font: 9px var(--vl-mono);
+  color: #9ab7c4;
+  margin: 6px 0;
+}
+.vx-tap-controls > select {
+  font-size: 11px;
+  padding: 9px;
+}
+.vx-tap-controls .vl-parameter {
+  margin-top: 20px;
+}
+.vx-tap-controls .vl-parameter label {
+  font-size: 10px;
+}
+.vx-tap-controls .vl-readout strong {
+  font: 15px var(--vl-mono);
+}
+.vx-pressure-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  padding: 21px 0;
+  margin-top: 20px;
+  border-top: 1px solid #9db9c126;
+}
+.vx-pressure-metrics span {
+  font: 8px var(--vl-mono);
+  color: #8eacbb;
+  line-height: 1.8;
+}
+.vx-pressure-metrics b {
+  display: block;
+  font-size: 14px;
+  font-weight: 400;
+  color: #e2e9e3;
+}
+.vx-pressure-signals {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.vx-pressure-signals article {
+  min-width: 0;
+  padding: 20px 16px 10px;
+  border: 1px solid #9db9c122;
+  border-radius: 5px;
+  background: #10232c;
+}
+.vx-pressure-signals p {
+  color: #8facbb;
+  font-size: 9px;
+  margin: 10px 0 14px;
+}
+.vx-pressure-signals svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+.vx-pressure-signals text {
+  fill: #9db8c5;
+  font: 10px var(--vl-mono);
+}
+.vx-pressure-assumption {
+  font-size: 10px;
+  color: #8ba8b6;
+  line-height: 1.8;
+  margin: 18px 0 0;
+}
+.vx-pressure-resolution {
+  color: #edc490;
+  background: #dfaf7020;
+  border: 1px solid #dfaf7050;
+  padding: 12px;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.vx-background-models {
+  margin: 20px 0;
+  color: #99b4bf;
+  font-size: 11px;
+}
+.vx-background-models summary {
+  cursor: pointer;
+  padding: 12px 0;
+}
+@media (max-width: 1000px) {
+  .vx-pressure-map-layout {
+    grid-template-columns: minmax(0, 1.6fr) minmax(200px, 1fr);
+    gap: 16px;
+  }
+  .vx-pressure-settings {
+    gap: 16px;
+  }
+  .vx-pressure-settings .vl-parameter label {
+    flex-wrap: wrap;
+    gap: 9px;
+  }
+  .vx-pressure-metrics {
+    grid-template-columns: 1fr 1fr;
+  }
+  .vx-skin-legend {
+    width: 195px;
+  }
+}
+@media (max-width: 650px) {
+  .vx-pressure-panel {
+    padding: 19px 15px;
+  }
+  .vx-pressure-panel > header {
+    display: block;
+  }
+  .vx-pressure-panel > header > span {
+    display: block;
+    text-align: left;
+    margin-top: 12px;
+    line-height: 1.7;
+  }
+  .vx-pressure-panel h2 {
+    font-size: 25px;
+  }
+  .vx-pressure-settings,
+  .vx-pressure-map-layout,
+  .vx-pressure-signals {
+    grid-template-columns: 1fr;
+  }
+  .vx-pressure-settings {
+    gap: 25px;
+  }
+  .vx-pressure-map-title h3 {
+    font-size: 12px;
+  }
+  .vx-pressure-map-title .vl-segment button {
+    padding: 7px;
+  }
+  .vx-pressure-signals text {
+    font-size: 14px;
+  }
+  .vx-pressure-metrics b {
+    font-size: 12px;
+  }
+  .vx-skin-legend {
+    left: 12px;
+    right: 12px;
+    top: auto;
+    bottom: 28px;
+    width: auto;
+    padding: 7px 9px;
+  }
+  .vx-skin-legend > b,
+  .vx-skin-legend > span {
+    display: none;
+  }
+  .vx-skin-legend .vx-pressure-legend {
+    margin: 0;
+  }
+}
+
+.vx-harmonic-guide {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 40px;
+  margin: 0 0 24px;
+  padding: 14px 18px;
+  border-left: 2px solid #9ed7cd;
+  background: #0e222c;
+}
+.vx-harmonic-guide span {
+  color: #a8c0c9;
+  font-size: 11px;
+}
+.vx-harmonic-guide b {
+  display: block;
+  color: #dde7df;
+  font: 13px var(--vl-mono);
+  margin-bottom: 5px;
+}
+.vx-compare-harmonics {
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px;
+  color: #bce9df;
+  border: 1px solid #9ed7cd55;
+  background: #183c44;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.vx-compare-harmonics:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.vx-pressure-metrics small {
+  display: block;
+  font-size: 8px;
+}

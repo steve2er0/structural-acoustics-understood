@@ -3115,6 +3115,132 @@ body.site-system-workbench .site-page-shell-workbench::before {
 .workbench-domain-svg .wb-modal-readout rect { fill: rgba(85, 184, 255, .07); stroke: var(--site-color-cyan); }
 .workbench-domain-svg .wb-modal-readout text { fill: #c6dbef; font-size: 9px; }
 
+/* Two-stage isolation designer: domain visualization only; shell and cards remain shared. */
+.two-stage-visual { padding: var(--site-space-4); }
+.two-stage-animation-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-bottom: var(--site-space-3);
+}
+.two-stage-animation-controls button { min-height: 44px; }
+.two-stage-animation-controls .is-active {
+  color: #03101e;
+  border-color: var(--site-color-cyan);
+  background: var(--site-color-cyan);
+}
+.two-stage-visual > svg {
+  width: 100%;
+  min-height: 430px;
+  display: block;
+  border: 1px solid var(--site-color-border);
+  border-radius: var(--site-radius-md);
+  background:
+    linear-gradient(rgba(85, 184, 255, .045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(85, 184, 255, .045) 1px, transparent 1px),
+    rgba(3, 16, 30, .74);
+  background-size: 32px 32px;
+}
+.two-stage-base rect { fill: #405a72; stroke: #a5bdd3; stroke-width: 2; }
+.two-stage-base path { fill: none; stroke: #7189a3; stroke-width: 2; }
+.two-stage-plate rect { fill: #154f5b; stroke: #52c8aa; stroke-width: 2.5; }
+.two-stage-payload rect { fill: #173e66; stroke: #55b8ff; stroke-width: 2.5; }
+.two-stage-plate text,
+.two-stage-payload text { fill: #eef7ff; font-family: var(--mono); font-size: 12px; font-weight: 700; text-anchor: middle; }
+.two-stage-springs path { fill: none; stroke-width: 3; vector-effect: non-scaling-stroke; }
+.two-stage-springs.stage-one path { stroke: #52c8aa; }
+.two-stage-springs.stage-two path { stroke: #f0a34a; }
+.two-stage-label text { fill: #9bb1c7; font-family: var(--mono); font-size: 10px; }
+.two-stage-label text:first-child { fill: #d8e6f5; font-size: 12px; font-weight: 800; }
+.two-stage-motion-arrows path { fill: none; stroke: #f5ce68; stroke-width: 3; }
+.two-stage-motion-arrows marker path { fill: #f5ce68; stroke: none; }
+.two-stage-animation-title,
+.two-stage-animation-readout { fill: #dce8f7; font-family: var(--mono); font-weight: 800; text-anchor: middle; }
+.two-stage-animation-title { font-size: 14px; }
+.two-stage-animation-readout { fill: #8fa8c2; font-size: 11px; font-weight: 500; }
+.two-stage-animation-note {
+  margin: var(--site-space-3) 0 0;
+  color: var(--site-color-muted);
+  font-size: .72rem;
+  line-height: 1.55;
+}
+.two-stage-animation-note strong { color: #d8e6f5; }
+.two-stage-mode-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--site-space-3);
+  margin-top: var(--site-space-4);
+}
+.two-stage-mode-cards article {
+  padding: .85rem;
+  border: 1px solid var(--site-color-border);
+  border-left: 3px solid var(--site-color-cyan);
+  border-radius: var(--site-radius-sm);
+  background: rgba(7, 28, 49, .68);
+}
+.two-stage-mode-cards article + article { border-left-color: #f0a34a; }
+.two-stage-mode-cards span,
+.two-stage-mode-cards strong,
+.two-stage-mode-cards small { display: block; }
+.two-stage-mode-cards span { color: var(--site-color-muted); font-family: var(--mono); font-size: .57rem; letter-spacing: .05em; text-transform: uppercase; }
+.two-stage-mode-cards strong { margin-top: .35rem; color: var(--site-color-text); font-size: 1.2rem; }
+.two-stage-mode-cards small { margin-top: .28rem; color: #8fa8c2; font-family: var(--mono); font-size: .62rem; }
+.two-stage-how { margin-top: var(--site-space-4); border: 1px solid var(--site-color-border); border-radius: var(--site-radius-sm); background: rgba(7, 28, 49, .54); }
+.two-stage-how > summary { min-height: 48px; display: flex; align-items: center; padding: .7rem .9rem; color: #b9cee2; cursor: pointer; font-weight: 750; }
+.two-stage-how > div { padding: 0 .9rem .9rem; columns: 2 260px; column-gap: 1.5rem; }
+.two-stage-how h4 { break-after: avoid; margin: .8rem 0 .25rem; color: var(--site-color-text); font-size: .72rem; }
+.two-stage-how p { break-inside: avoid; margin: 0 0 .75rem; color: var(--site-color-muted); font-size: .68rem; line-height: 1.55; }
+
+.compound-mode-controls { max-height: 148px; overflow-y: auto; padding: .15rem; }
+.compound-mode-controls button { min-width: 48px; }
+.compound-base rect { fill: #405a72; stroke: #a5bdd3; stroke-width: 2; }
+.compound-base path { fill: none; stroke: #7189a3; stroke-width: 2; }
+.compound-body { stroke-width: 2.5; }
+.compound-body.intermediate { fill: #154f5b; stroke: #52c8aa; }
+.compound-body.payload { fill: #173e66; stroke: #55b8ff; }
+.compound-stage-lines path { fill: none; stroke-width: 2.5; stroke-dasharray: 5 5; vector-effect: non-scaling-stroke; }
+.compound-stage-lines.stage-one path { stroke: #52c8aa; }
+.compound-stage-lines.stage-two path { stroke: #f0a34a; }
+.compound-stage-lines text,
+.compound-mount text,
+.compound-12dof-visual svg > g > text { fill: #a9bed3; font-family: var(--mono); font-size: 9px; text-anchor: middle; }
+.compound-mount circle { stroke-width: 2; vector-effect: non-scaling-stroke; }
+.compound-mount.stage-one circle { fill: #123b43; stroke: #52c8aa; }
+.compound-mount.stage-two circle { fill: #49341e; stroke: #f0a34a; }
+.compound-cg { fill: none; stroke: #f5ce68; stroke-width: 2.5; vector-effect: non-scaling-stroke; }
+.compound-coordinate-key rect { fill: rgba(7, 28, 49, .88); stroke: #526d88; }
+.compound-coordinate-key text { fill: #c7daec; font-family: var(--mono); font-size: 12px; }
+.compound-coordinate-key text:first-of-type { fill: #55b8ff; font-weight: 800; }
+.compound-coordinate-key path { stroke: #526d88; }
+.compound-mode-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.compound-mode-cards article,
+.compound-mode-cards article + article { border-left-color: #526d88; }
+.compound-mode-cards article.is-participating { border-left-color: #f0a34a; background: rgba(62, 42, 20, .32); }
+
+html[data-theme="light"] .two-stage-visual > svg { background-color: #edf3f5; }
+html[data-theme="light"] .two-stage-plate rect { fill: #dcefe9; stroke: #2f7255; }
+html[data-theme="light"] .two-stage-payload rect { fill: #e0ebf5; stroke: #176b8b; }
+html[data-theme="light"] .two-stage-plate text,
+html[data-theme="light"] .two-stage-payload text,
+html[data-theme="light"] .two-stage-animation-title { fill: #172027; }
+html[data-theme="light"] .two-stage-label text,
+html[data-theme="light"] .two-stage-animation-readout { fill: #59686f; }
+html[data-theme="light"] .two-stage-label text:first-child { fill: #29383f; }
+html[data-theme="light"] .two-stage-mode-cards article,
+html[data-theme="light"] .two-stage-how { background: #fffdf8; }
+html[data-theme="light"] .two-stage-animation-note strong,
+html[data-theme="light"] .two-stage-mode-cards strong,
+html[data-theme="light"] .two-stage-how h4 { color: #172027; }
+html[data-theme="light"] .compound-body.intermediate { fill: #dcefe9; stroke: #2f7255; }
+html[data-theme="light"] .compound-body.payload { fill: #e0ebf5; stroke: #176b8b; }
+html[data-theme="light"] .compound-coordinate-key rect { fill: #f7fafb; stroke: #a8bac2; }
+html[data-theme="light"] .compound-coordinate-key text,
+html[data-theme="light"] .compound-stage-lines text,
+html[data-theme="light"] .compound-mount text,
+html[data-theme="light"] .compound-12dof-visual svg > g > text { fill: #42545c; }
+html[data-theme="light"] .compound-coordinate-key text:first-of-type { fill: #176b8b; }
+html[data-theme="light"] .compound-mode-cards article.is-participating { background: #fff5e8; }
+
 @media (max-width: 1260px) {
   .capstone-workbench { grid-template-columns: 166px minmax(0, 1fr); }
   .capstone-main { grid-column: 2; border-right: 0; }
@@ -3227,6 +3353,14 @@ body.site-system-workbench .site-page-shell-workbench::before {
   .workbench-source-panel > header > span { display: block; max-width: none; margin-top: .45rem; text-align: left; }
   .workbench-source-panel dl { grid-template-columns: 1fr; }
   .workbench-source-panel dl > div + div { border-left: 0; border-top: 1px solid var(--site-color-border); }
+  .two-stage-visual { position: sticky; left: 0; width: calc(100vw - 26px); padding: .75rem; }
+  .two-stage-visual > svg { min-width: 660px; min-height: 420px; }
+  .two-stage-animation-controls { position: sticky; left: 0; width: calc(100vw - 50px); }
+  .two-stage-animation-note,
+  .two-stage-mode-cards,
+  .two-stage-how { position: sticky; left: 0; width: calc(100vw - 50px); }
+  .two-stage-mode-cards { grid-template-columns: 1fr; }
+  .compound-mode-cards { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 420px) {

@@ -21,20 +21,30 @@ import {
   PRESETS,
   physicalTimeRate,
   pathLength,
-  pairVisibility,
   solve,
   type Settings,
 } from "./physics";
 import { useWakeClock } from "./simulation";
 import World, { CAMERAS, type View } from "./Scene";
-import { CrossflowMap, FrequencyPlot, ConvectionPlot } from "./Plots";
+import { FrequencyPlot, ConvectionPlot } from "./Plots";
 import { TOUR } from "./tour";
 import Notes from "./Notes";
+import PressurePanel, { PressureLegend, AttachmentMap } from "./PressurePanel";
+import {
+  clampTap,
+  DEFAULT_TAPS,
+  MAX_MODE_RATIO,
+  harmonicComparisonTaps,
+  PRESSURE_DEFAULT,
+  type PressureSettings,
+  type PressureTap,
+  type PressureUnit,
+} from "./pressure";
 import "./style.css";
 const fixed = (n: number) => n.toFixed(2);
 const angle = (n: number) => `${n > 0 ? "+" : ""}${n.toFixed(0)}`;
 export default function VortexApp() {
-  const [settings, setSettings] = useState<Settings>({ ...DEFAULT });
+  const [settings, setSettings] = useState<Settings>({ ...DEFAULT, alpha: 0 });
   const [view, setView] = useState<View>("Vehicle"),
     [revision, setRevision] = useState(0);
   const [selected, setSelected] = useState(0),
@@ -44,9 +54,47 @@ export default function VortexApp() {
     () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
   const [playback, setPlayback] = useState(0.5),
-    [preset, setPreset] = useState("Ascent at incidence");
+    [preset, setPreset] = useState("Axial flight");
   const model = useMemo(() => solve(settings), [settings]);
-  const clock = useWakeClock(model, paused, playback);
+  const [pressureEnabled, setPressureEnabled] = useState(true);
+  const [pressureSettings, setPressureSettings] = useState<PressureSettings>({
+    ...PRESSURE_DEFAULT,
+  });
+  const [taps, setTaps] = useState<[PressureTap, PressureTap]>(DEFAULT_TAPS);
+  const [activeTap, setActiveTap] = useState(0);
+  const [pressureUnit, setPressureUnit] = useState<PressureUnit>("cp");
+  const [pressureLimit, setPressureLimit] = useState(0.1);
+  const pressureTaps = useMemo(
+    () => taps.map((t) => clampTap(t, model)) as [PressureTap, PressureTap],
+    [taps, model],
+  );
+  const clockPlayback =
+    playback *
+    Math.min(
+      1,
+      4 /
+        (physicalTimeRate(model, 1) *
+          pressureSettings.frequency *
+          MAX_MODE_RATIO),
+    );
+  const clock = useWakeClock(model, paused, clockPlayback);
+  const placeTap = (tap: PressureTap) => {
+    tour.stop();
+    const next = clampTap(tap, model);
+    setTaps(
+      (current) =>
+        current.map((t, i) => (i === activeTap ? next : t)) as [
+          PressureTap,
+          PressureTap,
+        ],
+    );
+    setSelected(next.body);
+  };
+  const changePressure = (patch: Partial<PressureSettings>) => {
+    tour.stop();
+    setPressureSettings((s) => ({ ...s, ...patch }));
+    clock.reset();
+  };
   const camera = (v: View) => {
     setView(v);
     setRevision((n) => n + 1);
@@ -68,6 +116,7 @@ export default function VortexApp() {
     tour.stop();
     setPreset("Custom");
     setSettings((s) => ({ ...s, ...patch }));
+    clock.reset();
     if (patch.boosters === false) setSelected(0);
   };
   const pick = (i: number) => {
@@ -85,11 +134,17 @@ export default function VortexApp() {
   };
   const reset = () => {
     tour.reset();
-    setSettings({ ...DEFAULT });
+    setSettings({ ...DEFAULT, alpha: 0 });
     setSelected(0);
     camera("Vehicle");
     setWakes(true);
-    setPreset("Ascent at incidence");
+    setPressureEnabled(true);
+    setPressureSettings({ ...PRESSURE_DEFAULT });
+    setTaps(DEFAULT_TAPS);
+    setActiveTap(0);
+    setPressureUnit("cp");
+    setPressureLimit(0.1);
+    setPreset("Axial flight");
     setPlayback(0.5);
     setPaused(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     clock.reset();
@@ -97,7 +152,7 @@ export default function VortexApp() {
   const closeNotes = useCallback(() => setNotes(false), []);
   const body =
     model.bodies.find((b) => b.index === selected) ?? model.bodies[0];
-  const noWake = pairVisibility(model) === 0;
+  const noWake = model.speed === 0 || !settings.boosters;
   const phase = (clock.snapshot.travel % pathLength(body)) / pathLength(body);
   const compressed = settings.mach > 0.3;
   return (
@@ -119,13 +174,13 @@ export default function VortexApp() {
               EXPERIMENT 07 / AERODYNAMIC UNSTEADINESS
             </p>
             <h1>
-              Watch the wake <em>take shape.</em>
+              See the pressure <em>take shape.</em>
             </h1>
           </div>
           <p>
-            Longitudinal vortices on a multi-body launch vehicle.
+            Attachment wakes on a multi-body launch vehicle.
             <br />
-            Follow the air from nose to tail. See the leeward pair.
+            Forward bracket → shed wake → pressure on the core and boosters.
           </p>
         </header>
         <div className="vx-workbench">
@@ -262,8 +317,8 @@ export default function VortexApp() {
                   shadows={false}
                   aria-label={
                     settings.boosters
-                      ? "Three-dimensional core and two boosters with longitudinal counter-rotating vortices"
-                      : "Three-dimensional isolated core with longitudinal counter-rotating vortices"
+                      ? "Three-dimensional core and two boosters with forward attachment wakes and surface pressure"
+                      : "Three-dimensional isolated core with no attachment wake source"
                   }
                 >
                   <World
@@ -274,6 +329,15 @@ export default function VortexApp() {
                     view={view}
                     revision={revision}
                     wakes={wakes}
+                    paintPressure={pressureEnabled}
+                    pressure={{
+                      settings: pressureSettings,
+                      unit: pressureUnit,
+                      limit: pressureLimit,
+                      taps: pressureTaps,
+                      activeTap,
+                      onPlace: placeTap,
+                    }}
                   />
                 </LabCanvas>
               </SceneBoundary>
@@ -291,6 +355,13 @@ export default function VortexApp() {
                   Relative air · nose → aft
                 </span>
               </div>
+              {pressureEnabled && view !== "Cross-section" && (
+                <div className="vx-skin-legend">
+                  <b>SURFACE FLUCTUATION · ASSUMED FIELD</b>
+                  <PressureLegend unit={pressureUnit} limit={pressureLimit} />
+                  <span>Click skin → Tap {activeTap ? "B" : "A"}</span>
+                </div>
+              )}
               {view === "Cross-section" && !noWake && (
                 <div className="vx-cut-label">
                   ⊗ AXIAL FLOW INTO PAGE · {model.axialSpeed.toFixed(1)} m/s
@@ -303,28 +374,35 @@ export default function VortexApp() {
                     {model.speed === 0
                       ? "Still air."
                       : model.crossSpeed < 1e-8
-                        ? "Axial flow."
-                        : "No leeward vortex pair."}
+                        ? "No attachment source."
+                        : "No attachment source."}
                   </strong>
                   <p>
                     {model.speed === 0
                       ? "Increase Mach to introduce flow."
-                      : "Air still flows nose to tail. Add α or β to reveal the leeward pair."}
+                      : "Restore the boosters to restore the forward attachments and their wake."}
                   </p>
                 </div>
               )}
               <div className="vx-scene-foot">
-                <span>ILLUSTRATIVE WAKE · NOT CFD</span>
+                <span>
+                  {pressureEnabled
+                    ? "PRESCRIBED PRESSURE · NOT CFD"
+                    : "ILLUSTRATIVE WAKE · NOT CFD"}
+                </span>
                 <span>DRAG TO ORBIT · SCROLL TO ZOOM</span>
               </div>
             </div>
             <div className="vx-scene-tools">
+              <Toggle checked={pressureEnabled} onChange={setPressureEnabled}>
+                Surface pressure
+              </Toggle>
               <SegmentedControl
                 label="Camera view"
                 value={view}
-                options={(["Vehicle", "Cross-section", "Wake"] as View[]).map(
-                  (v) => ({ value: v, label: v }),
-                )}
+                options={(
+                  ["Vehicle", "Attachment", "Cross-section", "Wake"] as View[]
+                ).map((v) => ({ value: v, label: v }))}
                 onChange={(v) => {
                   tour.stop();
                   camera(v);
@@ -338,7 +416,7 @@ export default function VortexApp() {
                 <RotateCcw size={14} />
               </button>
               <Toggle checked={wakes} onChange={setWakes}>
-                Vortex paths
+                Attachment wake
               </Toggle>
             </div>
             <div className="vx-transport">
@@ -363,7 +441,8 @@ export default function VortexApp() {
                 </select>
               </label>
               <span>
-                {physicalTimeRate(model, playback).toFixed(3)}× PHYSICAL TIME
+                {physicalTimeRate(model, clockPlayback).toFixed(3)}× PHYSICAL
+                TIME
               </span>
             </div>
           </section>
@@ -372,9 +451,12 @@ export default function VortexApp() {
               <span>READ THE WAKE</span>
               <b>AXIAL CUT</b>
             </div>
-            <CrossflowMap
+            <AttachmentMap
               model={model}
-              clock={clock.snapshot}
+              settings={pressureSettings}
+              time={clock.snapshot.time}
+              unit={pressureUnit}
+              limit={pressureLimit}
               selected={selected}
               onSelect={pick}
             />
@@ -432,66 +514,100 @@ export default function VortexApp() {
             </div>
             <p className="vx-context">
               {model.speed === 0
-                ? "No air motion at zero Mach. Increase speed to see axial transport and the illustrated leeward pair."
+                ? "No air motion at zero Mach. Increase speed to restore the attachment wake and its pressure fluctuations."
                 : noWake
-                  ? "At zero incidence, axial air continues past the vehicle. The illustrated leeward pair fades; base wakes are outside this model."
-                  : "Follow each colored core from the forebody shoulder down the leeward side. Moving dots trace axial transport and opposite swirl. Neighboring wakes are not coupled."}
+                  ? "No forward attachment hardware remains with the boosters removed. Its pressure contribution is zero."
+                  : "The golden forward attachments are the wake sources. Roll-up packets convect aft through each gap and load the facing surfaces. This mechanism persists at zero incidence. The 1× flank mode changes sign across the wake; 2× is strongest on its centerline. Amplitudes are prescribed."}
             </p>
           </aside>
         </div>
+        {
+          <PressurePanel
+            model={model}
+            settings={pressureSettings}
+            onSettings={changePressure}
+            time={clock.snapshot.time}
+            selected={selected}
+            taps={pressureTaps}
+            activeTap={activeTap}
+            onActive={setActiveTap}
+            onCompare={() => {
+              tour.stop();
+              setTaps(harmonicComparisonTaps(model, selected));
+              setActiveTap(1);
+            }}
+            onPlace={placeTap}
+            unit={pressureUnit}
+            onUnit={(unit) => {
+              setPressureUnit(unit);
+              setPressureLimit(unit === "cp" ? 0.1 : 2000);
+            }}
+            limit={pressureLimit}
+            onLimit={setPressureLimit}
+          />
+        }
         <section
           className={`vx-model-strip ${compressed ? "vx-extrapolated" : ""}`}
           aria-live="polite"
         >
-          <span>{compressed ? "EXTRAPOLATION" : "LONGITUDINAL VORTICES"}</span>
+          <span>{compressed ? "EXTRAPOLATION" : "ATTACHMENT WAKE"}</span>
           <p>
             {compressed
               ? "Above Mach 0.3, compressible effects need a different model. Paths remain illustrative; shocks and transonic buffet are not solved."
-              : "The paired cores develop along the vehicle. Their shape and swirl are prescribed; separation onset, asymmetry and gap-flow coupling are not solved."}
+              : "Forward booster/core attachments generate the illustrated wake. Its pressure field is prescribed; shock interaction, gap amplification and aerodynamic loads are not solved."}
           </p>
           <button onClick={() => setNotes(true)}>
             Model notes <ArrowUpRight size={12} />
           </button>
         </section>
-        <section className="vx-plots" aria-label="Flow interpretation plots">
-          <article>
-            <div className="vx-plot-title">
-              <div>
-                <p className="vl-eyebrow">01 / CROSSFLOW REFERENCE</p>
-                <h2>A reference scale, not a prediction.</h2>
+        <details className="vx-background-models">
+          <summary>
+            Separate reference models · cylinder scale and forebody vortices
+          </summary>
+          <section
+            className="vx-plots"
+            aria-label="Separate background reference models"
+          >
+            <article>
+              <div className="vx-plot-title">
+                <div>
+                  <p className="vl-eyebrow">01 / CROSSFLOW REFERENCE</p>
+                  <h2>A reference scale, not a prediction.</h2>
+                </div>
+                <div className="vx-plot-key">
+                  <span>— Core</span>
+                  {settings.boosters && <span>┄ Boosters</span>}
+                </div>
               </div>
-              <div className="vx-plot-key">
-                <span>— Core</span>
-                {settings.boosters && <span>┄ Boosters</span>}
+              <FrequencyPlot model={model} />
+              <p>
+                St · U⊥ / D is a cylinder-based frequency scale. It does not
+                imply periodic shedding of these longitudinal vortices.
+              </p>
+            </article>
+            <article>
+              <div className="vx-plot-title">
+                <div>
+                  <p className="vl-eyebrow">02 / SPATIAL DEVELOPMENT</p>
+                  <h2>Along the vehicle, then aft.</h2>
+                </div>
+                <span className="vx-plot-key">
+                  {`${(0.65 * model.axialSpeed).toFixed(1)} m/s convection`}
+                </span>
               </div>
-            </div>
-            <FrequencyPlot model={model} />
-            <p>
-              St · U⊥ / D is a cylinder-based frequency scale. It does not imply
-              periodic shedding of these longitudinal vortices.
-            </p>
-          </article>
-          <article>
-            <div className="vx-plot-title">
-              <div>
-                <p className="vl-eyebrow">02 / SPATIAL DEVELOPMENT</p>
-                <h2>Along the vehicle, then aft.</h2>
-              </div>
-              <span className="vx-plot-key">
-                {`${(0.65 * model.axialSpeed).toFixed(1)} m/s convection`}
-              </span>
-            </div>
-            <ConvectionPlot
-              model={model}
-              clock={clock.snapshot}
-              selected={selected}
-            />
-            <p>
-              Both vortices coexist along the barrel. Tracers travel downstream
-              on a shared clock; the paths do not alternate from side to side.
-            </p>
-          </article>
-        </section>
+              <ConvectionPlot
+                model={model}
+                clock={clock.snapshot}
+                selected={selected}
+              />
+              <p>
+                Both vortices coexist along the barrel. Tracers travel
+                downstream on a shared clock; the paths do not alternate from
+                side to side.
+              </p>
+            </article>
+          </section>
+        </details>
         <footer className="vx-footer">
           <span>VORTEX SHEDDING / EXPERIMENT 07</span>
           <span>

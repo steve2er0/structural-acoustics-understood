@@ -23,9 +23,16 @@ import {
 } from "./physics";
 import type { Clock } from "./simulation";
 import { Vehicle } from "./Vehicle";
-export type View = "Vehicle" | "Cross-section" | "Wake";
+import {
+  PressureVehicle,
+  PressureCores,
+  AttachmentHighlights,
+  type PressureDisplay,
+} from "./PressureScene";
+export type View = "Vehicle" | "Attachment" | "Cross-section" | "Wake";
 export const CAMERAS: CameraPresets<View> = {
   Vehicle: { position: [8, 5, 24], target: [0, -0.8, 0.5] },
+  Attachment: { position: [7, 2.5, 9], target: [0.5, 0, 0] },
   "Cross-section": { position: [0, 7, 0.03], target: [0, 0, 0] },
   Wake: { position: [7, 3, 18], target: [0, -2.6, 0.7] },
 };
@@ -152,11 +159,14 @@ function SlicePair({
   const radius = body.diameter * SCALE * 0.105;
   const circle = useMemo(
     () =>
-      Array.from({ length: 51 }, (_, i): Point => [
-        center[0] + radius * Math.cos((i / 50) * Math.PI * 2),
-        0.2,
-        center[2] + radius * Math.sin((i / 50) * Math.PI * 2),
-      ]),
+      Array.from(
+        { length: 51 },
+        (_, i): Point => [
+          center[0] + radius * Math.cos((i / 50) * Math.PI * 2),
+          0.2,
+          center[2] + radius * Math.sin((i / 50) * Math.PI * 2),
+        ],
+      ),
     [center[0], center[2], radius],
   );
   useFrame(() => {
@@ -282,6 +292,8 @@ function World({
   view,
   revision,
   wakes,
+  pressure,
+  paintPressure = true,
 }: {
   model: Model;
   live: RefObject<Clock>;
@@ -290,6 +302,8 @@ function World({
   view: View;
   revision: number;
   wakes: boolean;
+  pressure?: PressureDisplay;
+  paintPressure?: boolean;
 }) {
   const slice = view === "Cross-section";
   return (
@@ -311,8 +325,27 @@ function World({
         selected={selected}
         onSelect={onSelect}
         slice={slice}
+        showMarking={!paintPressure}
       />
+      {pressure && !slice && (
+        <PressureVehicle
+          model={model}
+          live={live}
+          display={pressure}
+          paint={paintPressure}
+        />
+      )}
+      {pressure && !slice && <AttachmentHighlights model={model} />}
+      {wakes && pressure && (
+        <PressureCores
+          model={model}
+          live={live}
+          display={pressure}
+          slice={slice}
+        />
+      )}
       {wakes &&
+        !pressure &&
         model.bodies.flatMap((body) =>
           [0, 1].map((side) =>
             slice ? (

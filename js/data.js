@@ -1849,6 +1849,26 @@ export const toolCatalog = [
       "duct",
       "TL"
     ]
+  },
+  {
+    "id": "two-stage-isolation",
+    "title": "Two-Stage Isolation Designer",
+    "category": "Dynamics",
+    "description": "Design a coupled base-to-intermediate-to-payload stack with selectable vertical 2-DOF or geometry-driven 12-DOF rigid-body dynamics, discrete mount loads, phase, travel, force, and single-stage comparison.",
+    "complexity": "Advanced",
+    "keywords": [
+      "compound isolation",
+      "two stage isolator",
+      "2-DOF",
+      "12-DOF",
+      "rigid body",
+      "mount geometry",
+      "CG offset",
+      "dynamic stiffness",
+      "intermediate mass",
+      "transmissibility",
+      "mechanical filter"
+    ]
   }
 ];
 

@@ -2,6 +2,8 @@ import { ArrowUpRight, BookOpen, Play, RotateCcw } from "lucide-react";
 import { Link } from "@app/router";
 import { LABS } from "@app/labs";
 const labNames = {
+  cryo: "Cryo Tank",
+  tbl: "Panel Fields",
   vortex: "Vortex",
   sea: "SEA",
   rs25: "RS-25",

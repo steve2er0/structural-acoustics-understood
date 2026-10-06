@@ -6,7 +6,9 @@ export interface LabDefinition {
     | "accelerometer"
     | "sea"
     | "rs25"
-    | "vortex";
+    | "vortex"
+    | "tbl"
+    | "cryo";
   number: string;
   title: string;
   description: string;
@@ -84,5 +86,25 @@ export const LABS: readonly LabDefinition[] = [
     route: "/labs/vortex",
     subjects: ["Crossflow", "Strouhal scaling", "Multi-body wakes"],
     accent: "#9ed7cd",
+  },
+  {
+    id: "tbl",
+    number: "08",
+    title: "Pressure Fields on a Panel",
+    description:
+      "Watch turbulent pressure convect across a panel. Compare Corcos, diffuse acoustics and a plane wave, then discover which patterns the structure accepts.",
+    route: "/labs/tbl",
+    subjects: ["Corcos coherence", "Spatial acceptance", "Panel response"],
+    accent: "#e6c28c",
+  },
+  {
+    id: "cryo",
+    number: "09",
+    title: "Cryogenic Tank Modes",
+    description:
+      "Fill a thin aluminum tank with LOX or LH₂. Separate liquid inertia, pressure prestress, and seven slosh modes to see how the coupled shapes change.",
+    route: "/labs/cryo",
+    subjects: ["Added mass", "Pressure prestress", "Slosh coupling"],
+    accent: "#a9dadd",
   },
 ];

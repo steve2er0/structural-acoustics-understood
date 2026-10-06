@@ -15,6 +15,8 @@ import {
 import type { Simulation as SEASimulation } from "../labs/sea/simulation";
 import { Sensor } from "../labs/accelerometer/Sensor";
 import { PlateArticle } from "../labs/modal/Scene";
+import { PanelPreview } from "../labs/tbl/Scene";
+import { CryoPreview } from "../labs/cryo/Scene";
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { LabCanvas, LabEnvironment, SceneBoundary } from "@engine/Scene";
@@ -83,7 +85,11 @@ function Model({ lab, active }: { lab: LabDefinition["id"]; active: boolean }) {
       <directionalLight position={[3, 7, 5]} intensity={3} color="#fff1d9" />
       <directionalLight position={[-4, 3, 1]} intensity={2} color="#b3d1db" />
       <LabEnvironment />
-      {lab === "vortex" ? (
+      {lab === "cryo" ? (
+        <CryoPreview />
+      ) : lab === "tbl" ? (
+        <PanelPreview active={active} />
+      ) : lab === "vortex" ? (
         <group scale={0.54} position-y={0.1} rotation-z={-0.2}>
           <VortexVehicle model={vortexModel} />
           {[0, 1].map((side) => (

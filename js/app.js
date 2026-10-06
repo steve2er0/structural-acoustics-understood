@@ -28,6 +28,7 @@ import { renderPageShell, renderBreadcrumbs, renderSectionHeader, renderCallout,
 import { renderLaunchSeaCapstone, bindLaunchSeaCapstone } from './launch-sea-capstone.js';
 import { engineeringAnalysisRegistry, engineeringWorkbenchRegistry } from './engineering-workbenches.js';
 import { sorbothaneIsolationCalculator, sorbothaneIsolationWorkbench } from './sorbothane-isolation.js';
+import { twoStageIsolationCalculator } from './two-stage-isolation.js';
 import { displayEngineeringResult, formatDisplayInputNumber, fromDisplayNumber, toDisplayNumber, toDisplayStep, toDisplayUnit, unitConversion } from './unit-system.js';
 import {
   addEngineeringArtifact,
@@ -44,7 +45,7 @@ import {
 } from './engineering-system.js';
 
 const sections = [...baseSections, ...acs519Sections, ...workflowExpansionSections, ...programExpansionSections, ...seaParameterSections, ...electronicsFatigueSections];
-const calculatorRegistry = { ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, ...electronicsFatigueCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator };
+const calculatorRegistry = { ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, ...electronicsFatigueCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator, 'two-stage-isolation': twoStageIsolationCalculator };
 const toolCatalog = [...baseToolCatalog, ...extraToolCatalog, ...acs519ToolCatalog, ...workflowExpansionToolCatalog, ...programExpansionToolCatalog, ...seaParameterToolCatalog, ...electronicsFatigueToolCatalog];
 const demos = [...baseDemos, ...acs519Demos, ...workflowExpansionDemos, ...programExpansionDemos, ...seaParameterDemos, ...electronicsFatigueDemos];
 const caseNotes = [...baseCaseNotes, ...acs519CaseNotes, ...workflowExpansionCaseNotes, ...programExpansionCaseNotes, ...seaParameterCaseNotes, ...electronicsFatigueCaseNotes];
