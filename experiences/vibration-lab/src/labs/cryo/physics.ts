@@ -71,6 +71,11 @@ export type ModalMode = {
   sloshId?: number;
   referenceId: string;
   match: number;
+  /** Overlap with the previous accepted fill state, not with the dry shape. */
+  trackingMAC: number;
+  /** Weakest accepted overlap from the deterministic empty-tank seed. */
+  trackingMinMAC: number;
+  trackingAmbiguous: boolean;
   residual: number;
   eigenvalue: number;
   unstable: boolean;
@@ -135,13 +140,14 @@ type Block = {
 };
 const TAU = 2 * Math.PI;
 export const STRUCTURAL_ORDER = 5;
+/** Scene / comparison coverage; higher Fourier diagnostic orders remain separate. */
+export const SHELL_MAX_ORDER = 12;
 export const POTENTIAL_RADIAL_ORDER = 4;
 export const POTENTIAL_AXIAL_ORDER = 8;
 const SHAPES: ShellBasis[] = [];
-for (let n = 0; n <= 4; n++)
+for (let n = 0; n <= SHELL_MAX_ORDER; n++)
   for (const orientation of (n > 0 && n < 4 ? ["cos", "sin"] : ["cos"]) as (
-    | "cos"
-    | "sin"
+    "cos" | "sin"
   )[])
     for (let axialOrder = 1; axialOrder <= STRUCTURAL_ORDER; axialOrder++)
       SHAPES.push({ n, orientation, axialOrder, index: SHAPES.length });
@@ -517,9 +523,12 @@ function shellMatrices(
   const key = `${n}-${orientation}-${orders}`,
     cached = SHELL_CACHE.get(key);
   if (cached) return cached;
+  const existing = SHAPES.filter(
+    (b) => b.n === n && b.orientation === orientation,
+  );
   const basis =
-      orders === STRUCTURAL_ORDER
-        ? SHAPES.filter((b) => b.n === n && b.orientation === orientation)
+      orders === STRUCTURAL_ORDER && existing.length > 0
+        ? existing
         : Array.from({ length: orders }, (_, i) => ({
             n,
             orientation,
@@ -682,12 +691,14 @@ function fluidMatrices(
   radial = POTENTIAL_RADIAL_ORDER,
   axial = POTENTIAL_AXIAL_ORDER,
   cylinder = false,
+  radialQuadrature = GR.length,
+  energyGram = false,
 ) {
   const n = basis[0].n,
     size = basis.length,
     ns = slosh && !full ? 1 : 0,
     total = size + ns;
-  const key = `${n}-${h.toFixed(9)}-${full}-${radial}-${axial}-${size}-${cylinder}`;
+  const key = `${n}-${h.toFixed(9)}-${full}-${radial}-${axial}-${size}-${cylinder}-${radialQuadrature}-${ns}-${energyGram}`;
   const saved = FLUID_CACHE.get(key);
   if (saved) return saved;
   const psi = potentialBasis(n, radial, axial),
@@ -702,10 +713,11 @@ function fluidMatrices(
     area = Math.PI * Rs * Rs,
     flux = Array(size).fill(0),
     grav = zero(total);
-  const zq = integrateSegments(h);
+  const zq = integrateSegments(h),
+    rq = radialQuadrature === GR.length ? GR : gauss(radialQuadrature);
   for (const q of zq) {
     const r = fluidRadius(q.z);
-    for (const g of GR) {
+    for (const g of rq) {
       const rr = (r * (g.x + 1)) / 2,
         w = ((angular * rr * r) / 2) * g.w * q.w,
         p = psi.map((v) => potential(v, rr, q.z, h));
@@ -751,7 +763,12 @@ function fluidMatrices(
     Bn = B.map((row, i) => row.map((v) => v / d[i]));
   const invLn = inverseSPD(Ln),
     response = mul(invLn, Bn).map((row, i) => row.map((x) => x / d[i]));
-  const mass = mul(transpose(Bn), mul(invLn, Bn));
+  // High-n blocks use a symmetric positive energy Gram product instead of
+  // multiplying an explicit inverse into B twice. Keep n<=4 unchanged.
+  const whitened = energyGram ? mul(inverseLower(cholesky(Ln)), Bn) : undefined;
+  const mass = whitened
+    ? mul(transpose(whitened), whitened)
+    : mul(transpose(Bn), mul(invLn, Bn));
   let added = mass.slice(0, size).map((r) => r.slice(0, size));
   if (ns) {
     const mff = mass[size][size];
@@ -768,9 +785,32 @@ function fluidMatrices(
     potentials: psi,
     response,
   };
-  if (FLUID_CACHE.size > 120) FLUID_CACHE.clear();
+  if (FLUID_CACHE.size >= 4096)
+    FLUID_CACHE.delete(FLUID_CACHE.keys().next().value!);
   FLUID_CACHE.set(key, result);
   return result;
+}
+/** Identical potential integration for solves, tracking and liquid animation. */
+function shellFluidMatrices(
+  basis: ShellBasis[],
+  h: number,
+  slosh: SloshMode | undefined,
+  full: boolean,
+) {
+  const n = basis[0].n;
+  return fluidMatrices(
+    basis,
+    h,
+    slosh,
+    full,
+    POTENTIAL_RADIAL_ORDER,
+    POTENTIAL_AXIAL_ORDER,
+    false,
+    n <= 4
+      ? GR.length
+      : Math.max(GR.length, n + 2 * POTENTIAL_RADIAL_ORDER + 1),
+    n > 4,
+  );
 }
 function nullFlux(flux: number[]): Matrix {
   // Orthonormal coordinates satisfying zero volume change in a full,
@@ -817,6 +857,97 @@ function cleanSettings(s: Settings): Settings {
     ),
   };
 }
+
+type BlockSpectrum = {
+  vectors: number[][];
+  values: number[];
+  residuals: number[];
+  mass: Matrix;
+  ns: number;
+  nf: number;
+};
+
+/** Matrix assembly and eigenvalues are independent of display-mode identity. */
+function blockSpectrum(
+  b: Block,
+  id: CaseId,
+  full: boolean,
+  surfaceActive: boolean,
+  density: number,
+  a: number,
+): BlockSpectrum {
+  const withMass = id === "mass" || id === "combined" || id === "coupled",
+    withPressure = id === "pressure" || id === "combined" || id === "coupled",
+    ns = b.basis.length,
+    nf = id === "coupled" && surfaceActive && b.slosh ? 1 : 0,
+    size = ns + nf,
+    k = zero(size),
+    mass = zero(size);
+  for (let i = 0; i < ns; i++)
+    for (let j = 0; j < ns; j++) {
+      k[i][j] = b.dryStiffness[i][j] + (withPressure ? b.geometric[i][j] : 0);
+      mass[i][j] = b.dryMass[i][j];
+    }
+  if (withMass) {
+    const fm = nf ? b.fluidMass : b.addedMass;
+    for (let i = 0; i < size; i++)
+      for (let j = 0; j < size; j++) mass[i][j] += density * fm[i][j];
+  }
+  if (nf)
+    for (let i = 0; i < size; i++)
+      for (let j = 0; j < size; j++) k[i][j] += density * a * b.gravity[i][j];
+  let t = identity(size);
+  if (full && withMass && b.n === 0) t = nullFlux(b.flux);
+  const eigen = generalizedEigen(project(k, t), project(mass, t));
+  return {
+    vectors: eigen.vectors.map((v) =>
+      t.map((row) => row.reduce((s, x, j) => s + x * v[j], 0)),
+    ),
+    values: eigen.values,
+    residuals: eigen.residuals,
+    mass,
+    ns,
+    nf,
+  };
+}
+
+/** Optimal rectangular assignment. Bitmask DP bounds the six-mode search. */
+function modeAssignment(score: Matrix): number[] {
+  const candidates = score.length,
+    references = score[0]?.length ?? 0,
+    required = Math.min(candidates, references),
+    memo = new Map<string, { score: number; pairs: [number, number][] }>();
+  const visit = (
+    ref: number,
+    used: number,
+    count: number,
+  ): { score: number; pairs: [number, number][] } => {
+    if (count === required) return { score: 0, pairs: [] };
+    if (ref === references) return { score: -Infinity, pairs: [] };
+    const key = `${ref}-${used}-${count}`,
+      cached = memo.get(key);
+    if (cached) return cached;
+    let best = { score: -Infinity, pairs: [] as [number, number][] };
+    for (let candidate = 0; candidate < candidates; candidate++) {
+      if (used & (1 << candidate)) continue;
+      const next = visit(ref + 1, used | (1 << candidate), count + 1),
+        value = score[candidate][ref] + next.score;
+      if (value > best.score + 1e-14)
+        best = { score: value, pairs: [[candidate, ref], ...next.pairs] };
+    }
+    if (references - ref > required - count) {
+      const skipped = visit(ref + 1, used, count);
+      if (skipped.score > best.score + 1e-14) best = skipped;
+    }
+    memo.set(key, best);
+    return best;
+  };
+  const assignment = Array(candidates).fill(-1);
+  for (const [candidate, ref] of visit(0, 0, 0).pairs)
+    assignment[candidate] = ref;
+  return assignment;
+}
+
 function modalCase(
   blocks: Block[],
   id: CaseId,
@@ -831,79 +962,18 @@ function modalCase(
     withSlosh = id === "coupled" && surfaceActive;
   const modes: ModalMode[] = [];
   for (const b of blocks) {
-    const ns = b.basis.length,
-      nf = withSlosh && b.slosh ? 1 : 0,
-      size = ns + nf;
-    let k = zero(size),
-      m = zero(size);
-    for (let i = 0; i < ns; i++)
-      for (let j = 0; j < ns; j++) {
-        k[i][j] = b.dryStiffness[i][j] + (withPressure ? b.geometric[i][j] : 0);
-        m[i][j] = b.dryMass[i][j];
-      }
-    if (withMass) {
-      const fm = nf ? b.fluidMass : b.addedMass;
-      for (let i = 0; i < size; i++)
-        for (let j = 0; j < size; j++) m[i][j] += density * fm[i][j];
-    }
-    if (nf)
-      for (let i = 0; i < size; i++)
-        for (let j = 0; j < size; j++) k[i][j] += density * a * b.gravity[i][j];
-    let t = identity(size);
-    if (full && withMass && b.n === 0) t = nullFlux(b.flux);
-    const eigen = generalizedEigen(project(k, t), project(m, t));
-    const vectors = eigen.vectors.map((v) =>
-      t.map((row) => row.reduce((s, x, j) => s + x * v[j], 0)),
-    );
+    const eigen = blockSpectrum(b, id, full, surfaceActive, density, a),
+      { ns, nf, vectors } = eigen;
     const key = `${b.n}-${b.orientation}`,
       refs = dryReferences.get(key)!;
-    // Global assignment maximizes dry-mass MAC; at most four candidates.
+    // Provisional unweighted dry overlap; findMode resolves fill continuation
+    // lazily for this angular block before any UI displays its identity.
     const score = vectors.map((v) =>
       refs.map((r) => mac(v.slice(0, ns), r, b.dryMass)),
     );
-    const structuralWeights = vectors.map((v) =>
-      Math.sqrt(
-        Math.max(
-          0,
-          quadratic(b.dryMass, v.slice(0, ns)) /
-            Math.max(1e-30, quadratic(m, v)),
-        ),
-      ),
-    );
-    let best = -1,
-      assignment: number[] = Array(vectors.length).fill(-1);
-    const required = Math.min(ns, vectors.length);
-    const visit = (
-      ref: number,
-      used: Set<number>,
-      pairs: { ref: number; v: number }[],
-      sum: number,
-    ) => {
-      if (pairs.length === required) {
-        if (sum > best) {
-          best = sum;
-          assignment = Array(vectors.length).fill(-1);
-          for (const p of pairs) assignment[p.v] = p.ref;
-        }
-        return;
-      }
-      if (ref === ns) return;
-      if (ns - ref > required - pairs.length) visit(ref + 1, used, pairs, sum);
-      for (let v = 0; v < vectors.length; v++)
-        if (!used.has(v)) {
-          used.add(v);
-          pairs.push({ ref, v });
-          visit(
-            ref + 1,
-            used,
-            pairs,
-            sum + score[v][ref] * structuralWeights[v],
-          );
-          pairs.pop();
-          used.delete(v);
-        }
-    };
-    visit(0, new Set(), [], 0);
+    const assignment = nf
+      ? [-1, ...modeAssignment(score.slice(1))]
+      : modeAssignment(score);
     for (let j = 0; j < vectors.length; j++) {
       const v = vectors[j],
         dryRef = assignment[j],
@@ -960,6 +1030,9 @@ function modalCase(
           : 0,
         sloshId: sloshMode ? b.slosh!.id : undefined,
         match: sloshMode ? 1 : score[j][jref],
+        trackingMAC: 1,
+        trackingMinMAC: 1,
+        trackingAmbiguous: false,
         residual: eigen.residuals[j],
         eigenvalue: eigen.values[j],
         unstable: eigen.values[j] < -1e-8,
@@ -997,16 +1070,15 @@ export function solve(input: Settings = DEFAULT): Solution {
     : [];
   const blocks: Block[] = [],
     refs = new Map<string, number[][]>();
-  for (let n = 0; n <= 4; n++)
+  for (let n = 0; n <= SHELL_MAX_ORDER; n++)
     for (const orientation of (n > 0 && n < 4 ? ["cos", "sin"] : ["cos"]) as (
-      | "cos"
-      | "sin"
+      "cos" | "sin"
     )[]) {
       const shell = shellMatrices(n, orientation),
         size = shell.basis.length,
         sm = slosh.find((s) => s.n === n && s.orientation === orientation);
       const f = fluidActive
-        ? fluidMatrices(shell.basis, h, sm, full)
+        ? shellFluidMatrices(shell.basis, h, sm, full)
         : {
             mass: zero(size),
             added: zero(size),
@@ -1071,6 +1143,7 @@ export function solve(input: Settings = DEFAULT): Solution {
       "Shell trial functions taper at both poles and impose near-inextensional barrel hoop/shear kinematics. Free-free means no applied modal supports; this is a restricted elastic Ritz space with rigid-body modes excluded.",
       "Barrel KG retains initial-stress energy only. Dome prestress and the pressure follower-load tangent are omitted; this is not a complete pressurized free-free tangent operator.",
       "Five axial shell trials per angular family; first three matched branches are exposed. Refinement sensitivity is about 0.03% for the baseline lowest n2 dry mode, but about 12–14% for lowest n1/n3/n4. Frequencies remain model estimates.",
+      "Inspection includes n=0 through n=12. Orders n>=4 have rigid free-surface loading in partial fill because no free-surface coordinates are retained for those families; extending shell coverage does not add slosh eigenvectors.",
       "Uniform aluminum properties; thermal contraction, insulation, stiffeners, liquid compressibility, damping and nonlinear slosh are omitted.",
     ],
   };
@@ -1084,6 +1157,312 @@ export function solve(input: Settings = DEFAULT): Solution {
     );
   return result;
 }
+
+type TrackedSpectrum = BlockSpectrum & {
+  fill: number;
+  /** Dry shell rank, with ns reserved for the one surface coordinate. */
+  labels: number[];
+  quality: number[];
+  minimumQuality: number[];
+  ambiguous: boolean[];
+};
+type FillTracker = {
+  settings: Settings;
+  id: CaseId;
+  n: number;
+  nodes: TrackedSpectrum[];
+};
+const FILL_TRACKERS = new Map<string, FillTracker>();
+const TRACKED_BLOCKS = new WeakMap<Solution, Set<string>>();
+const TRACK_STEP = 0.01;
+const TRACK_ACCEPT_MAC = 0.995;
+const TRACK_WARNING_MAC = 0.9;
+const TRACK_MIN_STEP = 1e-5;
+const TRACK_MAX_REFINEMENT = 12;
+
+function trackingSpectrum(settings: Settings, id: CaseId, n: number) {
+  const h = heightForFill(settings.fill),
+    shell = shellMatrices(n, "cos"),
+    fluidActive = settings.fill > 1e-8,
+    full = settings.fill >= 1 - 1e-8,
+    surfaceActive = fluidActive && !full,
+    template = surfaceActive
+      ? SLOSH_TEMPLATE.find((s) => s.n === n)
+      : undefined,
+    slosh = template
+      ? { ...template, frequency: 0, cylinderFrequency: 0 }
+      : undefined,
+    size = shell.basis.length,
+    density = FLUIDS[settings.fluid].density,
+    f =
+      fluidActive && (id === "mass" || id === "combined" || id === "coupled")
+        ? shellFluidMatrices(shell.basis, h, slosh, full)
+        : {
+            mass: zero(size),
+            added: zero(size),
+            gravityUnit: zero(size),
+            flux: Array(size).fill(0),
+            sloshMass: 0,
+          },
+    b: Block = {
+      n,
+      orientation: "cos",
+      basis: shell.basis,
+      dryMass: shell.mass,
+      dryStiffness: shell.stiffness,
+      geometric: pressureMatrix(shell.basis, settings, h, density),
+      fluidMass: f.mass,
+      addedMass: f.added,
+      gravity: f.gravityUnit,
+      slosh,
+      flux: f.flux,
+    };
+  return blockSpectrum(
+    b,
+    id,
+    full,
+    surfaceActive,
+    density,
+    settings.accelerationG * G0,
+  );
+}
+
+function nearlyDegenerate(values: number[], index: number) {
+  return values.some(
+    (value, other) =>
+      other !== index &&
+      Math.abs(value - values[index]) <=
+        1e-8 * Math.max(1, Math.abs(value), Math.abs(values[index])),
+  );
+}
+
+function signedOverlap(a: number[], b: number[], metric: Matrix) {
+  return a.reduce(
+    (sum, x, i) => sum + x * metric[i].reduce((v, y, j) => v + y * b[j], 0),
+    0,
+  );
+}
+
+function seedTracker(
+  settings: Settings,
+  id: CaseId,
+  n: number,
+): TrackedSpectrum {
+  const spectrum = trackingSpectrum({ ...settings, fill: 0 }, id, n),
+    shell = shellMatrices(n, "cos"),
+    dry = generalizedEigen(shell.stiffness, shell.mass),
+    score = spectrum.vectors.map((v) =>
+      dry.vectors.map((ref) => mac(v, ref, shell.mass)),
+    ),
+    labels = modeAssignment(score),
+    quality = labels.map((label, i) => Math.min(1, score[i][label]));
+  spectrum.vectors.forEach((v, i) => {
+    if (signedOverlap(v, dry.vectors[labels[i]], shell.mass) < 0)
+      for (let j = 0; j < v.length; j++) v[j] = -v[j];
+  });
+  return {
+    ...spectrum,
+    fill: 0,
+    labels,
+    quality,
+    minimumQuality: quality.slice(),
+    ambiguous: labels.map(
+      (label, i) =>
+        quality[i] < TRACK_WARNING_MAC ||
+        nearlyDegenerate(dry.values, label) ||
+        nearlyDegenerate(spectrum.values, i),
+    ),
+  };
+}
+
+function matchFillStep(
+  previous: TrackedSpectrum,
+  spectrum: BlockSpectrum,
+  fill: number,
+  n: number,
+): TrackedSpectrum {
+  const shell = shellMatrices(n, "cos"),
+    openingSurface = previous.nf === 0 && spectrum.nf === 1,
+    closingSurface = previous.nf === 1 && spectrum.nf === 0,
+    topologyChange =
+      openingSurface ||
+      closingSurface ||
+      previous.vectors.length !== spectrum.vectors.length,
+    size = topologyChange ? spectrum.ns : spectrum.ns + spectrum.nf,
+    metric = topologyChange
+      ? shell.mass
+      : spectrum.mass.map((row, i) =>
+          row.map((value, j) => (value + previous.mass[i][j]) / 2),
+        ),
+    references = previous.vectors
+      .map((v, i) => ({ vector: v.slice(0, size), index: i }))
+      .filter(
+        ({ index }) => !closingSurface || previous.labels[index] < previous.ns,
+      ),
+    // At first positive fill the isolated fluid branch is born below all
+    // positive elastic branches. Later steps track its fluid coordinate too.
+    newSurface = openingSurface ? 0 : -1,
+    candidates = spectrum.vectors
+      .map((v, i) => ({ vector: v.slice(0, size), index: i }))
+      .filter(({ index }) => index !== newSurface),
+    score = candidates.map((candidate) =>
+      references.map((ref) =>
+        Math.min(1, mac(candidate.vector, ref.vector, metric)),
+      ),
+    ),
+    assignment = modeAssignment(score),
+    labels = Array(spectrum.vectors.length).fill(-1),
+    quality = Array(spectrum.vectors.length).fill(1),
+    minimumQuality = Array(spectrum.vectors.length).fill(1),
+    ambiguous = Array(spectrum.vectors.length).fill(false);
+  if (newSurface >= 0) {
+    labels[newSurface] = spectrum.ns;
+    ambiguous[newSurface] = nearlyDegenerate(spectrum.values, newSurface);
+    if (spectrum.vectors[newSurface][spectrum.ns] < 0)
+      spectrum.vectors[newSurface] = spectrum.vectors[newSurface].map(
+        (v) => -v,
+      );
+  }
+  candidates.forEach((candidate, i) => {
+    const reference = references[assignment[i]],
+      current = candidate.index,
+      prior = reference.index;
+    labels[current] = previous.labels[prior];
+    quality[current] = score[i][assignment[i]];
+    minimumQuality[current] = Math.min(
+      previous.minimumQuality[prior],
+      quality[current],
+    );
+    ambiguous[current] =
+      previous.ambiguous[prior] ||
+      minimumQuality[current] < TRACK_WARNING_MAC ||
+      nearlyDegenerate(spectrum.values, current);
+    if (signedOverlap(candidate.vector, reference.vector, metric) < 0)
+      spectrum.vectors[current] = spectrum.vectors[current].map((v) => -v);
+  });
+  return { ...spectrum, fill, labels, quality, minimumQuality, ambiguous };
+}
+
+function advanceFill(
+  tracker: FillTracker,
+  previous: TrackedSpectrum,
+  fill: number,
+  depth = 0,
+): TrackedSpectrum {
+  const spectrum = trackingSpectrum(
+      { ...tracker.settings, fill },
+      tracker.id,
+      tracker.n,
+    ),
+    next = matchFillStep(previous, spectrum, fill, tracker.n),
+    refinableTopology =
+      (previous.nf === spectrum.nf &&
+        previous.vectors.length === spectrum.vectors.length) ||
+      (previous.nf === 0 && spectrum.nf === 1);
+  if (
+    fill < 1 &&
+    refinableTopology &&
+    Math.min(...next.quality) < TRACK_ACCEPT_MAC &&
+    fill - previous.fill > TRACK_MIN_STEP &&
+    depth < TRACK_MAX_REFINEMENT
+  ) {
+    const middle = (previous.fill + fill) / 2,
+      intermediate = advanceFill(tracker, previous, middle, depth + 1);
+    return advanceFill(tracker, intermediate, fill, depth + 1);
+  }
+  return next;
+}
+
+function trackedAt(settings: Settings, id: CaseId, n: number): TrackedSpectrum {
+  // With no retained surface coordinate, these operators are identical.
+  // Share their continuation instead of solving the same high-n path twice.
+  if (id === "coupled" && n >= 4) id = "combined";
+  const pressure = id === "pressure" || id === "combined" || id === "coupled",
+    key = `${id}-${n}-${settings.fluid}-${pressure ? `${settings.ullagePsi}-${settings.accelerationG}` : "mass"}`;
+  let tracker = FILL_TRACKERS.get(key);
+  if (!tracker) {
+    tracker = {
+      settings: { ...settings },
+      id,
+      n,
+      nodes: [seedTracker(settings, id, n)],
+    };
+    if (FILL_TRACKERS.size >= 64)
+      FILL_TRACKERS.delete(FILL_TRACKERS.keys().next().value!);
+    FILL_TRACKERS.set(key, tracker);
+  }
+  const index = Math.min(100, Math.floor(settings.fill / TRACK_STEP + 1e-10));
+  while (tracker.nodes.length <= index) {
+    const fill = tracker.nodes.length * TRACK_STEP,
+      previous = tracker.nodes[tracker.nodes.length - 1];
+    tracker.nodes.push(advanceFill(tracker, previous, Math.min(1, fill)));
+  }
+  const previous = tracker.nodes[index];
+  return Math.abs(settings.fill - previous.fill) < 1e-12
+    ? previous
+    : advanceFill(tracker, previous, settings.fill);
+}
+
+/** Identity is resolved only for angular blocks inspected by the UI. */
+function resolveTrackedBlock(
+  solution: Solution,
+  caseId: CaseId,
+  n: number,
+  orientation: "cos" | "sin",
+) {
+  let resolved = TRACKED_BLOCKS.get(solution);
+  if (!resolved) {
+    resolved = new Set();
+    TRACKED_BLOCKS.set(solution, resolved);
+  }
+  const key = `${caseId}-${n}-${orientation}`;
+  if (resolved.has(key)) return;
+  const shell = shellMatrices(n, orientation),
+    dry = generalizedEigen(shell.stiffness, shell.mass),
+    tracked =
+      caseId === "dry"
+        ? seedTracker(solution.settings, caseId, n)
+        : trackedAt(solution.settings, caseId, n),
+    modes = solution.cases[caseId].modes
+      .filter((mode) => mode.n === n && mode.orientation === orientation)
+      .sort((a, b) => a.eigenvalue - b.eigenvalue),
+    slosh = solution.slosh.find(
+      (s) => s.n === n && s.orientation === orientation,
+    );
+  modes.forEach((mode, i) => {
+    const label = tracked.labels[i],
+      isSlosh = label === tracked.ns,
+      local = shell.basis.map((b) => mode.vector[b.index]);
+    if (tracked.nf && slosh) local.push(mode.vector[NSHELL + slosh.id - 1]);
+    if (signedOverlap(local, tracked.vectors[i], tracked.mass) < 0)
+      mode.vector = mode.vector.map((value) => -value);
+    mode.kind = isSlosh ? "slosh" : "shell";
+    mode.axialOrder = isSlosh ? 0 : label + 1;
+    mode.sloshId = isSlosh ? slosh!.id : undefined;
+    mode.referenceId = isSlosh
+      ? `slosh-${slosh!.id}`
+      : `shell-${n}-${label + 1}-${orientation}`;
+    mode.id = `${caseId}-${mode.referenceId}`;
+    mode.label = isSlosh
+      ? slosh!.label
+      : `Shell n=${n} · branch ${label + 1}${orientation === "sin" ? " · sine" : ""}`;
+    mode.match = isSlosh
+      ? 1
+      : Math.min(
+          1,
+          mac(local.slice(0, tracked.ns), dry.vectors[label], shell.mass),
+        );
+    mode.trackingMAC = tracked.quality[i];
+    mode.trackingMinMAC = tracked.minimumQuality[i];
+    mode.trackingAmbiguous = tracked.ambiguous[i];
+    NORMALIZED_MODES.delete(mode);
+    SURFACE_MEAN.delete(mode);
+    FLUID_MODE_RESPONSE.delete(mode);
+    mode.normalization = 1;
+  });
+  resolved.add(key);
+}
+
 function rawShell(mode: ModalMode, z: number, theta: number) {
   let radial = 0,
     axial = 0,
@@ -1221,10 +1600,22 @@ export function findMode(
   selection: Selection,
 ): ModalMode | undefined {
   const modes = solution.cases[caseId].modes;
-  if (selection.kind === "slosh")
+  if (selection.kind === "slosh") {
+    if (!solution.surfaceActive) return undefined;
+    const template = SLOSH_TEMPLATE.find(
+      (s) => s.id === (selection.sloshId ?? 1),
+    );
+    if (!template) return undefined;
+    resolveTrackedBlock(solution, caseId, template.n, template.orientation);
     return modes.find(
       (m) => m.kind === "slosh" && m.sloshId === (selection.sloshId ?? 1),
     );
+  }
+  const n = selection.n ?? 2,
+    orientation = selection.orientation ?? "cos";
+  if (!modes.some((m) => m.n === n && m.orientation === orientation))
+    return undefined;
+  resolveTrackedBlock(solution, caseId, n, orientation);
   return modes.find(
     (m) =>
       m.kind === "shell" &&
@@ -1232,6 +1623,25 @@ export function findMode(
       m.axialOrder === (selection.axialOrder ?? 1) &&
       m.orientation === (selection.orientation ?? "cos"),
   );
+}
+/** Resolve identities for callers enumerating a whole case instead of using findMode. */
+export function resolveCaseModes(
+  solution: Solution,
+  caseId: CaseId,
+): ModalMode[] {
+  const blocks = new Set(
+    solution.cases[caseId].modes.map((mode) => `${mode.n}-${mode.orientation}`),
+  );
+  for (const key of blocks) {
+    const [n, orientation] = key.split("-");
+    resolveTrackedBlock(
+      solution,
+      caseId,
+      Number(n),
+      orientation as "cos" | "sin",
+    );
+  }
+  return solution.cases[caseId].modes;
 }
 /** MAC across solutions uses the common dry structural mass metric. */
 export function structuralMAC(a: ModalMode, b: ModalMode): number {
@@ -1374,6 +1784,732 @@ export function dryRitzFrequencies(
   );
 }
 
+export const FOURIER_CUTOFFS = [8, 12, 16, 20] as const;
+export const FOURIER_MAX_ORDER = 20;
+export type FourierCutoff = (typeof FOURIER_CUTOFFS)[number];
+export type FourierCaseId = "mass" | "pressure" | "combined";
+export type FourierSurfaceModel =
+  | "empty"
+  | "condensed-retained-shape"
+  | "rigid-surface"
+  | "closed-liquid"
+  | "not-applied";
+export type FourierMode = {
+  /** Dry shape identity; a sweep uses adjacent-fill matching from its empty seed. */
+  branch: number;
+  frequency: number;
+  dryFrequency: number;
+  /** Dry-stiffness Rayleigh frequency evaluated on THIS wet vector. */
+  structuralRayleighFrequency: number;
+  /** Actual wet-vector quadratic ratio phi^T MA phi / phi^T Ms phi. */
+  addedMassRatio: number;
+  residual: number;
+  dryMAC: number;
+  stepMAC: number | null;
+  trackingAmbiguous: boolean;
+  unstable: boolean;
+};
+export type FourierFamily = {
+  n: number;
+  wavelength: number | null;
+  retained: boolean;
+  freeSurfaceModel: FourierSurfaceModel;
+  dryFrequencies: number[];
+  modes: FourierMode[];
+  /** Counts cosine representatives, with degenerate sine partners omitted. */
+  inBandCount: number;
+  maxResidual: number;
+  available: boolean;
+  error?: string;
+};
+export type FourierCoverage = {
+  settings: Settings;
+  cutoff: FourierCutoff;
+  maxOrder: number;
+  band: [number, number];
+  caseId: FourierCaseId;
+  families: FourierFamily[];
+  retainedInBandModes: number;
+  omittedInBandModes: number;
+  omittedFamilies: number[];
+  maxResidual: number;
+};
+export type FourierSweepPoint = {
+  fill: number;
+  liquidHeight: number;
+  modes: FourierMode[];
+  available: boolean;
+  freeSurfaceModel: FourierSurfaceModel;
+  error?: string;
+};
+export type FourierSweep = {
+  settings: Settings;
+  n: number;
+  caseId: FourierCaseId;
+  points: FourierSweepPoint[];
+  minTrackingMAC: number;
+  trackingAmbiguous: boolean;
+};
+type FourierSpectrum = {
+  shellMass: Matrix;
+  shellStiffness: Matrix;
+  addedMass: Matrix;
+  dry: ReturnType<typeof generalizedEigen>;
+  wet: BlockSpectrum;
+  freeSurfaceModel: FourierSurfaceModel;
+};
+const FOURIER_SPECTRA = new Map<string, FourierSpectrum>();
+
+/**
+ * Separate angular coverage calculation, extending beyond the scene's n<=12.
+ * Each n has the same five restricted meridional shell trials. Independent
+ * axisymmetric Fourier blocks cannot alter lower-n eigenvalues when extended.
+ * This is an angular coverage screen, not a complete 10–2000 Hz FE spectrum.
+ */
+function fourierSpectrum(
+  settings: Settings,
+  n: number,
+  caseId: FourierCaseId,
+  quadratureExtra = 0,
+  potentialRadial = POTENTIAL_RADIAL_ORDER,
+  potentialAxial = POTENTIAL_AXIAL_ORDER,
+): FourierSpectrum {
+  const pressureKey =
+      caseId === "mass"
+        ? "mass"
+        : `${settings.ullagePsi}-${settings.accelerationG}`,
+    key = `${settings.fluid}-${settings.fill}-${pressureKey}-${n}-${caseId}-${quadratureExtra}-${potentialRadial}-${potentialAxial}`,
+    saved = FOURIER_SPECTRA.get(key);
+  if (saved) return saved;
+  const shell = shellMatrices(n, "cos"),
+    h = heightForFill(settings.fill),
+    density = FLUIDS[settings.fluid].density,
+    fluidActive = settings.fill > 1e-8,
+    full = settings.fill >= 1 - 1e-8,
+    template =
+      fluidActive && !full
+        ? SLOSH_TEMPLATE.find((s) => s.n === n && s.orientation === "cos")
+        : undefined,
+    slosh = template
+      ? { ...template, frequency: 0, cylinderFrequency: 0 }
+      : undefined,
+    size = shell.basis.length,
+    // At fixed z, fluid kinetic integrands have degree <= 2n+4(radial-1)+1.
+    // A q-point Gauss rule integrates through degree 2q-1. This scales q with n;
+    // the baseline n<=4 quadrature is preserved byte for byte.
+    radialQuadrature =
+      (n <= 4 && potentialRadial === POTENTIAL_RADIAL_ORDER
+        ? GR.length
+        : Math.max(GR.length, n + 2 * potentialRadial + 1)) + quadratureExtra,
+    f =
+      fluidActive && caseId !== "pressure"
+        ? fluidMatrices(
+            shell.basis,
+            h,
+            slosh,
+            full,
+            potentialRadial,
+            potentialAxial,
+            false,
+            radialQuadrature,
+            n > 4,
+          )
+        : {
+            mass: zero(size),
+            added: zero(size),
+            gravityUnit: zero(size),
+            flux: Array(size).fill(0),
+          },
+    b: Block = {
+      n,
+      orientation: "cos",
+      basis: shell.basis,
+      dryMass: shell.mass,
+      dryStiffness: shell.stiffness,
+      geometric: pressureMatrix(shell.basis, settings, h, density),
+      fluidMass: f.mass,
+      addedMass: f.added,
+      gravity: f.gravityUnit,
+      slosh,
+      flux: f.flux,
+    },
+    result: FourierSpectrum = {
+      shellMass: shell.mass,
+      shellStiffness: shell.stiffness,
+      addedMass: f.added.map((row) => row.map((v) => density * v)),
+      dry: generalizedEigen(shell.stiffness, shell.mass),
+      wet: blockSpectrum(
+        b,
+        caseId,
+        full,
+        fluidActive && !full,
+        density,
+        settings.accelerationG * G0,
+      ),
+      freeSurfaceModel:
+        caseId === "pressure"
+          ? "not-applied"
+          : !fluidActive
+            ? "empty"
+            : full
+              ? "closed-liquid"
+              : slosh
+                ? "condensed-retained-shape"
+                : "rigid-surface",
+    };
+  if (FOURIER_SPECTRA.size > 1024) FOURIER_SPECTRA.clear();
+  FOURIER_SPECTRA.set(key, result);
+  return result;
+}
+
+function fourierModes(spectrum: FourierSpectrum): FourierMode[] {
+  const { dry, wet, shellMass, shellStiffness, addedMass } = spectrum,
+    scores = wet.vectors.map((v) =>
+      dry.vectors.map((reference) => Math.min(1, mac(v, reference, shellMass))),
+    ),
+    assignment = modeAssignment(scores);
+  return wet.vectors.map((v, i) => {
+    const reference = assignment[i];
+    return {
+      branch: reference + 1,
+      frequency: Math.sqrt(Math.max(0, wet.values[i])) / TAU,
+      dryFrequency: Math.sqrt(Math.max(0, dry.values[reference])) / TAU,
+      structuralRayleighFrequency:
+        Math.sqrt(
+          Math.max(
+            0,
+            quadratic(shellStiffness, v) /
+              Math.max(1e-30, quadratic(shellMass, v)),
+          ),
+        ) / TAU,
+      addedMassRatio:
+        quadratic(addedMass, v) / Math.max(1e-30, quadratic(shellMass, v)),
+      residual: wet.residuals[i],
+      dryMAC: scores[i][reference],
+      stepMAC: null,
+      trackingAmbiguous: nearlyDegenerate(wet.values, i),
+      unstable: wet.values[i] < -1e-8,
+    };
+  });
+}
+
+function fourierSurface(
+  settings: Settings,
+  n: number,
+  caseId: FourierCaseId = "mass",
+): FourierSurfaceModel {
+  if (caseId === "pressure") return "not-applied";
+  return settings.fill <= 1e-8
+    ? "empty"
+    : settings.fill >= 1 - 1e-8
+      ? "closed-liquid"
+      : n <= 3
+        ? "condensed-retained-shape"
+        : "rigid-surface";
+}
+
+export type FourierCoverageOptions = {
+  cutoff?: FourierCutoff;
+  minHz?: number;
+  maxHz?: number;
+  caseId?: FourierCaseId;
+  trackedBranch?: number;
+};
+
+/**
+ * All n=0..20 are solved with five shell trials. By default all five modes use
+ * snapshot dry-MAC labels. trackedBranch requests one dry-seeded branch with
+ * the same canonical fill continuation used by fourierFillSweep; the trial
+ * space and operators are unchanged. Cutoff only distinguishes angular coverage.
+ */
+export function* fourierCoverageSteps(
+  input: Settings = DEFAULT,
+  options: FourierCoverageOptions = {},
+): Generator<number, FourierCoverage, void> {
+  const settings = cleanSettings(input),
+    cutoff = FOURIER_CUTOFFS.includes(options.cutoff ?? 12)
+      ? (options.cutoff ?? 12)
+      : 12,
+    caseId =
+      options.caseId === "combined" || options.caseId === "pressure"
+        ? options.caseId
+        : "mass",
+    trackedBranch = Number.isFinite(options.trackedBranch)
+      ? Math.max(
+          1,
+          Math.min(STRUCTURAL_ORDER, Math.round(options.trackedBranch!)),
+        )
+      : null,
+    minHz = Number.isFinite(options.minHz) ? Math.max(0, options.minHz!) : 10,
+    maxHz = Number.isFinite(options.maxHz)
+      ? Math.max(minHz, options.maxHz!)
+      : Math.max(minHz, 2000),
+    families: FourierFamily[] = [];
+  for (let n = 0; n <= FOURIER_MAX_ORDER; n++) {
+    try {
+      const sample =
+        trackedBranch !== null
+          ? fourierTrackedSample(
+              settings,
+              n,
+              caseId,
+              settings.fill,
+              undefined,
+              trackedBranch,
+            )
+          : undefined;
+      if (sample && !sample.node) throw new Error(sample.error);
+      const spectrum =
+          sample?.node?.spectrum ?? fourierSpectrum(settings, n, caseId),
+        modes = sample?.node
+          ? trackedFourierModes(sample.node).filter(
+              (mode) => mode.branch === trackedBranch,
+            )
+          : fourierModes(spectrum),
+        inBandCount = modes.filter(
+          (mode) =>
+            !mode.unstable &&
+            mode.frequency >= minHz &&
+            mode.frequency <= maxHz,
+        ).length;
+      families.push({
+        n,
+        wavelength: n > 0 ? (TAU * TANK.radius) / n : null,
+        retained: n <= cutoff,
+        freeSurfaceModel: spectrum.freeSurfaceModel,
+        dryFrequencies: spectrum.dry.values.map(
+          (value) => Math.sqrt(Math.max(0, value)) / TAU,
+        ),
+        modes,
+        inBandCount,
+        maxResidual: Math.max(...spectrum.wet.residuals),
+        available: true,
+      });
+    } catch (error) {
+      families.push({
+        n,
+        wavelength: n > 0 ? (TAU * TANK.radius) / n : null,
+        retained: n <= cutoff,
+        freeSurfaceModel: fourierSurface(settings, n, caseId),
+        dryFrequencies: [],
+        modes: [],
+        inBandCount: 0,
+        maxResidual: 0,
+        available: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+    // A browser can schedule the next family on another event-loop turn.
+    yield n;
+  }
+  return {
+    settings,
+    cutoff,
+    maxOrder: FOURIER_MAX_ORDER,
+    band: [minHz, maxHz],
+    caseId,
+    families,
+    retainedInBandModes: families
+      .filter((f) => f.retained)
+      .reduce((sum, f) => sum + f.inBandCount, 0),
+    omittedInBandModes: families
+      .filter((f) => !f.retained)
+      .reduce((sum, f) => sum + f.inBandCount, 0),
+    omittedFamilies: families
+      .filter((f) => !f.retained && f.inBandCount > 0)
+      .map((f) => f.n),
+    maxResidual: Math.max(
+      ...families.filter((f) => f.available).map((f) => f.maxResidual),
+      0,
+    ),
+  };
+}
+
+/** Synchronous counterpart; browser UI can use fourierCoverageSteps to yield. */
+export function fourierCoverage(
+  input: Settings = DEFAULT,
+  options: FourierCoverageOptions = {},
+): FourierCoverage {
+  const steps = fourierCoverageSteps(input, options);
+  let result = steps.next();
+  while (!result.done) result = steps.next();
+  return result.value;
+}
+
+type FourierTrackedNode = {
+  spectrum: FourierSpectrum;
+  tracked: TrackedSpectrum;
+};
+type FourierTrackingSample = { node?: FourierTrackedNode; error?: string };
+const FOURIER_TRACKERS = new Map<string, Map<number, FourierTrackingSample>>();
+
+function seedFourierNode(
+  settings: Settings,
+  n: number,
+  caseId: FourierCaseId,
+): FourierTrackedNode {
+  const spectrum = fourierSpectrum({ ...settings, fill: 0 }, n, caseId),
+    modes = fourierModes(spectrum),
+    vectors = spectrum.wet.vectors.map((vector) => vector.slice()),
+    labels = modes.map((mode) => mode.branch - 1),
+    quality = modes.map((mode) => mode.dryMAC);
+  return {
+    spectrum,
+    tracked: {
+      ...spectrum.wet,
+      vectors,
+      fill: 0,
+      labels,
+      quality,
+      minimumQuality: quality.slice(),
+      ambiguous: modes.map(
+        (mode) => mode.trackingAmbiguous || mode.dryMAC < TRACK_WARNING_MAC,
+      ),
+    },
+  };
+}
+
+function advanceFourierNode(
+  settings: Settings,
+  n: number,
+  caseId: FourierCaseId,
+  previous: FourierTrackedNode,
+  fill: number,
+  depth = 0,
+  trackedBranch?: number,
+): FourierTrackedNode {
+  // The low-order families include densely spaced breathing/slosh-coupled
+  // seeds. Preserve their established all-mode continuation before filtering.
+  if (n <= 4) trackedBranch = undefined;
+  const spectrum = fourierSpectrum({ ...settings, fill }, n, caseId),
+    wet = {
+      ...spectrum.wet,
+      vectors: spectrum.wet.vectors.map((vector) => vector.slice()),
+    },
+    tracked = matchFillStep(previous.tracked, wet, fill, n),
+    sameTopology = previous.tracked.vectors.length === tracked.vectors.length,
+    inspectedQuality = tracked.quality.filter(
+      (_, i) =>
+        trackedBranch === undefined || tracked.labels[i] === trackedBranch - 1,
+    );
+  if (
+    fill < 1 &&
+    sameTopology &&
+    Math.min(...inspectedQuality) < TRACK_ACCEPT_MAC &&
+    fill - previous.tracked.fill > TRACK_MIN_STEP &&
+    depth < TRACK_MAX_REFINEMENT
+  ) {
+    const middle = advanceFourierNode(
+      settings,
+      n,
+      caseId,
+      previous,
+      (previous.tracked.fill + fill) / 2,
+      depth + 1,
+      trackedBranch,
+    );
+    return advanceFourierNode(
+      settings,
+      n,
+      caseId,
+      middle,
+      fill,
+      depth + 1,
+      trackedBranch,
+    );
+  }
+  return { spectrum, tracked };
+}
+
+function fourierCanonicalTrack(
+  settings: Settings,
+  n: number,
+  caseId: FourierCaseId,
+  throughFill = 1,
+  trackedBranch?: number,
+) {
+  if (n <= 4) trackedBranch = undefined;
+  const pressureKey =
+      caseId === "mass"
+        ? "mass"
+        : `${settings.ullagePsi}-${settings.accelerationG}`,
+    key = `${settings.fluid}-${pressureKey}-${n}-${caseId}-${trackedBranch ?? "all"}`,
+    saved = FOURIER_TRACKERS.get(key);
+  const samples = saved ?? new Map<number, FourierTrackingSample>();
+  if (!samples.size)
+    samples.set(0, { node: seedFourierNode(settings, n, caseId) });
+  const lastFill = [...samples.keys()].at(-1)!,
+    steps = trackedBranch === undefined ? 100 : 20,
+    start = Math.round(lastFill * steps) + 1,
+    target = Math.min(steps, Math.ceil(throughFill * steps - 1e-10));
+  let previous = [...samples.values()]
+    .reverse()
+    .find((sample) => sample.node)!.node!;
+  for (let i = start; i <= target; i++) {
+    const fill = i / steps;
+    try {
+      previous = advanceFourierNode(
+        settings,
+        n,
+        caseId,
+        previous,
+        fill,
+        0,
+        trackedBranch,
+      );
+      samples.set(fill, { node: previous });
+    } catch (error) {
+      // Preserve the last valid seed: a failed shallow-pool solve is a gap,
+      // rather than fabricated zero mass or a silent change of branch identity.
+      samples.set(fill, {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  // Keep all 21 angular families for each of the three comparison cases.
+  if (!saved && FOURIER_TRACKERS.size >= 96)
+    FOURIER_TRACKERS.delete(FOURIER_TRACKERS.keys().next().value!);
+  FOURIER_TRACKERS.set(key, samples);
+  return samples;
+}
+
+/** Exact-fill sample from the same lazy canonical grid as coverage and sweeps. */
+function fourierTrackedSample(
+  settings: Settings,
+  n: number,
+  caseId: FourierCaseId,
+  fill: number,
+  canonical?: Map<number, FourierTrackingSample>,
+  trackedBranch?: number,
+): FourierTrackingSample {
+  canonical ??= fourierCanonicalTrack(settings, n, caseId, fill, trackedBranch);
+  const exact = canonical.get(fill);
+  if (exact) return exact;
+  const preceding = [...canonical.entries()]
+    .filter(([value, sample]) => value < fill && sample.node)
+    .at(-1)![1].node!;
+  try {
+    return {
+      node: advanceFourierNode(
+        settings,
+        n,
+        caseId,
+        preceding,
+        fill,
+        0,
+        trackedBranch,
+      ),
+    };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+function trackedFourierModes(node: FourierTrackedNode): FourierMode[] {
+  const modes = fourierModes(node.spectrum);
+  modes.forEach((mode, i) => {
+    const reference = node.tracked.labels[i];
+    mode.branch = reference + 1;
+    mode.dryFrequency =
+      Math.sqrt(Math.max(0, node.spectrum.dry.values[reference])) / TAU;
+    mode.dryMAC = Math.min(
+      1,
+      mac(
+        node.tracked.vectors[i],
+        node.spectrum.dry.vectors[reference],
+        node.spectrum.shellMass,
+      ),
+    );
+    mode.stepMAC = node.tracked.fill === 0 ? null : node.tracked.quality[i];
+    mode.trackingAmbiguous = node.tracked.ambiguous[i];
+  });
+  return modes;
+}
+
+/**
+ * Selected-family fill sweep. All-mode labels follow a deterministic 1% grid;
+ * a requested n>=5 branch uses a 5% seed grid refined on that branch's overlap.
+ * Orders n<=4 preserve their established all-mode 1% continuation.
+ * bounded MAC refinement; displayed samples remain 5% plus exact current fill.
+ * Exact markers are matched from canonical nodes and never alter later labels.
+ * MAC<0.90/degeneracy breaks plotted branches. A flat curve cannot establish
+ * angular completeness.
+ */
+export function fourierFillSweep(
+  input: Settings = DEFAULT,
+  requestedN = 12,
+  caseId: FourierCaseId = "mass",
+  optionsOrFills: number[] | { fills?: number[]; trackedBranch?: number } = {},
+): FourierSweep {
+  const fills = Array.isArray(optionsOrFills)
+      ? optionsOrFills
+      : (optionsOrFills.fills ?? Array.from({ length: 21 }, (_, i) => i / 20)),
+    requestedBranch = Array.isArray(optionsOrFills)
+      ? undefined
+      : optionsOrFills.trackedBranch,
+    trackedBranch = Number.isFinite(requestedBranch)
+      ? Math.max(1, Math.min(STRUCTURAL_ORDER, Math.round(requestedBranch!)))
+      : undefined,
+    settings = cleanSettings(input),
+    n = Math.max(
+      0,
+      Math.min(
+        FOURIER_MAX_ORDER,
+        Math.round(Number.isFinite(requestedN) ? requestedN : 12),
+      ),
+    ),
+    sampleFills = [
+      ...new Set([
+        0,
+        settings.fill,
+        ...fills
+          .filter(Number.isFinite)
+          .map((fill) => Math.max(0, Math.min(1, fill))),
+      ]),
+    ].sort((a, b) => a - b),
+    canonical = fourierCanonicalTrack(
+      settings,
+      n,
+      caseId,
+      Math.max(...sampleFills),
+      trackedBranch,
+    ),
+    points: FourierSweepPoint[] = [];
+  const accepted: FourierTrackedNode[] = [];
+  for (const fill of sampleFills) {
+    const sample = fourierTrackedSample(
+      settings,
+      n,
+      caseId,
+      fill,
+      canonical,
+      trackedBranch,
+    );
+    if (!sample.node) {
+      points.push({
+        fill,
+        liquidHeight: heightForFill(fill),
+        modes: [],
+        available: false,
+        freeSurfaceModel: fourierSurface({ ...settings, fill }, n, caseId),
+        error: sample.error,
+      });
+      continue;
+    }
+    const node = sample.node,
+      modes = trackedFourierModes(node).filter(
+        (mode) => trackedBranch === undefined || mode.branch === trackedBranch,
+      );
+    accepted.push(node);
+    points.push({
+      fill,
+      liquidHeight: heightForFill(fill),
+      modes,
+      available: true,
+      freeSurfaceModel: node.spectrum.freeSurfaceModel,
+    });
+  }
+  return {
+    settings,
+    n,
+    caseId,
+    points,
+    minTrackingMAC: Math.min(
+      1,
+      ...accepted.flatMap((node) =>
+        node.tracked.minimumQuality.filter(
+          (_, i) =>
+            trackedBranch === undefined ||
+            node.tracked.labels[i] === trackedBranch - 1,
+        ),
+      ),
+    ),
+    trackingAmbiguous: points.some(
+      (p) => !p.available || p.modes.some((mode) => mode.trackingAmbiguous),
+    ),
+  };
+}
+
+function fourierSensitivity(coarse: FourierSpectrum, refined: FourierSpectrum) {
+  const coarseModes = fourierModes(coarse),
+    refinedModes = fourierModes(refined),
+    score = coarse.wet.vectors.map((vector) =>
+      refined.wet.vectors.map((reference) =>
+        Math.min(1, mac(vector, reference, coarse.shellMass)),
+      ),
+    ),
+    assignment = modeAssignment(score),
+    minMAC = Math.min(...assignment.map((reference, i) => score[i][reference]));
+  return {
+    maxFrequencyRelativeDifference: Math.max(
+      ...coarseModes.map((mode, i) => {
+        const reference = refinedModes[assignment[i]];
+        return (
+          Math.abs(mode.frequency - reference.frequency) /
+          Math.max(1e-30, reference.frequency)
+        );
+      }),
+    ),
+    maxMassRatioRelativeDifference: Math.max(
+      ...coarseModes.map((mode, i) => {
+        const reference = refinedModes[assignment[i]];
+        return (
+          Math.abs(mode.addedMassRatio - reference.addedMassRatio) /
+          Math.max(1e-30, reference.addedMassRatio)
+        );
+      }),
+    ),
+    minMAC,
+    matchingAmbiguous:
+      minMAC < TRACK_WARNING_MAC ||
+      coarseModes.some((mode) => mode.trackingAmbiguous) ||
+      refinedModes.some((mode) => mode.trackingAmbiguous),
+  };
+}
+
+/** Radial integration sensitivity only; does not test Ritz/potential basis completeness. */
+export function fourierQuadratureDiagnostics(
+  input: Settings = DEFAULT,
+  n = 12,
+  caseId: FourierCaseId = "mass",
+) {
+  const settings = cleanSettings(input),
+    coarse = fourierSpectrum(settings, n, caseId),
+    refined = fourierSpectrum(settings, n, caseId, 4);
+  return {
+    n,
+    radialPoints:
+      n <= 4
+        ? GR.length
+        : Math.max(GR.length, n + 2 * POTENTIAL_RADIAL_ORDER + 1),
+    refinedRadialPoints:
+      (n <= 4
+        ? GR.length
+        : Math.max(GR.length, n + 2 * POTENTIAL_RADIAL_ORDER + 1)) + 4,
+    ...fourierSensitivity(coarse, refined),
+  };
+}
+
+/** Potential trial refinement; reports sensitivity rather than certifying completeness. */
+export function fourierBasisDiagnostics(
+  input: Settings = DEFAULT,
+  n = 12,
+  caseId: FourierCaseId = "mass",
+) {
+  const settings = cleanSettings(input),
+    coarse = fourierSpectrum(settings, n, caseId),
+    refined = fourierSpectrum(settings, n, caseId, 0, 5, 10);
+  return {
+    n,
+    potentialRadialOrder: POTENTIAL_RADIAL_ORDER,
+    potentialAxialOrder: POTENTIAL_AXIAL_ORDER,
+    refinedPotentialRadialOrder: 5,
+    refinedPotentialAxialOrder: 10,
+    ...fourierSensitivity(coarse, refined),
+    maxResidual: Math.max(...coarse.wet.residuals, ...refined.wet.residuals),
+  };
+}
+
 const FLUID_MODE_RESPONSE = new WeakMap<
   ModalMode,
   { potentials: Potential[]; coefficients: number[] }
@@ -1402,7 +2538,7 @@ export function fluidDisplacement(
       sm = solution.slosh.find(
         (s) => s.n === mode.n && s.orientation === mode.orientation,
       );
-    const f = fluidMatrices(
+    const f = shellFluidMatrices(
         shell.basis,
         solution.liquidHeight,
         sm,

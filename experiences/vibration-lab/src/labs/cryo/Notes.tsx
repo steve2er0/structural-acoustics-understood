@@ -65,6 +65,14 @@ export default function Notes({ close }: { close: () => void }) {
           geometry preserves circumferential orthogonality, so modes with
           different azimuthal orders do not exchange energy in this reduction.
         </p>
+        <p>
+          The shell inspector and animation cover n = 0–12, retaining five axial
+          trials for each represented orientation: 80 shell coordinates and
+          seven surface coordinates in the partial-fill coupled system. Orders n
+          = 1–3 include cosine/sine partners; n = 4–12 show one representative
+          cosine orientation. Each family exposes its first three tracked shell
+          branches.
+        </p>
         <h3>Seven eigenvectors, including directional pairs</h3>
         <p>
           The ideal circular free-surface basis is ordered as n = 1 cosine/sine,
@@ -73,6 +81,12 @@ export default function Notes({ close }: { close: () => void }) {
           shapes define the retained fluid eigenvectors in this reduced model;
           directional partners count separately. They are generated here, rather
           than imported from your existing tank model.
+        </p>
+        <p>
+          No extra slosh shapes are introduced for n ≥ 4. Those partial-fill
+          shell families use a rigid free surface; their coupled and
+          mass-plus-pressure comparisons coincide because the seven retained n =
+          0–3 surface shapes are orthogonal to them.
         </p>
         <code>ω²slosh = aeff k tanh(kH) · k = ξ/R</code>
         <p>
@@ -117,6 +131,54 @@ export default function Notes({ close }: { close: () => void }) {
           matter. A completely full tank has no retained free-surface slosh
           coordinates.
         </p>
+        <h3>Fourier coverage and the fill sweep</h3>
+        <p>
+          The Fourier coverage analysis adds representative cosine shell
+          families through n = 20, independently of the n = 0–12 animation. Its
+          horizontal axis is frequency on a logarithmic scale; its vertical axis
+          is circumferential order. The plot and selected-family fill sweep
+          display m = 1, meaning the first tracked dry shell branch in each
+          family. This is a mixed Ritz eigenvector, not a single axial trial
+          function. Five axial trials remain in each solve; higher branches are
+          hidden. Compare cutoffs of 8, 12, 16 and 20 over your frequency band.
+          In this axisymmetric model, different n blocks are orthogonal: adding
+          higher orders leaves every existing block unchanged. A quiet fill
+          curve, or unchanged low-order frequencies, therefore cannot establish
+          that n = 12 is sufficient. Look for additional in-band families above
+          the cutoff, then check the structural and fluid basis within each
+          relevant family. An m = 1 branch below the plotted frequency band does
+          not establish that its family has no higher in-band branches.
+        </p>
+        <code>μj = (φjᵀ MA φj) / (φjᵀ Mdry φj)</code>
+        <p>
+          This modal ratio measures liquid inertia relative to structural
+          inertia for the solved wet shape. Added mass is applied throughout the
+          retained spectrum; there is no 100 Hz switch. Higher n means shorter
+          circumferential wavelength, λθ = πD/n. Tank size alone does not fix
+          the required order: stiffness, fill, mode shapes and the analysis band
+          also matter.
+        </p>
+        <p>
+          The pressure-only comparison applies Kdry + KG with dry structural
+          mass and no added-mass matrix, so μ = 0. Fill, fluid density and axial
+          acceleration still change the pressure-induced geometric stiffness
+          through the liquid head. The fluid-basis refinement control is omitted
+          for this case because no fluid inertia operator is applied.
+        </p>
+        <p>
+          Each animated and diagnostic family retains five axial shell trials.
+          Partial-fill n = 0–3 uses the existing retained-surface condensation;
+          n ≥ 4 uses a rigid-surface approximation, so those fill curves are not
+          complete pressure-release results. The displayed counts represent only
+          m = 1 in one orientation per family; higher branches and the
+          degenerate sine partner are not counted. Surface-condensation and
+          closed-liquid constraints apply to the cases with fluid added mass,
+          rather than the pressure-only comparison. The finite n = 20 search,
+          restricted shell basis and incompressible fluid do not establish
+          completeness or physical accuracy over 10–2000 Hz. Liquid acoustic
+          modes require a compressible formulation when they interact with the
+          structure.
+        </p>
         <h3>Numerical sensitivity at the nominal operating point</h3>
         <p>
           85% LOX, 31 psig, 2 g. The potential-flow column compares the lowest
@@ -146,14 +208,37 @@ export default function Notes({ close }: { close: () => void }) {
         </table>
         <p>
           Some shell families remain sensitive to the restricted trial space.
-          Mode-shape MAC is shown beside each shell result; weak matches are
-          marked in the fill comparison. Near the dome poles, slosh and shell
-          approximations need additional refinement. The pressure reduction
-          omits the follower-load tangent and dome prestress; the ullage gas
-          spring is also omitted.
+          Fill-step MAC measures overlap with the preceding continuation state;
+          dry-shape overlap measures how much the tracked shape has changed.
+          Uncertain continuation is marked in the fill comparison. Liquid
+          kinetic energy does not decide which branch is a shell mode. Near the
+          dome poles, slosh and shell approximations need additional refinement.
+          The pressure reduction omits the follower-load tangent and dome
+          prestress; the ullage gas spring is also omitted.
         </p>
         <h3>Primary references</h3>
         <ul>
+          <li>
+            <a
+              href="https://ntrs.nasa.gov/citations/19800011283"
+              target="_blank"
+              rel="noreferrer"
+            >
+              NASA TP-1558: Hydroelastic vibration of partially filled shells
+            </a>{" "}
+            — series potential-flow inertia, prestress and free-surface
+            coupling.
+          </li>
+          <li>
+            <a
+              href="https://ntrs.nasa.gov/citations/20200001729"
+              target="_blank"
+              rel="noreferrer"
+            >
+              NASA: Rocket engine modal correlation in liquid hydrogen
+            </a>{" "}
+            — structural interaction with compressible liquid acoustic modes.
+          </li>
           <li>
             <a
               href="https://ntrs.nasa.gov/citations/19670006555"

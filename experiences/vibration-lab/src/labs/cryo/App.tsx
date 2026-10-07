@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -15,6 +15,7 @@ import { LabCanvas, SceneBoundary } from "@engine/Scene";
 import { useGuidedTour } from "@engine/useGuidedTour";
 import {
   DEFAULT,
+  SHELL_MAX_ORDER,
   findMode,
   solve,
   type Settings,
@@ -29,13 +30,11 @@ import "./style.css";
 const format = (n: number, digits = 2) =>
   n.toLocaleString("en-US", { maximumFractionDigits: digits });
 const INITIAL: Selection = { kind: "shell", n: 2, axialOrder: 1, sloshId: 1 };
-const SHELL_NAMES = [
-  "Breathing",
-  "Bending",
-  "Ovalization",
-  "Three-lobe",
-  "Four-lobe",
-];
+const SHELL_NAMES = Array.from(
+  { length: SHELL_MAX_ORDER + 1 },
+  (_, n) =>
+    ["Breathing", "Bending", "Ovalization", "Three-lobe"][n] ?? `${n}-lobe`,
+);
 export default function CryoLab() {
   const [settings, setSettings] = useState<Settings>({ ...DEFAULT });
   const [caseId, setCase] = useState<CaseId>("coupled");
@@ -63,10 +62,6 @@ export default function CryoLab() {
   const active =
     !!selected &&
     (selection.kind !== "slosh" || (settings.fill > 0 && settings.fill < 1));
-  useEffect(() => {
-    if (selection.kind === "shell" && !selected && availableOrders.length)
-      setSelection((s) => ({ ...s, axialOrder: availableOrders[0] }));
-  }, [selected, selection.kind]);
   const caseData = CASES.find((c) => c.id === caseId)!;
   const dry = findMode(solution, "dry", { ...selection, kind: "shell" });
   const frequencyChange =
@@ -262,9 +257,11 @@ export default function CryoLab() {
                 <i className={paused ? "" : "vl-status-dot"} />
                 {display === "Pressure"
                   ? "STATIC PRESSURE"
-                  : paused
-                    ? "PAUSED"
-                    : "MODE SHAPE / SLOWED"}
+                  : !active
+                    ? "MODE UNAVAILABLE"
+                    : paused
+                      ? "PAUSED"
+                      : "MODE SHAPE / SLOWED"}
               </span>
             </div>
             <div className="cryo-scene">
@@ -344,7 +341,9 @@ export default function CryoLab() {
                 <i />
                 {display === "Pressure"
                   ? "0 → 1.4 MPa gauge"
-                  : "− displacement → +"}
+                  : active
+                    ? "− displacement → +"
+                    : "Undeformed tank"}
               </span>
             </div>
             <p className="cryo-scene-caption">
@@ -352,7 +351,9 @@ export default function CryoLab() {
                 ? `Configured static load: ${format(settings.ullagePsi)} psig ullage + ${format(solution.headPa / 6894.757)} psi liquid head at the bottom.${caseId === "dry" || caseId === "mass" ? " This selected eigenproblem excludes pressure stiffness." : ""}`
                 : active
                   ? "Displacements are amplified. The silver ghost marks the undeformed shell; shell and surface motion share one eigenvector scale."
-                  : "Free-surface slosh is inactive in an empty or completely full tank."}
+                  : selection.kind === "shell"
+                    ? "This tracked branch is unavailable at complete fill. The tank is shown undeformed."
+                    : "Free-surface slosh is inactive in an empty or completely full tank."}
               <span>
                 Reduced shell / potential-flow model · frequencies illustrate
                 this model.
@@ -438,9 +439,9 @@ export default function CryoLab() {
                   </select>
                 </label>
                 <label>
-                  Axial reference
+                  Tracked shell branch
                   <select
-                    aria-label="Axial shell reference"
+                    aria-label="Tracked shell branch"
                     value={selection.axialOrder}
                     onChange={(e) => {
                       tour.stop();
@@ -450,9 +451,10 @@ export default function CryoLab() {
                       }));
                     }}
                   >
-                    {availableOrders.map((j) => (
+                    {[1, 2, 3].map((j) => (
                       <option key={j} value={j}>
-                        Basis {j}
+                        Dry branch {j}
+                        {availableOrders.includes(j) ? "" : " · unavailable"}
                       </option>
                     ))}
                   </select>
@@ -488,8 +490,24 @@ export default function CryoLab() {
                 </label>
               </div>
             )}
+            {selection.kind === "shell" &&
+              selection.n >= 4 &&
+              settings.fill > 0 &&
+              settings.fill < 1 &&
+              ["mass", "combined", "coupled"].includes(caseId) && (
+                <p className="cryo-inline-note">
+                  n = {selection.n} uses liquid added mass with a rigid free
+                  surface. The seven slosh shapes belong to n = 0–3.
+                </p>
+              )}
             <div className="cryo-hero-readout">
-              <span>{active ? caseData.label : "Fluid mode inactive"}</span>
+              <span>
+                {active
+                  ? caseData.label
+                  : selection.kind === "shell"
+                    ? "Shell branch unavailable"
+                    : "Fluid mode inactive"}
+              </span>
               <strong>
                 {active && selected
                   ? format(selected.frequency, selected.frequency < 1 ? 3 : 2)
@@ -504,10 +522,17 @@ export default function CryoLab() {
               {selection.kind === "shell" && selected && (
                 <span className="cryo-frequency-delta">
                   {frequencyChange >= 0 ? "+" : ""}
-                  {format(frequencyChange, 1)}% from matched dry reference
+                  {format(frequencyChange, 1)}% from dry branch
                 </span>
               )}
             </div>
+            {selection.kind === "shell" && !selected && (
+              <p className="cryo-inline-note">
+                At complete fill, the sealed incompressible liquid removes one
+                volume-changing shell direction. This branch is unavailable;
+                lower the fill to follow it again, or choose another branch.
+              </p>
+            )}
             <div className="cryo-stat-list">
               <div>
                 <span>Liquid mass</span>
@@ -560,38 +585,53 @@ export default function CryoLab() {
             {selected && selection.kind === "shell" && (
               <div className="cryo-match">
                 <span>
-                  Dry reference MAC <b>{format(selected.match * 100, 1)}%</b>
+                  Fill-step MAC <b>{format(selected.trackingMAC * 100, 1)}%</b>
                 </span>
                 <small>
-                  Eigen residual {selected.residual.toExponential(1)}
+                  Dry-shape overlap {format(selected.match * 100, 1)}% · Eigen
+                  residual {selected.residual.toExponential(1)}
                 </small>
-                {selected.match < 0.8 && (
+                {selected.trackingAmbiguous ? (
                   <p>
-                    Weak shape match: this eigenvector mixes the reference
-                    shapes. Inspect the mode before interpreting the frequency
-                    comparison.
+                    Uncertain continuation: closely mixed shapes could not be
+                    uniquely followed through fill. Inspect the mode before
+                    interpreting this branch comparison.
                   </p>
-                )}
+                ) : selected.match < 0.8 ? (
+                  <p>
+                    The shape has evolved from its dry reference. Strong overlap
+                    between successive fill steps keeps this branch connected as
+                    it changes.
+                  </p>
+                ) : null}
               </div>
             )}
             <p className="cryo-interpretation">
               {selection.kind === "slosh"
                 ? "The seven fluid eigenvectors contain three directional pairs and one axisymmetric shape. Shell coupling follows spatial overlap."
                 : caseId === "dry"
-                  ? "The dry reference isolates the elastic shell basis. Match this shape across the other operating models."
+                  ? "The dry reference anchors this shell branch. Each operating model follows its evolution through fill."
                   : caseId === "mass"
                     ? "Liquid contributes dynamic inertia through a coupled matrix. The wetted wall accelerates a mode-dependent portion of the liquid."
                     : caseId === "pressure"
                       ? "The geometric stiffness contribution comes from uniform ullage pressure and the acceleration-induced liquid pressure field."
                       : caseId === "combined"
                         ? "The condensed fluid inertia and pressure prestress act in the same eigensolve. Their balance sets the resulting shape and frequency."
-                        : "The elastic shell and seven retained free-surface coordinates are solved together. Different circumferential harmonics remain orthogonal."}
+                        : selection.n >= 4
+                          ? "This higher shell order has fluid inertia and pressure prestress, with no retained slosh coordinate. Its motion is orthogonal to the n = 0–3 free-surface shapes."
+                          : "The elastic shell and seven retained free-surface coordinates are solved together. Different circumferential harmonics remain orthogonal."}
             </p>
             {selection.kind === "shell" && [1, 3, 4].includes(selection.n) && (
               <p className="cryo-inline-note">
                 This family's lowest dry frequency changes about 12–14% with
                 nominal basis refinement. Its frequency remains an illustrative
                 estimate.
+              </p>
+            )}
+            {selection.kind === "shell" && selection.n > 4 && (
+              <p className="cryo-inline-note">
+                Five axial shell trials represent this family. Extending the
+                angular order does not establish axial-basis convergence.
               </p>
             )}
             {settings.fill > 0 &&
@@ -620,7 +660,13 @@ export default function CryoLab() {
               label="Tank analysis"
               value={tab}
               options={(
-                ["Compare", "Pressure", "Slosh", "Fill sweep"] as const
+                [
+                  "Compare",
+                  "Pressure",
+                  "Slosh",
+                  "Fill sweep",
+                  "Fourier coverage",
+                ] as const
               ).map((value) => ({ value, label: value }))}
               onChange={(t) => {
                 tour.stop();

@@ -36,7 +36,7 @@ Ullage pressure raises the entire profile. Acceleration changes the slope in the
 
 ## Structural Ritz space
 
-Five axial trial functions are retained for each represented circumferential family n = 0–4. Cosine and sine shell partners are retained for n = 1–3; n = 4 uses one representative orientation. This gives 40 structural coordinates. The UI exposes the first three matched elastic branches of each family.
+Five axial trial functions are retained for each represented circumferential family n = 0–12. Cosine and sine shell partners are retained for n = 1–3; n = 4–12 uses one representative cosine orientation. This gives 80 structural coordinates, plus the same seven surface coordinates in the partial-fill coupled system. The inspector and animation expose the first three tracked elastic branches of every family through n = 12. The four lowest names remain breathing (n = 0), bending (n = 1), ovalization (n = 2) and three-lobe (n = 3); higher families use their lobe count.
 
 For each axial polynomial Pⱼ(2z/H−1), a smooth envelope F(z) = sin²(πz/H)Pⱼ is used. Cylindrical displacement components have radial amplitude R(z)F(z)/R, near-inextensional hoop amplitude −uᵣ/n, and an axial amplitude −R(z)²F′/(Rn²) for n > 0. The n = 0 coordinates represent radial breathing without an independent axial relaxation coordinate.
 
@@ -138,13 +138,116 @@ M*A=M*{ss}-M*{sf}M*{ff}^{-1}M*{fs},\qquad
 \eta=-M*{ff}^{-1}M\_{fs}q_s.
 \]
 
-This is a **seven-coordinate condensation**, not the complete exact pressure-release free-surface operator. Angular blocks without a retained surface coordinate, including n = 4, retain the rigid-surface approximation. The same condensed surface motion is used in their visualization; the coupled case uses its solved η. Fluid arrows come from the gradient of the same Galerkin potential used for kinetic energy.
+This is a **seven-coordinate condensation**, not the complete exact pressure-release free-surface operator. Angular blocks without a retained surface coordinate, n = 4–12 in the animation, retain the rigid-surface approximation. For those blocks, the coupled and combined eigenproblems coincide: the seven lower-order free-surface coordinates remain orthogonal to their shell motion. Where a surface coordinate is retained, the condensed surface motion is used in its visualization; the coupled case uses its solved η. Fluid arrows come from the gradient of the same Galerkin potential used for kinetic energy.
 
-Mode labels are assigned by maximizing common dry-structural-mass MAC across the candidates within an angular block. Shell comparisons share the phase of their dry reference. A small MAC signals a poor branch correspondence; frequency ordering alone is not a mode identity. At complete fill, the incompressible sealed fluid imposes zero wall-volume change, eliminating one n = 0 direction. Matching then considers any subset of dry references; an eliminated branch is left unavailable. Empty and completely full tanks have no free-surface coordinates.
+Shell labels are anchored to dry references and continued through small fill increments within each angular block, using MAC and one-to-one assignment. The empty-tank seed includes the selected ullage pressure and is mapped to the dry shell with the dry structural mass metric. At fixed topology, successive states use the mean of their total kinetic mass matrices; the coupled case includes the retained surface coordinate. At surface opening/closing or a change in dimension, matching uses the shared structural coordinates with the dry mass metric. A liquid-heavy shell mode is not penalized for its small structural kinetic-energy fraction. Independently matching every fill to the original dry shape can jump between distinct eigenvectors as shapes evolve; that comparison is no longer used to define branch identity. Frequencies, eigen residuals and modal energy fractions remain outputs of the unchanged generalized eigenproblem, with no smoothing of eigenvalues.
+
+The canonical continuation grid uses 1% volume-fill increments, with adaptive bisection when an adjacent assignment has MAC below 99.5%. Refinement is bounded by a minimum fill step of 0.001 percentage point and twelve bisection levels. An accepted path containing MAC below 90% or a numerically degenerate pair is flagged as uncertain. The path starts from empty fill at fixed liquid, ullage and acceleration, so jumping the slider directly to a fill gives the same result as reaching it incrementally. Changing another operating parameter creates a new fill path; the demo does not track a multidimensional parameter path.
+
+Tracking is resolved lazily by `findMode` for the inspected angular block, with bounded operating-point caches. `solve` first returns the actual spectrum with provisional pointwise labels. Programmatic callers that enumerate an entire case should call `resolveCaseModes` to resolve all of that case's identities. This keeps slider interaction responsive without changing the spectrum.
+
+The UI separates **fill-step MAC** (overlap with the preceding continuation state) from **dry-shape overlap** (overlap with the original reference). A shape can evolve far from its dry reference while remaining continuously tracked. Uncertain continuation is flagged, and the fill plot breaks rather than joining an uncertain correspondence. Each current-fill plot marker uses the exact same eigenvector as the numerical readout and 3D scene.
+
+At complete fill, the incompressible sealed fluid imposes zero wall-volume change, eliminating one n = 0 direction. An eliminated branch is left unavailable. The user's selection remains on that branch with no frequency or modal animation, rather than silently switching to another eigenvector. Empty and completely full tanks have no free-surface coordinates.
 
 “Structural kinetic energy” and “fluid kinetic energy” sum to 100%. Fluid energy includes shell/surface cross terms; it is not a pure slosh-coordinate participation percentage. A single visual scale is applied to shell, surface and liquid displacement to preserve their relative amplitudes. Playback is slowed and deformation amplified.
 
+The shell mesh retains 96 circumferential segments, giving eight samples per angular wavelength at n = 12. Fluid-arrow sampling increases for n ≥ 4 to more than 2(n + 1) angles, avoiding the repeated-phase alias of the previous four fixed angular locations. The high-order radial sample rings are at 0.65 and 0.92 of the local tank radius because the potential motion concentrates near the wetted wall. This changes only visual sampling, not the fluid matrix, modal amplitudes or calculated frequencies.
+
 ## Numerical evidence and practical limits
+
+### Fourier coverage across a fill sweep
+
+The **Fourier coverage** analysis is an additional diagnostic, separate from the
+n = 0–12 animation and its seven-coordinate coupled solve. It evaluates the same
+shell-energy and potential-flow formulation in representative cosine blocks
+n = 0–20. The controls compare retained cutoffs of 8, 12, 16 and 20, with a
+user-selected frequency band (default 10–2000 Hz) and mass-only, pressure-only
+or mass plus pressure stiffness. Frequency is on the horizontal logarithmic
+axis and circumferential order n is on the vertical axis. The spectrum plot,
+selected-family fill sweep and current-fill readout show only **m = 1**, defined
+as the first tracked dry shell branch of each angular family. Its eigenvector
+mixes the five axial shell trials retained in every solve; m does not identify
+one literal axial Fourier wave or Ritz trial coordinate. Higher solved shell
+branches remain hidden in this panel.
+
+In an exactly axisymmetric tank, angular orthogonality makes these independent
+blocks. Raising the angular cutoff does **not** alter any already-retained
+block. Consequently, unchanged low-order frequencies or a weak dependence on
+fill cannot establish angular completeness. The diagnostic instead reports
+additional **m = 1** branches above the chosen cutoff that fall inside the
+analysis band. Counts include only the first tracked dry branch in one cosine
+orientation per n; higher shell branches and the degenerate sine partner are
+not counted. Frequencies outside the entered band are hidden and their counts
+are stated above the plot. An m = 1 frequency below 10 Hz can coexist with
+higher in-band branches of the same angular family, so the absence of plotted
+m = 1 points is not evidence of complete angular coverage. No modes above n = 20 are
+searched, and the five-trial axial space cannot represent every high-frequency
+shell mode.
+
+For each wet eigenvector, the mode-dependent added-mass ratio is
+
+\[
+\mu_j=\frac{\phi_j^T M_A\phi_j}{\phi_j^T M_{\rm dry}\phi_j}.
+\]
+
+The density-scaled added-mass matrix enters every retained mass-only or combined eigenproblem;
+there is no 100 Hz frequency gate. A small ratio indicates little added liquid
+inertia for that particular shape, rather than an extractor-frequency cutoff.
+The angular wavelength is \(\lambda_\theta=\pi D/n\), approximately 2.20 m at
+n = 12 for this tank. This length alone does not establish a suitable cutoff.
+
+The pressure-only case solves \((K_s+K_G)\phi=\omega^2M_s\phi\), omitting fluid
+added mass and giving μ = 0. Fill, liquid density and axial acceleration still
+affect its geometric stiffness through the hydrostatic pressure field. It
+does not apply the condensed/rigid surface treatment or full-liquid volume
+constraint and keeps all five structural directions at complete fill. The
+fluid-basis refinement button is not applicable to this case and is hidden.
+
+Partial-fill n = 0–3 uses the original retained-surface condensation. No
+additional slosh coordinates are introduced for n ≥ 4: these animated and diagnostic blocks
+use the **rigid-surface approximation**, not a complete pressure-release boundary
+condition. Empty fill has zero fluid added mass. At complete fill, the n = 0
+zero-volume-change constraint removes one structural direction. Thus the
+diagnostic remains useful for showing angular coverage and modal inertia, but
+cannot certify the user's FEM or full-band convergence.
+
+The selected-family fill plot shows only m = 1 at 5% volume samples with the exact operating
+fill inserted. Families n = 0–4 retain the established canonical 1% fill grid
+and refinement across all five branches. Families n = 5–20 use a canonical 5%
+seed grid, adaptively refined for the inspected m = 1 branch. The main
+animation's all-branch tracker retains its canonical 1% grid through n = 12.
+The upper plot requests this same tracked branch at the current fill, rather
+than rematching independently to the original dry shape.
+Adjacent matching uses the mean total kinetic mass metric at fixed topology
+and the dry structural metric when a full-tank constraint changes dimension,
+with one-to-one assignment across all five solved eigenvectors. Adaptive
+bisection refines steps where the inspected branch (or any branch for n = 0–4) has MAC below 99.5%, with
+the same bounded minimum step and refinement depth as the main
+animated fill plot. Accepted correspondences below 90% MAC or numerical
+degeneracy are flagged and the affected plot connection is broken. Inserting
+a current-fill point does not change the canonical branch assignment at other
+samples.
+
+High-order potential products require additional radial integration points.
+The animated and diagnostic blocks increase Gauss quadrature with n and radial basis order while
+preserving the original low-order integration. For blocks above
+n = 4, fluid inertia is assembled as a Cholesky energy Gram matrix to avoid
+the roundoff and asymmetry of explicit inverse multiplication. Failed numerical
+blocks are marked unavailable and coverage is reported incomplete; they are
+never treated as evidence of no in-band modes. An optional fixed-n fluid-basis
+check compares 4×8 and 5×10 potential trial spaces at the exact current fill,
+separately reporting frequency and modal-inertia sensitivity and solve quality
+across all five solved branches; its scope is stated separately from the
+single-branch plots.
+This is not angular-cutoff convergence or a structural-basis refinement.
+Radial quadrature refinement addresses polynomial integration, not axial/dome
+discretization or basis convergence. Algebraic residuals alone do not establish
+discretization accuracy. A useful FEM audit
+checks higher-n in-band families, refines the meridional/potential space, and
+assesses liquid acoustic interaction separately. An incompressible potential
+model continues to apply added mass at high frequency but does not contain
+compressible liquid acoustic modes.
 
 The tests exercise geometry/fill inversion, gauge pressure and total effective acceleration, empty/full tank limits, volume constraint, density scaling, gravity-slosh √a scaling, degeneracy, angular orthogonality, coupled eigen residuals, positive energy fractions, common displacement scale and phase, and an independent volume integration of the displayed liquid kinetic energy.
 
@@ -173,3 +276,4 @@ Near-full top-dome fill is harder for the fixed potential basis because the free
 - [NIST Digital Library of Mathematical Functions, §10.21](https://dlmf.nist.gov/10.21): Bessel zeros and derivative-zero notation. Here “first root” always means first strictly positive root; the n = 0 zero/constant mode is excluded.
 - [Cooper, NASA TN D-3831 (1967)](https://ntrs.nasa.gov/api/citations/19670009308/downloads/19670009308.pdf): infinitesimal vibrations about a prestressed shell equilibrium. Printed pages 9–12.
 - [NASA cryogenic-propellant density reference](https://ntrs.nasa.gov/api/citations/19950006283/downloads/19950006283.pdf): representative normal-boiling-point liquid hydrogen and liquid oxygen densities, rounded here to 70.8 and 1140 kg/m³.
+- [Brown & DeLessio, NASA (2020), _Test-Analysis Modal Correlation of Rocket Engine Structures in Liquid Hydrogen—Phase II_](https://ntrs.nasa.gov/api/citations/20200001729/downloads/20200001729.pdf): structural–acoustic interaction in a compressible liquid; this is evidence for an omitted mechanism, not validation of this tank model.

@@ -38,6 +38,7 @@ export const CAMERAS: CameraPresets<View> = {
 };
 const SCALE = 0.25;
 const BASE = 0.4;
+// Eight circumferential samples per wavelength at the maximum animated n = 12.
 const THETA = 96;
 const MERIDIAN = 108;
 const RADIAL = 24;
@@ -353,7 +354,10 @@ function Article({
   useEffect(() => () => liquid.geometry.dispose(), [liquid]);
   useEffect(() => () => surface.geometry.dispose(), [surface]);
   useFrame(() => {
-    const phase = Math.sin(clock.current);
+    // A zero drawing gain also marks an unavailable selected eigenvector.
+    // The fallback mode supplies geometry only; none of its modal field is shown.
+    const phase =
+      gain > 0 && display !== "Pressure" ? Math.sin(clock.current) : 0;
     const amplitude =
       display === "Pressure" ? 0 : (0.55 * gain * phase) / fields.peak;
     const positions = shell.geometry.getAttribute("position");
@@ -517,7 +521,11 @@ function Article({
           {display !== "Pressure" && (
             <Annotation
               position={[1.2, 1.1, 0.25]}
-              text={"Undeformed wire ghost\nModal motion amplified"}
+              text={
+                gain > 0
+                  ? "Undeformed wire ghost\nModal motion amplified"
+                  : "Undeformed wire ghost\nNo active eigenvector"
+              }
               color="#c8d8d2"
               offset={[50, 5]}
             />
@@ -546,11 +554,19 @@ function FluidArrows({
       drawDirection: Vector3;
       length: number;
     }[] = [];
+    // Four fixed angles alias high orders (all n = 12 samples had one phase).
+    // Cartesian gradient components also contain n +/- 1, so use > 2(n + 1)
+    // angles. Higher-n potential motion concentrates near the wetted wall.
+    const highOrder = mode.n >= 4;
+    const angularSamples = highOrder ? Math.max(12, 2 * mode.n + 3) : 4;
+    const radialSamples = highOrder ? [0.65, 0.92] : [0.35, 0.7];
     for (const fraction of [0.28, 0.55, 0.82]) {
       const z = solution.liquidHeight * fraction;
-      for (const ringFraction of [0.35, 0.7])
-        for (let j = 0; j < 4; j++) {
-          const theta = Math.PI / 4 + (j * Math.PI) / 2,
+      for (const ringFraction of radialSamples)
+        for (let j = 0; j < angularSamples; j++) {
+          const theta = highOrder
+              ? ((j + 0.35) * Math.PI * 2) / angularSamples
+              : Math.PI / 4 + (j * Math.PI) / 2,
             r = radiusAt(z) * ringFraction;
           const field = fluidDisplacement(solution, mode, r, z, theta);
           const direction = new Vector3(
@@ -834,6 +850,7 @@ export default function World({
       />
       <Dimensions />
       {display === "Fluid motion" &&
+        gain > 0 &&
         solution.fluidActive &&
         (caseId === "mass" ||
           caseId === "combined" ||

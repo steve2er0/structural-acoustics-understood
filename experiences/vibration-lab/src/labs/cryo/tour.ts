@@ -1,7 +1,8 @@
 import type { CaseId, Settings } from "./physics";
 import type { View } from "./Scene";
 export type Display = "Mode shape" | "Pressure" | "Fluid motion";
-export type AnalysisTab = "Compare" | "Pressure" | "Slosh" | "Fill sweep";
+export type AnalysisTab =
+  "Compare" | "Pressure" | "Slosh" | "Fill sweep" | "Fourier coverage";
 export const TOUR: readonly {
   duration: number;
   title: string;
@@ -109,7 +110,7 @@ export const TOUR: readonly {
   {
     duration: 11,
     title: "Follow the mode as the liquid level changes.",
-    copy: "Move the fill slider to change the wetted geometry. Frequency curves match the selected reference shape within a circumferential family; near mixed modes, inspect the shape and its character.",
+    copy: "Move the fill slider to change the wetted geometry. Follow one shell branch through small fill steps. Its shape can evolve away from the dry shape; inspect continuation quality near mixed modes.",
     settings: {},
     caseId: "coupled",
     display: "Mode shape",
@@ -117,6 +118,19 @@ export const TOUR: readonly {
     tab: "Fill sweep",
     kind: "shell",
     n: 2,
+    sloshId: 1,
+  },
+  {
+    duration: 11,
+    title: "Inspect a shorter angular wavelength.",
+    copy: "n = 12 makes twelve circumferential lobes. The wetted shell still accelerates liquid. This order has a rigid free surface in the reduction; the seven retained lower-order slosh shapes do not couple to it. The inspector reaches n = 12, while Fourier coverage searches additional families through n = 20.",
+    settings: {},
+    caseId: "mass",
+    display: "Mode shape",
+    view: "Surface",
+    tab: "Compare",
+    kind: "shell",
+    n: 12,
     sloshId: 1,
   },
 ];

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { findMode, solve, type Solution, type CaseId } from "./physics";
 import type { AnalysisTab } from "./tour";
+import FourierCoverage from "./FourierCoverage";
 export interface Selection {
   kind: "shell" | "slosh";
   n: number;
@@ -47,7 +48,7 @@ export const CASES: {
     label: "With seven slosh modes",
     short: "+ 7 slosh",
     color: "#c9b4e8",
-    copy: "Shell and free-surface coordinates solved together",
+    copy: "Shell + surface solve; retained slosh shapes at n = 0–3",
   },
 ];
 const fmt = (x: number) =>
@@ -77,14 +78,14 @@ export default function Plots({
     () =>
       tab !== "Fill sweep" || selection.kind !== "shell"
         ? []
-        : Array.from({ length: 19 }, (_, i) => {
-            const fill = 0.05 + i * 0.05;
+        : Array.from({ length: 21 }, (_, i) => {
+            const fill = i * 0.05;
             const s = solve({ ...solution.settings, fill });
             const modes = CASES.map((c) => findMode(s, c.id, selection));
             return {
               fill,
-              values: modes.map((m) => m?.frequency ?? 0),
-              matches: modes.map((m) => m?.match ?? 0),
+              values: modes.map((m) => m?.frequency ?? null),
+              uncertain: modes.map((m) => !m || m.trackingAmbiguous),
             };
           }),
     [
@@ -97,6 +98,8 @@ export default function Plots({
       selection.axialOrder,
     ],
   );
+  if (tab === "Fourier coverage")
+    return <FourierCoverage solution={solution} />;
   if (tab === "Pressure") {
     const ullage = solution.ullagePa / 1000,
       head = solution.headPa / 1000,
@@ -253,20 +256,32 @@ export default function Plots({
       </div>
     );
   if (tab === "Fill sweep") {
-    const limit = Math.max(1, ...sweep.flatMap((s) => s.values)) * 1.15;
+    // Use the same exact-fill eigenvectors as the readout and scene, rather
+    // than placing their markers on an independently interpolated curve.
+    const currentModes = CASES.map((c) => findMode(solution, c.id, selection));
+    const points = [
+      ...sweep.filter((s) => Math.abs(s.fill - solution.settings.fill) > 1e-9),
+      {
+        fill: solution.settings.fill,
+        values: currentModes.map((m) => m?.frequency ?? null),
+        uncertain: currentModes.map((m) => !m || m.trackingAmbiguous),
+      },
+    ].sort((a, b) => a.fill - b.fill);
+    const limit =
+      Math.max(1, ...points.flatMap((s) => s.values.map((v) => v ?? 0))) * 1.15;
     const x = (f: number) => L + f * (W - L - R),
       y = (f: number) => T + (1 - f / limit) * (H - T - B);
     return (
       <div className="cryo-plot-card">
         <div className="cryo-plot-title">
-          <h3>Follow this shell family through the fill range.</h3>
-          <span>REFERENCE-SHAPE MATCH / Hz</span>
+          <h3>Follow the same mode as the tank fills.</h3>
+          <span>FILL CONTINUATION / Hz</span>
         </div>
         <svg
           className="cryo-plot"
           viewBox={`0 0 ${W} ${H}`}
           role="img"
-          aria-label="Matched modal frequencies as liquid volume fill changes"
+          aria-label="Tracked modal frequencies as liquid volume fill changes"
         >
           {[0, 0.25, 0.5, 0.75, 1].map((v) => (
             <g key={v}>
@@ -293,11 +308,11 @@ export default function Plots({
           {CASES.map((c, j) => (
             <path
               key={c.id}
-              d={sweep
+              d={points
                 .map((s, i) =>
-                  s.matches[j] < 0.8
+                  s.uncertain[j] || s.values[j] === null
                     ? ""
-                    : `${i > 0 && sweep[i - 1].matches[j] >= 0.8 ? "L" : "M"} ${x(s.fill)} ${y(s.values[j])}`,
+                    : `${i > 0 && !points[i - 1].uncertain[j] && points[i - 1].values[j] !== null ? "L" : "M"} ${x(s.fill)} ${y(s.values[j]!)}`,
                 )
                 .join(" ")}
               stroke={c.color}
@@ -315,13 +330,13 @@ export default function Plots({
             strokeDasharray="2 5"
           />
           {CASES.map((c, j) =>
-            sweep
-              .filter((s) => s.matches[j] < 0.8)
+            points
+              .filter((s) => s.uncertain[j] && s.values[j] !== null)
               .map((s) => (
                 <circle
                   key={`${c.id}-${s.fill}`}
                   cx={x(s.fill)}
-                  cy={y(s.values[j])}
+                  cy={y(s.values[j]!)}
                   r={3}
                   fill="none"
                   stroke={c.color}
@@ -337,7 +352,9 @@ export default function Plots({
                   cx={x(solution.settings.fill)}
                   cy={y(m.frequency)}
                   r={4}
-                  fill={c.color}
+                  fill={m.trackingAmbiguous ? "none" : c.color}
+                  stroke={c.color}
+                  strokeWidth={m.trackingAmbiguous ? 2 : 1}
                 />
               )
             );
@@ -365,11 +382,14 @@ export default function Plots({
           ))}
         </div>
         <p className="cryo-plot-caption">
-          Each point matches the dry reference shape within its circumferential
-          family. This is a reference-shape comparison, not a guarantee that one
-          eigenvalue branch remains continuous through strong mixing. Open
-          circles mark weak shape matches (MAC below 80%); curves break at these
-          points. Pressure and acceleration are held fixed.
+          Each branch follows eigenvector overlap through small fill increments
+          within its circumferential family. Its shape can evolve away from the
+          dry shape without changing its identity. Open circles and breaks mark
+          uncertain continuation; an unavailable full-tank branch has no point.
+          Pressure and acceleration are held fixed. Dots at the current fill use
+          the same solve as the readout and 3D mode.
+          {selection.n >= 4 &&
+            " At partial fill, this angular family uses a rigid free surface and has no retained slosh coordinate; its coupled and mass-plus-pressure results coincide."}
         </p>
       </div>
     );
@@ -383,7 +403,7 @@ export default function Plots({
   return (
     <div className="cryo-plot-card">
       <div className="cryo-plot-title">
-        <h3>One reference shape. Five ways to solve it.</h3>
+        <h3>One tracked branch. Five ways to solve it.</h3>
         <span>FREQUENCY / Hz</span>
       </div>
       <div className="cryo-comparison">
@@ -397,8 +417,14 @@ export default function Plots({
             <span className="cryo-case-text">
               <b>{c.label}</b>
               <small>
-                {c.copy}
-                {c.mode && c.mode.match < 0.8 ? " · weak shape match" : ""}
+                {c.id === "coupled" && selection.n >= 4
+                  ? "No retained slosh shape at this n; same solve as mass + pressure"
+                  : c.copy}
+                {c.mode?.trackingAmbiguous
+                  ? " · uncertain continuation"
+                  : c.mode && c.mode.match < 0.8
+                    ? " · evolved from dry shape"
+                    : ""}
               </small>
             </span>
             <span className="cryo-bar-track">
@@ -423,10 +449,14 @@ export default function Plots({
         ))}
       </div>
       <p className="cryo-plot-caption">
-        Modes are selected by their overlap with the dry reference shape, using
-        the same structural mass metric. Selecting a comparison updates the 3D
-        mode. The condensed-fluid cases represent the high-frequency limit of
-        the same liquid model used in the full solve.
+        Branches are anchored to the dry shell and followed through fill using
+        overlap between successive eigenvectors. Dry-shape overlap measures how
+        much the shape has changed; it does not select a different mode at each
+        fill. Selecting a comparison updates the 3D mode. The condensed-fluid
+        cases represent the high-frequency limit of the same liquid model used
+        in the full solve.
+        {selection.n >= 4 &&
+          " This higher angular family uses a rigid surface at partial fill, so adding the seven lower-order slosh coordinates does not change its result."}
       </p>
     </div>
   );
