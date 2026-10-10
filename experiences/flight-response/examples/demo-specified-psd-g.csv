@@ -1,0 +1,7 @@
+# Synthetic nominal PSD only
+frequency_hz,psd
+10,0.004
+30,0.007
+100,0.007
+500,0.003
+2000,0.001

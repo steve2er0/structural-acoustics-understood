@@ -1,3 +1,4 @@
+import {flightResponseTool,renderFlightResponseTool,bindFlightResponseTool} from './flight-response-tool.js';
 import { sections as baseSections, toolCatalog as baseToolCatalog, demos as baseDemos, caseNotes as baseCaseNotes, referenceGroups as baseReferenceGroups, glossary } from './data.js';
 import { calculatorRegistry as baseCalculatorRegistry } from './calculators.js';
 import { extraCalculatorRegistry } from './extra-calculators.js';
@@ -46,7 +47,7 @@ import {
 
 const sections = [...baseSections, ...acs519Sections, ...workflowExpansionSections, ...programExpansionSections, ...seaParameterSections, ...electronicsFatigueSections];
 const calculatorRegistry = { ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, ...electronicsFatigueCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator, 'two-stage-isolation': twoStageIsolationCalculator };
-const toolCatalog = [...baseToolCatalog, ...extraToolCatalog, ...acs519ToolCatalog, ...workflowExpansionToolCatalog, ...programExpansionToolCatalog, ...seaParameterToolCatalog, ...electronicsFatigueToolCatalog];
+const toolCatalog = [flightResponseTool, ...baseToolCatalog, ...extraToolCatalog, ...acs519ToolCatalog, ...workflowExpansionToolCatalog, ...programExpansionToolCatalog, ...seaParameterToolCatalog, ...electronicsFatigueToolCatalog];
 const demos = [...baseDemos, ...acs519Demos, ...workflowExpansionDemos, ...programExpansionDemos, ...seaParameterDemos, ...electronicsFatigueDemos];
 const caseNotes = [...baseCaseNotes, ...acs519CaseNotes, ...workflowExpansionCaseNotes, ...programExpansionCaseNotes, ...seaParameterCaseNotes, ...electronicsFatigueCaseNotes];
 const referenceGroups = [...baseReferenceGroups, ...acs519ReferenceGroups, ...workflowExpansionReferenceGroups, ...programExpansionReferenceGroups, ...seaParameterReferenceGroups, ...electronicsFatigueReferenceGroups];
@@ -60,6 +61,7 @@ const subjectToolSets = new Map(subjectWheel.map(subject => [subject.id, new Set
   ...subject.chapterIds.flatMap(id => (sectionById.get(id)?.concepts || []).map(concept => concept.toolId).filter(Boolean)),
   ...subject.demoIds.map(id => demoById.get(id)?.toolId).filter(Boolean)
 ])]));
+subjectToolSets.get('random-vibration').add(flightResponseTool.id);
 const DESIGN_PROOF_CHAPTER_ID = 'shell-acoustics-deep-dive';
 const DESIGN_PROOF_TOOL_ID = 'critical-frequency';
 const LAUNCH_SEA_CAPSTONE_ID = 'launch-vibroacoustic-capstone';
@@ -535,7 +537,9 @@ function conceptLinksForTool(id){
   return sections.flatMap(section=>section.concepts.map(concept=>({section,concept}))).filter(item=>item.concept.toolId===id).slice(0,4).map(({section,concept})=>({title:concept.title,description:section.title,href:`#/cheat-sheet?section=${encodeURIComponent(section.id)}&concept=${encodeURIComponent(slug(concept.title))}`}));
 }
 function renderTool(route){
-  const id=decodeURIComponent(route.segments[1]||''); const meta=toolById.get(id),calc=calculatorRegistry[id];
+  const id=decodeURIComponent(route.segments[1]||'');
+  if(id==='flight-response')return renderFlightResponseTool();
+  const meta=toolById.get(id),calc=calculatorRegistry[id];
   if(!meta||!calc)return renderNotFound('Calculator not found','The requested tool is not in this build.');
   if(workbenchRegistry[id]&&route.params.get('mode')!=='quick')return workbenchRegistry[id].render();
   const proof=isCalculatorDesignProof(route);
@@ -840,7 +844,8 @@ function bindGlobal(route){
   if(navKey(route)==='tools'&&route.segments[0]==='tools')bindToolFilters();
   if(route.segments[0]==='tool'){
     const id=decodeURIComponent(route.segments[1]||'');
-    if(workbenchRegistry[id]&&route.params.get('mode')!=='quick'){
+    if(id==='flight-response'){routeCleanup=bindFlightResponseTool(document);}
+    else if(workbenchRegistry[id]&&route.params.get('mode')!=='quick'){
       const cleanup=workbenchRegistry[id].bind(document),old=routeCleanup;
       routeCleanup=()=>{old();cleanup?.();};
     }else bindTool(route);

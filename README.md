@@ -136,3 +136,7 @@ The nine interactive 3D experiments share one application in [`experiences/vibra
 For viewing without Node.js or npm, save and open the prebuilt [Vibration-Lab.html](experiences/vibration-lab/portable/Vibration-Lab.html) in a browser. All nine demos are embedded in this one file.
 
 See [architecture](experiences/vibration-lab/docs/ARCHITECTURE.md) and [creating a lab](experiences/vibration-lab/docs/CREATING_A_LAB.md).
+
+## Flight response playback prototype
+
+[Flight Response](experiences/flight-response/README.md) is integrated into Tools at `#/tool/flight-response`, including the complete embedded tool in the existing `standalone.html`. Run `npm start` and open <http://localhost:4173/standalone.html#/tool/flight-response>. It compares continuously integrated flight oscillator peaks with a fixed nominal qualification ERS. Run `npm run test:flight-response` for numerical verification. Synthetic data is clearly labeled; local CSV acceleration and compatible precomputed ERS imports are supported. Specified PSD plus duration produces an explicitly statistical reference, with editable response/Q and peak-model assumptions. All calculations remain local. This is screening, with no certification, fatigue or safety conclusion. See [validation](experiences/flight-response/docs/VALIDATION.md) for completed checks and browser verification limits.

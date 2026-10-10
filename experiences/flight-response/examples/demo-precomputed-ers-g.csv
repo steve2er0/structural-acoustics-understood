@@ -1,0 +1,6 @@
+# Synthetic precomputed reference fixture: Q=10, absolute, primary+residual, g
+# Assumed illustrative curve; not achieved qualification
+frequency_hz,ers
+10,5
+100,12
+800,20

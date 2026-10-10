@@ -10,6 +10,7 @@
     "test": "node --test tests/*.test.mjs",
     "lab": "npm --prefix experiences/vibration-lab run dev",
     "build:lab": "npm --prefix experiences/vibration-lab run build",
-    "test:lab": "npm --prefix experiences/vibration-lab test"
+    "test:lab": "npm --prefix experiences/vibration-lab test",
+    "test:flight-response": "node --test experiences/flight-response/tests/*.test.mjs"
   }
 }

@@ -1,3 +1,4 @@
+import {buildFlightResponseBundle} from './build-flight-response.mjs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -12,6 +13,8 @@ function replaceRange(source, startMarker, endMarker, replacement) {
   return source.slice(0, start) + replacement + source.slice(end);
 }
 
+await buildFlightResponseBundle(projectRoot);
+const flightResponseToolModule = await read('js/flight-response-tool.js');
 let standalone = await read('standalone.html');
 const index = await read('index.html');
 const styles = await read('styles.css');
@@ -329,6 +332,7 @@ if (standalone.includes(frameworkStart)) {
 const oldRegistry = "const calculatorRegistry = { ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, ...electronicsFatigueCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator, 'two-stage-isolation': twoStageIsolationCalculator };";
 const newRegistry = "const calculatorRegistry = createEngineeringRegistry({ ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, ...electronicsFatigueCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator, 'two-stage-isolation': twoStageIsolationCalculator });";
 const appPrelude = [
+  moduleSource(flightResponseToolModule),
   moduleSource(unitSystemModule),
   moduleSource(toolDiscoveryModule),
   appImports,
