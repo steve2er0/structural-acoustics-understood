@@ -1,5 +1,6 @@
 // Continuous, exact first-order-hold SDOF state transition. Internal acceleration: m/s².
 export const G = 9.80665;
+export const LIMITS=Object.freeze({csvBytes:512e6,samples:32e6,duration:86400,steps:20e9,summaryBytes:128e6,chunkBytes:1024*1024,chunkSamples:131072,lineChars:4096,mapRows:1200});
 export const SCHEMA = 'sau-flight-response/1';
 export const DEFAULTS = Object.freeze({q:10, response:'absolute', fmin:10, fmax:800, pointsPerOctave:48, fs:16384, duration:18, seed:314159, window:1, qualDuration:120, peakModel:'one-exceedance', probability:.95, binWidth:.05});
 export function assert(ok, message) { if (!ok) throw new Error(message); }
@@ -11,7 +12,7 @@ export function validateSettings(s) {
   assert(s.fmin>=1 && s.fmax>s.fmin, 'Natural frequencies must increase from at least 1 Hz.');
   assert(s.fs>=20*s.fmax && s.fs<=200000, 'Sample rate must be at least 20 × maximum natural frequency and at most 200 kHz.');
   assert(s.pointsPerOctave>=Math.ceil(6*s.q*Math.LN2) && s.pointsPerOctave<=600, `Use at least ${Math.ceil(6*s.q*Math.LN2)} points/octave for this Q (six points per resonant bandwidth). Refine again to check convergence.`);
-  assert(s.duration>0 && s.duration<=120 && s.qualDuration>0 && s.qualDuration<=1e7, 'Record duration must be 0–120 s; qualification duration must be positive and ≤10 million s.');
+  assert(s.duration>0 && s.duration<=LIMITS.duration && s.qualDuration>0 && s.qualDuration<=1e7, 'Flight duration must be positive and ≤24 hours; qualification duration must be positive and ≤10 million s.');
   assert(Number.isInteger(s.seed) && s.seed>=0 && s.seed<=0xffffffff, 'Seed must be a 32-bit unsigned integer.');
   assert(s.binWidth===.05, 'This version stores 50 ms display bins.');
   assert(s.window>=.05 && s.window<=20 && Math.abs(s.window/.05-Math.round(s.window/.05))<1e-8, 'Display window must be a multiple of 50 ms, between 50 ms and 20 s.');
@@ -48,6 +49,7 @@ export function responseHistory(a,fs,fn,q,response) {
 }
 export function seeded(seed) { let state=seed>>>0;return ()=>{state=(Math.imul(1664525,state)+1013904223)>>>0;return (state+.5)/4294967296;}; }
 export function synthetic(s) {
+  assert(s.duration<=120 && Math.round(s.fs*s.duration)+1<=2e6,'Synthetic demo is limited to 120 s and 2 million samples; larger records use CSV import.');
   assert(s.fs>=5000,'Synthetic forcing requires sample rate ≥5000 Hz to resolve its 420 Hz dwell and broadband content.');
   const rand=seeded(s.seed), n=Math.round(s.fs*s.duration)+1, a=new Float64Array(n);
   const frequencies=Array.from({length:48},(_,i)=>12*(1200/12)**(i/47));
@@ -71,14 +73,29 @@ function csvRows(text) {
   const rows=lines.map((line,i)=>{const p=line.split(',').map(x=>x.trim());assert(p.length===2 && p.every(x=>x!==''), `CSV row ${i+2} requires exactly two values.`);const r=p.map(Number);assert(r.every(Number.isFinite), `CSV row ${i+2} contains a nonfinite number.`);return r;});
   return {header,rows};
 }
-export function parseFlight(text,unit) {
-  const {header,rows}=csvRows(text);assert(header.join(',')==='time_s,acceleration', 'Flight header must be time_s,acceleration.');
-  const scale=unitsFactor(unit),dt=rows[1][0]-rows[0][0];assert(dt>0,'Flight timestamps must strictly increase.');
-  const origin=rows[0][0];assert(rows.length<=2e6,'Limit: 2 million flight samples.');
-  for(let i=0;i<rows.length;i++) assert(Math.abs(rows[i][0]-origin-i*dt)<=Math.max(1e-9,dt*1e-3), `Flight timestamps must be uniform within 0.1% of dt (row ${i+2}); gaps/duplicates are rejected.`);
-  const duration=(rows.length-1)*dt;assert(duration>0 && duration<=120,'Imported duration exceeds supported 120 s.');
-  assert(1/dt<=200000,'Imported sample rate exceeds 200 kHz.');
-  return {a:Float64Array.from(rows,r=>r[1]*scale),fs:1/dt,duration,origin,source:'Local imported flight CSV',units:'m/s^2',inputUnits:unit,synthetic:false};
+// Incremental UTF-8 CSV parser: no split() of a complete file or arrays of boxed rows.
+export class FlightCSVParser {
+  constructor(unit,{validation=null}={}) {this.scale=unitsFactor(unit);this.unit=unit;this.validation=validation;this.pending='';this.line=0;this.header=false;this.count=0;this.first=0;this.last=0;this.chunks=[];this.used=0;}
+  feed(text) {this.pending+=text;let from=0,end;while((end=this.pending.indexOf('\n',from))>=0){this.row(this.pending.slice(from,end));from=end+1;}this.pending=this.pending.slice(from);assert(this.pending.length<=LIMITS.lineChars,'CSV line exceeds 4096 characters.');}
+  row(raw) {this.line++;assert(raw.length<=LIMITS.lineChars,`CSV row ${this.line} exceeds 4096 characters.`);const line=raw.trim().replace(/^\uFEFF/,'');if(!line||line.startsWith('#'))return;
+    if(!this.header){assert(line.toLowerCase().split(',').map(x=>x.trim()).join(',')==='time_s,acceleration','Flight header must be time_s,acceleration.');this.header=true;return;}
+    const comma=line.indexOf(',');assert(comma>0&&comma===line.lastIndexOf(','),`CSV row ${this.line} requires exactly two values.`);const ts=line.slice(0,comma).trim(),as=line.slice(comma+1).trim();assert(ts&&as,`CSV row ${this.line} requires exactly two values.`);const t=Number(ts),a=Number(as)*this.scale;assert(Number.isFinite(t)&&Number.isFinite(a),`CSV row ${this.line} contains a nonfinite number.`);
+    assert(this.count<LIMITS.samples,'Limit: 32 million flight samples.');if(!this.count)this.first=t;else assert(t>this.last,`Flight timestamps must strictly increase (row ${this.line}).`);
+    if(this.validation){const {origin,dt}=this.validation;assert(Math.abs(t-origin-this.count*dt)<=Math.max(1e-9,dt*1e-3),`Flight timestamps must be uniform within 0.1% of dt (row ${this.line}); gaps/duplicates are rejected.`);}
+    else {if(!this.used){this.current=new Float64Array(LIMITS.chunkSamples);this.chunks.push(this.current);}this.current[this.used++]=a;if(this.used===LIMITS.chunkSamples)this.used=0;}
+    this.last=t;this.count++;
+  }
+  finish() {if(this.pending){this.row(this.pending);this.pending='';}assert(this.header&&this.count>=2,'CSV requires a header and at least two rows.');const duration=this.last-this.first,dt=duration/(this.count-1);assert(duration>0&&duration<=LIMITS.duration,'Imported duration exceeds supported 24 hours.');assert(1/dt<=200000,'Imported sample rate exceeds 200 kHz.');
+    if(this.validation){assert(this.count===this.validation.sampleCount,'CSV changed during timestamp validation.');return null;}
+    if(this.used)this.chunks[this.chunks.length-1]=this.current.subarray(0,this.used);
+    return {chunks:this.chunks,sampleCount:this.count,fs:1/dt,duration,origin:this.first,source:'Local imported flight CSV',units:'m/s^2',inputUnits:this.unit,synthetic:false};
+  }
+}
+export function parseFlight(text,unit) {assert(typeof text==='string'&&text.length<=60e6,'Legacy text CSV exceeds 60 MB; use streaming File import for large files.');const parser=new FlightCSVParser(unit);parser.feed(text);const r=parser.finish(),validator=new FlightCSVParser(unit,{validation:{origin:r.origin,dt:1/r.fs,sampleCount:r.sampleCount}});validator.feed(text);validator.finish();const a=new Float64Array(r.sampleCount);let at=0;for(const chunk of r.chunks){a.set(chunk,at);at+=chunk.length;}delete r.chunks;return {...r,a};}
+export async function parseFlightFile(file,unit,{progress=()=>{},signal,chunkBytes=LIMITS.chunkBytes}={}) {
+  assert(file&&typeof file.slice==='function'&&file.size>0&&file.size<=LIMITS.csvBytes,'Flight CSV missing or exceeds 512 MB.');assert(Number.isInteger(chunkBytes)&&chunkBytes>0&&chunkBytes<=LIMITS.chunkBytes,'Parser chunk size must be 1 byte–1 MiB.');
+  const scan=async(parser,phase)=>{const decoder=new TextDecoder('utf-8',{fatal:true});for(let at=0;at<file.size;at+=chunkBytes){signal?.throwIfAborted();const buffer=await file.slice(at,Math.min(at+chunkBytes,file.size)).arrayBuffer();signal?.throwIfAborted();parser.feed(decoder.decode(buffer,{stream:true}));progress({phase,progress:Math.min(1,(at+buffer.byteLength)/file.size)});}parser.feed(decoder.decode());return parser.finish();};
+  const record=await scan(new FlightCSVParser(unit),'parse');await scan(new FlightCSVParser(unit,{validation:{origin:record.origin,dt:1/record.fs,sampleCount:record.sampleCount}}),'timestamps');return {...record,fileBytes:file.size,fileName:file.name||'local CSV'};
 }
 export function parseCurve(text,unit,kind='ers',metadata={}) {
   const {header,rows}=csvRows(text);assert(header.join(',')===(kind==='psd'?'frequency_hz,psd':'frequency_hz,ers'), `Expected frequency_hz,${kind==='psd'?'psd':'ers'} header.`);
@@ -128,23 +145,25 @@ export function estimateQualification(curve,grid,s) {
   return {values,details,integrationError:error,narrowbandMin,broadbandCount,label:`Specified PSD → statistical estimate · ${s.qualDuration} s · ${s.peakModel}`,estimated:true};
 }
 export const DEMO_PSD='frequency_hz,psd\n10,0.004\n30,0.007\n100,0.007\n500,0.003\n2000,0.001';
+export function computationPlan(record,s) {
+  validateSettings({...s,fs:record.fs,duration:record.duration});const grid=frequencyGrid(s),n=record.sampleCount??record.a?.length;assert(Number.isInteger(n)&&n>=2&&n<=LIMITS.samples,'Record needs 2–32 million finite samples.');
+  const ringdown=Math.log(1e6)/(Math.PI*s.fmin/s.q),residualSamples=Math.ceil(ringdown*record.fs),total=n+residualSamples,bins=Math.ceil(total/record.fs/s.binWidth),steps=total*grid.length,summaryBytes=bins*grid.length*16;
+  assert(steps<=LIMITS.steps,`Calculation needs ${(steps/1e9).toFixed(2)} billion oscillator steps; limit is 20 billion. Narrow the frequency range/grid; no samples are removed.`);assert(summaryBytes<=LIMITS.summaryBytes,`Exact 50 ms summaries need ${(summaryBytes/1e6).toFixed(1)} MB; limit is 128 MB. Narrow the frequency range/grid; no time bins are discarded.`);return {grid,n,ringdown,residualSamples,total,bins,steps,summaryBytes};
+}
 export function compute(record,s,progress=()=>{}) {
-  validateSettings({...s,fs:record.fs,duration:record.duration});const grid=frequencyGrid(s),fs=record.fs,n=record.a.length;
-  assert([...record.a].every(Number.isFinite),'Acceleration record contains nonfinite values.');
-  const ringdown=Math.log(1e6)/(Math.PI*s.fmin/s.q),residualSamples=Math.ceil(ringdown*fs),total=n+residualSamples;
-  assert(total*grid.length<=350e6,'Calculation exceeds 350 million oscillator steps. Reduce duration, frequency range or grid density.');
-  const bins=Math.ceil(total/fs/s.binWidth),peaks=new Float64Array(bins*grid.length),running=new Float64Array(peaks.length),final=new Float64Array(grid.length),primary=new Float64Array(grid.length),residual=new Float64Array(grid.length);
-  assert(peaks.byteLength*2<100e6,'Summary storage exceeds 100 MB.');
-  for(let k=0;k<grid.length;k++){const c=coefficients(grid[k],s.q,fs);let u=0,v=0,prev=record.a[0],max=0;
-    for(let i=1;i<total;i++){const a=i<n?record.a[i]:0,x=c.p00*u+c.p01*v+c.b00*prev+c.b10*a;v=c.p10*u+c.p11*v+c.b01*prev+c.b11*a;u=x;prev=a;
-      const y=Math.abs(s.response==='absolute'?u+2*c.z*v:-u),bin=Math.min(bins-1,Math.floor(i/fs/s.binWidth)),idx=bin*grid.length+k;
-      if(y>peaks[idx])peaks[idx]=y;if(y>max)max=y;
-      if(i<n){if(y>primary[k])primary[k]=y;}else if(y>residual[k])residual[k]=y;
-    }
-    final[k]=max;let cumulative=0;for(let j=0;j<bins;j++){cumulative=Math.max(cumulative,peaks[j*grid.length+k]);running[j*grid.length+k]=cumulative;}
-    if(k%8===0)progress(k/grid.length);
+  const {grid,n,ringdown,total,bins,steps,summaryBytes}=computationPlan(record,s),fs=record.fs,chunks=record.chunks||[record.a];let counted=0;for(const c of chunks){assert(c instanceof Float64Array,'Acceleration storage must be Float64.');for(const a of c)assert(Number.isFinite(a),'Acceleration record contains nonfinite values.');counted+=c.length;}assert(counted===n,'Acceleration sample count does not match storage.');
+  const peaks=new Float64Array(bins*grid.length),running=new Float64Array(peaks.length),final=new Float64Array(grid.length),primary=new Float64Array(grid.length),residual=new Float64Array(grid.length);let lastProgress=0;
+  for(let k=0;k<grid.length;k++){const c=coefficients(grid[k],s.q,fs);let u=0,v=0,prev=chunks[0][0],max=0,i=0;
+    const step=a=>{const x=c.p00*u+c.p01*v+c.b00*prev+c.b10*a;v=c.p10*u+c.p11*v+c.b01*prev+c.b11*a;u=x;prev=a;const y=Math.abs(s.response==='absolute'?u+2*c.z*v:-u),bin=Math.min(bins-1,Math.floor(i/fs/s.binWidth)),idx=bin*grid.length+k;if(y>peaks[idx])peaks[idx]=y;if(y>max)max=y;if(i<n){if(y>primary[k])primary[k]=y;}else if(y>residual[k])residual[k]=y;};
+    for(const chunk of chunks){for(let j=0;j<chunk.length;j++,i++)if(i)step(chunk[j]);const now=performance.now();if(now-lastProgress>100){progress((k+i/total)/grid.length);lastProgress=now;}}
+    for(;i<total;i++)step(0);final[k]=max;let cumulative=0;for(let j=0;j<bins;j++){cumulative=Math.max(cumulative,peaks[j*grid.length+k]);running[j*grid.length+k]=cumulative;}if(k%8===0)progress(k/grid.length);
   }
-  progress(1);return {grid,peaks,running,final,primary,residual,bins,binWidth:s.binWidth,recordDuration:record.duration,totalDuration:(total-1)/fs,ringdown,fs,source:record.source,synthetic:record.synthetic};
+  progress(1);return {grid,peaks,running,final,primary,residual,bins,binWidth:s.binWidth,recordDuration:record.duration,totalDuration:(total-1)/fs,ringdown,fs,source:record.source,synthetic:record.synthetic,sampleCount:n,steps,summaryBytes};
+}
+// Exact local maxima, then maximum-envelope aggregation only for heatmap pixels.
+export function mapColumn(result,reference,window,k,stride,values) {
+  const n=result.grid.length,count=Math.max(1,Math.round(window/result.binWidth)),queue=new Uint32Array(count+1);let head=0,length=0;
+  for(let j=0;j<result.bins;j++){while(length&&queue[head]<=j-count){head=(head+1)%queue.length;length--;}const y=result.peaks[j*n+k];while(length&&result.peaks[queue[(head+length-1)%queue.length]*n+k]<=y)length--;queue[(head+length)%queue.length]=j;length++;const idx=Math.floor(j/stride)*n+k;values[idx]=Math.max(values[idx],result.peaks[queue[head]*n+k]/reference[k]);}
 }
 export function localCurve(result,bin,window) {
   const count=Math.max(1,Math.round(window/result.binWidth)),first=Math.max(0,bin-count+1),values=new Float64Array(result.grid.length);

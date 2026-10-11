@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -16,6 +16,8 @@ import { useGuidedTour } from "@engine/useGuidedTour";
 import {
   DEFAULT,
   SHELL_MAX_ORDER,
+  surfaceShapes,
+  prepareTrackedModes,
   findMode,
   solve,
   type Settings,
@@ -49,21 +51,88 @@ export default function CryoLab() {
     () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
   const solution = useMemo(() => solve(settings), [settings]);
-  const selected = findMode(solution, caseId, selection);
-  const availableOrders = [1, 2, 3].filter(
-    (axialOrder) =>
-      !!findMode(solution, caseId, {
-        kind: "shell",
-        n: selection.n,
-        axialOrder,
-      }),
-  );
-  const mode = selected ?? findMode(solution, "coupled", INITIAL)!;
+  const shape =
+      selection.kind === "slosh"
+        ? surfaceShapes(settings).find((s) => s.id === selection.sloshId)
+        : undefined,
+    inspectedN = shape?.n ?? selection.n,
+    orientation = shape?.orientation ?? "cos";
+  const [prepared, setPrepared] = useState<{
+    solution: typeof solution;
+    n: number;
+    orientation: string;
+    progress: number;
+    done: boolean;
+    error?: string;
+  } | null>(null);
+  useEffect(() => {
+    let cancelled = false,
+      timer: ReturnType<typeof setTimeout>,
+      published = -1;
+    const steps = prepareTrackedModes(solution, inspectedN, orientation);
+    const advance = () => {
+      if (cancelled) return;
+      try {
+        const next = steps.next();
+        if (next.done || Math.floor(next.value * 20) > published) {
+          published = next.done ? 20 : Math.floor(next.value * 20);
+          setPrepared({
+            solution,
+            n: inspectedN,
+            orientation,
+            progress: next.done ? 1 : next.value,
+            done: next.done ?? false,
+          });
+        }
+        if (!next.done) timer = setTimeout(advance, 0);
+      } catch (error) {
+        setPrepared({
+          solution,
+          n: inspectedN,
+          orientation,
+          progress: 0,
+          done: false,
+          error:
+            error instanceof Error ? error.message : "Mode continuation failed",
+        });
+      }
+    };
+    timer = setTimeout(advance, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [solution, inspectedN, orientation]);
+  const current =
+      prepared?.solution === solution &&
+      prepared.n === inspectedN &&
+      prepared.orientation === orientation,
+    ready = current && prepared.done,
+    preparationStatus =
+      current && prepared.error
+        ? `Mode unavailable: ${prepared.error}`
+        : `Preparing tracked modes${current ? ` · ${Math.round(prepared.progress * 100)}%` : ""}…`;
+  const selected = ready ? findMode(solution, caseId, selection) : undefined;
+  const availableOrders =
+    ready && selection.kind === "shell"
+      ? [1, 2, 3].filter(
+          (axialOrder) =>
+            !!findMode(solution, caseId, {
+              kind: "shell",
+              n: selection.n,
+              axialOrder,
+            }),
+        )
+      : [];
+  const mode = selected ?? solution.cases.coupled.modes[0];
   const active =
     !!selected &&
     (selection.kind !== "slosh" || (settings.fill > 0 && settings.fill < 1));
   const caseData = CASES.find((c) => c.id === caseId)!;
-  const dry = findMode(solution, "dry", { ...selection, kind: "shell" });
+  const dry =
+    ready && selection.kind === "shell"
+      ? findMode(solution, "dry", { ...selection, kind: "shell" })
+      : undefined;
   const frequencyChange =
     selected && dry ? (selected.frequency / dry.frequency - 1) * 100 : 0;
   const camera = (v: View) => {
@@ -92,6 +161,11 @@ export default function CryoLab() {
   const change = (patch: Partial<Settings>) => {
     tour.stop();
     setSettings((s) => ({ ...s, ...patch }));
+    if (
+      patch.surfaceMaxOrder !== undefined ||
+      patch.surfaceRadialOrder !== undefined
+    )
+      setSelection({ ...INITIAL });
   };
   const chooseCase = (id: CaseId) => {
     tour.stop();
@@ -146,6 +220,9 @@ export default function CryoLab() {
             <br />
             Explore how a thin aluminum shell and its cryogenic liquid move
             together.
+            <span className="cryo-thermal-note">
+              Fixed material properties · cooldown effects excluded
+            </span>
           </p>
         </header>
         <div className="cryo-workbench">
@@ -236,11 +313,51 @@ export default function CryoLab() {
                   <dd>2:1 ellipsoidal</dd>
                 </div>
                 <div>
-                  <dt>Elastic condition</dt>
-                  <dd>Free-free target / Ritz</dd>
+                  <dt>Shell model</dt>
+                  <dd>Restricted elastic Ritz</dd>
                 </div>
               </dl>
               <small>Aluminum · E 69 GPa · ν 0.33</small>
+            </div>
+            <div className="cryo-surface-basis">
+              <p className="cryo-control-eyebrow">FREE-SURFACE BASIS</p>
+              <label>
+                Surface angular cutoff
+                <select
+                  value={settings.surfaceMaxOrder ?? 12}
+                  onChange={(e) => {
+                    change({ surfaceMaxOrder: +e.target.value });
+                    setSelection({ ...INITIAL });
+                  }}
+                >
+                  {[3, 6, 12].map((n) => (
+                    <option key={n} value={n}>
+                      n = 0–{n}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Radial surface shapes
+                <select
+                  value={settings.surfaceRadialOrder ?? 2}
+                  onChange={(e) => {
+                    change({ surfaceRadialOrder: +e.target.value });
+                    setSelection({ ...INITIAL });
+                  }}
+                >
+                  {[1, 2, 3, 4].map((p) => (
+                    <option key={p} value={p}>
+                      {p} per angular orientation
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <small>
+                {surfaceShapes(settings).length} coordinates · higher n uses
+                cosine representatives. n ≤ 3 with one radial shape reproduces
+                the original seven.
+              </small>
             </div>
             <button className="cryo-notes-link" onClick={() => setNotes(true)}>
               <BookOpen size={14} /> Equations & assumptions{" "}
@@ -404,7 +521,7 @@ export default function CryoLab() {
               value={selection.kind}
               options={[
                 { value: "shell", label: "Shell" },
-                { value: "slosh", label: "Slosh × 7" },
+                { value: "slosh", label: `Slosh × ${solution.retainedSlosh}` },
               ]}
               onChange={(kind) => {
                 tour.stop();
@@ -469,21 +586,10 @@ export default function CryoLab() {
                     value={selection.sloshId}
                     onChange={(e) => chooseSlosh(Number(e.target.value))}
                   >
-                    {Array.from({ length: 7 }, (_, i) => (
-                      <option key={i + 1} value={i + 1}>
-                        S{String(i + 1).padStart(2, "0")} ·{" "}
-                        {i < 2
-                          ? "n=1, lateral"
-                          : i < 4
-                            ? "n=2, two-lobe"
-                            : i === 4
-                              ? "n=0, axisymmetric"
-                              : "n=3, three-lobe"}
-                        {i !== 4
-                          ? i === 0 || i === 2 || i === 5
-                            ? " cosine"
-                            : " sine"
-                          : ""}
+                    {surfaceShapes(settings).map((shape) => (
+                      <option key={shape.id} value={shape.id}>
+                        n={shape.n} · radial {shape.radialOrder} ·{" "}
+                        {shape.orientation}
                       </option>
                     ))}
                   </select>
@@ -491,22 +597,25 @@ export default function CryoLab() {
               </div>
             )}
             {selection.kind === "shell" &&
-              selection.n >= 4 &&
+              selection.n > (settings.surfaceMaxOrder ?? 12) &&
               settings.fill > 0 &&
               settings.fill < 1 &&
               ["mass", "combined", "coupled"].includes(caseId) && (
                 <p className="cryo-inline-note">
                   n = {selection.n} uses liquid added mass with a rigid free
-                  surface. The seven slosh shapes belong to n = 0–3.
+                  surface because it exceeds the selected surface angular
+                  cutoff.
                 </p>
               )}
             <div className="cryo-hero-readout">
               <span>
-                {active
-                  ? caseData.label
-                  : selection.kind === "shell"
-                    ? "Shell branch unavailable"
-                    : "Fluid mode inactive"}
+                {!ready
+                  ? "Resolving tracked mode"
+                  : active
+                    ? caseData.label
+                    : selection.kind === "shell"
+                      ? "Shell branch unavailable"
+                      : "Fluid mode inactive"}
               </span>
               <strong>
                 {active && selected
@@ -526,7 +635,12 @@ export default function CryoLab() {
                 </span>
               )}
             </div>
-            {selection.kind === "shell" && !selected && (
+            {!ready && (
+              <p className="cryo-inline-note" role="status">
+                {preparationStatus}
+              </p>
+            )}
+            {ready && selection.kind === "shell" && !selected && (
               <p className="cryo-inline-note">
                 At complete fill, the sealed incompressible liquid removes one
                 volume-changing shell direction. This branch is unavailable;
@@ -608,7 +722,7 @@ export default function CryoLab() {
             )}
             <p className="cryo-interpretation">
               {selection.kind === "slosh"
-                ? "The seven fluid eigenvectors contain three directional pairs and one axisymmetric shape. Shell coupling follows spatial overlap."
+                ? "The surface basis spans angular families and radial shapes. Each selected branch follows coupled eigenvector overlap through fill."
                 : caseId === "dry"
                   ? "The dry reference anchors this shell branch. Each operating model follows its evolution through fill."
                   : caseId === "mass"
@@ -617,9 +731,9 @@ export default function CryoLab() {
                       ? "The geometric stiffness contribution comes from uniform ullage pressure and the acceleration-induced liquid pressure field."
                       : caseId === "combined"
                         ? "The condensed fluid inertia and pressure prestress act in the same eigensolve. Their balance sets the resulting shape and frequency."
-                        : selection.n >= 4
-                          ? "This higher shell order has fluid inertia and pressure prestress, with no retained slosh coordinate. Its motion is orthogonal to the n = 0–3 free-surface shapes."
-                          : "The elastic shell and seven retained free-surface coordinates are solved together. Different circumferential harmonics remain orthogonal."}
+                        : selection.n > (settings.surfaceMaxOrder ?? 12)
+                          ? "This angular order exceeds the selected surface cutoff and uses a constrained surface."
+                          : "The elastic shell and the selected surface coordinates are solved together. Multiple radial shapes share kinetic coupling within each angular family."}
             </p>
             {selection.kind === "shell" && [1, 3, 4].includes(selection.n) && (
               <p className="cryo-inline-note">
@@ -666,6 +780,8 @@ export default function CryoLab() {
                   "Slosh",
                   "Fill sweep",
                   "Fourier coverage",
+                  "Surface boundary",
+                  "Surface convergence",
                 ] as const
               ).map((value) => ({ value, label: value }))}
               onChange={(t) => {
@@ -676,14 +792,25 @@ export default function CryoLab() {
               }}
             />
           </header>
-          <Plots
-            solution={solution}
-            selection={selection}
-            caseId={caseId}
-            tab={tab}
-            onCase={chooseCase}
-            onSlosh={chooseSlosh}
-          />
+          {ready ||
+          [
+            "Pressure",
+            "Fourier coverage",
+            "Surface boundary",
+            "Surface convergence",
+          ].includes(tab) ? (
+            <Plots
+              solution={solution}
+              selection={selection}
+              caseId={caseId}
+              tab={tab}
+              onCase={chooseCase}
+              onSlosh={chooseSlosh}
+              onBasis={change}
+            />
+          ) : (
+            <p role="status">{preparationStatus}</p>
+          )}
         </section>
         <Equations solution={solution} />
         <footer className="cryo-footer">

@@ -50,14 +50,15 @@ export default function Equations({ solution }: { solution: Solution }) {
       <div className="cryo-math-grid">
         <article>
           <span className="cryo-math-number">01 / SHELL COMPARISONS</span>
-          <h3>Re-solve with mass and prestress</h3>
+          <h3>Re-solve with mass and pressure prestress</h3>
           <Equation label="K dry plus K G, times phi, equals omega squared times M dry plus M A, times phi.">
             (K<sub>dry</sub> + K<sub>G</sub>) φ = ω<sup>2</sup> (M<sub>dry</sub>{" "}
             + M<sub>A</sub>) φ
           </Equation>
           <p>
             K<sub>dry</sub> and M<sub>dry</sub> describe the dry structure. K
-            <sub>G</sub> is pressure-induced geometric stiffness; M<sub>A</sub>
+            <sub>G</sub> is the barrel pressure-prestress approximation; M
+            <sub>A</sub>
             is the condensed liquid added-mass matrix. The five comparisons
             switch these contributions on and off.
           </p>
@@ -79,7 +80,9 @@ export default function Equations({ solution }: { solution: Solution }) {
             <sub>sη</sub> and M<sub>ηη</sub> are its blocks. The second equation
             condenses the retained surface coordinates for the high-frequency
             mass comparison. Off-diagonal terms couple wall motions; total
-            liquid mass is not the modal added mass.
+            liquid mass is not the modal added mass. The Surface boundary
+            analysis separately compares this retained reduction with
+            constrained and pressure-release boundaries.
           </p>
         </article>
         <article>
@@ -108,12 +111,14 @@ export default function Equations({ solution }: { solution: Solution }) {
           </div>
         </article>
         <article>
-          <span className="cryo-math-number">04 / SEVEN SLOSH COORDINATES</span>
-          <h3>Keep the moving surface in the same solve</h3>
-          <Equation label="K x equals omega squared M x, with x comprising shell coordinates and seven surface coordinates.">
+          <span className="cryo-math-number">04 / SELECTED SURFACE BASIS</span>
+          <h3>
+            Keep {solution.retainedSlosh} surface coordinates in the same solve
+          </h3>
+          <Equation label="K x equals omega squared M x, with x comprising shell coordinates and the selected surface coordinates.">
             K x = ω<sup>2</sup> M x{" "}
             <span className="cryo-equation-gap">
-              x = [q<sub>s</sub>; η<sub>1…7</sub>]
+              x = [q<sub>s</sub>; η<sub>1…{solution.retainedSlosh}</sub>]
             </span>
           </Equation>
           <Equation label="K equals block diagonal K dry plus K G and zero, plus K g.">

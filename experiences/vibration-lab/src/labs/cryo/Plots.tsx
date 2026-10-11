@@ -1,7 +1,15 @@
 import { useMemo } from "react";
-import { findMode, solve, type Solution, type CaseId } from "./physics";
+import {
+  findMode,
+  solve,
+  type Solution,
+  type CaseId,
+  type Settings,
+} from "./physics";
 import type { AnalysisTab } from "./tour";
 import FourierCoverage from "./FourierCoverage";
+import SurfaceConvergence from "./SurfaceConvergence";
+import SurfaceBoundaryComparison from "./SurfaceBoundaryComparison";
 export interface Selection {
   kind: "shell" | "slosh";
   n: number;
@@ -31,24 +39,24 @@ export const CASES: {
   },
   {
     id: "pressure",
-    label: "Pressure only",
+    label: "Pressure prestress only",
     short: "+ prestress",
     color: "#e8be85",
-    copy: "Pressure stiffness; dry structural mass",
+    copy: "Barrel prestress approximation; dry structural mass",
   },
   {
     id: "combined",
-    label: "Mass + pressure",
+    label: "Mass + pressure prestress",
     short: "Both",
     color: "#b9d6a5",
-    copy: "Condensed fluid inertia and pressure stiffness",
+    copy: "Reduced surface inertia and barrel prestress",
   },
   {
     id: "coupled",
-    label: "With seven slosh modes",
-    short: "+ 7 slosh",
+    label: "Coupled shell + surface",
+    short: "+ surface",
     color: "#c9b4e8",
-    copy: "Shell + surface solve; retained slosh shapes at n = 0–3",
+    copy: "Shared liquid inertia and gravitational surface stiffness",
   },
 ];
 const fmt = (x: number) =>
@@ -66,6 +74,7 @@ export default function Plots({
   caseId,
   onCase,
   onSlosh,
+  onBasis,
 }: {
   solution: Solution;
   selection: Selection;
@@ -73,6 +82,7 @@ export default function Plots({
   caseId: CaseId;
   onCase: (id: CaseId) => void;
   onSlosh: (id: number) => void;
+  onBasis: (patch: Partial<Settings>) => void;
 }) {
   const sweep = useMemo(
     () =>
@@ -93,6 +103,8 @@ export default function Plots({
       solution.settings.fluid,
       solution.settings.ullagePsi,
       solution.settings.accelerationG,
+      solution.settings.surfaceMaxOrder,
+      solution.settings.surfaceRadialOrder,
       selection.kind,
       selection.n,
       selection.axialOrder,
@@ -100,6 +112,15 @@ export default function Plots({
   );
   if (tab === "Fourier coverage")
     return <FourierCoverage solution={solution} />;
+  if (tab === "Surface convergence")
+    return <SurfaceConvergence solution={solution} onBasis={onBasis} />;
+  if (tab === "Surface boundary")
+    return (
+      <SurfaceBoundaryComparison
+        solution={solution}
+        initialOrder={selection.n}
+      />
+    );
   if (tab === "Pressure") {
     const ullage = solution.ullagePa / 1000,
       head = solution.headPa / 1000,
@@ -201,15 +222,17 @@ export default function Plots({
     return (
       <div className="cryo-plot-card">
         <div className="cryo-plot-title">
-          <h3>Seven eigenvectors. Four spatial families.</h3>
+          <h3>
+            {solution.retainedSlosh} surface coordinates. Angular and radial
+            shapes.
+          </h3>
           <span>IDEAL TANK / COUPLED REDUCTION</span>
         </div>
         <div className="cryo-slosh-grid">
           {solution.slosh.map((s) => {
-            const coupled = findMode(solution, "coupled", {
-              kind: "slosh",
-              sloshId: s.id,
-            });
+            const coupled = solution.cases.coupled.modes.find(
+              (m) => m.kind === "slosh" && m.sloshId === s.id,
+            );
             return (
               <button
                 key={s.id}
@@ -229,14 +252,15 @@ export default function Plots({
                 </span>
                 <span className="cryo-slosh-shape">
                   {s.n === 0
-                    ? "Axisymmetric"
-                    : `n = ${s.n} · ${s.orientation === "cos" ? "cosine" : "sine"}`}
+                    ? `Axisymmetric · radial ${s.radialOrder}`
+                    : `n = ${s.n} · radial ${s.radialOrder} · ${s.orientation}`}
                 </span>
                 <strong>
                   {s.frequency.toFixed(3)} <small>Hz</small>
                 </strong>
                 <span className="cryo-slosh-coupled">
-                  Coupled {coupled ? coupled.frequency.toFixed(3) : "—"} Hz
+                  Coupled snapshot{" "}
+                  {coupled ? coupled.frequency.toFixed(3) : "—"} Hz
                 </span>
               </button>
             );
@@ -388,7 +412,7 @@ export default function Plots({
           uncertain continuation; an unavailable full-tank branch has no point.
           Pressure and acceleration are held fixed. Dots at the current fill use
           the same solve as the readout and 3D mode.
-          {selection.n >= 4 &&
+          {selection.n > (solution.settings.surfaceMaxOrder ?? 12) &&
             " At partial fill, this angular family uses a rigid free surface and has no retained slosh coordinate; its coupled and mass-plus-pressure results coincide."}
         </p>
       </div>
@@ -417,7 +441,8 @@ export default function Plots({
             <span className="cryo-case-text">
               <b>{c.label}</b>
               <small>
-                {c.id === "coupled" && selection.n >= 4
+                {c.id === "coupled" &&
+                selection.n > (solution.settings.surfaceMaxOrder ?? 12)
                   ? "No retained slosh shape at this n; same solve as mass + pressure"
                   : c.copy}
                 {c.mode?.trackingAmbiguous
@@ -455,8 +480,8 @@ export default function Plots({
         fill. Selecting a comparison updates the 3D mode. The condensed-fluid
         cases represent the high-frequency limit of the same liquid model used
         in the full solve.
-        {selection.n >= 4 &&
-          " This higher angular family uses a rigid surface at partial fill, so adding the seven lower-order slosh coordinates does not change its result."}
+        {selection.n > (solution.settings.surfaceMaxOrder ?? 12) &&
+          " This higher angular family uses a rigid surface at partial fill, so adding the selected surface coordinates does not change its result."}
       </p>
     </div>
   );

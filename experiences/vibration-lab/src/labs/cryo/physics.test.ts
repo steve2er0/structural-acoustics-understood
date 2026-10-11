@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  DEFAULT,
+  LEGACY_DEFAULT as DEFAULT,
   FLUIDS,
   G0,
   PSI,
@@ -232,7 +232,7 @@ describe("seven retained free-surface eigenvectors", () => {
       }
   });
   it("checks convergence of potential-flow and structural Ritz reductions", () => {
-    const d = convergenceDiagnostics();
+    const d = convergenceDiagnostics(DEFAULT);
     expect(Math.max(...d.map((x) => x.fluidRelativeDifference))).toBeLessThan(
       0.0005,
     );

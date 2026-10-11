@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef } from "react";
 import { X } from "lucide-react";
-import { convergenceDiagnostics } from "./physics";
+import { convergenceDiagnostics, LEGACY_DEFAULT } from "./physics";
 export default function Notes({ close }: { close: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
-  const convergence = useMemo(() => convergenceDiagnostics(), []);
+  const convergence = useMemo(() => convergenceDiagnostics(LEGACY_DEFAULT), []);
   useEffect(() => {
     const prior = document.activeElement as HTMLElement | null;
     dialog.current?.showModal();
@@ -45,48 +45,93 @@ export default function Notes({ close }: { close: () => void }) {
           acceleration already includes the gravity contribution in the intended
           load case. Pressure acts on the closed tank; the accelerated liquid
           transfers a net load to the tank. The demo uses a stated equivalent
-          balancing load for the prestress reduction. Free-free refers to the
-          elastic modal boundary condition.
+          balancing load for the prestress reduction. The structural trial space
+          contains elastic shapes and excludes rigid tank motions; it is not a
+          complete free-free model.
         </p>
         <h3>Re-solve the coupled system</h3>
         <code>[Kdry + KG] φ = ω² [Mdry + MA] φ</code>
         <p>
           Added mass is a matrix: wall motions communicate through the fluid.
           Partial fill creates off-diagonal terms between axial shell basis
-          functions. Pressure changes the tangent stiffness around a loaded
+          functions. The demo approximates pressure-induced geometric stiffness
+          using prescribed barrel tension, rather than solving the full loaded
           equilibrium. The comparison controls expose dry, inertia only,
           prestress only, and both effects.
         </p>
         <p>
-          The full comparison adds seven retained free-surface coordinates and
-          their coupling to the structural coordinates. The fluid inertia and
-          free-surface basis are assembled consistently; adding a second copy of
-          the slosh liquid mass would double-count the fluid. Axisymmetric
-          geometry preserves circumferential orthogonality, so modes with
-          different azimuthal orders do not exchange energy in this reduction.
+          The full comparison adds the selected angular and radial free-surface
+          coordinates and their coupling to the structural coordinates. The
+          fluid inertia and free-surface basis are assembled consistently;
+          adding a second copy of the slosh liquid mass would double-count the
+          fluid. Axisymmetric geometry preserves circumferential orthogonality,
+          so modes with different azimuthal orders do not exchange energy in
+          this reduction.
         </p>
         <p>
           The shell inspector and animation cover n = 0–12, retaining five axial
-          trials for each represented orientation: 80 shell coordinates and
-          seven surface coordinates in the partial-fill coupled system. Orders n
-          = 1–3 include cosine/sine partners; n = 4–12 show one representative
+          trials for each represented orientation: 80 shell coordinates and a
+          configurable surface basis in the partial-fill coupled system. Orders
+          n = 1–3 include cosine/sine partners; n = 4–12 show one representative
           cosine orientation. Each family exposes its first three tracked shell
           branches.
         </p>
-        <h3>Seven eigenvectors, including directional pairs</h3>
+        <h3>Angular families and radial surface shapes</h3>
         <p>
-          The ideal circular free-surface basis is ordered as n = 1 cosine/sine,
-          n = 2 cosine/sine, n = 0 axisymmetric, and n = 3 cosine/sine. Each
-          pair has the same frequency in the symmetric tank. These seven surface
-          shapes define the retained fluid eigenvectors in this reduced model;
-          directional partners count separately. They are generated here, rather
-          than imported from your existing tank model.
+          The default basis covers n = 0–12 with two radial shapes per
+          represented angular orientation: 32 coordinates. Low n = 1–3 has
+          sine/cosine partners; higher n has cosine representatives matching the
+          shell. Select up to four strictly positive derivative-Bessel roots per
+          family. The constant axisymmetric surface shape is excluded;
+          volume-conserving mean motion is handled separately.
         </p>
         <p>
-          No extra slosh shapes are introduced for n ≥ 4. Those partial-fill
-          shell families use a rigid free surface; their coupled and
-          mass-plus-pressure comparisons coincide because the seven retained n =
-          0–3 surface shapes are orthogonal to them.
+          n ≤ 3 with one radial shape reproduces the original seven. Orders
+          above the selected cutoff use a constrained surface. Multiple radial
+          shapes share the full liquid kinetic-energy and gravity matrices. They
+          are reference shapes generated here, rather than imported tank FE
+          modes.
+        </p>
+        <h3>Check the basis across fill</h3>
+        <p>
+          Surface convergence compares one to three radial shapes with a
+          four-shape reference at 17 sampled fills and every selected angular
+          family. Corresponding coupled modes are matched by kinetic-energy MAC.
+          The selected dry-shell branches and the first surface branch within
+          the band are checked. Passing requires the chosen frequency tolerance,
+          liquid/shell kinetic-ratio change ≤0.05 × max(1, reference ratio) for
+          shell targets, MAC ≥0.90 and unambiguous eigenvalues.
+        </p>
+        <p>
+          The common 8×20 liquid potential space isolates surface truncation; a
+          separate 9×22 calculation checks potential frequency sensitivity. A
+          numerical failure, ambiguous match or failed potential check leaves
+          the sample unresolved. The four-shape cap and sampled grid do not
+          prove continuum completeness or convergence between samples. Surface
+          refinement does not refine the five shell trials.
+        </p>
+        <h3>Compare the free-surface boundaries</h3>
+        <p>
+          Surface boundary analysis re-solves one angular family with the same
+          five shell trials and stiffness in three liquid models. The current
+          model retains its existing surface condensation. Constrained surface
+          imposes zero normal surface velocity; n = 0 also needs zero
+          wall-volume change. Pressure release imposes zero potential on the
+          liquid surface, equivalent to zero incremental pressure in the
+          high-frequency limit with gravity-wave dynamics omitted. It applies to
+          every displayed angular order. Each row orders its eigenfrequencies
+          independently and does not claim a common tracked mode. Empty and full
+          tanks have no free-surface comparison; all rows coincide at those
+          limits.
+        </p>
+        <p>
+          The independent flat-cylinder check uses exact potentials for a
+          uniform lateral wall pattern under a rigid lid and a cosine-in-height
+          lateral wall pattern with pressure release. Analytical added mass is
+          compared with the same fluid kinetic-energy assembly used in the tank
+          diagnostic. The two prescribed wall patterns differ. This verifies
+          cylinder added inertia, not tank prestress, shell convergence, or
+          agreement with DCI-HYDRO or measured modes.
         </p>
         <code>ω²slosh = aeff k tanh(kH) · k = ξ/R</code>
         <p>
@@ -167,26 +212,26 @@ export default function Notes({ close }: { close: () => void }) {
         </p>
         <p>
           Each animated and diagnostic family retains five axial shell trials.
-          Partial-fill n = 0–3 uses the existing retained-surface condensation;
-          n ≥ 4 uses a rigid-surface approximation, so those fill curves are not
-          complete pressure-release results. The displayed counts represent only
-          m = 1 in one orientation per family; higher branches and the
-          degenerate sine partner are not counted. Surface-condensation and
-          closed-liquid constraints apply to the cases with fluid added mass,
-          rather than the pressure-only comparison. The finite n = 20 search,
-          restricted shell basis and incompressible fluid do not establish
-          completeness or physical accuracy over 10–2000 Hz. Liquid acoustic
-          modes require a compressible formulation when they interact with the
-          structure.
+          Angular orders through the selected surface cutoff use
+          multi-coordinate condensation; higher orders use a constrained-surface
+          approximation, so those fill curves are not complete pressure-release
+          results. The displayed counts represent only m = 1 in one orientation
+          per family; higher branches and the degenerate sine partner are not
+          counted. Surface-condensation and closed-liquid constraints apply to
+          the cases with fluid added mass, rather than the pressure-only
+          comparison. The finite n = 20 search, restricted shell basis and
+          incompressible fluid do not establish completeness or physical
+          accuracy over 10–2000 Hz. Liquid acoustic modes require a compressible
+          formulation when they interact with the structure.
         </p>
         <h3>Numerical sensitivity at the nominal operating point</h3>
         <p>
-          85% LOX, 31 psig, 2 g. The potential-flow column compares the lowest
-          combined-model frequency using 4×8 and 5×10 potential trial functions.
-          The shell column compares the lowest dry frequency using five and
-          seven structural trial functions. These check basis sensitivity in
-          this reduction, rather than accuracy against a tank finite-element
-          solution.
+          Historical seven-coordinate baseline: 85% LOX, 31 psig, 2 g. The
+          potential-flow column compares the lowest combined-model frequency
+          using 4×8 and 5×10 potential trial functions. The shell column
+          compares the lowest dry frequency using five and seven structural
+          trial functions. These check basis sensitivity in this reduction,
+          rather than accuracy against a tank finite-element solution.
         </p>
         <table className="cryo-convergence">
           <thead>

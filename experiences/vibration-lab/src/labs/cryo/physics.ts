@@ -2,17 +2,27 @@
  * Cryogenic tank: a finite-dimensional shell/potential-flow energy model.
  * SI internally. Shapes are Ritz approximations, not imported tank FE modes.
  */
+import { SLOSH_ROOTS } from "./sloshRoots";
 export type Settings = {
   fluid: "lox" | "lh2";
   fill: number;
   ullagePsi: number;
   accelerationG: number;
+  surfaceMaxOrder?: number;
+  surfaceRadialOrder?: number;
 };
 export const DEFAULT: Settings = {
   fluid: "lox",
   fill: 0.85,
   ullagePsi: 31,
   accelerationG: 2,
+  surfaceMaxOrder: 12,
+  surfaceRadialOrder: 2,
+};
+export const LEGACY_DEFAULT: Settings = {
+  ...DEFAULT,
+  surfaceMaxOrder: 3,
+  surfaceRadialOrder: 1,
 };
 export const TANK = {
   radius: 4.2,
@@ -135,7 +145,7 @@ type Block = {
   fluidMass: Matrix;
   gravity: Matrix;
   addedMass: Matrix;
-  slosh?: SloshMode;
+  slosh?: SloshMode[];
   flux: number[];
 };
 const TAU = 2 * Math.PI;
@@ -210,6 +220,45 @@ const SLOSH_TEMPLATE: Omit<SloshMode, "frequency" | "cylinderFrequency">[] = [
     label: "Slosh 7 · three-lobe sine",
   },
 ];
+// Stable coordinate IDs preserve the original seven while extending coverage.
+for (let radialOrder = 1; radialOrder <= 4; radialOrder++)
+  for (let n = 0; n <= 20; n++)
+    for (const orientation of (n ? ["cos", "sin"] : ["cos"]) as (
+      "cos" | "sin"
+    )[])
+      if (
+        !SLOSH_TEMPLATE.some(
+          (s) =>
+            s.n === n &&
+            s.orientation === orientation &&
+            s.radialOrder === radialOrder,
+        )
+      )
+        SLOSH_TEMPLATE.push({
+          id: SLOSH_TEMPLATE.length + 1,
+          n,
+          orientation,
+          radialOrder,
+          root: SLOSH_ROOTS[n][radialOrder - 1],
+          label: `Surface n=${n} · radial ${radialOrder} · ${orientation}`,
+        });
+
+/** Higher angular families share the shell's cosine representative convention. */
+export function surfaceShapes(
+  settings: Settings = DEFAULT,
+  n?: number,
+  orientation?: "cos" | "sin",
+): SloshMode[] {
+  const maximum = settings.surfaceMaxOrder ?? DEFAULT.surfaceMaxOrder!,
+    radial = settings.surfaceRadialOrder ?? DEFAULT.surfaceRadialOrder!;
+  return SLOSH_TEMPLATE.filter(
+    (s) =>
+      s.n <= maximum &&
+      s.radialOrder <= radial &&
+      (n === undefined ? s.n < 4 || s.orientation === "cos" : s.n === n) &&
+      (orientation === undefined || s.orientation === orientation),
+  ).map((s) => ({ ...s, frequency: 0, cylinderFrequency: 0 }));
+}
 const zero = (n: number, m = n): Matrix =>
   Array.from({ length: n }, () => Array(m).fill(0));
 const identity = (n: number): Matrix =>
@@ -253,6 +302,35 @@ function inverseSPD(a: Matrix): Matrix {
   const li = inverseLower(cholesky(a));
   return mul(transpose(li), li);
 }
+/** Select independent normalized potential trials; never add an artificial energy diagonal. */
+function independentPotentialTrials(gram: Matrix): number[] {
+  const n = gram.length,
+    factors = zero(n),
+    diagonal = gram.map((r, i) => r[i]),
+    selected: number[] = [],
+    used = new Set<number>();
+  for (let k = 0; k < n; k++) {
+    let pivot = -1,
+      big = 0;
+    for (let i = 0; i < n; i++)
+      if (!used.has(i) && diagonal[i] > big) {
+        big = diagonal[i];
+        pivot = i;
+      }
+    if (pivot < 0 || big < 1e-10) break;
+    used.add(pivot);
+    selected.push(pivot);
+    const root = Math.sqrt(big);
+    for (let i = 0; i < n; i++)
+      if (!used.has(i) || i === pivot) {
+        let value = gram[i][pivot];
+        for (let j = 0; j < k; j++) value -= factors[i][j] * factors[pivot][j];
+        factors[i][k] = value / root;
+        diagonal[i] -= factors[i][k] ** 2;
+      }
+  }
+  return selected;
+}
 export function symmetricEigen(a: Matrix): {
   values: number[];
   vectors: Matrix;
@@ -272,7 +350,7 @@ export function symmetricEigen(a: Matrix): {
           q = j;
         }
     const magnitude = Math.max(1, ...d.map((r, i) => Math.abs(r[i])));
-    if (big < 1e-13 * magnitude) break;
+    if (big < (n > 6 ? 1e-15 : 1e-13) * magnitude) break;
     const t = 0.5 * Math.atan2(2 * d[p][q], d[q][q] - d[p][p]),
       c = Math.cos(t),
       s = Math.sin(t);
@@ -429,7 +507,12 @@ export function pressureAt(s: Solution, z: number) {
   return { ullage: s.ullagePa, head, total: s.ullagePa + head };
 }
 export function besselJ(n: number, x: number): number {
-  // Power series is accurate over this demo's first-root interval, x≤4.21.
+  // Integer-order integral avoids catastrophic series cancellation at higher roots.
+  if (x > 8)
+    return BESSEL_QUADRATURE.reduce((sum, q) => {
+      const t = (Math.PI * (q.x + 1)) / 2;
+      return sum + (q.w * Math.cos(n * t - x * Math.sin(t))) / 2;
+    }, 0);
   let t = (x / 2) ** n;
   for (let k = 2; k <= n; k++) t /= k;
   let sum = t;
@@ -440,6 +523,7 @@ export function besselJ(n: number, x: number): number {
   }
   return sum;
 }
+const BESSEL_QUADRATURE = gauss(64);
 function sloshShape(s: SloshMode, r: number, surfaceRadius: number) {
   return surfaceRadius > 1e-9 ? besselJ(s.n, (s.root * r) / surfaceRadius) : 0;
 }
@@ -650,27 +734,111 @@ function legendre(l: number, x: number): { p: number; d: number } {
   }
   return { p: p1, d: d1 };
 }
-type Potential = { power: number; axial: number };
-function potentialBasis(n: number, radial = 3, axial = 6): Potential[] {
+type Potential = {
+  power: number;
+  axial: number;
+  pressureRelease?: boolean;
+  radialIndex?: number;
+  angularOrder?: number;
+  scaleRadius?: number;
+  axialBeta?: number;
+};
+function potentialBasis(
+  n: number,
+  radial = 3,
+  axial = 6,
+  pressureRelease = false,
+): Potential[] {
   const out: Potential[] = [];
   for (let j = 0; j < radial; j++)
-    for (let l = 0; l < axial; l++)
-      if (n !== 0 || j !== 0 || l !== 0)
-        out.push({ power: n + 2 * j, axial: l });
+    // Enforce the surface condition within the SAME polynomial degree as the
+    // unconstrained space: one axial direction is removed per radial order.
+    // Multiplying all axial trials would raise degree and break nested-energy bounds.
+    for (let l = 0; l < axial - (pressureRelease ? 1 : 0); l++)
+      if (pressureRelease || n !== 0 || j !== 0 || l !== 0)
+        out.push({
+          power: n + 2 * j,
+          axial: l,
+          pressureRelease,
+          ...(radial >= 5 ? { radialIndex: j, angularOrder: n } : {}),
+        });
   return out;
 }
 function potential(p: Potential, r: number, z: number, h: number) {
-  const R = TANK.radius,
+  const R = p.scaleRadius ?? TANK.radius,
     t = r / R,
     x = (2 * z) / h - 1,
-    L = legendre(p.axial, x),
-    rp = t ** p.power;
+    L =
+      p.axialBeta === undefined
+        ? legendre(p.axial, x)
+        : {
+            p: jacobiPolynomial(p.axial, 0, p.axialBeta, x),
+            d: p.axial
+              ? ((p.axial + p.axialBeta + 1) / 2) *
+                jacobiPolynomial(p.axial - 1, 1, p.axialBeta + 1, x)
+              : 0,
+          },
+    radialPolynomial =
+      p.radialIndex === undefined
+        ? undefined
+        : {
+            p: jacobiPolynomial(
+              p.radialIndex,
+              0,
+              p.angularOrder!,
+              2 * t * t - 1,
+            ),
+            d: p.radialIndex
+              ? ((p.radialIndex + p.angularOrder! + 1) / 2) *
+                jacobiPolynomial(
+                  p.radialIndex - 1,
+                  1,
+                  p.angularOrder! + 1,
+                  2 * t * t - 1,
+                )
+              : 0,
+          },
+    rn = t ** (p.angularOrder ?? p.power),
+    rp = radialPolynomial ? rn * radialPolynomial.p : rn,
+    derivative = radialPolynomial
+      ? ((p.angularOrder!
+          ? p.angularOrder! * t ** (p.angularOrder! - 1) * radialPolynomial.p
+          : 0) +
+          rn * radialPolynomial.d * 4 * t) /
+        R
+      : p.power === 0
+        ? 0
+        : (p.power / R) * t ** (p.power - 1),
+    surfaceFactor = p.pressureRelease ? 1 - z / h : 1;
   return {
-    v: rp * L.p,
-    dr: p.power === 0 ? 0 : (p.power / R) * t ** (p.power - 1) * L.p,
-    dz: (rp * L.d * 2) / h,
+    v: rp * L.p * surfaceFactor,
+    dr: derivative * L.p * surfaceFactor,
+    dz:
+      (rp * L.d * 2 * surfaceFactor) / h -
+      (p.pressureRelease ? (rp * L.p) / h : 0),
   };
 }
+function jacobiPolynomial(
+  order: number,
+  alpha: number,
+  beta: number,
+  x: number,
+): number {
+  if (!order) return 1;
+  let p0 = 1,
+    p1 = (alpha - beta + (alpha + beta + 2) * x) / 2;
+  for (let k = 2; k <= order; k++) {
+    const t = 2 * k + alpha + beta,
+      a = 2 * k * (k + alpha + beta) * (t - 2),
+      b = (t - 1) * (t * (t - 2) * x + alpha * alpha - beta * beta),
+      c = 2 * (k + alpha - 1) * (k + beta - 1) * t,
+      p = (b * p1 - c * p0) / a;
+    p0 = p1;
+    p1 = p;
+  }
+  return p1;
+}
+export type SurfaceBoundary = "retained" | "rigid" | "pressure-release";
 const FLUID_CACHE = new Map<
   string,
   {
@@ -681,31 +849,47 @@ const FLUID_CACHE = new Map<
     sloshMass: number;
     potentials: Potential[];
     response: Matrix;
+    potentialRank: number;
+    potentialTrials: number;
   }
 >();
 function fluidMatrices(
   basis: ShellBasis[],
   h: number,
-  slosh: SloshMode | undefined,
+  slosh: SloshMode | SloshMode[] | undefined,
   full: boolean,
   radial = POTENTIAL_RADIAL_ORDER,
   axial = POTENTIAL_AXIAL_ORDER,
   cylinder = false,
   radialQuadrature = GR.length,
   energyGram = false,
+  options: {
+    boundary?: SurfaceBoundary;
+    /** Prescribed normal wall shapes for independent cylindrical benchmarks. */
+    wallNormal?: (z: number) => number[];
+  } = {},
 ) {
-  const n = basis[0].n,
+  const shapes = slosh ? (Array.isArray(slosh) ? slosh : [slosh]) : [],
+    boundary = options.boundary ?? "retained",
+    pressureRelease = !full && boundary === "pressure-release",
+    n = basis[0].n,
     size = basis.length,
-    ns = slosh && !full ? 1 : 0,
+    ns = !full && boundary === "retained" ? shapes.length : 0,
     total = size + ns;
-  const key = `${n}-${h.toFixed(9)}-${full}-${radial}-${axial}-${size}-${cylinder}-${radialQuadrature}-${ns}-${energyGram}`;
-  const saved = FLUID_CACHE.get(key);
+  const key = `${n}-${h.toFixed(9)}-${full}-${radial}-${axial}-${size}-${cylinder}-${radialQuadrature}-${shapes.map((s) => s.id).join(",")}-${energyGram}-${boundary}`;
+  const saved = options.wallNormal ? undefined : FLUID_CACHE.get(key);
   if (saved) return saved;
-  const psi = potentialBasis(n, radial, axial),
+  const psi = potentialBasis(n, radial, axial, pressureRelease),
     np = psi.length,
     L = zero(np),
     B = zero(np, total),
     angular = n === 0 ? TAU : Math.PI;
+  if (radial >= 5)
+    psi.forEach((p) => {
+      p.scaleRadius =
+        !cylinder && h < TANK.domeDepth ? radiusAt(h) : TANK.radius;
+      if (!cylinder && h < TANK.domeDepth) p.axialBeta = n;
+    });
   const fluidRadius = (z: number) => (cylinder ? TANK.radius : radiusAt(z));
   const fluidDerivatives = (z: number) =>
     cylinder ? { r: TANK.radius, r1: 0, r2: 0 } : radiusDerivatives(z);
@@ -715,40 +899,110 @@ function fluidMatrices(
     grav = zero(total);
   const zq = integrateSegments(h),
     rq = radialQuadrature === GR.length ? GR : gauss(radialQuadrature);
-  for (const q of zq) {
-    const r = fluidRadius(q.z);
-    for (const g of rq) {
-      const rr = (r * (g.x + 1)) / 2,
-        w = ((angular * rr * r) / 2) * g.w * q.w,
-        p = psi.map((v) => potential(v, rr, q.z, h));
+  if (radial >= 5) {
+    // Separate radial and axial products before the tensor contraction. This
+    // uses the same Gauss points, while avoiding a full np² loop at every r.
+    for (const q of zq) {
+      const r = fluidRadius(q.z),
+        radialMass = zero(radial),
+        radialEnergy = zero(radial),
+        prototypes = Array.from({ length: radial }, (_, j) => ({
+          power: n + 2 * j,
+          axial: 0,
+          radialIndex: j,
+          angularOrder: n,
+          scaleRadius: psi[0].scaleRadius,
+        }));
+      for (const g of rq) {
+        const rr = (r * (g.x + 1)) / 2,
+          w = (angular * rr * r * g.w) / 2,
+          values = prototypes.map((p) => potential(p, rr, q.z, h));
+        for (let i = 0; i < radial; i++)
+          for (let j = 0; j <= i; j++) {
+            radialMass[i][j] += w * values[i].v * values[j].v;
+            radialEnergy[i][j] +=
+              w *
+              (values[i].dr * values[j].dr +
+                (n ? (n * n * values[i].v * values[j].v) / (rr * rr) : 0));
+          }
+      }
+      for (let i = 0; i < radial; i++)
+        for (let j = 0; j < i; j++) {
+          radialMass[j][i] = radialMass[i][j];
+          radialEnergy[j][i] = radialEnergy[i][j];
+        }
+      const axialValues = psi.map((p) =>
+        potential(
+          {
+            power: 0,
+            axial: p.axial,
+            pressureRelease: p.pressureRelease,
+            axialBeta: p.axialBeta,
+          },
+          1,
+          q.z,
+          h,
+        ),
+      );
       for (let i = 0; i < np; i++)
-        for (let j = 0; j <= i; j++)
+        for (let j = 0; j <= i; j++) {
+          const ri = (psi[i].power - n) / 2,
+            rj = (psi[j].power - n) / 2;
           L[i][j] +=
-            w *
-            (p[i].dr * p[j].dr +
-              p[i].dz * p[j].dz +
-              (n > 0 ? (n * n * p[i].v * p[j].v) / (rr * rr) : 0));
+            q.w *
+            (radialEnergy[ri][rj] * axialValues[i].v * axialValues[j].v +
+              radialMass[ri][rj] * axialValues[i].dz * axialValues[j].dz);
+        }
+    }
+  } else {
+    for (const q of zq) {
+      const r = fluidRadius(q.z);
+      for (const g of rq) {
+        const rr = (r * (g.x + 1)) / 2,
+          w = ((angular * rr * r) / 2) * g.w * q.w,
+          p = psi.map((v) => potential(v, rr, q.z, h));
+        for (let i = 0; i < np; i++)
+          for (let j = 0; j <= i; j++)
+            L[i][j] +=
+              w *
+              (p[i].dr * p[j].dr +
+                p[i].dz * p[j].dz +
+                (n > 0 ? (n * n * p[i].v * p[j].v) / (rr * rr) : 0));
+      }
     }
   }
   for (let i = 0; i < np; i++) for (let j = 0; j < i; j++) L[j][i] = L[i][j];
   for (const q of zq) {
     const { r, r1 } = fluidDerivatives(q.z),
-      u = basis.map((b) => basisShape(b, q.z)),
+      normal = options.wallNormal
+        ? options.wallNormal(q.z)
+        : basis.map((b) => {
+            const u = basisShape(b, q.z);
+            return u.ur - r1 * u.zz;
+          }),
       p = psi.map((v) => potential(v, r, q.z, h).v);
     for (let j = 0; j < size; j++) {
-      const boundary = (u[j].ur - r1 * u[j].zz) * r * q.w * angular;
-      if (n === 0) flux[j] += boundary;
-      for (let i = 0; i < np; i++) B[i][j] += p[i] * boundary;
+      const wallFlux = normal[j] * r * q.w * angular;
+      if (n === 0) flux[j] += wallFlux;
+      for (let i = 0; i < np; i++) B[i][j] += p[i] * wallFlux;
     }
   }
-  if (!full && area > 1e-10) {
-    for (const g of GS) {
+  if (!full && boundary === "retained" && area > 1e-10) {
+    const surfaceQuadrature = shapes.some((s) => s.radialOrder > 1 || s.n > 3)
+      ? gauss(
+          Math.max(
+            GS.length,
+            Math.ceil(Math.max(...shapes.map((s) => s.root))) + 8,
+          ),
+        )
+      : GS;
+    for (const g of surfaceQuadrature) {
       const r = (Rs * (g.x + 1)) / 2,
         w = ((angular * r * Rs) / 2) * g.w,
         p = psi.map((v) => potential(v, r, h, h).v);
-      const eta = slosh ? sloshShape(slosh, r, Rs) : 0;
+      const eta = shapes.map((s) => sloshShape(s, r, Rs));
       const surface = Array.from({ length: total }, (_, j) =>
-        j < size ? (n === 0 ? -flux[j] / area : 0) : eta,
+        j < size ? (n === 0 ? -flux[j] / area : 0) : eta[j - size],
       );
       for (let i = 0; i < np; i++)
         for (let j = 0; j < total; j++) B[i][j] += p[i] * surface[j] * w;
@@ -761,20 +1015,37 @@ function fluidMatrices(
   const d = L.map((row, i) => Math.sqrt(row[i]));
   const Ln = L.map((row, i) => row.map((v, j) => v / (d[i] * d[j]))),
     Bn = B.map((row, i) => row.map((v) => v / d[i]));
-  const invLn = inverseSPD(Ln),
-    response = mul(invLn, Bn).map((row, i) => row.map((x) => x / d[i]));
+  const selected =
+      radial >= 5
+        ? independentPotentialTrials(Ln)
+        : Array.from({ length: np }, (_, i) => i),
+    reducedL = selected.map((i) => selected.map((j) => Ln[i][j])),
+    reducedB = selected.map((i) => Bn[i]),
+    invLn = inverseSPD(reducedL),
+    solved = mul(invLn, reducedB),
+    response = zero(np, total);
+  selected.forEach((index, i) => {
+    response[index] = solved[i].map((x) => x / d[index]);
+  });
   // High-n blocks use a symmetric positive energy Gram product instead of
   // multiplying an explicit inverse into B twice. Keep n<=4 unchanged.
-  const whitened = energyGram ? mul(inverseLower(cholesky(Ln)), Bn) : undefined;
+  const whitened = energyGram
+    ? mul(inverseLower(cholesky(reducedL)), reducedB)
+    : undefined;
   const mass = whitened
     ? mul(transpose(whitened), whitened)
-    : mul(transpose(Bn), mul(invLn, Bn));
+    : mul(transpose(reducedB), mul(invLn, reducedB));
   let added = mass.slice(0, size).map((r) => r.slice(0, size));
   if (ns) {
-    const mff = mass[size][size];
-    for (let i = 0; i < size; i++)
-      for (let j = 0; j < size; j++)
-        added[i][j] -= (mass[i][size] * mass[size][j]) / mff;
+    const msf = mass.slice(0, size).map((r) => r.slice(size)),
+      correction = mul(
+        msf,
+        mul(
+          inverseSPD(mass.slice(size).map((r) => r.slice(size))),
+          transpose(msf),
+        ),
+      );
+    added = added.map((row, i) => row.map((v, j) => v - correction[i][j]));
   }
   const result = {
     mass,
@@ -784,32 +1055,37 @@ function fluidMatrices(
     sloshMass: ns ? mass[size][size] : 0,
     potentials: psi,
     response,
+    potentialRank: selected.length,
+    potentialTrials: np,
   };
   if (FLUID_CACHE.size >= 4096)
     FLUID_CACHE.delete(FLUID_CACHE.keys().next().value!);
-  FLUID_CACHE.set(key, result);
+  if (!options.wallNormal) FLUID_CACHE.set(key, result);
   return result;
 }
 /** Identical potential integration for solves, tracking and liquid animation. */
 function shellFluidMatrices(
   basis: ShellBasis[],
   h: number,
-  slosh: SloshMode | undefined,
+  slosh: SloshMode | SloshMode[] | undefined,
   full: boolean,
 ) {
-  const n = basis[0].n;
+  const n = basis[0].n,
+    count = Array.isArray(slosh) ? slosh.length : slosh ? 1 : 0,
+    radial = count > 1 ? count + 4 : POTENTIAL_RADIAL_ORDER,
+    axial = count > 1 ? 4 + 4 * count : POTENTIAL_AXIAL_ORDER;
   return fluidMatrices(
     basis,
     h,
     slosh,
     full,
-    POTENTIAL_RADIAL_ORDER,
-    POTENTIAL_AXIAL_ORDER,
+    radial,
+    axial,
     false,
-    n <= 4
+    n <= 4 && radial === POTENTIAL_RADIAL_ORDER
       ? GR.length
-      : Math.max(GR.length, n + 2 * POTENTIAL_RADIAL_ORDER + 1),
-    n > 4,
+      : Math.max(GR.length, n + 2 * radial + 1),
+    n > 4 || count > 1,
   );
 }
 function nullFlux(flux: number[]): Matrix {
@@ -855,6 +1131,17 @@ function cleanSettings(s: Settings): Settings {
         ? s.accelerationG
         : DEFAULT.accelerationG,
     ),
+    surfaceMaxOrder: Math.max(
+      0,
+      Math.min(20, Math.round(s.surfaceMaxOrder ?? DEFAULT.surfaceMaxOrder!)),
+    ),
+    surfaceRadialOrder: Math.max(
+      1,
+      Math.min(
+        4,
+        Math.round(s.surfaceRadialOrder ?? DEFAULT.surfaceRadialOrder!),
+      ),
+    ),
   };
 }
 
@@ -865,6 +1152,7 @@ type BlockSpectrum = {
   mass: Matrix;
   ns: number;
   nf: number;
+  surfaceReferences?: number[][];
 };
 
 /** Matrix assembly and eigenvalues are independent of display-mode identity. */
@@ -879,7 +1167,7 @@ function blockSpectrum(
   const withMass = id === "mass" || id === "combined" || id === "coupled",
     withPressure = id === "pressure" || id === "combined" || id === "coupled",
     ns = b.basis.length,
-    nf = id === "coupled" && surfaceActive && b.slosh ? 1 : 0,
+    nf = id === "coupled" && surfaceActive ? (b.slosh?.length ?? 0) : 0,
     size = ns + nf,
     k = zero(size),
     mass = zero(size);
@@ -908,6 +1196,12 @@ function blockSpectrum(
     mass,
     ns,
     nf,
+    surfaceReferences: nf
+      ? generalizedEigen(
+          b.gravity.slice(ns).map((row) => row.slice(ns)),
+          b.fluidMass.slice(ns).map((row) => row.slice(ns)),
+        ).vectors
+      : [],
   };
 }
 
@@ -956,6 +1250,7 @@ function modalCase(
   density: number,
   a: number,
   dryReferences: Map<string, number[][]>,
+  capacity: number,
 ): ModalCase {
   const withMass = id === "mass" || id === "combined" || id === "coupled",
     withPressure = id === "pressure" || id === "combined" || id === "coupled",
@@ -971,15 +1266,30 @@ function modalCase(
     const score = vectors.map((v) =>
       refs.map((r) => mac(v.slice(0, ns), r, b.dryMass)),
     );
-    const assignment = nf
-      ? [-1, ...modeAssignment(score.slice(1))]
-      : modeAssignment(score);
+    const assignment =
+      nf === 1
+        ? [-1, ...modeAssignment(score.slice(1))]
+        : nf > 1
+          ? modeAssignment(
+              vectors.map((v) =>
+                [
+                  ...refs.map((r) => [...r, ...Array(nf).fill(0)]),
+                  ...eigen.surfaceReferences!.map((r) => [
+                    ...Array(ns).fill(0),
+                    ...r,
+                  ]),
+                ].map((r) => mac(v, r, eigen.mass)),
+              ),
+            )
+          : modeAssignment(score);
     for (let j = 0; j < vectors.length; j++) {
       const v = vectors[j],
         dryRef = assignment[j],
-        sloshMode = nf && dryRef < 0;
+        sloshMode = nf && (dryRef < 0 || dryRef >= ns),
+        surfaceRank = dryRef < 0 ? 0 : dryRef - ns,
+        surfaceMode = sloshMode ? b.slosh![surfaceRank] : undefined;
       const phase = sloshMode
-        ? v[ns]
+        ? v[ns + surfaceRank]
         : v
             .slice(0, ns)
             .reduce(
@@ -993,14 +1303,27 @@ function modalCase(
               0,
             );
       if (phase < 0) for (let i = 0; i < v.length; i++) v[i] = -v[i];
-      const global = Array(NSHELL + 7).fill(0);
+      const global = Array(NSHELL + capacity).fill(0);
       for (let i = 0; i < ns; i++) global[b.basis[i].index] = v[i];
-      if (nf && b.slosh) global[NSHELL + b.slosh.id - 1] = v[ns];
-      else if (withMass && surfaceActive && b.slosh)
-        global[NSHELL + b.slosh.id - 1] =
-          -b.fluidMass[ns]
-            .slice(0, ns)
-            .reduce((sum, x, i) => sum + x * v[i], 0) / b.fluidMass[ns][ns];
+      if (nf)
+        b.slosh!.forEach((s, i) => {
+          global[NSHELL + s.id - 1] = v[ns + i];
+        });
+      else if (withMass && surfaceActive && b.slosh?.length) {
+        const mff = b.fluidMass.slice(ns).map((row) => row.slice(ns)),
+          rhs = b.fluidMass
+            .slice(ns)
+            .map((row) =>
+              row.slice(0, ns).reduce((sum, x, i) => sum + x * v[i], 0),
+            ),
+          eta = mul(
+            inverseSPD(mff),
+            rhs.map((x) => [-x]),
+          ).map((row) => row[0]);
+        b.slosh.forEach((s, i) => {
+          global[NSHELL + s.id - 1] = eta[i];
+        });
+      }
       const structural = quadratic(b.dryMass, v.slice(0, ns));
       const fluid = withMass
         ? density * quadratic(nf ? b.fluidMass : b.addedMass, v)
@@ -1008,13 +1331,13 @@ function modalCase(
       const total = structural + fluid;
       const jref = Math.max(0, dryRef),
         referenceId = sloshMode
-          ? `slosh-${b.slosh!.id}`
+          ? `slosh-${surfaceMode!.id}`
           : `shell-${b.n}-${jref + 1}-${b.orientation}`;
       const mode: ModalMode = {
         id: `${id}-${referenceId}`,
         referenceId,
         label: sloshMode
-          ? b.slosh!.label
+          ? surfaceMode!.label
           : `Shell n=${b.n} · axial ${jref + 1}${b.orientation === "sin" ? " · sine" : ""}`,
         kind: sloshMode ? "slosh" : "shell",
         frequency: Math.sqrt(Math.max(0, eigen.values[j])) / TAU,
@@ -1025,10 +1348,14 @@ function modalCase(
         shellFraction: structural / total,
         sloshFraction: fluid / total,
         sloshParticipation: nf
-          ? (density * b.fluidMass[ns][ns] * v[ns] * v[ns]) /
+          ? (density *
+              quadratic(
+                b.fluidMass.slice(ns).map((row) => row.slice(ns)),
+                v.slice(ns),
+              )) /
             Math.max(1e-30, total)
           : 0,
-        sloshId: sloshMode ? b.slosh!.id : undefined,
+        sloshId: sloshMode ? surfaceMode!.id : undefined,
         match: sloshMode ? 1 : score[j][jref],
         trackingMAC: 1,
         trackingMinMAC: 1,
@@ -1059,7 +1386,7 @@ export function solve(input: Settings = DEFAULT): Solution {
     surfaceActive = fluidActive && !full,
     acc = settings.accelerationG * G0;
   const slosh: SloshMode[] = surfaceActive
-    ? SLOSH_TEMPLATE.map((s) => {
+    ? surfaceShapes(settings).map((s) => {
         const k = s.root / Math.max(1e-8, radiusAt(h));
         return {
           ...s,
@@ -1076,7 +1403,7 @@ export function solve(input: Settings = DEFAULT): Solution {
     )[]) {
       const shell = shellMatrices(n, orientation),
         size = shell.basis.length,
-        sm = slosh.find((s) => s.n === n && s.orientation === orientation);
+        sm = slosh.filter((s) => s.n === n && s.orientation === orientation);
       const f = fluidActive
         ? shellFluidMatrices(shell.basis, h, sm, full)
         : {
@@ -1086,11 +1413,15 @@ export function solve(input: Settings = DEFAULT): Solution {
             flux: Array(size).fill(0),
             sloshMass: 0,
           };
-      if (sm)
-        sm.frequency =
-          acc > 0
-            ? Math.sqrt((acc * f.gravityUnit[size][size]) / f.sloshMass) / TAU
-            : 0;
+      if (sm.length) {
+        const rigid = generalizedEigen(
+          f.gravityUnit.slice(size).map((row) => row.slice(size)),
+          f.mass.slice(size).map((row) => row.slice(size)),
+        );
+        sm.forEach((s, i) => {
+          s.frequency = Math.sqrt(Math.max(0, acc * rigid.values[i])) / TAU;
+        });
+      }
       const block: Block = {
         n,
         orientation,
@@ -1112,7 +1443,16 @@ export function solve(input: Settings = DEFAULT): Solution {
     }
   const cases = {} as Record<CaseId, ModalCase>;
   for (const id of CASE_IDS)
-    cases[id] = modalCase(blocks, id, full, surfaceActive, density, acc, refs);
+    cases[id] = modalCase(
+      blocks,
+      id,
+      full,
+      surfaceActive,
+      density,
+      acc,
+      refs,
+      Math.max(0, ...surfaceShapes(settings).map((s) => s.id)),
+    );
   const ullagePa = settings.ullagePsi * PSI,
     headPa = density * acc * h;
   const result: Solution = {
@@ -1137,13 +1477,13 @@ export function solve(input: Settings = DEFAULT): Solution {
       "Reduced shell / potential-flow model; displayed frequencies are educational estimates, not correlated tank FE predictions.",
       "Domes enter shell energy, wetted geometry and fluid potential integration. Prestress KG uses the barrel membrane resultants; dome and attachment stresses require a static FE load case.",
       "Hydrostatic axial force is balanced by a distributed axial reaction. This specified static surrogate preserves free-free elastic modal coordinates; it is not a flight thrust attachment model.",
-      "The seven retained free-surface coordinates count lateral sine/cosine partners separately. Seven fluid modes are a truncation, not the complete slosh spectrum.",
+      `Surface basis: n=0–${settings.surfaceMaxOrder}, ${settings.surfaceRadialOrder} radial shapes per represented angular orientation; ${slosh.length} active coordinates. Higher n uses cosine representatives, matching the shell space.`,
       "Fluid kinetic energy includes shell/free-surface cross terms. The high-frequency mass comparison condenses the retained slosh coordinates; the coupled case uses their shared uncondensed mass.",
       "Pressure-maintained ullage: incremental gas-compression stiffness is omitted. A sealed ullage requires a gas spring, particularly for breathing modes.",
       "Shell trial functions taper at both poles and impose near-inextensional barrel hoop/shear kinematics. Free-free means no applied modal supports; this is a restricted elastic Ritz space with rigid-body modes excluded.",
       "Barrel KG retains initial-stress energy only. Dome prestress and the pressure follower-load tangent are omitted; this is not a complete pressurized free-free tangent operator.",
       "Five axial shell trials per angular family; first three matched branches are exposed. Refinement sensitivity is about 0.03% for the baseline lowest n2 dry mode, but about 12–14% for lowest n1/n3/n4. Frequencies remain model estimates.",
-      "Inspection includes n=0 through n=12. Orders n>=4 have rigid free-surface loading in partial fill because no free-surface coordinates are retained for those families; extending shell coverage does not add slosh eigenvectors.",
+      "Inspection includes n=0 through n=12. Angular orders above the selected surface cutoff use a constrained surface. Use Surface convergence to assess truncation across fill.",
       "Uniform aluminum properties; thermal contraction, insulation, stiffeners, liquid compressibility, damping and nonlinear slosh are omitted.",
     ],
   };
@@ -1153,7 +1493,7 @@ export function solve(input: Settings = DEFAULT): Solution {
     );
   if (settings.fill < 0.05 && settings.fill > 0)
     result.notes.push(
-      "A shallow bottom-dome liquid pool is outside the cylindrical slosh benchmark geometry. These seven fixed surface families need not be the lowest seven modes at this fill.",
+      "A shallow bottom-dome pool differs from the cylinder benchmark. These reference surface shapes need not be the lowest modes of the actual domed liquid domain.",
     );
   return result;
 }
@@ -1186,12 +1526,7 @@ function trackingSpectrum(settings: Settings, id: CaseId, n: number) {
     fluidActive = settings.fill > 1e-8,
     full = settings.fill >= 1 - 1e-8,
     surfaceActive = fluidActive && !full,
-    template = surfaceActive
-      ? SLOSH_TEMPLATE.find((s) => s.n === n)
-      : undefined,
-    slosh = template
-      ? { ...template, frequency: 0, cylinderFrequency: 0 }
-      : undefined,
+    slosh = surfaceActive ? surfaceShapes(settings, n, "cos") : [],
     size = shell.basis.length,
     density = FLUIDS[settings.fluid].density,
     f =
@@ -1281,9 +1616,55 @@ function matchFillStep(
   fill: number,
   n: number,
 ): TrackedSpectrum {
+  if (previous.nf === 0 && spectrum.nf > 1) {
+    const refs = [
+        ...previous.vectors.map((v) => [...v, ...Array(spectrum.nf).fill(0)]),
+        ...spectrum.surfaceReferences!.map((v) => [
+          ...Array(spectrum.ns).fill(0),
+          ...v,
+        ]),
+      ],
+      scores = spectrum.vectors.map((v) =>
+        refs.map((r) => mac(v, r, spectrum.mass)),
+      ),
+      assignment = modeAssignment(scores),
+      labels = assignment.map((ref) =>
+        ref < previous.vectors.length
+          ? previous.labels[ref]
+          : spectrum.ns + ref - previous.vectors.length,
+      ),
+      quality = assignment.map((ref, i) =>
+        ref < previous.vectors.length
+          ? Math.min(
+              1,
+              mac(
+                spectrum.vectors[i].slice(0, spectrum.ns),
+                previous.vectors[ref],
+                shellMatrices(n, "cos").mass,
+              ),
+            )
+          : 1,
+      );
+    const vectors = spectrum.vectors.map((v, i) =>
+      signedOverlap(v, refs[assignment[i]], spectrum.mass) < 0
+        ? v.map((x) => -x)
+        : v.slice(),
+    );
+    return {
+      ...spectrum,
+      vectors,
+      fill,
+      labels,
+      quality,
+      minimumQuality: quality.slice(),
+      ambiguous: quality.map(
+        (q, i) => q < TRACK_WARNING_MAC || nearlyDegenerate(spectrum.values, i),
+      ),
+    };
+  }
   const shell = shellMatrices(n, "cos"),
-    openingSurface = previous.nf === 0 && spectrum.nf === 1,
-    closingSurface = previous.nf === 1 && spectrum.nf === 0,
+    openingSurface = previous.nf === 0 && spectrum.nf > 0,
+    closingSurface = previous.nf > 0 && spectrum.nf === 0,
     topologyChange =
       openingSurface ||
       closingSurface ||
@@ -1366,9 +1747,15 @@ function advanceFill(
     fill - previous.fill > TRACK_MIN_STEP &&
     depth < TRACK_MAX_REFINEMENT
   ) {
-    const middle = (previous.fill + fill) / 2,
-      intermediate = advanceFill(tracker, previous, middle, depth + 1);
-    return advanceFill(tracker, intermediate, fill, depth + 1);
+    try {
+      const middle = (previous.fill + fill) / 2,
+        intermediate = advanceFill(tracker, previous, middle, depth + 1);
+      return advanceFill(tracker, intermediate, fill, depth + 1);
+    } catch {
+      // Preserve the valid target eigensolve, but do not claim a verified path
+      // through an intermediate fill that the finite potential space cannot solve.
+      return { ...next, ambiguous: next.ambiguous.map(() => true) };
+    }
   }
   return next;
 }
@@ -1376,9 +1763,10 @@ function advanceFill(
 function trackedAt(settings: Settings, id: CaseId, n: number): TrackedSpectrum {
   // With no retained surface coordinate, these operators are identical.
   // Share their continuation instead of solving the same high-n path twice.
-  if (id === "coupled" && n >= 4) id = "combined";
+  if (id === "coupled" && !surfaceShapes(settings, n, "cos").length)
+    id = "combined";
   const pressure = id === "pressure" || id === "combined" || id === "coupled",
-    key = `${id}-${n}-${settings.fluid}-${pressure ? `${settings.ullagePsi}-${settings.accelerationG}` : "mass"}`;
+    key = `${id}-${n}-${settings.fluid}-${settings.surfaceMaxOrder}-${settings.surfaceRadialOrder}-${pressure ? `${settings.ullagePsi}-${settings.accelerationG}` : "mass"}`;
   let tracker = FILL_TRACKERS.get(key);
   if (!tracker) {
     tracker = {
@@ -1401,6 +1789,27 @@ function trackedAt(settings: Settings, id: CaseId, n: number): TrackedSpectrum {
   return Math.abs(settings.fill - previous.fill) < 1e-12
     ? previous
     : advanceFill(tracker, previous, settings.fill);
+}
+
+/** Warm the deterministic continuation one canonical fill step at a time. */
+export function* prepareTrackedModes(
+  solution: Solution,
+  n: number,
+  orientation: "cos" | "sin" = "cos",
+) {
+  const steps = Math.floor(solution.settings.fill / TRACK_STEP + 1e-10),
+    total = CASE_IDS.length * (steps + 2);
+  let completed = 0;
+  for (const id of CASE_IDS) {
+    if (id !== "dry")
+      for (let i = 0; i <= steps; i++) {
+        trackedAt({ ...solution.settings, fill: i * TRACK_STEP }, id, n);
+        yield ++completed / total;
+      }
+    else completed += steps + 1;
+    resolveTrackedBlock(solution, id, n, orientation);
+    yield ++completed / total;
+  }
 }
 
 /** Identity is resolved only for angular blocks inspected by the UI. */
@@ -1426,25 +1835,27 @@ function resolveTrackedBlock(
     modes = solution.cases[caseId].modes
       .filter((mode) => mode.n === n && mode.orientation === orientation)
       .sort((a, b) => a.eigenvalue - b.eigenvalue),
-    slosh = solution.slosh.find(
+    slosh = solution.slosh.filter(
       (s) => s.n === n && s.orientation === orientation,
     );
   modes.forEach((mode, i) => {
     const label = tracked.labels[i],
-      isSlosh = label === tracked.ns,
+      isSlosh = label >= tracked.ns,
+      surfaceMode = isSlosh ? slosh[label - tracked.ns] : undefined,
       local = shell.basis.map((b) => mode.vector[b.index]);
-    if (tracked.nf && slosh) local.push(mode.vector[NSHELL + slosh.id - 1]);
+    if (tracked.nf)
+      local.push(...slosh.map((s) => mode.vector[NSHELL + s.id - 1]));
     if (signedOverlap(local, tracked.vectors[i], tracked.mass) < 0)
       mode.vector = mode.vector.map((value) => -value);
     mode.kind = isSlosh ? "slosh" : "shell";
     mode.axialOrder = isSlosh ? 0 : label + 1;
-    mode.sloshId = isSlosh ? slosh!.id : undefined;
+    mode.sloshId = surfaceMode?.id;
     mode.referenceId = isSlosh
-      ? `slosh-${slosh!.id}`
+      ? `slosh-${surfaceMode!.id}`
       : `shell-${n}-${label + 1}-${orientation}`;
     mode.id = `${caseId}-${mode.referenceId}`;
     mode.label = isSlosh
-      ? slosh!.label
+      ? surfaceMode!.label
       : `Shell n=${n} · branch ${label + 1}${orientation === "sin" ? " · sine" : ""}`;
     mode.match = isSlosh
       ? 1
@@ -1602,7 +2013,7 @@ export function findMode(
   const modes = solution.cases[caseId].modes;
   if (selection.kind === "slosh") {
     if (!solution.surfaceActive) return undefined;
-    const template = SLOSH_TEMPLATE.find(
+    const template = solution.slosh.find(
       (s) => s.id === (selection.sloshId ?? 1),
     );
     if (!template) return undefined;
@@ -1657,15 +2068,9 @@ export function cylinderSloshFrequency(
   depth: number,
   accelerationG: number,
   radius = TANK.radius,
+  radialOrder = 1,
 ): number {
-  const root =
-      n === 0
-        ? 3.831705970207513
-        : n === 1
-          ? 1.841183781340659
-          : n === 2
-            ? 3.05423692822714
-            : 4.201188941210528,
+  const root = SLOSH_ROOTS[n][radialOrder - 1],
     k = root / radius;
   return (
     Math.sqrt(
@@ -1709,7 +2114,7 @@ export function convergenceDiagnostics(settings: Settings = DEFAULT) {
   for (let n = 0; n <= 4; n++) {
     const shell = shellMatrices(n, "cos"),
       refinedShell = shellMatrices(n, "cos", 7);
-    const template = SLOSH_TEMPLATE.find((x) => x.n === n),
+    const template = surfaceShapes(s, n, "cos")[0],
       sm =
         partial && template
           ? { ...template, frequency: 0, cylinderFrequency: 0 }
@@ -1782,6 +2187,562 @@ export function dryRitzFrequencies(
   return generalizedEigen(s.stiffness, s.mass).values.map(
     (v) => Math.sqrt(Math.max(0, v)) / TAU,
   );
+}
+
+export type SurfaceBoundaryRow = {
+  boundary: SurfaceBoundary;
+  frequencies: number[];
+  addedMassRatios: number[];
+  maxResidual: number;
+  /** Density-scaled matrix in the common five-coordinate shell space. */
+  addedMass: Matrix;
+  constrainedVolume: boolean;
+  available: boolean;
+  error?: string;
+};
+export function surfacePotentialOrders(
+  settings: Settings,
+  n: number,
+): [number, number] {
+  const count =
+    settings.fill > 1e-8 && settings.fill < 1 - 1e-8
+      ? surfaceShapes(settings, n, "cos").length
+      : 0;
+  return count > 1
+    ? [count + 4, 4 + 4 * count]
+    : [POTENTIAL_RADIAL_ORDER, POTENTIAL_AXIAL_ORDER];
+}
+const SURFACE_BOUNDARY_CACHE = new Map<string, SurfaceBoundaryRow[]>();
+
+/**
+ * Re-solves each boundary model in the same shell space and with the same K.
+ * Eigenvalues are sorted independently, not assigned a common tracked identity.
+ * The scene's retained-surface model and continuation remain separate.
+ */
+export function surfaceBoundaryComparison(
+  input: Settings = DEFAULT,
+  n = 2,
+  withPrestress = true,
+  radial = surfacePotentialOrders(input, n)[0],
+  axial = surfacePotentialOrders(input, n)[1],
+): SurfaceBoundaryRow[] {
+  if (!Number.isInteger(n) || n < 0 || n > 20)
+    throw new Error(
+      "Surface comparison requires an integer angular order from 0 to 20",
+    );
+  const settings = cleanSettings(input),
+    key = `${settings.fluid}-${settings.fill}-${settings.ullagePsi}-${settings.accelerationG}-${settings.surfaceMaxOrder}-${settings.surfaceRadialOrder}-${n}-${withPrestress}-${radial}-${axial}`,
+    cached = SURFACE_BOUNDARY_CACHE.get(key);
+  if (cached) return cached;
+  const shell = shellMatrices(n, "cos"),
+    size = shell.basis.length,
+    h = heightForFill(settings.fill),
+    density = FLUIDS[settings.fluid].density,
+    active = settings.fill > 1e-8,
+    full = settings.fill >= 1 - 1e-8,
+    slosh = active && !full ? surfaceShapes(settings, n, "cos") : [],
+    kg = withPrestress
+      ? pressureMatrix(shell.basis, settings, h, density)
+      : zero(size),
+    stiffness = shell.stiffness.map((row, i) =>
+      row.map((v, j) => v + kg[i][j]),
+    );
+  const rows = (["retained", "rigid", "pressure-release"] as const).map(
+    (boundary): SurfaceBoundaryRow => {
+      const constrainedVolume =
+        active && n === 0 && (full || boundary === "rigid");
+      try {
+        const f = active
+            ? fluidMatrices(
+                shell.basis,
+                h,
+                slosh,
+                full,
+                radial,
+                axial,
+                false,
+                Math.max(GR.length, n + 2 * radial + 1),
+                true,
+                { boundary },
+              )
+            : { added: zero(size), flux: Array(size).fill(0) },
+          addedMass = f.added.map((row) => row.map((v) => density * v)),
+          mass = shell.mass.map((row, i) =>
+            row.map((v, j) => v + addedMass[i][j]),
+          ),
+          t = constrainedVolume ? nullFlux(f.flux) : identity(size),
+          eigen = generalizedEigen(project(stiffness, t), project(mass, t)),
+          vectors = eigen.vectors.map((v) =>
+            t.map((row) => row.reduce((sum, x, i) => sum + x * v[i], 0)),
+          );
+        return {
+          boundary,
+          frequencies: eigen.values.map((v) => {
+            if (v < -1e-8)
+              throw new Error("Unstable stiffness in surface comparison");
+            return Math.sqrt(Math.max(0, v)) / TAU;
+          }),
+          addedMassRatios: vectors.map(
+            (v) => quadratic(addedMass, v) / quadratic(shell.mass, v),
+          ),
+          maxResidual: Math.max(...eigen.residuals),
+          addedMass,
+          constrainedVolume,
+          available: true,
+        };
+      } catch (error) {
+        return {
+          boundary,
+          frequencies: [],
+          addedMassRatios: [],
+          maxResidual: Infinity,
+          addedMass: [],
+          constrainedVolume,
+          available: false,
+          error: error instanceof Error ? error.message : "Fluid solve failed",
+        };
+      }
+    },
+  );
+  if (SURFACE_BOUNDARY_CACHE.size >= 128) SURFACE_BOUNDARY_CACHE.clear();
+  SURFACE_BOUNDARY_CACHE.set(key, rows);
+  return rows;
+}
+
+// Independent special-function solution, not the Galerkin trial/quadrature code.
+// Only modest x is needed by the two fixed cylinder depths in the benchmark.
+function modifiedBesselI(n: number, x: number): number {
+  let term = 1;
+  for (let j = 1; j <= n; j++) term *= x / (2 * j);
+  let sum = term;
+  for (let j = 1; j < 200; j++) {
+    term *= (x * x) / (4 * j * (n + j));
+    sum += term;
+    if (Math.abs(term) <= Math.abs(sum) * 1e-16) break;
+  }
+  return sum;
+}
+
+/**
+ * Exact flat-cylinder kinetic-energy benchmarks for u_r(R,z,theta)=qdot*w(z)*cos(n theta).
+ * Rigid lid: w=1, psi=(R/n)(r/R)^n cos(n theta), MA=rho*pi*R^2*h/n.
+ * Pressure release: w=cos(kz), k=pi/(2h), psi=I_n(kr)cos(kz)cos(n theta)/(k I'_n(kR)).
+ * Both have a rigid bottom. Different wall patterns are tested, not compared as equal forcing.
+ * The numerical column calls the SAME fluid assembly as the tank diagnostic.
+ */
+export function cylinderAddedMassBenchmark(
+  n = 1,
+  depth = 12,
+  density: number = FLUIDS.lox.density,
+  radial = POTENTIAL_RADIAL_ORDER,
+  axial = POTENTIAL_AXIAL_ORDER,
+) {
+  if (
+    !Number.isInteger(n) ||
+    n < 1 ||
+    n > 20 ||
+    ![2, 12].includes(depth) ||
+    density <= 0
+  )
+    throw new Error(
+      "Benchmark requires n=1–20, depth 2 or 12 m, and positive density",
+    );
+  const R = TANK.radius,
+    k = Math.PI / (2 * depth),
+    x = k * R,
+    derivative = (modifiedBesselI(n - 1, x) + modifiedBesselI(n + 1, x)) / 2,
+    basis: ShellBasis[] = [{ n, orientation: "cos", axialOrder: 1, index: 0 }];
+  return (["rigid", "pressure-release"] as const).map((boundary) => {
+    const analytic =
+        boundary === "rigid"
+          ? (density * Math.PI * R * R * depth) / n
+          : (density * Math.PI * R * depth * modifiedBesselI(n, x)) /
+            (2 * k * derivative),
+      f = fluidMatrices(
+        basis,
+        depth,
+        undefined,
+        false,
+        radial,
+        axial,
+        true,
+        Math.max(GR.length, n + 2 * radial + 1),
+        true,
+        {
+          boundary,
+          wallNormal: (z) => [boundary === "rigid" ? 1 : Math.cos(k * z)],
+        },
+      ),
+      numerical = density * f.added[0][0];
+    return {
+      boundary,
+      n,
+      depth,
+      density,
+      analytic,
+      numerical,
+      relativeError: Math.abs(numerical - analytic) / analytic,
+    };
+  });
+}
+
+/** The common potential space isolates surface truncation from fluid refinement. */
+export function surfaceSpectrum(
+  input: Settings,
+  n: number,
+  radialCount: number,
+  potentialRadial = 8,
+  potentialAxial = 20,
+  cylinderDepth?: number,
+) {
+  const settings = cleanSettings({ ...input, surfaceRadialOrder: radialCount }),
+    shell = shellMatrices(n, "cos"),
+    ns = shell.basis.length,
+    h = cylinderDepth ?? heightForFill(settings.fill),
+    active = cylinderDepth !== undefined || settings.fill > 1e-8,
+    full = cylinderDepth === undefined && settings.fill >= 1 - 1e-8,
+    shapes = active && !full ? surfaceShapes(settings, n, "cos") : [],
+    density = FLUIDS[settings.fluid].density,
+    fullShapes =
+      active && !full
+        ? surfaceShapes({ ...settings, surfaceRadialOrder: 4 }, n, "cos")
+        : [],
+    fullFluid = active
+      ? fluidMatrices(
+          shell.basis,
+          h,
+          fullShapes,
+          full,
+          potentialRadial,
+          potentialAxial,
+          cylinderDepth !== undefined,
+          Math.max(GR.length, n + 2 * potentialRadial + 1),
+          true,
+        )
+      : {
+          mass: zero(ns),
+          added: zero(ns),
+          gravityUnit: zero(ns),
+          flux: Array(ns).fill(0),
+        },
+    indices = Array.from({ length: ns + shapes.length }, (_, i) => i),
+    f = {
+      ...fullFluid,
+      mass: indices.map((i) => indices.map((j) => fullFluid.mass[i][j])),
+      gravityUnit: indices.map((i) =>
+        indices.map((j) => fullFluid.gravityUnit[i][j]),
+      ),
+    },
+    block: Block = {
+      n,
+      orientation: "cos",
+      basis: shell.basis,
+      dryMass: shell.mass,
+      dryStiffness: shell.stiffness,
+      geometric:
+        cylinderDepth === undefined
+          ? pressureMatrix(shell.basis, settings, h, density)
+          : zero(ns),
+      fluidMass: f.mass,
+      addedMass: f.added,
+      gravity: f.gravityUnit,
+      flux: f.flux,
+      slosh: shapes,
+    },
+    spectrum = blockSpectrum(
+      block,
+      "coupled",
+      full,
+      active && !full,
+      density,
+      settings.accelerationG * G0,
+    );
+  return {
+    ...spectrum,
+    n,
+    shellMass: shell.mass,
+    shapes,
+    density,
+    fluidMass: f.mass,
+    potentialRank:
+      "potentialRank" in fullFluid ? (fullFluid.potentialRank as number) : 0,
+    potentialTrials:
+      "potentialTrials" in fullFluid
+        ? (fullFluid.potentialTrials as number)
+        : 0,
+    frequencies: spectrum.values.map((v) => Math.sqrt(Math.max(0, v)) / TAU),
+  };
+}
+export function cylinderSloshSpectrum(
+  n: number,
+  depth: number,
+  accelerationG: number,
+  radialCount = 4,
+  potentialRadial = 8,
+  potentialAxial = 20,
+) {
+  const s = surfaceSpectrum(
+      { ...DEFAULT, surfaceMaxOrder: 20, accelerationG },
+      n,
+      radialCount,
+      potentialRadial,
+      potentialAxial,
+      depth,
+    ),
+    ns = s.ns;
+  const e = generalizedEigen(
+    spectrumGravity(n, radialCount, depth, potentialRadial, potentialAxial),
+    s.fluidMass.slice(ns).map((r) => r.slice(ns)),
+  );
+  return e.values.map(
+    (v) => Math.sqrt(Math.max(0, accelerationG * G0 * v)) / TAU,
+  );
+}
+function spectrumGravity(
+  n: number,
+  radialCount: number,
+  depth: number,
+  radial: number,
+  axial: number,
+) {
+  const shell = shellMatrices(n, "cos"),
+    shapes = surfaceShapes(
+      { ...DEFAULT, surfaceMaxOrder: 20, surfaceRadialOrder: radialCount },
+      n,
+      "cos",
+    ),
+    ns = shell.basis.length;
+  return fluidMatrices(
+    shell.basis,
+    depth,
+    shapes,
+    false,
+    radial,
+    axial,
+    true,
+    Math.max(GR.length, n + 2 * radial + 1),
+    true,
+  )
+    .gravityUnit.slice(ns)
+    .map((r) => r.slice(ns));
+}
+export type SurfaceMatch = {
+  radial: number;
+  frequencyError: number;
+  energyError: number;
+  minimumMAC: number;
+  missing: number;
+  reliable: boolean;
+};
+export type SurfaceConvergenceRow = {
+  fill: number;
+  n: number;
+  noSurface: boolean;
+  matches: SurfaceMatch[];
+  recommended: number | null;
+  potentialError: number | null;
+  referenceResidual: number;
+  potentialRank?: number;
+  potentialTrials?: number;
+  error?: string;
+};
+export type SurfaceConvergenceOptions = {
+  maxOrder?: number;
+  branches?: number;
+  maxHz?: number;
+  tolerance?: number;
+  energyTolerance?: number;
+  fills?: number[];
+};
+export const SURFACE_FILL_GRID = [
+  0, 0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95,
+  0.975, 0.99, 1,
+];
+const SURFACE_CONVERGENCE_CACHE = new Map<string, SurfaceConvergenceRow>();
+function surfaceTargets(
+  reference: ReturnType<typeof surfaceSpectrum>,
+  branches: number,
+  maxHz: number,
+  gravity: boolean,
+) {
+  const dry = generalizedEigen(
+      shellMatrices(reference.n, "cos").stiffness,
+      reference.shellMass,
+    ),
+    refs = reference.nf
+      ? [
+          ...dry.vectors.map((r) => [...r, ...Array(reference.nf).fill(0)]),
+          ...reference.surfaceReferences!.map((r) => [
+            ...Array(reference.ns).fill(0),
+            ...r,
+          ]),
+        ]
+      : dry.vectors,
+    assignment = modeAssignment(
+      reference.vectors.map((v) => refs.map((r) => mac(v, r, reference.mass))),
+    );
+  const targets = assignment
+    .map((rank, i) => ({ rank, i }))
+    .filter(
+      ({ rank, i }) =>
+        rank >= 0 && rank < branches && reference.frequencies[i] <= maxHz,
+    )
+    .map(({ i }) => i);
+  const shellCount = targets.length;
+  if (gravity && reference.nf) {
+    const first = assignment.findIndex((rank) => rank >= reference.ns);
+    if (first >= 0 && reference.frequencies[first] <= maxHz)
+      targets.push(first);
+  }
+  return { indices: targets, shellCount };
+}
+function surfaceMatch(
+  reference: ReturnType<typeof surfaceSpectrum>,
+  coarse: ReturnType<typeof surfaceSpectrum>,
+  target: { indices: number[]; shellCount: number },
+  radial: number,
+): SurfaceMatch {
+  const targets = target.indices;
+  const padded = coarse.vectors.map((v) => [
+      ...v,
+      ...Array(reference.mass.length - v.length).fill(0),
+    ]),
+    scores = padded.map((v) =>
+      targets.map((i) =>
+        Math.min(1, mac(v, reference.vectors[i], reference.mass)),
+      ),
+    ),
+    assignment = modeAssignment(scores),
+    pairs = assignment.map((j, i) => ({ i, j })).filter(({ j }) => j >= 0);
+  let frequencyError = 0,
+    energyError = 0,
+    minimumMAC = 1;
+  const ratio = (s: ReturnType<typeof surfaceSpectrum>, v: number[]) =>
+    quadratic(s.mass, v) / quadratic(s.shellMass, v.slice(0, s.ns)) - 1;
+  for (const { i, j } of pairs) {
+    const index = targets[j],
+      f = reference.frequencies[index];
+    frequencyError = Math.max(
+      frequencyError,
+      Math.abs(coarse.frequencies[i] - f) / Math.max(1e-8, f),
+    );
+    minimumMAC = Math.min(minimumMAC, scores[i][j]);
+    // Fluid/shell kinetic ratio is assessed only for shell-dominated target identities.
+    if (j < target.shellCount) {
+      const mu = ratio(reference, reference.vectors[index]),
+        cmu = ratio(coarse, coarse.vectors[i]);
+      energyError = Math.max(
+        energyError,
+        Math.abs(cmu - mu) / Math.max(1, Math.abs(mu)),
+      );
+    }
+  }
+  return {
+    radial,
+    frequencyError,
+    energyError,
+    minimumMAC,
+    missing: targets.length - pairs.length,
+    reliable:
+      targets.length > 0 &&
+      minimumMAC >= 0.9 &&
+      Math.max(...coarse.residuals, ...reference.residuals) < 1e-5 &&
+      targets.every((i) => !nearlyDegenerate(reference.values, i)),
+  };
+}
+/** Each yield is one angular/fill sample; consumers can cancel and keep the UI responsive. */
+export function* surfaceConvergenceSteps(
+  input: Settings = DEFAULT,
+  options: SurfaceConvergenceOptions = {},
+) {
+  const settings = cleanSettings(input),
+    maxOrder = Math.max(0, Math.min(12, options.maxOrder ?? 12)),
+    branches = options.branches ?? 3,
+    maxHz = options.maxHz ?? 100,
+    tolerance = options.tolerance ?? 0.01,
+    energyTolerance = options.energyTolerance ?? 0.05,
+    fills = [...new Set(options.fills ?? SURFACE_FILL_GRID)].sort(
+      (a, b) => a - b,
+    );
+  for (const fill of fills)
+    for (let n = 0; n <= maxOrder; n++) {
+      const key = JSON.stringify([
+        settings.fluid,
+        settings.ullagePsi,
+        settings.accelerationG,
+        fill,
+        n,
+        branches,
+        maxHz,
+        tolerance,
+        energyTolerance,
+      ]);
+      let row = SURFACE_CONVERGENCE_CACHE.get(key);
+      if (!row) {
+        try {
+          const operating = { ...settings, fill, surfaceMaxOrder: 20 },
+            reference = surfaceSpectrum(operating, n, 4),
+            targets = surfaceTargets(
+              reference,
+              branches,
+              maxHz,
+              settings.accelerationG > 0,
+            ),
+            noSurface = fill <= 1e-8 || fill >= 1 - 1e-8,
+            matches = [1, 2, 3, 4].map((p) =>
+              surfaceMatch(
+                reference,
+                surfaceSpectrum(operating, n, p),
+                targets,
+                p,
+              ),
+            ),
+            refined = surfaceSpectrum(operating, n, 4, 9, 22),
+            check = surfaceMatch(reference, refined, targets, 4),
+            potentialError =
+              check.reliable && !check.missing ? check.frequencyError : null,
+            recommended = noSurface
+              ? 0
+              : (matches.find(
+                  (m) =>
+                    m.radial < 4 &&
+                    m.reliable &&
+                    !m.missing &&
+                    m.frequencyError <= tolerance &&
+                    m.energyError <= energyTolerance &&
+                    potentialError !== null &&
+                    potentialError <= tolerance,
+                )?.radial ?? null);
+          row = {
+            fill,
+            n,
+            noSurface,
+            matches,
+            recommended,
+            potentialError,
+            referenceResidual: Math.max(...reference.residuals),
+            potentialRank: reference.potentialRank,
+            potentialTrials: reference.potentialTrials,
+          };
+        } catch (error) {
+          row = {
+            fill,
+            n,
+            noSurface: fill === 0 || fill === 1,
+            matches: [],
+            recommended: null,
+            potentialError: null,
+            referenceResidual: Infinity,
+            error:
+              error instanceof Error ? error.message : "Surface solve failed",
+          };
+        }
+        if (SURFACE_CONVERGENCE_CACHE.size > 1024)
+          SURFACE_CONVERGENCE_CACHE.clear();
+        SURFACE_CONVERGENCE_CACHE.set(key, row);
+      }
+      yield row;
+    }
 }
 
 export const FOURIER_CUTOFFS = [8, 12, 16, 20] as const;
@@ -1874,11 +2835,14 @@ function fourierSpectrum(
   potentialRadial = POTENTIAL_RADIAL_ORDER,
   potentialAxial = POTENTIAL_AXIAL_ORDER,
 ): FourierSpectrum {
+  const [requiredRadial, requiredAxial] = surfacePotentialOrders(settings, n);
+  potentialRadial = Math.max(potentialRadial, requiredRadial);
+  potentialAxial = Math.max(potentialAxial, requiredAxial);
   const pressureKey =
       caseId === "mass"
         ? "mass"
         : `${settings.ullagePsi}-${settings.accelerationG}`,
-    key = `${settings.fluid}-${settings.fill}-${pressureKey}-${n}-${caseId}-${quadratureExtra}-${potentialRadial}-${potentialAxial}`,
+    key = `${settings.fluid}-${settings.fill}-${pressureKey}-${settings.surfaceMaxOrder}-${settings.surfaceRadialOrder}-${n}-${caseId}-${quadratureExtra}-${potentialRadial}-${potentialAxial}`,
     saved = FOURIER_SPECTRA.get(key);
   if (saved) return saved;
   const shell = shellMatrices(n, "cos"),
@@ -1886,13 +2850,7 @@ function fourierSpectrum(
     density = FLUIDS[settings.fluid].density,
     fluidActive = settings.fill > 1e-8,
     full = settings.fill >= 1 - 1e-8,
-    template =
-      fluidActive && !full
-        ? SLOSH_TEMPLATE.find((s) => s.n === n && s.orientation === "cos")
-        : undefined,
-    slosh = template
-      ? { ...template, frequency: 0, cylinderFrequency: 0 }
-      : undefined,
+    slosh = fluidActive && !full ? surfaceShapes(settings, n, "cos") : [],
     size = shell.basis.length,
     // At fixed z, fluid kinetic integrands have degree <= 2n+4(radial-1)+1.
     // A q-point Gauss rule integrates through degree 2q-1. This scales q with n;
@@ -1912,7 +2870,7 @@ function fourierSpectrum(
             potentialAxial,
             false,
             radialQuadrature,
-            n > 4,
+            n > 4 || slosh.length > 1,
           )
         : {
             mass: zero(size),
@@ -1953,7 +2911,7 @@ function fourierSpectrum(
             ? "empty"
             : full
               ? "closed-liquid"
-              : slosh
+              : slosh.length
                 ? "condensed-retained-shape"
                 : "rigid-surface",
     };
@@ -2003,7 +2961,7 @@ function fourierSurface(
     ? "empty"
     : settings.fill >= 1 - 1e-8
       ? "closed-liquid"
-      : n <= 3
+      : surfaceShapes(settings, n, "cos").length > 0
         ? "condensed-retained-shape"
         : "rigid-surface";
 }
@@ -2233,7 +3191,7 @@ function fourierCanonicalTrack(
       caseId === "mass"
         ? "mass"
         : `${settings.ullagePsi}-${settings.accelerationG}`,
-    key = `${settings.fluid}-${pressureKey}-${n}-${caseId}-${trackedBranch ?? "all"}`,
+    key = `${settings.fluid}-${pressureKey}-${settings.surfaceMaxOrder}-${settings.surfaceRadialOrder}-${n}-${caseId}-${trackedBranch ?? "all"}`,
     saved = FOURIER_TRACKERS.get(key);
   const samples = saved ?? new Map<number, FourierTrackingSample>();
   if (!samples.size)
@@ -2474,18 +3432,17 @@ export function fourierQuadratureDiagnostics(
   caseId: FourierCaseId = "mass",
 ) {
   const settings = cleanSettings(input),
+    [radial] = surfacePotentialOrders(settings, n),
+    points =
+      n <= 4 && radial === POTENTIAL_RADIAL_ORDER
+        ? GR.length
+        : Math.max(GR.length, n + 2 * radial + 1),
     coarse = fourierSpectrum(settings, n, caseId),
     refined = fourierSpectrum(settings, n, caseId, 4);
   return {
     n,
-    radialPoints:
-      n <= 4
-        ? GR.length
-        : Math.max(GR.length, n + 2 * POTENTIAL_RADIAL_ORDER + 1),
-    refinedRadialPoints:
-      (n <= 4
-        ? GR.length
-        : Math.max(GR.length, n + 2 * POTENTIAL_RADIAL_ORDER + 1)) + 4,
+    radialPoints: points,
+    refinedRadialPoints: points + 4,
     ...fourierSensitivity(coarse, refined),
   };
 }
@@ -2497,14 +3454,15 @@ export function fourierBasisDiagnostics(
   caseId: FourierCaseId = "mass",
 ) {
   const settings = cleanSettings(input),
+    [radial, axial] = surfacePotentialOrders(settings, n),
     coarse = fourierSpectrum(settings, n, caseId),
-    refined = fourierSpectrum(settings, n, caseId, 0, 5, 10);
+    refined = fourierSpectrum(settings, n, caseId, 0, radial + 1, axial + 2);
   return {
     n,
-    potentialRadialOrder: POTENTIAL_RADIAL_ORDER,
-    potentialAxialOrder: POTENTIAL_AXIAL_ORDER,
-    refinedPotentialRadialOrder: 5,
-    refinedPotentialAxialOrder: 10,
+    potentialRadialOrder: radial,
+    potentialAxialOrder: axial,
+    refinedPotentialRadialOrder: radial + 1,
+    refinedPotentialAxialOrder: axial + 2,
     ...fourierSensitivity(coarse, refined),
     maxResidual: Math.max(...coarse.wet.residuals, ...refined.wet.residuals),
   };
@@ -2535,26 +3493,17 @@ export function fluidDisplacement(
   let cached = FLUID_MODE_RESPONSE.get(mode);
   if (!cached) {
     const shell = shellMatrices(mode.n, mode.orientation),
-      sm = solution.slosh.find(
+      sm = solution.slosh.filter(
         (s) => s.n === mode.n && s.orientation === mode.orientation,
       );
     const f = shellFluidMatrices(
-        shell.basis,
-        solution.liquidHeight,
-        sm,
-        !solution.surfaceActive,
-      ),
-      ns = shell.basis.length;
+      shell.basis,
+      solution.liquidHeight,
+      sm,
+      !solution.surfaceActive,
+    );
     const q = shell.basis.map((b) => mode.vector[b.index]);
-    if (sm) {
-      if (mode.id.startsWith("coupled-"))
-        q.push(mode.vector[NSHELL + sm.id - 1]);
-      else
-        q.push(
-          -f.mass[ns].slice(0, ns).reduce((sum, x, i) => sum + x * q[i], 0) /
-            f.mass[ns][ns],
-        );
-    }
+    q.push(...sm.map((s) => mode.vector[NSHELL + s.id - 1]));
     cached = {
       potentials: f.potentials,
       coefficients: f.response.map((row) =>
@@ -2575,14 +3524,7 @@ export function fluidDisplacement(
     radial += q * p.dr * c;
     axial += q * p.dz * c;
     if (r > 1e-8) tangential += ((q * n * p.v) / r) * d;
-    else if (n === 1 && cached.potentials[i].power === 1)
-      tangential +=
-        (q / TANK.radius) *
-        legendre(
-          cached.potentials[i].axial,
-          (2 * z) / solution.liquidHeight - 1,
-        ).p *
-        d;
+    else if (n === 1) tangential += q * p.dr * d;
   }
   return { radial, axial, tangential };
 }

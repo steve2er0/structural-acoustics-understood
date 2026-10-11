@@ -107,7 +107,11 @@ function FluidBasisCheck({
             </>
           ) : (
             <>
-              <strong>4 × 8 → 5 × 10 fluid basis</strong>
+              <strong>
+                {result.potentialRadialOrder} × {result.potentialAxialOrder} →{" "}
+                {result.refinedPotentialRadialOrder} ×{" "}
+                {result.refinedPotentialAxialOrder} fluid basis
+              </strong>
               <span>
                 Max frequency change{" "}
                 {fmt(result.maxFrequencyRelativeDifference * 100, 3)}%{" · "}max
@@ -171,14 +175,16 @@ function FourierCoverageContent({ solution }: { solution: Solution }) {
     caseId === "mass"
       ? "Added mass only"
       : caseId === "pressure"
-        ? "Pressure only"
-        : "Mass + pressure";
+        ? "Pressure prestress only"
+        : "Mass + pressure prestress";
   const operatingColor = caseId === "pressure" ? "#b9d6a5" : "#9cdae3";
   const requestKey = JSON.stringify([
     settings.fluid,
     settings.fill,
     settings.ullagePsi,
     settings.accelerationG,
+    settings.surfaceMaxOrder,
+    settings.surfaceRadialOrder,
     cutoff,
     minHz,
     maxHz,
@@ -382,8 +388,8 @@ function FourierCoverageContent({ solution }: { solution: Solution }) {
             onChange={(event) => setCaseId(event.target.value as FourierCaseId)}
           >
             <option value="mass">Added mass only</option>
-            <option value="pressure">Pressure only</option>
-            <option value="combined">Mass + pressure</option>
+            <option value="pressure">Pressure prestress only</option>
+            <option value="combined">Mass + pressure prestress</option>
           </select>
         </label>
         <fieldset className="cryo-fourier-band">
@@ -450,7 +456,7 @@ function FourierCoverageContent({ solution }: { solution: Solution }) {
                   One cosine representative per n, first tracked dry branch
                   only.
                   {caseId !== "pressure" &&
-                    " Partial-fill orders n ≥ 4 use a rigid-surface approximation."}
+                    " Orders above the selected surface angular cutoff use a constrained surface."}
                   {failedFamilies.length > 0 &&
                     ` Numerical blocks unavailable: n = ${failedFamilies.join(", ")}.`}
                   {unavailableBranches.length > 0 &&
@@ -833,7 +839,7 @@ function FourierCoverageContent({ solution }: { solution: Solution }) {
             current fill.
             {caseId === "pressure"
               ? " Fill changes the acceleration-induced pressure field; the structural mass stays dry."
-              : n >= 4
+              : n > (settings.surfaceMaxOrder ?? 12)
                 ? " This family uses a rigid liquid surface at partial fill, without a retained slosh coordinate."
                 : " This family uses the demo’s retained free-surface shapes at partial fill."}
           </p>
@@ -900,7 +906,7 @@ function FourierCoverageContent({ solution }: { solution: Solution }) {
                     : current && !currentBranch
                       ? "The tracked m = 1 branch is unavailable at this fill."
                       : caseId === "pressure"
-                        ? "Pressure only: μ = 0; no fluid added-mass operator is applied."
+                        ? "Pressure prestress only: μ = 0; no fluid added-mass operator is applied."
                         : "? = uncertain branch identity · μ = liquid / structural modal inertia"}
               </small>
             </div>

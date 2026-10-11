@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  DEFAULT,
+  LEGACY_DEFAULT as DEFAULT,
   FOURIER_CUTOFFS,
   FOURIER_MAX_ORDER,
   SHELL_MAX_ORDER,

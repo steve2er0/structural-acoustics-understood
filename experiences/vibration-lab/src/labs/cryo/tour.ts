@@ -2,7 +2,13 @@ import type { CaseId, Settings } from "./physics";
 import type { View } from "./Scene";
 export type Display = "Mode shape" | "Pressure" | "Fluid motion";
 export type AnalysisTab =
-  "Compare" | "Pressure" | "Slosh" | "Fill sweep" | "Fourier coverage";
+  | "Compare"
+  | "Pressure"
+  | "Slosh"
+  | "Fill sweep"
+  | "Fourier coverage"
+  | "Surface boundary"
+  | "Surface convergence";
 export const TOUR: readonly {
   duration: number;
   title: string;
@@ -70,7 +76,7 @@ export const TOUR: readonly {
   },
   {
     duration: 12,
-    title: "Retain seven free-surface eigenvectors.",
+    title: "Retain angular and radial surface shapes.",
     copy: "The slosh basis includes directional pairs and one axisymmetric mode. The free surface and shell exchange motion only where their spatial patterns overlap. They are solved together.",
     settings: {},
     caseId: "coupled",
@@ -123,7 +129,7 @@ export const TOUR: readonly {
   {
     duration: 11,
     title: "Inspect a shorter angular wavelength.",
-    copy: "n = 12 makes twelve circumferential lobes. The wetted shell still accelerates liquid. This order has a rigid free surface in the reduction; the seven retained lower-order slosh shapes do not couple to it. The inspector reaches n = 12, while Fourier coverage searches additional families through n = 20.",
+    copy: "n = 12 makes twelve circumferential lobes. The wetted shell still accelerates liquid. The expanded basis includes a matching twelve-lobe surface family with radial shapes. The inspector reaches n = 12, while Fourier coverage searches additional families through n = 20.",
     settings: {},
     caseId: "mass",
     display: "Mode shape",
