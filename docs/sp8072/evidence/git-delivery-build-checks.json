@@ -1,0 +1,118 @@
+{
+  "createdUTC": "2026-10-14T12:04:56.633Z",
+  "tests": {
+    "passed": 165,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0
+  },
+  "standalone": {
+    "firstSha256": "f7ee169164e14a98d456d4ebe3005909aebb15d2ca0fee48c59026c76299f112",
+    "secondSha256": "f7ee169164e14a98d456d4ebe3005909aebb15d2ca0fee48c59026c76299f112",
+    "deterministic": true
+  },
+  "entireExampleCalculationUnchanged": true,
+  "numericalFiles": [
+    {
+      "file": "js/sp8072-physics.js",
+      "sha256": "a2800a20da43196ceabb517bd51adc9860b36f76b66593a949173429d988ca62",
+      "originalSha256": "a2800a20da43196ceabb517bd51adc9860b36f76b66593a949173429d988ca62"
+    },
+    {
+      "file": "js/sp8072-data.js",
+      "sha256": "7594a938efff3fcd7100b19adbe4033c0c748c62f36b009657073322217d534b",
+      "originalSha256": "7594a938efff3fcd7100b19adbe4033c0c748c62f36b009657073322217d534b"
+    }
+  ],
+  "preserved": [
+    {
+      "file": "experiences/flight-response/Flight-Response.html",
+      "expected": "4a7597df21068bc15a646781fab08b611d91822c3c7c8065594413b5efdce3b9",
+      "actual": "4a7597df21068bc15a646781fab08b611d91822c3c7c8065594413b5efdce3b9"
+    },
+    {
+      "file": "experiences/flight-response/README.md",
+      "expected": "e11b871bf7c283c6d3e221d1057b9a060219c40a09814dcfdfd30d49902df2ab",
+      "actual": "e11b871bf7c283c6d3e221d1057b9a060219c40a09814dcfdfd30d49902df2ab"
+    },
+    {
+      "file": "experiences/flight-response/app.mjs",
+      "expected": "6fec00630bed08087851a7f05e2e93ff0f0adae02c2a1f28c1060bfb5d1ec54c",
+      "actual": "6fec00630bed08087851a7f05e2e93ff0f0adae02c2a1f28c1060bfb5d1ec54c"
+    },
+    {
+      "file": "experiences/flight-response/docs/ALGORITHM.md",
+      "expected": "fbe16a382c1487a6e7687b306921e297c2c810f20d69a803f2624eb4f3cd4718",
+      "actual": "fbe16a382c1487a6e7687b306921e297c2c810f20d69a803f2624eb4f3cd4718"
+    },
+    {
+      "file": "experiences/flight-response/docs/VALIDATION.md",
+      "expected": "599fec9e8583c35679d86c782c54e25546e80272eafc5e2c0e2aaaf02553d256",
+      "actual": "599fec9e8583c35679d86c782c54e25546e80272eafc5e2c0e2aaaf02553d256"
+    },
+    {
+      "file": "experiences/flight-response/index.html",
+      "expected": "bf0fcbcf0f4ed6bea8e5d7800a3d770c721a2e0af6100f5710ea3dd3b5a98e59",
+      "actual": "bf0fcbcf0f4ed6bea8e5d7800a3d770c721a2e0af6100f5710ea3dd3b5a98e59"
+    },
+    {
+      "file": "experiences/flight-response/physics.mjs",
+      "expected": "28b12a05cb32a131d9e4573192856406a6c9c875a8014090bc1de50f9fee20a6",
+      "actual": "28b12a05cb32a131d9e4573192856406a6c9c875a8014090bc1de50f9fee20a6"
+    },
+    {
+      "file": "experiences/flight-response/style.css",
+      "expected": "1cf01707264c3441371ce343f593f1232befbe1ec02bf6c2c1a6731aa7531682",
+      "actual": "1cf01707264c3441371ce343f593f1232befbe1ec02bf6c2c1a6731aa7531682"
+    },
+    {
+      "file": "experiences/flight-response/tests/independent-check.py",
+      "expected": "911e821c8fa81743ce4343f7ecdf2960f6e272765d494b12ae09d02328c5a384",
+      "actual": "911e821c8fa81743ce4343f7ecdf2960f6e272765d494b12ae09d02328c5a384"
+    },
+    {
+      "file": "experiences/flight-response/tests/physics.test.mjs",
+      "expected": "ccf0075a1ac2e2a6a23cb744cf40f3430dfafac6abb8760025e1ef55bd08fc43",
+      "actual": "ccf0075a1ac2e2a6a23cb744cf40f3430dfafac6abb8760025e1ef55bd08fc43"
+    },
+    {
+      "file": "experiences/flight-response/tests/stream.test.mjs",
+      "expected": "9f0a5e553eab0fc75cbe731d06b558108255281dd610ca07ee341c435a018153",
+      "actual": "9f0a5e553eab0fc75cbe731d06b558108255281dd610ca07ee341c435a018153"
+    },
+    {
+      "file": "experiences/flight-response/tests/worker.test.mjs",
+      "expected": "62c7326a09f7d87dd219d336505de9f4e27d5e3fe282ef65bc1cee6238457f71",
+      "actual": "62c7326a09f7d87dd219d336505de9f4e27d5e3fe282ef65bc1cee6238457f71"
+    },
+    {
+      "file": "js/flight-response-tool.js",
+      "expected": "1dad15b27aadf4cce5a6a321d8bbecdb03c539e66c5507a97755cdc7a2b847b6",
+      "actual": "1dad15b27aadf4cce5a6a321d8bbecdb03c539e66c5507a97755cdc7a2b847b6"
+    },
+    {
+      "file": "references/NASA-SP-8072-19710023719.pdf",
+      "expected": "84f1483c2c8477810186e98765ea99e4b7f7cc71e0a47eb8f86977d3b02aabf8",
+      "actual": "84f1483c2c8477810186e98765ea99e4b7f7cc71e0a47eb8f86977d3b02aabf8"
+    },
+    {
+      "file": "references/NASA-20140005349-Diffuser-Water-Injection.pdf",
+      "expected": "707898c671e4a8169e66bd8660ed6af044cedff7aa39dab49352eb78569b2d62",
+      "actual": "707898c671e4a8169e66bd8660ed6af044cedff7aa39dab49352eb78569b2d62"
+    },
+    {
+      "file": "docs/sp8072/example-study.json",
+      "expected": "3ffc6263728b4a70b96dc37c31b6711dbcc53a16ef37071249d0f87028037c5a",
+      "actual": "3ffc6263728b4a70b96dc37c31b6711dbcc53a16ef37071249d0f87028037c5a"
+    }
+  ],
+  "gitDiffCheck": true,
+  "browserEvidence": "docs/sp8072/evidence/original-checkout-browser.json",
+  "limits": "Software validation and separate browser observations; no physical engine/pad correlation or direct-file/print acceptance.",
+  "validationContext": "Isolated commit candidate built from main HEAD plus the reviewed SP-8072 changes; unrelated local flight-response edits are excluded.",
+  "localPreviewStandaloneSha256": "d818d69935e24b49bf1773c929c621b23a0123ad96c03f6ff5134e7205e8576b",
+  "standaloneDifferenceFromLocalPreview": "Only the pre-existing uncommitted flightResponseDocument bundle differs; SP-8072 and all other content are identical.",
+  "browserScope": "Prior HTTP browser QA of the main-folder preview; not rerun during Git delivery. SP-8072 source and styles are identical to that preview.",
+  "branch": "main",
+  "remote": "origin"
+}

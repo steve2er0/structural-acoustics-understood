@@ -102,7 +102,7 @@ export function sp8072VisibleKeys(context){
 function measurementFigure(context,s){
   const v=s.inputs,measurements=context.nativeResult.measurementLocations;
   const display=n=>`${fmt(Number(toDisplayNumber(n,'m',context.project.unitSystem)))} ${toDisplayUnit('m',context.project.unitSystem)}`;
-  const paths=[],maxStation=Math.max(...s.sources.map(p=>p.x),s.diameter*40);
+  const paths=[],maxStation=Math.max(...s.sources.map(p=>p.x))+2*s.diameter;
   for(const origin of s.origins)for(const branch of s.branches)paths.push(Array.from({length:80},(_,i)=>sp8072FlowPoint(maxStation*i/79,s.diameter,v,branch.az,origin).position));
   const points=[...paths.flat(),...measurements.map(m=>m.position),...s.origins];
   const projection=(horizontal,vertical,left,top,width,height)=>{
@@ -110,35 +110,91 @@ function measurementFigure(context,s){
     const spanA=Math.max(1,Math.max(...a)-amin),spanB=Math.max(1,bmax-Math.min(...b)),scale=Math.min(width/spanA,height/spanB);
     return p=>[left+(width-spanA*scale)/2+(p[horizontal]-amin)*scale,top+(height-spanB*scale)/2+(bmax-p[vertical])*scale];
   };
-  const xz=projection(0,2,65,135,520,230),xy=projection(0,1,690,115,160,145);
+  const xz=projection(0,2,40,110,640,160),xy=projection(0,1,20,28,140,85);
+  const horizontal=points.map(p=>xz(p)[0]),left=Math.min(...horizontal)-60,right=Math.max(...horizontal)+60;
+  const viewWidth=Math.max(480,right-left),viewLeft=(left+right-viewWidth)/2,axisX=viewLeft+24;
   const flow=project=>paths.map(path=>`<polyline points="${path.map(project).map(p=>p.join(',')).join(' ')}"/>`).join('');
   const sources=s.sources.filter((_,i)=>i%Math.max(1,Math.ceil(s.sources.length/80))===0);
-  const marks=project=>sources.map(p=>{const [x,y]=project(p.position);return `<circle cx="${x}" cy="${y}" r="3"><title>Acoustic source station ${esc(p.id)}, not a microphone</title></circle>`;}).join('');
+  const marks=project=>sources.map(p=>{
+    const [x,y]=project(p.position);
+    return `<circle cx="${x}" cy="${y}" r="2.5"><title>Acoustic source station ${esc(p.id)}, not a microphone</title></circle>`;
+  }).join('');
   const microphones=project=>{
-    const labels=[];
+    const labels=[],nozzleCenter=s.origins.reduce((sum,p)=>sum+project(p)[0],0)/s.origins.length;
     return measurements.map((m,i)=>{
-      const [x,y]=project(m.position),lx=Math.min(x+15,project===xz?585:842);
-      let ly=y-20;
-      while(labels.some(p=>Math.abs(p[0]-lx)<40&&Math.abs(p[1]-ly)<27))ly+=28;
+      const [x,y]=project(m.position),direction=project===xy&&x<28?1:x<nozzleCenter||(project===xy?x>140:x>650)?-1:1,lx=x+direction*13;
+      let ly=y-11;
+      while(labels.some(p=>Math.abs(p[0]-lx)<32&&Math.abs(p[1]-ly)<18))ly+=19;
       labels.push([lx,ly]);
-      return `<g class="sp8072-microphone sp8072-mic-${i+1}${m.error?' sp8072-mic-invalid':''}"><title>${m.id}: proposed microphone at (${m.position.join(', ')}) m; ${m.error?esc(m.error):`${m.overallDb.toFixed(2)} dB re 20 µPa, predicted selected-band OASPL`}</title><circle cx="${x}" cy="${y}" r="10"/><path d="M${x-5},${y}h10 M${x},${y-5}v10"/><path class="sp8072-label-leader" d="M${x+8},${y-6}L${lx},${ly+12}"/><rect x="${lx}" y="${ly}" width="36" height="24" rx="5"/><text x="${lx+18}" y="${ly+17}" text-anchor="middle">${m.id}</text></g>`;
+      return `<g class="sp8072-microphone sp8072-mic-${i+1}${m.error?' sp8072-mic-invalid':''}">
+        <title>${m.id}: proposed microphone at (${m.position.join(', ')}) m; ${m.error?esc(m.error):`${m.overallDb.toFixed(2)} dB re 20 µPa, predicted selected-band OASPL`}</title>
+        ${i===0?`<circle class="sp8072-main-mic-halo" cx="${x}" cy="${y}" r="9"/>`:''}
+        <circle cx="${x}" cy="${y}" r="5.5"/><path d="M${x-3},${y}h6 M${x},${y-3}v6"/>
+        <path class="sp8072-label-leader" d="M${x+direction*5},${y-4}L${lx-direction*2},${ly+2}"/>
+        <text x="${lx}" y="${ly}" style="text-anchor:${direction>0?'start':'end'}">${m.id}</text>
+      </g>`;
     }).join('');
   };
   const engine=s.origins.slice(0,8).map(p=>{
     const [x,y]=xz(p);
-    return `<g class="sp8072-engine" transform="translate(${x} ${y})"><title>Illustrative rocket engine: feed lines, combustion chamber, throat and bell nozzle. Outline not to scale; nozzle exit anchored at the calculated origin.</title><path class="sp8072-engine-pipe" d="M-13,-89V-63 M13,-89V-73H32V-47H12 M-12,-64H-30V-40H-10"/><circle cx="32" cy="-58" r="8"/><rect x="-14" y="-73" width="28" height="9" rx="2"/><path class="sp8072-engine-body" d="M-12,-64Q-17,-54 -12,-42Q-6,-33 -8,-24Q-12,-10 -27,0H27Q12,-10 8,-24Q6,-33 12,-42Q17,-54 12,-64Z"/><path class="sp8072-engine-hot" d="M-5,-52Q-7,-40 0,-30Q7,-40 5,-52Z"/><path class="sp8072-engine-ribs" d="M-14,-14H14 M-19,-7H19 M-27,0H27"/></g>`;
+    return `<g class="sp8072-engine" transform="translate(${x} ${y}) scale(1.15)">
+      <title>Illustrative rocket engine: feed lines, combustion chamber, throat and bell nozzle. Outline not to scale; nozzle exit anchored at the calculated origin.</title>
+      <path class="sp8072-engine-pipe" d="M-13,-89V-63 M13,-89V-73H32V-47H12 M-12,-64H-30V-40H-10"/>
+      <circle cx="32" cy="-58" r="8"/><rect x="-14" y="-73" width="28" height="9" rx="2"/>
+      <path class="sp8072-engine-body" d="M-12,-64Q-17,-54 -12,-42Q-6,-33 -8,-24Q-12,-10 -27,0H27Q12,-10 8,-24Q6,-33 12,-42Q17,-54 12,-64Z"/>
+      <path class="sp8072-engine-hot" d="M-5,-52Q-7,-40 0,-30Q7,-40 5,-52Z"/>
+      <path class="sp8072-engine-ribs" d="M-14,-14H14 M-19,-7H19 M-27,0H27"/>
+    </g>`;
   }).join('');
   const dominant=s.sources.reduce((best,p)=>p.totalPressureEnergy>best.totalPressureEnergy?p:best,s.sources[0]);
   const source=xz(dominant.position),receiver=xz(measurements[0].position);
-  const origins=project=>s.origins.map(p=>{const [x,y]=project(p);return `<circle class="sp8072-nozzle-origin" cx="${x}" cy="${y}" r="4"/>`;}).join('');
-  const cards=measurements.map((m,i)=>`<article class="sp8072-location-card sp8072-mic-${i+1}" aria-label="${m.id} predicted measurement location"><h4>${m.id} · ${i?'Comparison microphone':'Main receiver'}</h4><p class="sp8072-location-level">${m.error?'Unavailable':`${m.overallDb.toFixed(2)} <span>dB re 20 µPa</span>`}</p><p>Predicted selected-band OASPL</p><p class="sp8072-location-coordinate">X ${esc(display(m.position[0]))} · Y ${esc(display(m.position[1]))} · Z ${esc(display(m.position[2]))}</p>${m.error?`<p class="sp8072-invalid">${esc(m.error)}</p>`:`<p>RMS pressure ${esc(fmt(Number(toDisplayNumber(m.pressureRms,'Pa RMS',context.project.unitSystem))))} ${esc(toDisplayUnit('Pa RMS',context.project.unitSystem))}</p>`}</article>`).join('');
-  return `<figure class="sp8072-measurement-figure"><div class="sp8072-geometry-scroll" tabindex="0" role="region" aria-label="Rocket engine and microphone geometry; scroll horizontally on narrow screens"><svg class="workbench-domain-svg sp8072-geometry" viewBox="0 0 900 440" role="img" aria-label="Rocket engine illustration and proposed microphone locations M1${measurements.slice(1).map(m=>`, ${m.id}`).join('')}, side and top views"><title>Rocket engine and predicted measurement locations</title><desc>Side view XZ, Z upward; top view XY shows out-of-plane separation. Engine outline and plume width are illustrative, not to scale. Microphone centers and source stations use the entered geometry. M1 is the main receiver, with the same prediction as the main result and spectrum. All locations are predictions, not measured data.</desc><text class="sp8072-view-label" x="30" y="32">SIDE VIEW · XZ</text><text class="sp8072-view-label" x="680" y="32">TOP VIEW · XY</text><path class="sp8072-view-divider" d="M650,20V404"/><g class="sp8072-plume">${flow(xz)}</g><g class="sp8072-flow">${flow(xz)}</g><path class="sp8072-radiation" d="M${source.join(',')}L${receiver.join(',')}"><title>Illustrative path from the strongest selected-band source contribution to M1. Calculation sums all sources with full 3D ranges and angles.</title></path><g class="sp8072-sources">${marks(xz)}</g>${engine}${origins(xz)}${microphones(xz)}<g class="sp8072-flow">${flow(xy)}</g><g class="sp8072-sources">${marks(xy)}</g>${origins(xy)}${microphones(xy)}<g class="sp8072-axis"><path d="M34,392h44m-5,-4 5,4 -5,4 M34,392v-44m-4,5 4,-5 4,5"/><text x="85" y="397">X</text><text x="27" y="339">Z</text></g><g class="sp8072-axis"><path d="M695,295h34 M695,295v-32"/><text x="737" y="300">X</text><text x="688" y="252">Y</text></g><text x="680" y="346">Full XYZ ranges</text><text x="680" y="370">in every prediction</text></svg></div><figcaption><div class="sp8072-geometry-legend"><span class="sp8072-legend-flow">Exhaust flow</span><span class="sp8072-legend-source">Acoustic source stations</span><span class="sp8072-legend-mic">Proposed microphones</span><span class="sp8072-legend-path">Example path to M1</span></div><p>Engine outline and plume width are illustrative, not to scale. Nozzle exits, source stations and microphone centers follow the entered coordinates. ${s.origins.length>8?'Eight engine icons shown; all nozzle origins are marked. ':''}${v.cluster==='merged'&&v.engines>1?'The engine icon represents the equivalent mixed flow, not individual cluster hardware. ':''}Z = 0 is the pad datum; no ground geometry or reflection model is drawn.</p></figcaption></figure><div class="sp8072-location-cards">${cards}</div><div class="sp8072-geometry-caption"><p>${esc(SP8072_DEFLECTORS.find(d=>d.id===v.deflector).label)} · equivalent flow diameter ${esc(display(s.diameter))} · ${s.sources.length} source allocation records (markers sampled)</p><p>All levels cover ${s.bands[0].lower.toFixed(1)}–${s.bands.at(-1).upper.toFixed(1)} Hz. M1 follows Receiver X/Y/Z; edit Comparison microphone locations for M2/M3. Matching microphone traces appear in the spectrum. These locations are proposed sampling positions, not measured results.</p></div>`;
+  const origins=project=>s.origins.map(p=>{
+    const [x,y]=project(p);return `<circle class="sp8072-nozzle-origin" cx="${x}" cy="${y}" r="3"/>`;
+  }).join('');
+  const cards=measurements.map((m,i)=>`<article class="sp8072-location-card sp8072-mic-${i+1}" role="listitem" aria-label="${m.id} predicted measurement location">
+    <h4><span class="sp8072-location-id">${m.id}</span> ${i?'Comparison microphone':'Main receiver'}</h4>
+    <p class="sp8072-location-level">${m.error?'Unavailable':`${m.overallDb.toFixed(2)} <span>dB re 20 µPa</span>`}</p>
+    <p class="sp8072-location-coordinate">X ${esc(display(m.position[0]))} · Y ${esc(display(m.position[1]))} · Z ${esc(display(m.position[2]))}</p>
+    ${m.error?`<p class="sp8072-invalid">${esc(m.error)}</p>`:''}
+  </article>`).join('');
+  return `<figure class="sp8072-measurement-figure">
+    <div class="sp8072-geometry-layout">
+      <div class="sp8072-main-view">
+        <div class="sp8072-view-heading"><span>Engine &amp; receiver geometry</span><span>Side view · XZ · Z upward</span></div>
+        <div class="sp8072-geometry-scroll" tabindex="0" role="region" aria-label="Rocket engine and microphone geometry">
+          <svg class="workbench-domain-svg sp8072-geometry" viewBox="${viewLeft} 0 ${viewWidth} 300" role="img" aria-label="Rocket engine illustration and proposed microphone locations M1${measurements.slice(1).map(m=>`, ${m.id}`).join('')}, side view">
+            <title>Rocket engine and predicted measurement locations — side view</title>
+            <desc>Side view XZ, Z upward. Engine outline and plume width are illustrative, not to scale. Microphone centers and source stations follow entered geometry. M1 is the main receiver. All locations are predictions, not measured data.</desc>
+            <g class="sp8072-plume">${flow(xz)}</g><g class="sp8072-flow">${flow(xz)}</g>
+            <path class="sp8072-radiation" d="M${source.join(',')}L${receiver.join(',')}"><title>Example path from the strongest selected-band source contribution to M1; the prediction sums all sources using full 3D ranges and angles.</title></path>
+            <g class="sp8072-sources">${marks(xz)}</g>${engine}${origins(xz)}${microphones(xz)}
+            <g class="sp8072-axis"><path d="M${axisX},278h25m-4,-3 4,3 -4,3 M${axisX},278v-25m-3,4 3,-4 3,4"/><text x="${axisX+30}" y="282">X</text><text x="${axisX-4}" y="248">Z</text></g>
+          </svg>
+        </div>
+      </div>
+      <aside class="sp8072-top-view" aria-label="Out-of-plane microphone positions">
+        <h4>Top view · XY</h4>
+        <svg class="workbench-domain-svg sp8072-top-geometry" viewBox="0 0 180 150" role="img" aria-label="Top view of source stations and proposed microphones">
+          <title>Top view · XY</title><desc>Y is out of plane in the side view; distances and radiation angles use all three coordinates.</desc>
+          <g class="sp8072-flow">${flow(xy)}</g><g class="sp8072-sources">${marks(xy)}</g>${origins(xy)}${microphones(xy)}
+          <g class="sp8072-axis"><path d="M12,137h20 M12,137v-20"/><text x="36" y="141">X</text><text x="8" y="113">Y</text></g>
+        </svg>
+        <p>Full XYZ distances in every prediction.</p>
+      </aside>
+    </div>
+    <figcaption><div class="sp8072-geometry-legend"><span class="sp8072-legend-flow">Exhaust flow</span><span class="sp8072-legend-source">Acoustic sources</span><span class="sp8072-legend-mic">Proposed microphones</span><span class="sp8072-legend-path">Example path to M1</span></div><p>Engine outline and plume width are illustrative, not to scale; microphone positions follow the inputs.</p></figcaption>
+  </figure>
+  <div class="sp8072-readout-heading"><span>Predicted microphone levels</span><span>${s.bands[0].lower.toFixed(1)}–${s.bands.at(-1).upper.toFixed(1)} Hz</span></div>
+  <div class="sp8072-location-cards" role="list" aria-label="Predicted microphone levels">${cards}</div>
+  <p class="sp8072-geometry-caption">${esc(SP8072_DEFLECTORS.find(d=>d.id===v.deflector).label)} · equivalent flow diameter ${esc(display(s.diameter))} · ${s.sources.length} source allocation records</p>`;
 }
 function diagram(context){
   const s=context.nativeResult?.sp8072;if(!s)return '<p class="sp8072-invalid">Resolve the field error below to recover the geometry and prediction.</p>';
+  const display=(n,unit)=>`${fmt(Number(toDisplayNumber(n,unit,context.project.unitSystem)))} ${toDisplayUnit(unit,context.project.unitSystem)}`;
+  const geometryNotes=`<p>Microphone locations are proposed sampling positions, not measured data. M1 follows Receiver X/Y/Z; edit Comparison microphone locations for M2/M3. Matching colors and IDs identify the spectrum traces below. Every prediction uses full 3D source-to-receiver distances and radiation angles. Source markers are sampled for display; all ${s.sources.length} allocation records contribute to the calculation.</p><p>Engine outline and plume width are illustrative, not to scale. Nozzle exits and microphone centers follow the entered coordinates. Z = 0 is the pad datum; no ground geometry or reflection model is drawn. ${s.origins.length>8?'Eight engine icons shown; all nozzle origins are marked. ':''}${s.inputs.cluster==='merged'&&s.inputs.engines>1?'The engine icon represents the equivalent mixed flow, not individual cluster hardware.':''}</p><p>Selected-band RMS pressure: ${context.nativeResult.measurementLocations.map(m=>`${m.id} ${m.error?'unavailable':esc(display(m.pressureRms,'Pa RMS'))}`).join(' · ')}. The location table and exported calculation retain coordinates and exact results.</p>`;
   return `${measurementFigure(context,s)}
   <div class="sp8072-actions"><button type="button" class="button-quiet" data-sp-action="evidence">Export calculation JSON</button><button type="button" class="button-quiet" data-sp-action="csv">Export spectrum CSV</button><button type="button" class="button-quiet" data-sp-action="report">Export report</button><button type="button" class="button-quiet" data-sp-action="svg">Export spectrum SVG</button><button type="button" class="button-quiet" data-sp-action="print">Print report</button><button type="button" class="button-secondary" data-sp-move="x-" data-wb-focus-key="receiver-x-minus">Receiver −X</button><button type="button" class="button-secondary" data-sp-move="x+" data-wb-focus-key="receiver-x-plus">Receiver +X</button><button type="button" class="button-secondary" data-sp-move="z-" data-wb-focus-key="receiver-z-minus">Receiver −Z</button><button type="button" class="button-secondary" data-sp-move="z+" data-wb-focus-key="receiver-z-plus">Receiver +Z</button></div>
-  <details class="sp8072-method-note"><summary>Equations, curve provenance and exploration guide</summary><p>1. Change thrust: acoustic watts scale linearly at fixed velocity and efficiency. 2. Change diameter or engine count: spectral similarity and apparent source positions shift. 3. Save a baseline, then turn the flow: range and directivity may raise loading. 4. Enter a water scenario and its basis; water metadata alone gives no reduction.</p><p>Eq. 1: WOA = 0.005 n F Ue (1% efficiency). Eqs. 4/8: convert normalized density to actual bandwidth. Eqs. 5/9: SPL = Lw,band − 20 log10 r − 11 + DI. Eqs. 6/10: incoherent energy sums. Eq. 7: axial source power. Fig. 11: xt/de = 3.45(1 + 0.38 Me)². Fig. 16: 20 log10(1−M∞).</p><p>Density curves: log-abscissa / dB interpolation, exact power-law band integrals or selectable center approximation. Fig. 14: log/log source-position interpolation. Fig. 10: angle-linear, Strouhal-log interpolation. Missing density tails are omitted and reported; source positions outside their curve fail. Coarse manual reading uncertainty: ±1–1.5 dB and ±12–15% positions. No hidden normalization.</p><p>Printed Eq. 8 shows “+ log Δfb”; a power level requires 10 log Δfb. This tool applies dimensional linear-power bandwidth conversion, consistent with Eq. 4. Both methods use the printed rounded −11 dB spherical-spreading constant.</p><p>Fig. 20 is a rough, configuration-specific octave estimate, not recommended for formal preliminary loads (§4.2 p. 28); its generalization is excluded. Figs. 18–19 provide auxiliary correlation only. No structural or internal-response model is implied.</p><ul>${SP8072_SUPPORT.map(r=>`<li><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a> — ${esc(r.note)}</li>`).join('')}</ul></details>`;
+  <details class="sp8072-method-note"><summary>Geometry, equations and source basis</summary>${geometryNotes}<p>1. Change thrust: acoustic watts scale linearly at fixed velocity and efficiency. 2. Change diameter or engine count: spectral similarity and apparent source positions shift. 3. Save a baseline, then turn the flow: range and directivity may raise loading. 4. Enter a water scenario and its basis; water metadata alone gives no reduction.</p><p>Eq. 1: WOA = 0.005 n F Ue (1% efficiency). Eqs. 4/8: convert normalized density to actual bandwidth. Eqs. 5/9: SPL = Lw,band − 20 log10 r − 11 + DI. Eqs. 6/10: incoherent energy sums. Eq. 7: axial source power. Fig. 11: xt/de = 3.45(1 + 0.38 Me)². Fig. 16: 20 log10(1−M∞).</p><p>Density curves: log-abscissa / dB interpolation, exact power-law band integrals or selectable center approximation. Fig. 14: log/log source-position interpolation. Fig. 10: angle-linear, Strouhal-log interpolation. Missing density tails are omitted and reported; source positions outside their curve fail. Coarse manual reading uncertainty: ±1–1.5 dB and ±12–15% positions. No hidden normalization.</p><p>Printed Eq. 8 shows “+ log Δfb”; a power level requires 10 log Δfb. This tool applies dimensional linear-power bandwidth conversion, consistent with Eq. 4. Both methods use the printed rounded −11 dB spherical-spreading constant.</p><p>Fig. 20 is a rough, configuration-specific octave estimate, not recommended for formal preliminary loads (§4.2 p. 28); its generalization is excluded. Figs. 18–19 provide auxiliary correlation only. No structural or internal-response model is implied.</p><ul>${SP8072_SUPPORT.map(r=>`<li><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a> — ${esc(r.note)}</li>`).join('')}</ul></details>`;
 }
 function bindInteractive(root,context){
   const chart=root.querySelector('[data-wb-chart="0"]');

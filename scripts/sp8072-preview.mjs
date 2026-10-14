@@ -5,7 +5,7 @@ import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const port=Number(process.env.SP8072_PREVIEW_PORT||4178);
+const port=Number(process.env.SP8072_PREVIEW_PORT||4173);
 if(!Number.isInteger(port)||port<1024||port>65535)throw new Error('SP8072_PREVIEW_PORT must be an integer from 1024 to 65535.');
 const url=`http://localhost:${port}/standalone.html`,sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 const expected=sha(readFileSync(path.join(root,'standalone.html')));

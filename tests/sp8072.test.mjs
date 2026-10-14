@@ -129,7 +129,7 @@ test('SP8072 microphone predictions use full XYZ ranges and preserve the analyti
   assert.deepEqual(result.plots[0].traces.find(t=>t.name.startsWith('M2')).y,m2.bands.map(b=>b.splDb));
   assert.deepEqual(result.tables[0].rows[1].slice(1,4),[0,20,0]);
   const diagram=sp8072WorkbenchDefinition.renderDiagram({nativeResult:result,project:{unitSystem:'SI'}});
-  assert.match(diagram,/sp8072-engine-body/);assert.match(diagram,/TOP VIEW · XY/);assert.match(diagram,/M2 · Comparison microphone/);assert.match(diagram,/predictions, not measured data/);
+  assert.match(diagram,/sp8072-engine-body/);assert.match(diagram,/Top view · XY/);assert.match(diagram,/aria-label="M2 predicted measurement location"/);assert.match(diagram,/predictions, not measured data/);
 });
 test('SP8072 invalid comparison receivers are isolated and malformed location lists fail explicitly',()=>{
   const base=fixture.cases[0].inputs,result=sp8072Calculator.compute({...base,measurementLocations:'[[0,0,-17],[0,10,0]]'});

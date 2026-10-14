@@ -1,0 +1,34 @@
+{
+  "status": "completed",
+  "summary": "Integrated the compact engine/microphone visualization and shared typography into the owner-selected structural-acoustics-understood checkout, rebuilt its standalone HTML and verified the original-folder HTTP preview. Existing files were backed up; 448 other existing files, including owner changes and reference PDFs, remain identical.",
+  "workingFolder": "/Users/stephenwells/Documents/DevOps/structural-acoustics-understood",
+  "artifacts": [
+    "docs/sp8072/README.md",
+    "docs/sp8072/VALIDATION.md",
+    "js/sp8072-tool.js",
+    "scripts/sp8072-preview.mjs",
+    "service-worker.js",
+    "standalone.html",
+    "styles.css",
+    "tests/calculators.test.mjs",
+    "tests/sp8072.test.mjs",
+    "scripts/sp8072-verify-style.mjs",
+    "docs/sp8072/evidence/original-checkout-integration.json",
+    "docs/sp8072/evidence/original-checkout-browser.json",
+    "docs/sp8072/evidence/original-checkout-desktop.jpg"
+  ],
+  "checks": {
+    "testsPassed": 165,
+    "standaloneDeterministic": true,
+    "servingExactLocalBuild": true,
+    "savedCalculationUnchanged": true,
+    "otherExistingFilesPreserved": 448
+  },
+  "limitations": [
+    "HTTP-hosted standalone browser verified; direct-file execution and print/import/reset/download checks were not repeated during integration.",
+    "Changes are local and uncommitted."
+  ],
+  "next_steps": [
+    "Reload the already-open original standalone file or review the verified localhost:4173 standalone preview."
+  ]
+}

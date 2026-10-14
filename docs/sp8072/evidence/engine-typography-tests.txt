@@ -1,0 +1,1004 @@
+
+> structural-acoustics-understood@1.0.0 test
+> node --test tests/*.test.mjs
+
+TAP version 13
+# Subtest: every catalog entry has a calculator and every default case runs
+ok 1 - every catalog entry has a calculator and every default case runs
+  ---
+  duration_ms: 1512.388291
+  type: 'test'
+  ...
+# Subtest: every calculator returns the complete engineering response schema
+ok 2 - every calculator returns the complete engineering response schema
+  ---
+  duration_ms: 1309.601167
+  type: 'test'
+  ...
+# Subtest: PCB accelerometer catalog is normalized, grouped, and source traceable
+ok 3 - PCB accelerometer catalog is normalized, grouped, and source traceable
+  ---
+  duration_ms: 0.382167
+  type: 'test'
+  ...
+# Subtest: shared logarithmic axes use decade labels, complete minor grids, and fixed comparison domains
+ok 4 - shared logarithmic axes use decade labels, complete minor grids, and fixed comparison domains
+  ---
+  duration_ms: 3.504292
+  type: 'test'
+  ...
+# Subtest: PCB accelerometer explorer exposes specification ranges and DAQ-limited dynamic range
+ok 5 - PCB accelerometer explorer exposes specification ranges and DAQ-limited dynamic range
+  ---
+  duration_ms: 1.162917
+  type: 'test'
+  ...
+# Subtest: PCB explorer keeps incomplete and charge-output models selectable without inventing specifications
+ok 6 - PCB explorer keeps incomplete and charge-output models selectable without inventing specifications
+  ---
+  duration_ms: 0.36525
+  type: 'test'
+  ...
+# Subtest: decibel summation returns +3.0103 dB for equal independent levels
+ok 7 - decibel summation returns +3.0103 dB for equal independent levels
+  ---
+  duration_ms: 0.17175
+  type: 'test'
+  ...
+# Subtest: GRMS reports the integrated acceleration with PSD-specific meaning
+ok 8 - GRMS reports the integrated acceleration with PSD-specific meaning
+  ---
+  duration_ms: 0.506625
+  type: 'test'
+  ...
+# Subtest: one-third-octave 1 kHz band uses geometric edges
+ok 9 - one-third-octave 1 kHz band uses geometric edges
+  ---
+  duration_ms: 0.338542
+  type: 'test'
+  ...
+# Subtest: Miles equation matches the standard narrowband expression
+ok 10 - Miles equation matches the standard narrowband expression
+  ---
+  duration_ms: 0.467
+  type: 'test'
+  ...
+# Subtest: plate wave tool compares speed and wavelength families at the selected frequency
+ok 11 - plate wave tool compares speed and wavelength families at the selected frequency
+  ---
+  duration_ms: 0.609166
+  type: 'test'
+  ...
+# Subtest: plate wave selected frequency must remain inside the plotted band
+ok 12 - plate wave selected frequency must remain inside the plotted band
+  ---
+  duration_ms: 0.239625
+  type: 'test'
+  ...
+# Subtest: plate critical-frequency tool plots size-aware finite-panel TL with coincidence context
+ok 13 - plate critical-frequency tool plots size-aware finite-panel TL with coincidence context
+  ---
+  duration_ms: 4.799709
+  type: 'test'
+  ...
+# Subtest: plate dimensions move finite-panel modes and TL without moving infinite-plate coincidence
+ok 14 - plate dimensions move finite-panel modes and TL without moving infinite-plate coincidence
+  ---
+  duration_ms: 5.175083
+  type: 'test'
+  ...
+# Subtest: plate critical-frequency fluid presets synchronize density and sound speed with clear model scope
+ok 15 - plate critical-frequency fluid presets synchronize density and sound speed with clear model scope
+  ---
+  duration_ms: 9.26875
+  type: 'test'
+  ...
+# Subtest: material presets synchronize dependent properties and plate modal frequencies
+ok 16 - material presets synchronize dependent properties and plate modal frequencies
+  ---
+  duration_ms: 5.200333
+  type: 'test'
+  ...
+# Subtest: plate boundary presets update frequencies and enforce the selected edge restraint in the mode shapes
+ok 17 - plate boundary presets update frequencies and enforce the selected edge restraint in the mode shapes
+  ---
+  duration_ms: 6.39525
+  type: 'test'
+  ...
+# Subtest: material presets synchronize advanced cylinder properties and shell-mode frequencies
+ok 18 - material presets synchronize advanced cylinder properties and shell-mode frequencies
+  ---
+  duration_ms: 1.248208
+  type: 'test'
+  ...
+# Subtest: beam, plate, and cylinder tools expose boundary-consistent animated 3D mode shapes
+ok 19 - beam, plate, and cylinder tools expose boundary-consistent animated 3D mode shapes
+  ---
+  duration_ms: 18.766208
+  type: 'test'
+  ...
+# Subtest: advanced shell acoustics leads with the selected frequency-tagged animated mode shape
+ok 20 - advanced shell acoustics leads with the selected frequency-tagged animated mode shape
+  ---
+  duration_ms: 6.922875
+  type: 'test'
+  ...
+# Subtest: shell end restraint changes the selected basis and screening frequency
+ok 21 - shell end restraint changes the selected basis and screening frequency
+  ---
+  duration_ms: 1.034833
+  type: 'test'
+  ...
+# Subtest: beam, FE/BE, panel TL, and panel-cavity material presets stay synchronized
+ok 22 - beam, FE/BE, panel TL, and panel-cavity material presets stay synchronized
+  ---
+  duration_ms: 2.488041
+  type: 'test'
+  ...
+# Subtest: panel-cavity shares plate controls and leads with a labeled modal frequency map
+ok 23 - panel-cavity shares plate controls and leads with a labeled modal frequency map
+  ---
+  duration_ms: 1.227875
+  type: 'test'
+  ...
+# Subtest: modal density combines population screening with the structural and acoustic atlas
+ok 24 - modal density combines population screening with the structural and acoustic atlas
+  ---
+  duration_ms: 50.544042
+  type: 'test'
+  ...
+# Subtest: every calculator result uses the shared card, plot, and table unit conversion
+ok 25 - every calculator result uses the shared card, plot, and table unit conversion
+  ---
+  duration_ms: 1474.220334
+  type: 'test'
+  ...
+# Subtest: continuous number inputs do not inherit converted HTML step restrictions
+ok 26 - continuous number inputs do not inherit converted HTML step restrictions
+  ---
+  duration_ms: 0.591834
+  type: 'test'
+  ...
+# Subtest: priority gap-analysis tools expose behavior plots and separate alerts from limitations
+ok 27 - priority gap-analysis tools expose behavior plots and separate alerts from limitations
+  ---
+  duration_ms: 3.242375
+  type: 'test'
+  ...
+# Subtest: unit conversion uses conventional standard gravity
+ok 28 - unit conversion uses conventional standard gravity
+  ---
+  duration_ms: 0.090291
+  type: 'test'
+  ...
+# Subtest: display-unit input formatting preserves non-convertible numeric fields
+ok 29 - display-unit input formatting preserves non-convertible numeric fields
+  ---
+  duration_ms: 0.0625
+  type: 'test'
+  ...
+# Subtest: Welch PSD closes against time-domain RMS for generated data
+ok 30 - Welch PSD closes against time-domain RMS for generated data
+  ---
+  duration_ms: 86.460542
+  type: 'test'
+  ...
+# Subtest: three-subsystem SEA closes steady-state power balance
+ok 31 - three-subsystem SEA closes steady-state power balance
+  ---
+  duration_ms: 0.304125
+  type: 'test'
+  ...
+# Subtest: zero correlation combines PSD RMS by root-sum-square
+ok 32 - zero correlation combines PSD RMS by root-sum-square
+  ---
+  duration_ms: 0.23
+  type: 'test'
+  ...
+# Subtest: FDS pseudo-damage scales with duration and PSD amplitude
+ok 33 - FDS pseudo-damage scales with duration and PSD amplitude
+  ---
+  duration_ms: 4.171875
+  type: 'test'
+  ...
+# Subtest: Dirlik spectral damage recovers the narrowband Rayleigh limit
+ok 34 - Dirlik spectral damage recovers the narrowband Rayleigh limit
+  ---
+  duration_ms: 0.083
+  type: 'test'
+  ...
+# Subtest: FDS exposes finite narrowband, Dirlik, and deterministic synthesized-rainflow damage
+ok 35 - FDS exposes finite narrowband, Dirlik, and deterministic synthesized-rainflow damage
+  ---
+  duration_ms: 5.904958
+  type: 'test'
+  ...
+# Subtest: each selectable FDS damage method drives equal-damage duration synthesis
+ok 36 - each selectable FDS damage method drives equal-damage duration synthesis
+  ---
+  duration_ms: 17.625625
+  type: 'test'
+  ...
+# Subtest: resonance-resolved FDS is insensitive to sparse flat-PSD breakpoints
+ok 37 - resonance-resolved FDS is insensitive to sparse flat-PSD breakpoints
+  ---
+  duration_ms: 1.503
+  type: 'test'
+  ...
+# Subtest: damage-equivalent PSD synthesis converges and reports achieved FDS evidence
+ok 38 - damage-equivalent PSD synthesis converges and reports achieved FDS evidence
+  ---
+  duration_ms: 60.155375
+  type: 'test'
+  ...
+# Subtest: damage-equivalent synthesis uses test/flight FDS ratio in either duration direction
+ok 39 - damage-equivalent synthesis uses test/flight FDS ratio in either duration direction
+  ---
+  duration_ms: 82.445708
+  type: 'test'
+  ...
+# Subtest: qualification tailoring honors an explicit FDS damage margin and closes coverage
+ok 40 - qualification tailoring honors an explicit FDS damage margin and closes coverage
+  ---
+  duration_ms: 6.092583
+  type: 'test'
+  ...
+# Subtest: FDS calculator includes exposure duration in the reported test/flight damage ratio
+ok 41 - FDS calculator includes exposure duration in the reported test/flight damage ratio
+  ---
+  duration_ms: 248.698834
+  type: 'test'
+  ...
+# Subtest: FDS calculator accepts pasted flight and test PSDs and exposes coverage and equivalence evidence
+ok 42 - FDS calculator accepts pasted flight and test PSDs and exposes coverage and equivalence evidence
+  ---
+  duration_ms: 266.18925
+  type: 'test'
+  ...
+# Subtest: qualification tailoring raises deficient bands while reducing excess bands
+ok 43 - qualification tailoring raises deficient bands while reducing excess bands
+  ---
+  duration_ms: 323.898
+  type: 'test'
+  ...
+# Subtest: qualification-tailoring objective rejects the reverse equivalence direction
+ok 44 - qualification-tailoring objective rejects the reverse equivalence direction
+  ---
+  duration_ms: 0.173041
+  type: 'test'
+  ...
+# Subtest: content architecture matches the approved full build
+ok 45 - content architecture matches the approved full build
+  ---
+  duration_ms: 1.491167
+  type: 'test'
+  ...
+# Subtest: SEA parameter models preserve dimensional, reciprocity, power, and recovery limits
+ok 46 - SEA parameter models preserve dimensional, reciprocity, power, and recovery limits
+  ---
+  duration_ms: 5.372792
+  type: 'test'
+  ...
+# Subtest: ESA Appendix A modal-density formulations reproduce their published relations
+ok 47 - ESA Appendix A modal-density formulations reproduce their published relations
+  ---
+  duration_ms: 10.80725
+  type: 'test'
+  ...
+# Subtest: program-level launch models preserve limiting behavior and end-to-end directionality
+ok 48 - program-level launch models preserve limiting behavior and end-to-end directionality
+  ---
+  duration_ms: 1.645125
+  type: 'test'
+  ...
+# Subtest: ACS 537 noise-control models preserve path, field, measurement, and treatment limits
+ok 49 - ACS 537 noise-control models preserve path, field, measurement, and treatment limits
+  ---
+  duration_ms: 1.525958
+  type: 'test'
+  ...
+# Subtest: workflow expansion models preserve correlation, energy, statistics, and limiting behavior
+ok 50 - workflow expansion models preserve correlation, energy, statistics, and limiting behavior
+  ---
+  duration_ms: 1.354916
+  type: 'test'
+  ...
+# Subtest: every interactive demo has a short state-aware engineering takeaway
+ok 51 - every interactive demo has a short state-aware engineering takeaway
+  ---
+  duration_ms: 1.73825
+  type: 'test'
+  ...
+# Subtest: ACS 519 limiting cases and coupled balances remain physically consistent
+ok 52 - ACS 519 limiting cases and coupled balances remain physically consistent
+  ---
+  duration_ms: 4.610583
+  type: 'test'
+  ...
+# Subtest: spatial field models preserve normalization and expected length scales
+ok 53 - spatial field models preserve normalization and expected length scales
+  ---
+  duration_ms: 0.250625
+  type: 'test'
+  ...
+# Subtest: panel joint acceptance reproduces uniform-mode limits and nonnegative random-field coupling
+ok 54 - panel joint acceptance reproduces uniform-mode limits and nonnegative random-field coupling
+  ---
+  duration_ms: 24.545041
+  type: 'test'
+  ...
+# Subtest: TBL joint acceptance peaks near the finite-panel convection-velocity match
+ok 55 - TBL joint acceptance peaks near the finite-panel convection-velocity match
+  ---
+  duration_ms: 16.074458
+  type: 'test'
+  ...
+# Subtest: TR 12-007 honeycomb model recovers bending and shear limits with the expected panel-1 scales
+ok 56 - TR 12-007 honeycomb model recovers bending and shear limits with the expected panel-1 scales
+  ---
+  duration_ms: 0.168334
+  type: 'test'
+  ...
+# Subtest: experimental SEA inversion closes an independently generated two-subsystem power balance
+ok 57 - experimental SEA inversion closes an independently generated two-subsystem power balance
+  ---
+  duration_ms: 0.103667
+  type: 'test'
+  ...
+# Subtest: junction learning models stay passive and expose the fastener-spacing regime
+ok 58 - junction learning models stay passive and expose the fastener-spacing regime
+  ---
+  duration_ms: 0.088458
+  type: 'test'
+  ...
+# Subtest: inhomogeneous energy model keeps mass weighting finite and quantifies sparse-sensor bias
+ok 59 - inhomogeneous energy model keeps mass weighting finite and quantifies sparse-sensor bias
+  ---
+  duration_ms: 0.421375
+  type: 'test'
+  ...
+# Subtest: finite-aperture wavenumber scan recovers the synthetic junction transmission trend
+ok 60 - finite-aperture wavenumber scan recovers the synthetic junction transmission trend
+  ---
+  duration_ms: 6.852375
+  type: 'test'
+  ...
+# Subtest: CLF energy-flow model conserves power and separates gross exchange from net flow
+ok 61 - CLF energy-flow model conserves power and separates gross exchange from net flow
+  ---
+  duration_ms: 0.165584
+  type: 'test'
+  ...
+# Subtest: CLF power-injection forward model and inverse identification close exactly
+ok 62 - CLF power-injection forward model and inverse identification close exactly
+  ---
+  duration_ms: 0.248667
+  type: 'test'
+  ...
+# Subtest: CLF uncertainty study is reproducible and distinguishes random spread from systematic energy bias
+ok 63 - CLF uncertainty study is reproducible and distinguishes random spread from systematic energy bias
+  ---
+  duration_ms: 0.972
+  type: 'test'
+  ...
+# Subtest: standalone build contains the current catalogs, renderers, and demo takeaways
+ok 64 - standalone build contains the current catalogs, renderers, and demo takeaways
+  ---
+  duration_ms: 66.337375
+  type: 'test'
+  ...
+# Subtest: launch-vehicle SEA capstone solves a reciprocal, banded, auditable network
+ok 65 - launch-vehicle SEA capstone solves a reciprocal, banded, auditable network
+  ---
+  duration_ms: 461.733709
+  type: 'test'
+  ...
+# Subtest: engineering workbench registry upgrades ten real tools without replacing their quick screens
+ok 66 - engineering workbench registry upgrades ten real tools without replacing their quick screens
+  ---
+  duration_ms: 93.349167
+  type: 'test'
+  ...
+# Subtest: shared engineering-tool runtime exposes decision-centered wet-tank and modal-density pilots
+ok 67 - shared engineering-tool runtime exposes decision-centered wet-tank and modal-density pilots
+  ---
+  duration_ms: 25.860209
+  type: 'test'
+  ...
+# Subtest: site visual system exposes reusable components and themes every non-home route
+ok 68 - site visual system exposes reusable components and themes every non-home route
+  ---
+  duration_ms: 2.497416
+  type: 'test'
+  ...
+# Subtest: light and dark themes are selectable, persistent, and standalone-safe
+ok 69 - light and dark themes are selectable, persistent, and standalone-safe
+  ---
+  duration_ms: 2.078709
+  type: 'test'
+  ...
+# Subtest: wheel homepage is data-driven, accessible, and linked to real content
+ok 70 - wheel homepage is data-driven, accessible, and linked to real content
+  ---
+  duration_ms: 4.877333
+  type: 'test'
+  ...
+# Subtest: offline cache includes current interactive runtimes
+ok 71 - offline cache includes current interactive runtimes
+  ---
+  duration_ms: 0.329166
+  type: 'test'
+  ...
+# Subtest: engineering system connects hardware, pathways, tool discovery, projects, and live verification
+ok 72 - engineering system connects hardware, pathways, tool discovery, projects, and live verification
+  ---
+  duration_ms: 10.780542
+  type: 'test'
+  ...
+# Subtest: default result payloads are finite and structurally consistent
+ok 73 - default result payloads are finite and structurally consistent
+  ---
+  duration_ms: 1267.5165
+  type: 'test'
+  ...
+# Subtest: catalog identifiers, chapter identifiers, and concept anchors are unique
+ok 74 - catalog identifiers, chapter identifiers, and concept anchors are unique
+  ---
+  duration_ms: 0.302875
+  type: 'test'
+  ...
+# Subtest: 12-DOF assembly is symmetric and its strain energy closes against mount deformation
+ok 75 - 12-DOF assembly is symmetric and its strain energy closes against mount deformation
+  ---
+  duration_ms: 4.674125
+  type: 'test'
+  ...
+# Subtest: balanced rigid-body geometry reproduces the established axis-only 2-DOF FRF
+ok 76 - balanced rigid-body geometry reproduces the established axis-only 2-DOF FRF
+  ---
+  duration_ms: 28.007917
+  type: 'test'
+  ...
+# Subtest: complex rigid-body response satisfies every dynamic-stiffness row
+ok 77 - complex rigid-body response satisfies every dynamic-stiffness row
+  ---
+  duration_ms: 0.490958
+  type: 'test'
+  ...
+# Subtest: all twelve undamped modes satisfy Kφ = λMφ
+ok 78 - all twelve undamped modes satisfy Kφ = λMφ
+  ---
+  duration_ms: 0.907958
+  type: 'test'
+  ...
+# Subtest: static rigid-body solution closes both stage load paths
+ok 79 - static rigid-body solution closes both stage load paths
+  ---
+  duration_ms: 0.371792
+  type: 'test'
+  ...
+# Subtest: three-point non-collinear stages remain fully constrained
+ok 80 - three-point non-collinear stages remain fully constrained
+  ---
+  duration_ms: 0.693
+  type: 'test'
+  ...
+# Subtest: CG offsets create calculated translation-rotation coupling
+ok 81 - CG offsets create calculated translation-rotation coupling
+  ---
+  duration_ms: 23.585833
+  type: 'test'
+  ...
+# Subtest: custom mount-coordinate parser accepts explicit engineering length units
+ok 82 - custom mount-coordinate parser accepts explicit engineering length units
+  ---
+  duration_ms: 0.606625
+  type: 'test'
+  ...
+# Subtest: workbench exposes both 12-DOF and preserved 2-DOF result contracts
+ok 83 - workbench exposes both 12-DOF and preserved 2-DOF result contracts
+  ---
+  duration_ms: 19.569083
+  type: 'test'
+  ...
+# Subtest: Steinberg millimetre implementation is exactly equivalent to the inch coefficient
+ok 84 - Steinberg millimetre implementation is exactly equivalent to the inch coefficient
+  ---
+  duration_ms: 0.615542
+  type: 'test'
+  ...
+# Subtest: location factor and center/local bases are applied once
+ok 85 - location factor and center/local bases are applied once
+  ---
+  duration_ms: 0.234042
+  type: 'test'
+  ...
+# Subtest: numerical broad flat PSD response closes to Miles narrowband result
+ok 86 - numerical broad flat PSD response closes to Miles narrowband result
+  ---
+  duration_ms: 4.217083
+  type: 'test'
+  ...
+# Subtest: PCB random-response calculator accepts browser-form numeric strings
+ok 87 - PCB random-response calculator accepts browser-form numeric strings
+  ---
+  duration_ms: 3.820292
+  type: 'test'
+  ...
+# Subtest: component placement ranks demand without double-counting the location factor
+ok 88 - component placement ranks demand without double-counting the location factor
+  ---
+  duration_ms: 0.508084
+  type: 'test'
+  ...
+# Subtest: multimode PCB field keeps simple supports nodal and links curvature to surface strain
+ok 89 - multimode PCB field keeps simple supports nodal and links curvature to surface strain
+  ---
+  duration_ms: 4.882542
+  type: 'test'
+  ...
+# Subtest: three-band and Rayleigh methods share one explicit S-N basis
+ok 90 - three-band and Rayleigh methods share one explicit S-N basis
+  ---
+  duration_ms: 0.413083
+  type: 'test'
+  ...
+# Subtest: synthesized response is deterministic, RMS-normalized, and rainflow damage scales with stress
+ok 91 - synthesized response is deterministic, RMS-normalized, and rainflow damage scales with stress
+  ---
+  duration_ms: 7.840875
+  type: 'test'
+  ...
+# Subtest: mission ledger responds nonlinearly to level and linearly to repeats
+ok 92 - mission ledger responds nonlinearly to level and linearly to repeats
+  ---
+  duration_ms: 0.464375
+  type: 'test'
+  ...
+# Subtest: duration and support trade states move in the physically expected direction
+ok 93 - duration and support trade states move in the physically expected direction
+  ---
+  duration_ms: 2.587583
+  type: 'test'
+  ...
+# Subtest: PCB model-to-test correlation exposes frequency, response, and fatigue leverage
+ok 94 - PCB model-to-test correlation exposes frequency, response, and fatigue leverage
+  ---
+  duration_ms: 0.686958
+  type: 'test'
+  ...
+# Subtest: electronics curriculum, calculators, demos, and takeaways remain in registry parity
+ok 95 - electronics curriculum, calculators, demos, and takeaways remain in registry parity
+  ---
+  duration_ms: 0.834292
+  type: 'test'
+  ...
+# Subtest: every electronics calculator leads with a reusable decision visual
+ok 96 - every electronics calculator leads with a reusable decision visual
+  ---
+  duration_ms: 40.580291
+  type: 'test'
+  ...
+# Subtest: baseline vertical bounce mode is calculated in the intended 140-150 Hz region
+ok 97 - baseline vertical bounce mode is calculated in the intended 140-150 Hz region
+  ---
+  duration_ms: 85.485666
+  type: 'test'
+  ...
+# Subtest: lateral translation criteria follow modal participation rather than mode order
+ok 98 - lateral translation criteria follow modal participation rather than mode order
+  ---
+  duration_ms: 110.76925
+  type: 'test'
+  ...
+# Subtest: transmissibility evaluates direct X, Y, and Z base-to-response directions
+ok 99 - transmissibility evaluates direct X, Y, and Z base-to-response directions
+  ---
+  duration_ms: 351.001209
+  type: 'test'
+  ...
+# Subtest: top-corner response options add rigid-body rotation to CG translation
+ok 100 - top-corner response options add rigid-body rotation to CG translation
+  ---
+  duration_ms: 0.527666
+  type: 'test'
+  ...
+# Subtest: centered symmetric mounts suppress bounce-rocking stiffness coupling
+ok 101 - centered symmetric mounts suppress bounce-rocking stiffness coupling
+  ---
+  duration_ms: 0.409458
+  type: 'test'
+  ...
+# Subtest: planar CG shift introduces vertical translation and rocking coupling
+ok 102 - planar CG shift introduces vertical translation and rocking coupling
+  ---
+  duration_ms: 0.277333
+  type: 'test'
+  ...
+# Subtest: increasing CG height increases lateral-rocking coupling
+ok 103 - increasing CG height increases lateral-rocking coupling
+  ---
+  duration_ms: 0.321625
+  type: 'test'
+  ...
+# Subtest: identical elements in each physical stack combine in series
+ok 104 - identical elements in each physical stack combine in series
+  ---
+  duration_ms: 0.198458
+  type: 'test'
+  ...
+# Subtest: opposing preloaded stacks add incremental sandwich stiffness
+ok 105 - opposing preloaded stacks add incremental sandwich stiffness
+  ---
+  duration_ms: 0.42725
+  type: 'test'
+  ...
+# Subtest: symmetric vertical response closes to analytical complex-stiffness SDOF
+ok 106 - symmetric vertical response closes to analytical complex-stiffness SDOF
+  ---
+  duration_ms: 0.59025
+  type: 'test'
+  ...
+# Subtest: SI boundary conversions preserve the same physical configuration and modes
+ok 107 - SI boundary conversions preserve the same physical configuration and modes
+  ---
+  duration_ms: 10.07225
+  type: 'test'
+  ...
+# Subtest: static equilibrium keeps upper and lower element loads distinct and balanced
+ok 108 - static equilibrium keeps upper and lower element loads distinct and balanced
+  ---
+  duration_ms: 0.230459
+  type: 'test'
+  ...
+# Subtest: material provenance changes at published, digitized, and extrapolated boundaries
+ok 109 - material provenance changes at published, digitized, and extrapolated boundaries
+  ---
+  duration_ms: 0.230458
+  type: 'test'
+  ...
+# Subtest: standard and water-resistant Sorbothane use distinct formulation and starting-compression datasets
+ok 110 - standard and water-resistant Sorbothane use distinct formulation and starting-compression datasets
+  ---
+  duration_ms: 0.32875
+  type: 'test'
+  ...
+# Subtest: preload-driven material selection uses its calculated starting compression curve
+ok 111 - preload-driven material selection uses its calculated starting compression curve
+  ---
+  duration_ms: 0.284542
+  type: 'test'
+  ...
+# Subtest: formulation propagates through preload, modal solution, and NASTRAN PBUSH export
+ok 112 - formulation propagates through preload, modal solution, and NASTRAN PBUSH export
+  ---
+  duration_ms: 23.556666
+  type: 'test'
+  ...
+# Subtest: catalog includes current washer, ring, disc, and custom records
+ok 113 - catalog includes current washer, ring, disc, and custom records
+  ---
+  duration_ms: 0.105292
+  type: 'test'
+  ...
+# Subtest: Parker LORD AM catalog contains all nine families and 126 source-traceable part records
+ok 114 - Parker LORD AM catalog contains all nine families and 126 source-traceable part records
+  ---
+  duration_ms: 0.222792
+  type: 'test'
+  ...
+# Subtest: Parker LORD complete-mount stiffness uses published axial and radial rates directly
+ok 115 - Parker LORD complete-mount stiffness uses published axial and radial rates directly
+  ---
+  duration_ms: 0.196208
+  type: 'test'
+  ...
+# Subtest: Parker LORD AM rated-load frequency closes and back-to-back installation doubles rate and capacity
+ok 116 - Parker LORD AM rated-load frequency closes and back-to-back installation doubles rate and capacity
+  ---
+  duration_ms: 43.519458
+  type: 'test'
+  ...
+# Subtest: NASTRAN export uses the IPS slinch contract and a four-point shell-and-bush topology
+ok 117 - NASTRAN export uses the IPS slinch contract and a four-point shell-and-bush topology
+  ---
+  duration_ms: 5.931792
+  type: 'test'
+  ...
+# Subtest: NASTRAN plate material presets keep density and elastic properties synchronized
+ok 118 - NASTRAN plate material presets keep density and elastic properties synchronized
+  ---
+  duration_ms: 11.236958
+  type: 'test'
+  ...
+# Subtest: NASTRAN PBUSH stiffness follows the selected isolator and linearization frequency
+ok 119 - NASTRAN PBUSH stiffness follows the selected isolator and linearization frequency
+  ---
+  duration_ms: 3.095917
+  type: 'test'
+  ...
+# Subtest: NASTRAN correlation options make massless-plate and rigid-footprint assumptions explicit
+ok 120 - NASTRAN correlation options make massless-plate and rigid-footprint assumptions explicit
+  ---
+  duration_ms: 6.206916
+  type: 'test'
+  ...
+# Subtest: Parker LORD catalog screening evaluates every eligible part and single/back-to-back arrangement
+ok 121 - Parker LORD catalog screening evaluates every eligible part and single/back-to-back arrangement
+  ---
+  duration_ms: 1795.52025
+  type: 'test'
+  ...
+# Subtest: Parker LORD workbench exposes complete-mount data, library screening, and meaningful explorer variables
+ok 122 - Parker LORD workbench exposes complete-mount data, library screening, and meaningful explorer variables
+  ---
+  duration_ms: 101.97975
+  type: 'test'
+  ...
+# Subtest: workbench preserves trailing-zero requirement frequencies in rendered labels
+ok 123 - workbench preserves trailing-zero requirement frequencies in rendered labels
+  ---
+  duration_ms: 3305.326584
+  type: 'test'
+  ...
+# Subtest: water-resistant formulation is visible in the Isolator workflow and engineering report
+ok 124 - water-resistant formulation is visible in the Isolator workflow and engineering report
+  ---
+  duration_ms: 310.934333
+  type: 'test'
+  ...
+# Subtest: selected design drawings follow catalog geometry and asymmetric stack counts
+ok 125 - selected design drawings follow catalog geometry and asymmetric stack counts
+  ---
+  duration_ms: 106.788417
+  type: 'test'
+  ...
+# Subtest: design explorer supports durometer and both mount-spacing axes
+ok 126 - design explorer supports durometer and both mount-spacing axes
+  ---
+  duration_ms: 424.04025
+  type: 'test'
+  ...
+# Subtest: design explorer gives each variable a physically meaningful default range
+ok 127 - design explorer gives each variable a physically meaningful default range
+  ---
+  duration_ms: 0.18325
+  type: 'test'
+  ...
+# Subtest: design explorer centers a seven-by-seven study on the applied design
+ok 128 - design explorer centers a seven-by-seven study on the applied design
+  ---
+  duration_ms: 2339.385542
+  type: 'test'
+  ...
+# Subtest: catalog screening filters nominal geometry and selects the minimum passing stack count per part
+ok 129 - catalog screening filters nominal geometry and selects the minimum passing stack count per part
+  ---
+  duration_ms: 357.071333
+  type: 'test'
+  ...
+# Subtest: asynchronous catalog screening yields monotonic staged progress and uses added criteria
+ok 130 - asynchronous catalog screening yields monotonic staged progress and uses added criteria
+  ---
+  duration_ms: 153.614875
+  type: 'test'
+  ...
+# Subtest: catalog screening supports removing every discrete tone criterion
+ok 131 - catalog screening supports removing every discrete tone criterion
+  ---
+  duration_ms: 144.217166
+  type: 'test'
+  ...
+# Subtest: recommended compression is an explicit design criterion
+ok 132 - recommended compression is an explicit design criterion
+  ---
+  duration_ms: 45.569542
+  type: 'test'
+  ...
+# Subtest: CSV and Markdown exports retain response phase, provenance, modes, and sources
+ok 133 - CSV and Markdown exports retain response phase, provenance, modes, and sources
+  ---
+  duration_ms: 109.219375
+  type: 'test'
+  ...
+# Subtest: SP8072 independent reference: analytical-apparent-none
+ok 134 - SP8072 independent reference: analytical-apparent-none
+  ---
+  duration_ms: 1.925125
+  type: 'test'
+  ...
+# Subtest: SP8072 independent reference: analytical-apparent-open
+ok 135 - SP8072 independent reference: analytical-apparent-open
+  ---
+  duration_ms: 0.310292
+  type: 'test'
+  ...
+# Subtest: SP8072 independent reference: analytical-apparent-closed
+ok 136 - SP8072 independent reference: analytical-apparent-closed
+  ---
+  duration_ms: 0.25125
+  type: 'test'
+  ...
+# Subtest: SP8072 independent reference: analytical-apparent-twin
+ok 137 - SP8072 independent reference: analytical-apparent-twin
+  ---
+  duration_ms: 1.002
+  type: 'test'
+  ...
+# Subtest: SP8072 independent reference: analytical-distributed-integral
+ok 138 - SP8072 independent reference: analytical-distributed-integral
+  ---
+  duration_ms: 1.8335
+  type: 'test'
+  ...
+# Subtest: SP8072 power-law integration has exact constant, inverse-x and quadratic limits
+ok 139 - SP8072 power-law integration has exact constant, inverse-x and quadratic limits
+  ---
+  duration_ms: 0.094333
+  type: 'test'
+  ...
+# Subtest: SP8072 digitization domains fail rather than silently extrapolate position/directivity
+ok 140 - SP8072 digitization domains fail rather than silently extrapolate position/directivity
+  ---
+  duration_ms: 0.430083
+  type: 'test'
+  ...
+# Subtest: SP8072 band power / pressure variance closes to selected-band overall without tail renormalization
+ok 141 - SP8072 band power / pressure variance closes to selected-band overall without tail renormalization
+  ---
+  duration_ms: 12.743041
+  type: 'test'
+  ...
+# Subtest: SP8072 dry recovery, exact incremental water reduction, and all supported combined configurations
+ok 142 - SP8072 dry recovery, exact incremental water reduction, and all supported combined configurations
+  ---
+  duration_ms: 19.909666
+  type: 'test'
+  ...
+# Subtest: SP8072 separates power allocation, source path shielding, and surface loading
+ok 143 - SP8072 separates power allocation, source path shielding, and surface loading
+  ---
+  duration_ms: 25.67475
+  type: 'test'
+  ...
+# Subtest: SP8072 inactive curve drafts permit handbook and dry recovery, while active invalid curves fail
+ok 144 - SP8072 inactive curve drafts permit handbook and dry recovery, while active invalid curves fail
+  ---
+  duration_ms: 4.966917
+  type: 'test'
+  ...
+# Subtest: SP8072 continuous geometry and branch direction match explicit coordinates
+ok 145 - SP8072 continuous geometry and branch direction match explicit coordinates
+  ---
+  duration_ms: 0.519292
+  type: 'test'
+  ...
+# Subtest: SP8072 distributed quadrature converges to the independent continuous reference
+ok 146 - SP8072 distributed quadrature converges to the independent continuous reference
+  ---
+  duration_ms: 1.355458
+  type: 'test'
+  ...
+# Subtest: SP8072 linear 1-Hz bins retain units and reject silent band caps
+ok 147 - SP8072 linear 1-Hz bins retain units and reject silent band caps
+  ---
+  duration_ms: 0.349125
+  type: 'test'
+  ...
+# Subtest: SP8072 SI/English round trips, result schema, retained baseline and study identity
+ok 148 - SP8072 SI/English round trips, result schema, retained baseline and study identity
+  ---
+  duration_ms: 8.674667
+  type: 'test'
+  ...
+# Subtest: SP8072 source files, offline cache and generated standalone contain the complete independent route
+ok 149 - SP8072 source files, offline cache and generated standalone contain the complete independent route
+  ---
+  duration_ms: 32.7505
+  type: 'test'
+  ...
+# Subtest: SP8072 microphone predictions use full XYZ ranges and preserve the analytical main receiver
+ok 150 - SP8072 microphone predictions use full XYZ ranges and preserve the analytical main receiver
+  ---
+  duration_ms: 1.270459
+  type: 'test'
+  ...
+# Subtest: SP8072 invalid comparison receivers are isolated and malformed location lists fail explicitly
+ok 151 - SP8072 invalid comparison receivers are isolated and malformed location lists fail explicitly
+  ---
+  duration_ms: 0.807042
+  type: 'test'
+  ...
+# Subtest: SP8072 saved location inputs restore and English geometry retains SI prediction coordinates
+ok 152 - SP8072 saved location inputs restore and English geometry retains SI prediction coordinates
+  ---
+  duration_ms: 3.454208
+  type: 'test'
+  ...
+# Subtest: tool launcher search understands engineering abbreviations and natural task phrases
+ok 153 - tool launcher search understands engineering abbreviations and natural task phrases
+  ---
+  duration_ms: 3.859583
+  type: 'test'
+  ...
+# Subtest: tool launcher browsing filters by the shared subject and task metadata
+ok 154 - tool launcher browsing filters by the shared subject and task metadata
+  ---
+  duration_ms: 0.481333
+  type: 'test'
+  ...
+# Subtest: tool launcher gives pinned and recent tools deterministic default priority
+ok 155 - tool launcher gives pinned and recent tools deterministic default priority
+  ---
+  duration_ms: 0.130041
+  type: 'test'
+  ...
+# Subtest: stored tool lists reject stale ids, duplicates, and non-string values
+ok 156 - stored tool lists reject stale ids, duplicates, and non-string values
+  ---
+  duration_ms: 0.093
+  type: 'test'
+  ...
+# Subtest: complex frequency response satisfies the assembled dynamic-stiffness equations
+ok 157 - complex frequency response satisfies the assembled dynamic-stiffness equations
+  ---
+  duration_ms: 1.010792
+  type: 'test'
+  ...
+# Subtest: k2 approaching infinity makes both masses follow the Stage 1 supported-mass SDOF
+ok 158 - k2 approaching infinity makes both masses follow the Stage 1 supported-mass SDOF
+  ---
+  duration_ms: 0.416042
+  type: 'test'
+  ...
+# Subtest: k1 approaching infinity reduces payload response to the Stage 2 SDOF
+ok 159 - k1 approaching infinity reduces payload response to the Stage 2 SDOF
+  ---
+  duration_ms: 0.22125
+  type: 'test'
+  ...
+# Subtest: m1 approaching zero recovers the series-stiffness single dynamic mode
+ok 160 - m1 approaching zero recovers the series-stiffness single dynamic mode
+  ---
+  duration_ms: 0.212125
+  type: 'test'
+  ...
+# Subtest: equal masses and stiffnesses match the closed-form eigenvalues
+ok 161 - equal masses and stiffnesses match the closed-form eigenvalues
+  ---
+  duration_ms: 0.176417
+  type: 'test'
+  ...
+# Subtest: zero damping places singular dynamic stiffness at both undamped natural frequencies
+ok 162 - zero damping places singular dynamic stiffness at both undamped natural frequencies
+  ---
+  duration_ms: 0.121
+  type: 'test'
+  ...
+# Subtest: zero-damping payload response approaches fourth-order roll-off at high frequency
+ok 163 - zero-damping payload response approaches fourth-order roll-off at high frequency
+  ---
+  duration_ms: 2.943584
+  type: 'test'
+  ...
+# Subtest: stage damping-ratio inputs use explicit supported and reduced reference masses
+ok 164 - stage damping-ratio inputs use explicit supported and reduced reference masses
+  ---
+  duration_ms: 0.131625
+  type: 'test'
+  ...
+# Subtest: default workbench result exposes modes, response, phase, static load, and calculated commentary
+ok 165 - default workbench result exposes modes, response, phase, static load, and calculated commentary
+  ---
+  duration_ms: 3.723542
+  type: 'test'
+  ...
+1..165
+# tests 165
+# suites 0
+# pass 165
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9920.582875

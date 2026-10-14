@@ -1,0 +1,33 @@
+// Verify presentation changes without changing the existing numerical evidence.
+import {readFileSync,writeFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {execFileSync} from 'node:child_process';
+import assert from 'node:assert/strict';
+import {sp8072Calculator} from '../js/sp8072-tool.js';
+const root=new URL('../',import.meta.url),read=file=>readFileSync(new URL(file,root));
+const hash=file=>createHash('sha256').update(read(file)).digest('hex');
+const old=JSON.parse(read('docs/sp8072/evidence/build-checks.json'));
+// Owner edits vary between checkouts; preserve the bytes present when this run starts.
+const ownerBefore=old.ownerFiles.map(p=>({file:p.file,expected:hash(p.file)}));
+const references=[...old.sourceFiles.map(p=>({file:p.file,expected:p.sha256})),{file:'docs/sp8072/example-study.json',expected:old.approvedExampleSha256}];
+assert.ok(references.every(p=>p.expected===hash(p.file)),'Imported originals and the saved example must remain unchanged');
+const calculation=JSON.parse(read('docs/sp8072/evidence/measurement-example-calculation.json'));
+const result=sp8072Calculator.compute(calculation.inputs);
+assert.deepEqual(JSON.parse(JSON.stringify(result)),calculation.result,'Restyling must preserve the entire verified example calculation');
+const historical=JSON.parse(read('docs/sp8072/evidence/artifact-checks.json'));
+const numericalFiles=['js/sp8072-physics.js','js/sp8072-data.js'].map(file=>({file,sha256:hash(file),originalSha256:historical.entries.find(p=>p.file===file).sha256}));
+assert.ok(numericalFiles.every(p=>p.sha256===p.originalSha256),'Numerical model and source ordinates remain unchanged');
+execFileSync('npm',['run','build:standalone'],{cwd:root,stdio:'pipe'});
+const first=hash('standalone.html');
+const tests=execFileSync('npm',['test'],{cwd:root,encoding:'utf8'});
+writeFileSync(new URL('docs/sp8072/evidence/engine-restyle-tests.txt',root),tests);
+const count=key=>Number(tests.match(new RegExp('^# '+key+' (\\d+)','m'))?.[1]);
+assert.equal(count('fail'),0);assert.equal(count('pass'),count('tests'));assert.ok(count('tests')>=165);
+execFileSync('npm',['run','build:standalone'],{cwd:root,stdio:'pipe'});
+const second=hash('standalone.html');assert.equal(first,second);
+const preserved=[...ownerBefore,...references].map(p=>({...p,actual:hash(p.file)}));
+assert.ok(preserved.every(p=>p.expected===p.actual),'Build and checks must preserve unrelated owner files and imported originals');
+execFileSync('git',['diff','--check'],{cwd:root,stdio:'pipe'});
+const checks={createdUTC:new Date().toISOString(),tests:{passed:count('pass'),failed:count('fail'),skipped:count('skipped'),cancelled:count('cancelled')},standalone:{firstSha256:first,secondSha256:second,deterministic:true},entireExampleCalculationUnchanged:true,numericalFiles,preserved,gitDiffCheck:true,browserEvidence:'docs/sp8072/evidence/engine-restyle-browser-checks.json',limits:'Software validation and separate browser observations; no physical engine/pad correlation or direct-file/print acceptance.'};
+writeFileSync(new URL('docs/sp8072/evidence/engine-restyle-build-checks.json',root),JSON.stringify(checks,null,2)+'\n');
+console.log(JSON.stringify({testsPassed:count('pass'),calculationUnchanged:true,numericalFilesUnchanged:true,standaloneDeterministic:true,preservedFiles:preserved.length}));

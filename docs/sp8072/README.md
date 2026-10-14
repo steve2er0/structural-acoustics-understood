@@ -4,11 +4,23 @@ Current status: **engine and measurement-location update complete; core software
 
 Open `#/tool/nasa-sp8072` in the modular application or generated `standalone.html`. The existing launch-acoustic tool retains its teaching spectrum and designation. The new route uses a separate source dataset, numerical model and adapter, with the shared interactive-analysis layout and `EngineeringResult` contract.
 
-To open this checkout's updated standalone preview, run `node scripts/sp8072-preview.mjs` and use the URL it prints (default: `http://localhost:4178/standalone.html#/tool/nasa-sp8072`). The launcher starts a detached, loopback-only server and checks that its served HTML exactly matches this checkout. Running the launcher again reuses the matching server. Runtime PID and log are kept in `tmp/sp8072-preview/`.
+Continue work in `/Users/stephenwells/Documents/DevOps/structural-acoustics-understood`. To open this checkout's updated standalone preview, run `node scripts/sp8072-preview.mjs` and use the URL it prints (default: `http://localhost:4173/standalone.html#/tool/nasa-sp8072`). The launcher starts or reuses a loopback-only server and verifies its served HTML matches this checkout. Runtime PID and log are kept in `tmp/sp8072-preview/`.
 
-The owner approved integration into the original checkout on October 13, 2026. The reviewed engine/microphone update was applied there with backups, and unrelated local Flight Response edits were preserved. Reload the original standalone tab to load the updated diagram. New CoS agents now edit the chosen project folder by default; retained worktree sessions continue in their existing folder. Browser policy still prevents automated control of `file://` tabs.
+The owner selected this original checkout on October 14, 2026. The tested compact layout and typography update has been integrated here; `standalone.html` is regenerated from this folder's sources. The earlier worktree/browser records below are retained as historical evidence. See [checkout integration checks](evidence/original-checkout-integration.json) for the current delivery and backup location.
 
-## Engine illustration and proposed measurement locations — October 13 update
+## Compact panel refinement — October 13
+
+Follow-up typography correction: side/top view headings, microphone labels and diagram axes now use the site's existing monospace technical-label font. The rendered family matches surrounding input labels in standalone/modular pages and dark/light themes. Mobile labels fit without adding page or geometry overflow. See [latest browser checks](evidence/engine-typography-browser-checks.json) and [latest build checks](evidence/engine-typography-build-checks.json).
+
+The engine view now follows the site's engineering panel typography, subdued hardware drawing and compact result language. The side view is primary; a small top-view inset explains out-of-plane separation. Three microphone readouts share a single row on desktop and become compact labeled rows on mobile. Coordinates and predicted levels stay visible; RMS pressure, geometry caveats and source-allocation explanations remain in **Geometry, equations and source basis** and the existing evidence tables.
+
+At 1728 px width, the same two-octave example panel is about 40% shorter (749 px versus the earlier 1264 px). Adaptive framing fits all three microphone labels at 390 px width without horizontal scrolling. Dark/light themes, coordinate updates, error recovery and English pressure details were checked. The full saved example calculation and both numerical source files are unchanged; the suite passes 165/165 and the standalone rebuild is deterministic. See [current browser record](evidence/engine-restyle-browser-checks.json), [build checks](evidence/engine-restyle-build-checks.json), and reproduce software checks with `node scripts/sp8072-verify-style.mjs`.
+
+![Compact engine and microphone panel with shared typography](evidence/engine-typography-desktop.jpg)
+
+The following sections and earlier screenshots retain the initial engine-view delivery and its evidence. The updated view is now integrated in this original checkout. Earlier worktree observations retain their recorded scope.
+
+## Engine illustration and proposed measurement locations — initial October 13 update
 
 The geometry view now shows a recognizable rocket engine with feed lines, combustion chamber, throat and bell nozzle, anchored at the calculated nozzle exit. The engine outline and plume width are illustrative, not to scale. Nozzle origins, acoustic source stations and microphone centers follow the entered coordinates. Side (XZ) and top (XY) views distinguish out-of-plane locations; the example dashed path connects the strongest selected-band source contribution to the main receiver. The calculation still sums every source using full XYZ distances and angles.
 

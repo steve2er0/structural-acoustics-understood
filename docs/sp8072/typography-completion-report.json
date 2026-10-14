@@ -1,0 +1,33 @@
+{
+  "status": "completed",
+  "summary": "Corrected the visualization typography to use the shared monospace technical-label font for view/readout headings, axes and microphone IDs. Hosted standalone and modular computed fonts match the input labels; dark/light and emulated mobile layout checks passed.",
+  "artifacts": [
+    "styles.css",
+    "service-worker.js",
+    "standalone.html",
+    "tests/calculators.test.mjs",
+    "docs/sp8072/README.md",
+    "docs/sp8072/VALIDATION.md",
+    "docs/sp8072/evidence/engine-typography-browser-checks.json",
+    "docs/sp8072/evidence/engine-typography-build-checks.json",
+    "docs/sp8072/evidence/engine-typography-tests.txt",
+    "docs/sp8072/evidence/engine-typography-desktop.jpg",
+    "docs/sp8072/evidence/engine-typography-light.jpg",
+    "docs/sp8072/evidence/engine-typography-mobile.jpg"
+  ],
+  "checks": {
+    "testsPassed": 165,
+    "completeExampleCalculationUnchanged": true,
+    "standaloneDeterministic": true,
+    "numericalModelDataUnchanged": true,
+    "preservedReferenceAndOwnerFiles": 16,
+    "matchingComputedFontFamilies": true
+  },
+  "limitations": [
+    "Changes remain in the assigned worktree; original-checkout integration is a separate scope decision.",
+    "Direct-file, offline, print, import/reset and downloads were not repeated for this typography correction."
+  ],
+  "next_steps": [
+    "Review the refreshed working-copy preview at http://localhost:4178/standalone.html#/tool/nasa-sp8072."
+  ]
+}

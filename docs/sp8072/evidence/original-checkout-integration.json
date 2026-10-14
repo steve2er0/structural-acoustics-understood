@@ -1,0 +1,1854 @@
+{
+  "createdUTC": "2026-10-14T04:06:05.795097+00:00",
+  "workingFolder": "/Users/stephenwells/Documents/DevOps/structural-acoustics-understood",
+  "sourceWorktree": "/Users/stephenwells/Documents/DevOps/chief-of-staff/runtime/worktrees/3abdf1ce-f164-497b-bbf8-8e9512cc0c51",
+  "backup": "/Users/stephenwells/Documents/DevOps/structural-acoustics-understood/tmp/sp8072-integration/20261014T040208Z",
+  "modifiedExistingFiles": [
+    "docs/sp8072/README.md",
+    "docs/sp8072/VALIDATION.md",
+    "js/sp8072-tool.js",
+    "scripts/sp8072-preview.mjs",
+    "service-worker.js",
+    "standalone.html",
+    "styles.css",
+    "tests/calculators.test.mjs",
+    "tests/sp8072.test.mjs"
+  ],
+  "addedFiles": [
+    "scripts/sp8072-verify-style.mjs",
+    "docs/sp8072/evidence/engine-restyle-browser-checks.json",
+    "docs/sp8072/evidence/engine-restyle-build-checks.json",
+    "docs/sp8072/evidence/engine-restyle-tests.txt",
+    "docs/sp8072/evidence/engine-restyled-desktop.jpg",
+    "docs/sp8072/evidence/engine-restyled-light.jpg",
+    "docs/sp8072/evidence/engine-restyled-mobile-levels.jpg",
+    "docs/sp8072/evidence/engine-restyled-mobile.jpg",
+    "docs/sp8072/evidence/engine-typography-browser-checks.json",
+    "docs/sp8072/evidence/engine-typography-build-checks.json",
+    "docs/sp8072/evidence/engine-typography-desktop.jpg",
+    "docs/sp8072/evidence/engine-typography-light.jpg",
+    "docs/sp8072/evidence/engine-typography-mobile.jpg",
+    "docs/sp8072/evidence/engine-typography-tests.txt",
+    "docs/sp8072/style-completion-report.json",
+    "docs/sp8072/typography-completion-report.json"
+  ],
+  "checks": {
+    "applicationTests": {
+      "passed": 165,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0
+    },
+    "standalone": {
+      "firstSha256": "d818d69935e24b49bf1773c929c621b23a0123ad96c03f6ff5134e7205e8576b",
+      "secondSha256": "d818d69935e24b49bf1773c929c621b23a0123ad96c03f6ff5134e7205e8576b",
+      "deterministic": true
+    },
+    "servedStandaloneSha256": "d818d69935e24b49bf1773c929c621b23a0123ad96c03f6ff5134e7205e8576b",
+    "servingUrl": "http://localhost:4173/standalone.html#/tool/nasa-sp8072",
+    "entireSavedCalculationUnchanged": true,
+    "numericalModelAndDataUnchanged": true,
+    "otherExistingFilesPreserved": 448,
+    "preservedFiles": [
+      {
+        "file": ".gitignore",
+        "sha256": "3562686c2dfa47d5ec144891636fc794f7448f8149d5766bf7614e1d9c9847e4"
+      },
+      {
+        "file": "BUILD_REPORT.md",
+        "sha256": "0ec86227ab488bec37938c2790318dffda039af810be44fc3157758fdae54ff2"
+      },
+      {
+        "file": "README.md",
+        "sha256": "e7208d9efe82bc13a7622876ec934714c82d500da3fe80ec0307d884cddf31e5"
+      },
+      {
+        "file": "REFERENCE_PARITY.md",
+        "sha256": "adb5211297cf0bba71c61331c7052aca923dd69b11b0fc1fcbe7a1868e6e5d54"
+      },
+      {
+        "file": "assets/favicon.svg",
+        "sha256": "22265e40cdb0c0e6e1c55f114c4b215302d42aef8128259751d0389872ac2085"
+      },
+      {
+        "file": "assets/homepage/launch-vehicle-cutaway.png",
+        "sha256": "731e78dee0fdb4af55828b2651ae9ebf9675bf795c1ee6427e422330ab66b1eb"
+      },
+      {
+        "file": "design/codex-structural-acoustics-homepage-redesign.md",
+        "sha256": "6e5ae436b37eac1d85ed9770b608e8f29d569dfe08b50e8351f519565867f4e2"
+      },
+      {
+        "file": "design/structural-acoustics-homepage-reference.png",
+        "sha256": "8709ba5ef72f8d2d75773dcd7543f77e37d4467e86c57f2f13d9d2bb069babdf"
+      },
+      {
+        "file": "docs/engineering-tool-design-guidelines/AGENT-HANDOFF.md",
+        "sha256": "1cf19f6e5a2f819388b39758b4cd842a793ce9abdc93ada6ba624409d46e723f"
+      },
+      {
+        "file": "docs/engineering-tool-design-guidelines/COMPONENT-INVENTORY.md",
+        "sha256": "482b44cd1a8e7cb99564e052e859f98421a3db818f6b506aaf23b9615841ad28"
+      },
+      {
+        "file": "docs/engineering-tool-design-guidelines/MIGRATION-MATRIX.md",
+        "sha256": "fc3251b17bd42dfacdab448b98a8cf57bc6d1342489255f0640de6fbd9d07c04"
+      },
+      {
+        "file": "docs/engineering-tool-design-guidelines/README.md",
+        "sha256": "798eeda5a562554af847fcae02544485ec65af7ee42abcbc0d74098b9a2871f4"
+      },
+      {
+        "file": "docs/engineering-tool-design-guidelines/assets/sorbothane-explorer-desktop.png",
+        "sha256": "955d133535fe90fe3785c43e3ce0070044eaa9bf541b1106dddb6fe704455b60"
+      },
+      {
+        "file": "docs/engineering-tool-design-guidelines/assets/sorbothane-isolator-desktop.png",
+        "sha256": "22d149a42f700d83c6295d3e9b836ebadc0ed50a6b8e54143f315b5080d0ca7a"
+      },
+      {
+        "file": "docs/engineering-tool-design-guidelines/assets/sorbothane-overview-desktop.png",
+        "sha256": "447ccc3760e4dca634d3ff12a3e0e7dc59ae45a6ba9befd901691be3334dfa40"
+      },
+      {
+        "file": "docs/engineering-tool-design-guidelines/assets/sorbothane-overview-mobile.png",
+        "sha256": "e325a739cc8f90add39aaa47a74c08f90c174a88730407cfaf28b1e93f88e2c6"
+      },
+      {
+        "file": "docs/engineering-tool-design-guidelines/assets/sorbothane-workbench-mobile.png",
+        "sha256": "b142d245b14fe6d8f71d1ec167ead586aeea6ad78f831ed8e9a9603aa458bd75"
+      },
+      {
+        "file": "docs/sorbothane-isolation/README.md",
+        "sha256": "f7e09f89e12a391ca73e4854d93d00da3647d6f387603399e4685ae0ec5f0d4d"
+      },
+      {
+        "file": "docs/sp8072/CONTROLS.md",
+        "sha256": "e767bfdf8e404c8e87ae93cae1401c24ed44f01492ae1cfc87fadbcacd9fc36e"
+      },
+      {
+        "file": "docs/sp8072/GIT-DELIVERY.md",
+        "sha256": "729ba2c193b0ff6dd22a333485e6cc135f96fd5f25831a9fa8ec6578363e4827"
+      },
+      {
+        "file": "docs/sp8072/completion-report.json",
+        "sha256": "baf4495cd9b2348285956faf4eb45678dcc000edb9732549ab1c111017f867ac"
+      },
+      {
+        "file": "docs/sp8072/evidence/artifact-checks.json",
+        "sha256": "4060aec22cdc4218dcd4121c643a8d768f179b0efb8c7194d00d8bc08ba19acc"
+      },
+      {
+        "file": "docs/sp8072/evidence/browser-checks.json",
+        "sha256": "b3e8c716c9e291e1c443cc2f0bc74389cbcdd9b477f322d15a4657a1502e06fd"
+      },
+      {
+        "file": "docs/sp8072/evidence/build-checks.json",
+        "sha256": "82a77422fae8cca603dbc5bae63f8cbc2cf46c20e3d8bda9e2a643c148fb3258"
+      },
+      {
+        "file": "docs/sp8072/evidence/download-checks.json",
+        "sha256": "e253f7b3af2cba9cbf74e4f9a46489cbd3da4478d7e303d28a57ef185e6cb8d2"
+      },
+      {
+        "file": "docs/sp8072/evidence/engine-measurements-desktop.jpg",
+        "sha256": "dffe6f3a8ac38e7ddfd8ec4ec8314bcc4aa556549aa00cd975421f24f4580760"
+      },
+      {
+        "file": "docs/sp8072/evidence/engine-measurements-mobile-levels.jpg",
+        "sha256": "66b91712fa19fd2e4688e701f7508dea21f6baec576370415f76cbfa4cf92b1c"
+      },
+      {
+        "file": "docs/sp8072/evidence/engine-measurements-mobile.jpg",
+        "sha256": "6298c1718de0e543fb88602b2ef0ea0f758461241d36b9c54f9f9874c7a693d4"
+      },
+      {
+        "file": "docs/sp8072/evidence/engine-measurements-offline.jpg",
+        "sha256": "69b190a2d6973cbabedae2075f083eb37d08d7cae173d429c1175aee00555beb"
+      },
+      {
+        "file": "docs/sp8072/evidence/engine-measurements-spectrum.jpg",
+        "sha256": "c225f220c3ce591a04eb45cc1a2be675e14c7cb62c512a87cdbb5e764d4dc2ab"
+      },
+      {
+        "file": "docs/sp8072/evidence/engine-measurements-standalone.jpg",
+        "sha256": "2965ad0e55fe1b7d6b9110c57bdb9ab2d72f5c7146da3aa03182fff20a96f65a"
+      },
+      {
+        "file": "docs/sp8072/evidence/engine-preview-recovery.jpg",
+        "sha256": "b5804a649b29ffc47032d8051bb61105cc841ec13981819759170abca9622961"
+      },
+      {
+        "file": "docs/sp8072/evidence/final-followup-checks.json",
+        "sha256": "2767941c573398b499eb48334b9fbbd6b8c4c38c08a77689afb29edbc05b5481"
+      },
+      {
+        "file": "docs/sp8072/evidence/final-pressure-label-check.json",
+        "sha256": "8b41bac70773f80067ed55d5a58b59a09313693611d9108926f773bae15ceb98"
+      },
+      {
+        "file": "docs/sp8072/evidence/final-pressure-label.png",
+        "sha256": "bdf997d0297069a30141d7b2e253a274d6f95e4a957cae01aada7c7a40b58681"
+      },
+      {
+        "file": "docs/sp8072/evidence/final-recovery-build-checks.json",
+        "sha256": "a14767533ebd8ab93bbf06430daacf41f7fcd7ca1f75868e9ccc64c87c94203a"
+      },
+      {
+        "file": "docs/sp8072/evidence/fresh-calculation-evidence.json",
+        "sha256": "3a381e4bb75b6c472d4519a03be0c59c78ecbd5ef5cda47f505132d03b702956"
+      },
+      {
+        "file": "docs/sp8072/evidence/fresh-export-checks.json",
+        "sha256": "e2dcea0037b1651f5d8ea061960073a891e8c1b4d3c6b6d7f40aac59f6b2fc5a"
+      },
+      {
+        "file": "docs/sp8072/evidence/fresh-report.txt",
+        "sha256": "51990bd6bbb67831e62d46a458a4473b07ceefb13bef2dd1d1e406d91e18b18d"
+      },
+      {
+        "file": "docs/sp8072/evidence/fresh-spectrum.csv",
+        "sha256": "45b933197807e064e5983a6f54d76f5f06ae6f730da36437c2dfa21170e98d6c"
+      },
+      {
+        "file": "docs/sp8072/evidence/fresh-spectrum.svg",
+        "sha256": "e9d4848066636a11a5fd818299dbe7cf40a714d591f8381aaa280ece3176a4a9"
+      },
+      {
+        "file": "docs/sp8072/evidence/fresh-study-export.json",
+        "sha256": "62f77ae70e104378cbbd123a62decb9e8357f4a1dd439c61b5024bbeb3337d18"
+      },
+      {
+        "file": "docs/sp8072/evidence/measurement-example-calculation.json",
+        "sha256": "19dba8060029886fa4cfaf747d7cb28591d98adefd531ebcebe6787885be6fa9"
+      },
+      {
+        "file": "docs/sp8072/evidence/measurement-example-report.txt",
+        "sha256": "32e8d4bddd08362a771102cc6752654b1a87977aeb4727d64d554836252012cb"
+      },
+      {
+        "file": "docs/sp8072/evidence/measurement-visualization-build-checks.json",
+        "sha256": "8f495f46f964420c5d0942e4df89b6e90e0c2b87c807e8305fdd305160128e43"
+      },
+      {
+        "file": "docs/sp8072/evidence/measurement-visualization-checks.json",
+        "sha256": "bc5fa2be237060e4447496f2f5a9f18c87123af5fecb333ea56109922e20631a"
+      },
+      {
+        "file": "docs/sp8072/evidence/measurement-visualization-tests.txt",
+        "sha256": "722389dbb52661b3ec82ac1459730b794ba85a2ae1f693e2cb8f14dfe3afebb4"
+      },
+      {
+        "file": "docs/sp8072/evidence/modular-desktop.png",
+        "sha256": "8ee8ab7a940606a2a5b3cf181cd412abc3778f88396bc53d4be108582c4cb416"
+      },
+      {
+        "file": "docs/sp8072/evidence/modular-final-geometry.png",
+        "sha256": "d28824dc069b41a3cf049ee074506088440ec322c8dbf602f8d33cf28cdb4bce"
+      },
+      {
+        "file": "docs/sp8072/evidence/modular-final-spectrum.png",
+        "sha256": "1b4c33f08f3495b64ee47bebaac6d12d23aba0be3c9805750dbab80b9a2e4767"
+      },
+      {
+        "file": "docs/sp8072/evidence/modular-mobile-geometry.png",
+        "sha256": "0413b56d1244693c8d310115c3bb7eab3bcf52b926e80f5beef89b7e8ec89577"
+      },
+      {
+        "file": "docs/sp8072/evidence/modular-mobile-spectrum.png",
+        "sha256": "67ba62aafbea792ca55e22702bf4e2207c008260db6127695d825011c2ea7d6a"
+      },
+      {
+        "file": "docs/sp8072/evidence/modular-mobile.png",
+        "sha256": "4f1414d79a54d97847e43e758e6b8769b55eadddc63602ac99eeb29229e9c397"
+      },
+      {
+        "file": "docs/sp8072/evidence/modular-wet-distributed.png",
+        "sha256": "2051009d89a42ff49cbf7b895e553befc1ff521e716772379444bffe0f80385d"
+      },
+      {
+        "file": "docs/sp8072/evidence/npm-test.log",
+        "sha256": "07c7848c19a158c637f3e2c1853d5665f22122c5951031c07c0398dcd9e1b710"
+      },
+      {
+        "file": "docs/sp8072/evidence/numerical-checks.json",
+        "sha256": "55863e58002f971055adc185471483888ab3803204573aac068f1889f9f0bb39"
+      },
+      {
+        "file": "docs/sp8072/evidence/preview-recovery-checks.json",
+        "sha256": "2443d3615851d6b4a80576557487f5b1e4233bb970174df96c101d6f1fe309e4"
+      },
+      {
+        "file": "docs/sp8072/evidence/recovered-distributed-study-export.json",
+        "sha256": "3cc995a36ce19a8783749907b6aaaef522bdf98c9fab05225d36c8b80715f14b"
+      },
+      {
+        "file": "docs/sp8072/evidence/recovered-study-export.json",
+        "sha256": "254f07b1545af4704302ab6dd75bce3ca1009ebe5e32e8b01e1ab2906e390488"
+      },
+      {
+        "file": "docs/sp8072/evidence/resume-checks.json",
+        "sha256": "ddc1834ae92494ef4250d7608a1eb4364f8abbb8cc57d44c802a0e054f24db2b"
+      },
+      {
+        "file": "docs/sp8072/evidence/resumed-mobile-geometry.png",
+        "sha256": "86874d892ad4926fecfcc0f4db355e1b51ad7374b9ebd7d4942cfd54191c0aa0"
+      },
+      {
+        "file": "docs/sp8072/example-study.json",
+        "sha256": "3ffc6263728b4a70b96dc37c31b6711dbcc53a16ef37071249d0f87028037c5a"
+      },
+      {
+        "file": "docs/sp8072/visualization-completion-report.json",
+        "sha256": "5624264c226d09177796d0970a1b9836c775797583c7bf038dc1d36303c0f76c"
+      },
+      {
+        "file": "experiences/electrodynamic-shaker/.gitignore",
+        "sha256": "61022f949eb49fe0ee5b774835be844845b3d71d9001f676d9ac82bd433e49a7"
+      },
+      {
+        "file": "experiences/electrodynamic-shaker/README.md",
+        "sha256": "5a62a0eabea03bcb057f0c1a20fe13751fc2679a369c3df014af6c8b5e18e39b"
+      },
+      {
+        "file": "experiences/electrodynamic-shaker/VALIDATION.md",
+        "sha256": "18298a2e38c3b5ca852507055a9fc4d2e72bde87617aec0fee5b2fb9f0c5f238"
+      },
+      {
+        "file": "experiences/electrodynamic-shaker/package.json",
+        "sha256": "1a11740615232b19260552774f6d294f7b7e8b0cb15d76398dd0b64b76c2369a"
+      },
+      {
+        "file": "experiences/electrodynamic-shaker/previews/cutaway-force.jpg",
+        "sha256": "aed25d31c6a1ac28329e1772286ae6eb0d67412989c5ca1a4398518ada647da4"
+      },
+      {
+        "file": "experiences/electrodynamic-shaker/previews/envelope.jpg",
+        "sha256": "16d4b1096335fd52f84e22c52969a61b2325848dd4ad1008eb466f5a6919a8c8"
+      },
+      {
+        "file": "experiences/electrodynamic-shaker/previews/initial-cutaway.jpg",
+        "sha256": "5144a6c5e05b942cb7c476ef90967a13904f1a1ebc8b5556e35c9e8f9d44faa4"
+      },
+      {
+        "file": "experiences/electrodynamic-shaker/previews/test-lab-desktop.jpg",
+        "sha256": "6f84c7bbdf155322898b82501da3f049d35db9cf39ce8344dafa6ffcc0ae59d1"
+      },
+      {
+        "file": "experiences/electrodynamic-shaker/previews/test-lab-mobile.jpg",
+        "sha256": "04177c9daef79388acce451a0c85dae6de0449a3e828de579da0a39524350a97"
+      },
+      {
+        "file": "experiences/electrodynamic-shaker/public/favicon.svg",
+        "sha256": "29b38848ea57facbda87110dfd941bfb19ba4ea777f3f32aa88c3b564d365ed0"
+      },
+      {
+        "file": "experiences/flight-response/Flight-Response.html",
+        "sha256": "62a6f6b3ba14b89bf46b349312b968dd65cb03e92945891d74f7589747eccc80"
+      },
+      {
+        "file": "experiences/flight-response/README.md",
+        "sha256": "88b060f5adaa31a8ca8364b770c837614d4582b50b3aa8646d8f5c2255c5e1b8"
+      },
+      {
+        "file": "experiences/flight-response/app.mjs",
+        "sha256": "c8c8be4941b5e7072a32817afde34f7650f308f4f47db2418a8be162b3fdf5c5"
+      },
+      {
+        "file": "experiences/flight-response/docs/ALGORITHM.md",
+        "sha256": "80cb4f0b17910b812aa9aaf1ae7fa400e2cae37784a1bfea0478cd63a6668326"
+      },
+      {
+        "file": "experiences/flight-response/docs/INTEGRATION.md",
+        "sha256": "5030cb4ffb111a75919da15fa26682f47b81f1e66f338d68c5a34ddbd0add9e4"
+      },
+      {
+        "file": "experiences/flight-response/docs/VALIDATION.md",
+        "sha256": "5db2281bd09c69b83328f3b31af0df7bc2f722e5e6b647340a924b0e7698ba0c"
+      },
+      {
+        "file": "experiences/flight-response/examples/demo-precomputed-ers-g.csv",
+        "sha256": "67b2e11a843250f8bfc81bae192f16ec63c4e2aa5df74b92b9f7074f963308f5"
+      },
+      {
+        "file": "experiences/flight-response/examples/demo-specified-psd-g.csv",
+        "sha256": "1acb508a42c7eb53443053d7759c5d706e245fb8831d741b5cdc819e990a331c"
+      },
+      {
+        "file": "experiences/flight-response/examples/invalid-flight.csv",
+        "sha256": "acf0a5762d614b0b30d65937f64337941915b7a4d7b8e01a2cee1acd73030c8f"
+      },
+      {
+        "file": "experiences/flight-response/examples/invalid-zero-ers.csv",
+        "sha256": "3f72a1ca3985b2070251b9b827c9a6ec0e403f77ff08ccb45dc4b02ad0f55611"
+      },
+      {
+        "file": "experiences/flight-response/examples/synthetic-flight-g.csv",
+        "sha256": "89d6b7976ea10daef2e04b99bd9b1f1fbc8775d1a8dd738e0e29083a421d05a1"
+      },
+      {
+        "file": "experiences/flight-response/index.html",
+        "sha256": "87d00957a1fb6444509b02cf3821b58acafe10b7cdf8d6643b2c6c2cf1df326f"
+      },
+      {
+        "file": "experiences/flight-response/physics.mjs",
+        "sha256": "4125b6f4a7e4af850e513f394ab4557a120a37813e4b9850641f4764057ebac6"
+      },
+      {
+        "file": "experiences/flight-response/serve.mjs",
+        "sha256": "f02f27bad9efd246642cd3ef6d7c2159446e9ea8f40c3194dbe2c539a4d452f4"
+      },
+      {
+        "file": "experiences/flight-response/style.css",
+        "sha256": "f1a352c5a3321f538938a55a7d20614bb0984a491a2fe91cc04f421865ce24ba"
+      },
+      {
+        "file": "experiences/flight-response/tests/independent-check.py",
+        "sha256": "789769baa22a9733d8a0d7168190d52d611a89dc0f132921ff3f2ab2f963110d"
+      },
+      {
+        "file": "experiences/flight-response/tests/large-file-check.mjs",
+        "sha256": "e2cb8febf6cff3bee3128f241b7e6b0d83624e21c296b79dca590590d109725d"
+      },
+      {
+        "file": "experiences/flight-response/tests/offline-bundle.test.mjs",
+        "sha256": "0c3694975769608e58a6a2b36808bee5c1a94b2d425dd550383cd0dd557385c4"
+      },
+      {
+        "file": "experiences/flight-response/tests/physics.test.mjs",
+        "sha256": "2f145b15d5893cc3a160967e4fccdee433bde0937e4d751e0646ede10bad2411"
+      },
+      {
+        "file": "experiences/flight-response/tests/stream.test.mjs",
+        "sha256": "a707678196629432369bf36fef2f00dabb88f7f4028e5f792144e0312210b370"
+      },
+      {
+        "file": "experiences/flight-response/tests/worker-bridge.mjs",
+        "sha256": "da2f38b5c35ddfeb7e175056de4e9ffc6e611175b4a4ea3303247c0e363b54da"
+      },
+      {
+        "file": "experiences/flight-response/tests/worker.test.mjs",
+        "sha256": "1d40e3d40306a4e1dfe28c2265273517b42173253846e8a21cdfba82d0441ac9"
+      },
+      {
+        "file": "experiences/flight-response/worker.mjs",
+        "sha256": "b397df3cb0b20dc51cc72c30fd4d3ee87269613541b0626233b1fcc712f87e6b"
+      },
+      {
+        "file": "experiences/vibration-isolation/.gitignore",
+        "sha256": "61022f949eb49fe0ee5b774835be844845b3d71d9001f676d9ac82bd433e49a7"
+      },
+      {
+        "file": "experiences/vibration-isolation/README.md",
+        "sha256": "3cb12d5ec70ebabd569210f53a6e380939fd927122fdbfda15881c354866bd28"
+      },
+      {
+        "file": "experiences/vibration-isolation/VALIDATION.md",
+        "sha256": "88cc635ad012f3b11125dc73ef46817256658f2134b7181e1e916d775b0326b4"
+      },
+      {
+        "file": "experiences/vibration-isolation/package.json",
+        "sha256": "c93e27f0a4e1cf38f0a84dd3a42b86d562da524aee3d1be6929f97299f380d30"
+      },
+      {
+        "file": "experiences/vibration-isolation/previews/corrected-lab-mobile.jpg",
+        "sha256": "816464afc9ad5d3de788f43ccb6a6c580b79e714ebcd59f9d2604c9ab8ce0523"
+      },
+      {
+        "file": "experiences/vibration-isolation/previews/corrected-lab-proportions.jpg",
+        "sha256": "b6ac27c23a7971b817022f0058a93636c78e0bebf4fad86ec238a0a490019ec9"
+      },
+      {
+        "file": "experiences/vibration-isolation/previews/larger-shaker-table.png",
+        "sha256": "df72217f65480e67779a9eac7bb7746e613a67697f86e716ce5450ba7fb802ef"
+      },
+      {
+        "file": "experiences/vibration-isolation/previews/mobile.png",
+        "sha256": "d3225e12eae3bc1c491feeb208156896ab3c8e92bcaf7de0a51830c325d0df9a"
+      },
+      {
+        "file": "experiences/vibration-isolation/previews/resonance-desktop.png",
+        "sha256": "c4c16fdec1358d4c3ef7c6c6cf5288c2cbd5b34db5344a1e95f9fe57085d4bba"
+      },
+      {
+        "file": "experiences/vibration-isolation/previews/shaker-generator-desktop.png",
+        "sha256": "dd1af5771d22521d9e88009bfc51bad9062f198845ea675109394ab2aa61db05"
+      },
+      {
+        "file": "experiences/vibration-isolation/previews/system-desktop.png",
+        "sha256": "59a6f1356935547f6aada92bf2148aad5d70f479e89fb45b2a1b0f320d8d6fd4"
+      },
+      {
+        "file": "experiences/vibration-isolation/previews/test-lab-desktop.jpg",
+        "sha256": "67827696899b4c4d4f87e2b9bf0edc09506dd0d4109123bc3db7aa4541307ea1"
+      },
+      {
+        "file": "experiences/vibration-isolation/previews/test-lab-mobile.jpg",
+        "sha256": "734b4a3b7594c2784366fde128fb9049247bfcd3fc4334b42819731eddb68843"
+      },
+      {
+        "file": "experiences/vibration-isolation/previews/test-lab-wide.jpg",
+        "sha256": "d4fcb6a800f9960a9e3589a4c240a2c1df3e56707c626eed7b7bcfc7108308e0"
+      },
+      {
+        "file": "experiences/vibration-isolation/public/favicon.svg",
+        "sha256": "29b38848ea57facbda87110dfd941bfb19ba4ea777f3f32aa88c3b564d365ed0"
+      },
+      {
+        "file": "experiences/vibration-lab/.gitattributes",
+        "sha256": "c83c491ff311997942ac762b912865f48f5a2b257d78cbc531a50e999ba5119a"
+      },
+      {
+        "file": "experiences/vibration-lab/.gitignore",
+        "sha256": "61022f949eb49fe0ee5b774835be844845b3d71d9001f676d9ac82bd433e49a7"
+      },
+      {
+        "file": "experiences/vibration-lab/README.md",
+        "sha256": "a142223f50097c6be4a909453bb9bdde22bc3259d69865daa4bbb0978a457e3a"
+      },
+      {
+        "file": "experiences/vibration-lab/VALIDATION.md",
+        "sha256": "0c11edffbde6720b249d8033df33277fae022cccadf91a39c270b8e793fe5df6"
+      },
+      {
+        "file": "experiences/vibration-lab/docs/ACCELEROMETER_MODEL.md",
+        "sha256": "617be1e206523ea2a87f79a275b514eca74c9343a614dbbe537a3e39bdf390d5"
+      },
+      {
+        "file": "experiences/vibration-lab/docs/ARCHITECTURE.md",
+        "sha256": "957e9976eb24c1f69b03e0147a622dd64546448866df0c506cc93d57d6774438"
+      },
+      {
+        "file": "experiences/vibration-lab/docs/CREATING_A_LAB.md",
+        "sha256": "097479f9dd3d762f66c6ea7222de91f1b588fa8f09ff26f9da86536fc54ac487"
+      },
+      {
+        "file": "experiences/vibration-lab/docs/CRYO_MODEL.md",
+        "sha256": "c96ed58cd1f1a711f2d59965a38f0db4d67cfb669b8d78f7beeeef0397efd2c9"
+      },
+      {
+        "file": "experiences/vibration-lab/docs/FALCON9_AUTOSEA_REFERENCE.json",
+        "sha256": "8d802336782763b8ef984b865d8a1b6942939dba584015209250f38fb960d3d3"
+      },
+      {
+        "file": "experiences/vibration-lab/docs/MODAL_MODEL.md",
+        "sha256": "a89c1c40e1c552e8b81e9c43371d0624fb04fe3547277b57a0017702dca94e96"
+      },
+      {
+        "file": "experiences/vibration-lab/docs/REFACTOR_PLAN.md",
+        "sha256": "5412fb76441c13315880f8b5589700d26af25535a7da46746cdff8af67774f6a"
+      },
+      {
+        "file": "experiences/vibration-lab/docs/RS25_MODEL.md",
+        "sha256": "74bb691a1392e7bc9c47730a1d76beb707ec1a8488c045711c93383103a30837"
+      },
+      {
+        "file": "experiences/vibration-lab/docs/SEA_MODEL.md",
+        "sha256": "9a1f8b8432f831d2b94bbd53977670b3a5940710ff9ad8f52aa08cb001a417cb"
+      },
+      {
+        "file": "experiences/vibration-lab/docs/TBL_MODEL.md",
+        "sha256": "fa28f51e2f501f9535eef2a54b87e3d2cfa953f41fe4c52e0742873fac261215"
+      },
+      {
+        "file": "experiences/vibration-lab/docs/VORTEX_MODEL.md",
+        "sha256": "f4f3c135b8ce632a13057a13d9af58874e73f66b4ff462d664f2ffa419cd57c2"
+      },
+      {
+        "file": "experiences/vibration-lab/index.html",
+        "sha256": "60a1bf80f85d3129d22f14d3b510664468e7ebddf0fbaaf738e55366335b456a"
+      },
+      {
+        "file": "experiences/vibration-lab/package-lock.json",
+        "sha256": "26a6d314ee7d3618cf1cc00a7dd60633c558d151fb4448abadafb9f3d5be929d"
+      },
+      {
+        "file": "experiences/vibration-lab/package.json",
+        "sha256": "044a940f32c32e207a4c1eb952a5da9625a2f88fb25711f074611d81b81ccc17"
+      },
+      {
+        "file": "experiences/vibration-lab/portable/README.txt",
+        "sha256": "ab9e9a403c46ea27ce3353f216d98374ffabc264225dc2011f34d3fc78cc7a29"
+      },
+      {
+        "file": "experiences/vibration-lab/portable/Vibration-Lab.html",
+        "sha256": "1afe8e5248359334e78d59ba753d6b5c6884b2dbe209127d2fd626d94864036e"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/accelerometer-cutaway.jpg",
+        "sha256": "06ec9af756271591f26b6f092e3158234277688f8b723f1a9a4a90fbe610dac0"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/accelerometer-mobile.jpg",
+        "sha256": "04190daa6ba75fd82fd41e09606a6096dc59109eebd077244933b57a6ce0963b"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/accelerometer-response.jpg",
+        "sha256": "09e6333ddd1f3bd3a59c97755abc0938a04df188968798d0d236229a96496622"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/cryo-desktop.png",
+        "sha256": "bd5f431cde6ba80c4db14d63936a9667782dbcf1f38798cd5888f46def049b38"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/cryo-equations-mobile.png",
+        "sha256": "ca80c62d4dee7635dc3fc45651607394bcc9812a4b30db6801a5f142b234a5d4"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/cryo-equations.png",
+        "sha256": "e71fe0b13f531b7564498bfcf8ec456b537ce37a1e0e53333d0bdea23737d934"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/cryo-fourier-m1-mobile.png",
+        "sha256": "c293b62e48d252153da9af5659262bb9042062117126089a7f42680078ada69a"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/cryo-fourier-mobile.jpg",
+        "sha256": "59e1892256232c87b3c7ba468fbd122f8ee9f3bf20cd5665f14211488dc6f36d"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/cryo-fourier-pressure.png",
+        "sha256": "0b3fcd5507f9282a801607cb04182708332c8defc9440e2700427c41f92512cf"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/cryo-fourier.jpg",
+        "sha256": "9d60bf10e4a83559a0231be3619464dc723a639cf3b22857cde76b4686d77c88"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/cryo-inspect-n12-mobile.png",
+        "sha256": "ef658887c1c9909575046b2fa9c909e75ffb215653b00b3000f4898069f045ac"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/cryo-inspect-n12.png",
+        "sha256": "cf4d4471d7b80bcab8d9a163b59e7814da2ccaa6a73e244d7ae424cebde4d80c"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/cryo-mobile.png",
+        "sha256": "de814b65fca351c6187bd03dbc0dfd2f13c347fe291f852428ef2f2e11245081"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/cryo-slosh-mobile.png",
+        "sha256": "8291cb65b187ac32974757197193a6d45332cf18b257cf88ad6d02137ae820a3"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/cryo-tracking-mobile.png",
+        "sha256": "b121e71bd53c70aa95b03cfc77a9734f4fb45904cec63bf143097805f022396a"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/cryo-tracking.png",
+        "sha256": "b38ec73df65f761777581e2e5bbe304aeacecca8309ee764d202dced154407b7"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/home-desktop.jpg",
+        "sha256": "91e570d3f22767aadae9999aaede2220ea0cd0c6a96c5aba9ea80d52bb4051b0"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/home-labs.jpg",
+        "sha256": "7127c8743c7dd49aff9f305a12c3df90086330f725861769320becbe1eb735b2"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/home-mobile.jpg",
+        "sha256": "a57e51de197fa38e7d00d986a965fc0c83b2448aeae307102fdb6e5d26eb7ba7"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/isolation-desktop.jpg",
+        "sha256": "dca7d822122fcdfd7919cd6f567e96aeeee745d405d505144b5cd922814bd3e6"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/isolation-mobile.jpg",
+        "sha256": "d62a32858e7bf918b85064343e08223989dc6379fceac2b7f5fc995f9baefb24"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/modal-desktop.jpg",
+        "sha256": "4e59657c1ec1f7bf309782afd2494cd105c7a7622d17ae7c6b0d7624e9d0c990"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/modal-mobile.jpg",
+        "sha256": "9218efdfca44a3c501f3fc470594ec4bba00a82422e2067ae7e386126d9fadd8"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/modal-placement.jpg",
+        "sha256": "0c599729fe8b5e4a1cfb3a5b5ee76eabe52eeb3916ffa7b7e10ff6cbe05bd4eb"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/modal-spectra.jpg",
+        "sha256": "7b664969ec744837af08af827ba5288ee006f570916c8c9747c47f44d329bdf9"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/portable-modal.png",
+        "sha256": "db8452e1d8e07701c84c991f0609ea5a693fa294996681ac65039e30e54dacd2"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/rs25-cavitation-closeup-mobile.png",
+        "sha256": "622a1125d850201a04d5b1753982419fa4eec49d9c150c9da6b9bc2214db571e"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/rs25-cavitation-closeup.png",
+        "sha256": "42489341a4609eb0cf842b3e0c6e76986d81bde7842564b7b4e81f863662c8e6"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/rs25-cutaway.jpg",
+        "sha256": "8bdde65ade749bb6a376dc6f3c00f6866d23da8d7aa96758bfabcc1475ba93d6"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/rs25-cycle.jpg",
+        "sha256": "9382d81df010b4d7aabec664055b089234f7d7e0813c169cbb38a6192a821445"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/rs25-longitudinal-pump-cutaway.png",
+        "sha256": "267807ebc450797c0fab0f6e9f9710e8bfa5bf3ca06006394c510d1a5f3b7724"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/rs25-longitudinal-pumps.png",
+        "sha256": "fdf42fc9b3b319a9cb80bc947e5999192969d8c655085e3cfd7eb1c098c07850"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/rs25-lpftp-dynamics.png",
+        "sha256": "1388b288a9d06c8f78e5c8bc308dccb2051c667928a87ddc34ece0e2af7c5a4b"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/rs25-lpftp-mobile.png",
+        "sha256": "8cb1e544a16a876422498fb9f93720681f2e1354e0128dbce394a428b445fab2"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/rs25-mobile.jpg",
+        "sha256": "a49545c4f2d1ca777d5c9f7c7a861d620136581ab9e7342924dc02174684e391"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/rs25-photo-guided-engine.jpg",
+        "sha256": "ea19be85b0d5203fffb4b2768b54f2708abc5906e6b8a7127f4239f83870a8c8"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/rs25-plume-mobile.png",
+        "sha256": "d667e498538f2c71685472719051e82b24c5f9dd0d772b589624ea462a1af001"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/rs25-pogo-accumulator.jpg",
+        "sha256": "04d1c105a4212566765dbd1c654145f382f0c4542ee07e4d5e0e614348a33bb3"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/rs25-running.jpg",
+        "sha256": "c922bbc9f5d8ec35b17dc7454dd2e4a48681f6d9e41f9d33db1e8165923ba39e"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/rs25-shock-diamonds.jpg",
+        "sha256": "69abb0161d1b36dbd294941fd5e2ec5c1734ccd8d4e5b8e75f13c982a418b847"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/sea-buildup.jpg",
+        "sha256": "d9bf40b4bd4d04b15d15feb5d39b4aad85a4878f6c1fdc3f097b0e14899d0a53"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/sea-equal-energy.jpg",
+        "sha256": "2e37842f53f5e7b21edb11bd86c3ef290494148c3a04ae7f4812a63cdf1df0c5"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/sea-falcon9-cavity.png",
+        "sha256": "1cffd9628b852c70b0e80f9b9003ae3a01cde41791732e3e4fab72eff2715eb4"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/sea-falcon9-mobile.png",
+        "sha256": "c4bb5e0abc528fd88e17ca1caf3e41a4e40b68a861bf576d55faa06a5e1d2bd3"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/sea-falcon9.png",
+        "sha256": "02d4d293bca5f2ab6b20a967619dc1b405890172224ff838219c37a2c3c68027"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/sea-mobile.jpg",
+        "sha256": "b199cd4616bb78da0f555a402394ec3e7f07c2c21a091b3e1badaaf095be535d"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/shaker-envelope.jpg",
+        "sha256": "b114d8bd25157e32a39e24989768c7789013a308d033b0caafe53c20039cd5f4"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/shaker-mobile.jpg",
+        "sha256": "5736ed2de00e3c9806f99fd9b986c1234ea226e718e185eb0d05d583d0fde476"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/tbl-desktop.png",
+        "sha256": "d76a737cdd757babbb1757280ba0484f75bfbedbe51ee15f02e114112483ba7f"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/tbl-mobile.png",
+        "sha256": "b9a6ba47bc6931970f3eb7c4fa865131bb771df7725c762f4c835c350681c6a7"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/tbl-response-mobile.png",
+        "sha256": "93b08bc183909d45a237d892c0d328ebfb40a41f41d8be2488ece84a6f122f64"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/template-mobile.jpg",
+        "sha256": "5b88ad6caaf7f6e204454d27e9a82ddb959d7b62555b0c03e394b24e00873a9f"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/three-labs.jpg",
+        "sha256": "3ddc9bddaf27f53a6db6ef5c52746d77fa5c1f4fc14349278edce40d04cbba4e"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/vortex-cross-section.png",
+        "sha256": "4b315cda9c350696f96f407573bae5d9de24c69e462343c0def3e491b28091f5"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/vortex-harmonic-mobile.png",
+        "sha256": "3e14464826ae642cf9afe20ede2c722c0ff367d44818e95033662c38ebe01fb8"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/vortex-harmonic-spectrum.png",
+        "sha256": "efcf72be80a95493334fa8bdea8885b07a9a9d3f2633f68f11380ab16a524ddd"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/vortex-mobile.png",
+        "sha256": "f683d034e3f677a1cfa0711a33598fb5360af3b244b6a072bced5d17fdeb2b2b"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/vortex-overview.png",
+        "sha256": "f5cdba50b5848f06c26a178bf79a1b2c2965b0ad918a3c0eea9dd4fe18174ac2"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/vortex-pressure-attachment.png",
+        "sha256": "8e0df51e4131b855762517afa84035179b2fb459913b58538bb33d088e26a6f7"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/vortex-pressure-map.png",
+        "sha256": "0700aefa8b265ac2e69544ab0ff9a514598b14331469a02369e67d055f5bc577"
+      },
+      {
+        "file": "experiences/vibration-lab/previews/vortex-pressure-mobile.png",
+        "sha256": "bf04886987a3eb5acaf7fac1203877e1b2bc063a043f902e52d75acfcf63b236"
+      },
+      {
+        "file": "experiences/vibration-lab/scripts/build-portable.mjs",
+        "sha256": "2b19908ec9c0709e69d78089a45f35366162c9afb51feff8ebd82029ff3b7a68"
+      },
+      {
+        "file": "experiences/vibration-lab/scripts/generate-modal-plate.py",
+        "sha256": "44b0edd49a0a87685058f3fd850cb8fd9ae15bc14dfe24448c3995d344946052"
+      },
+      {
+        "file": "experiences/vibration-lab/src/app/App.tsx",
+        "sha256": "d92fa7c5649362036c3d9df965f47d0a692af996c0f8303751412eb0899b39ff"
+      },
+      {
+        "file": "experiences/vibration-lab/src/app/Home.tsx",
+        "sha256": "1486dccabfcc8211421da0595f2eb9b3de8626879936626f32faeb8e3d5202fd"
+      },
+      {
+        "file": "experiences/vibration-lab/src/app/Preview.tsx",
+        "sha256": "6b45939fc0cacd096b2f912c0f0e31d430b8bb66934653a6e10b891d1d0695cc"
+      },
+      {
+        "file": "experiences/vibration-lab/src/app/labs.ts",
+        "sha256": "e192731842c79a25b5fcfc5df6647e27973409bddfebdcf025d5917f880f4ebc"
+      },
+      {
+        "file": "experiences/vibration-lab/src/app/route-location.test.ts",
+        "sha256": "6da44529a688134dc1104fca6e8eb0e1cc19fe7212a18170e004fbca5ac484ea"
+      },
+      {
+        "file": "experiences/vibration-lab/src/app/route-location.ts",
+        "sha256": "9d52728dc47b3ebad26ec094c432dafc9c4f9a447e2b88416516954d1068ca7b"
+      },
+      {
+        "file": "experiences/vibration-lab/src/app/router.tsx",
+        "sha256": "031fb5a0e1454440b307d6bcca60a675481d6febbaf9b28bcecd289e65d53be7"
+      },
+      {
+        "file": "experiences/vibration-lab/src/components/Controls.tsx",
+        "sha256": "0b48eda2a976918c5425821a8cdb3708d5f6a7a26ca4fc637311e5add978b0d2"
+      },
+      {
+        "file": "experiences/vibration-lab/src/components/LabNavigation.tsx",
+        "sha256": "1bb008f41dbf4c9a6122397e0080948c142de7ae83ecfa809a7b3395acd28990"
+      },
+      {
+        "file": "experiences/vibration-lab/src/components/TourTransport.tsx",
+        "sha256": "4bf8d590fc8a42cec19cc174088aab4511f0d1f7e59c977a8e505339d03c9832"
+      },
+      {
+        "file": "experiences/vibration-lab/src/design/platform.css",
+        "sha256": "38855444b232956f28cdfbfdfc788e973075465b310ff1d25d7c1688968ec472"
+      },
+      {
+        "file": "experiences/vibration-lab/src/dev/LabTemplate.tsx",
+        "sha256": "4177a6d940034b4e6bd9d9726620235ffc2e01ae6ece1d7492c4309adc20e933"
+      },
+      {
+        "file": "experiences/vibration-lab/src/engine/Camera.tsx",
+        "sha256": "14846461b2e462c5fb133465e9e7e0ba789ea8115c6a8de94f0a399b4cf9ef43"
+      },
+      {
+        "file": "experiences/vibration-lab/src/engine/EngineeringVector.tsx",
+        "sha256": "573dba3d18d1b357380f7a1e52b907a5156785c250b637705d735a61f34a6334"
+      },
+      {
+        "file": "experiences/vibration-lab/src/engine/Plot.tsx",
+        "sha256": "c1e5a4311248fa565405586c646a387ba20806483d36061a21c7b870d81c37b5"
+      },
+      {
+        "file": "experiences/vibration-lab/src/engine/Scene.tsx",
+        "sha256": "01d82f20dc2c3e31a12749856e2ee17861320bd5c8d2625f98f19e2a19428e42"
+      },
+      {
+        "file": "experiences/vibration-lab/src/engine/annotations.ts",
+        "sha256": "6c3a086d4efc93e16ef41d457925d040e39398096e082cad9803dc4b9135b4d3"
+      },
+      {
+        "file": "experiences/vibration-lab/src/engine/highlight.ts",
+        "sha256": "c734b923b9240254dd536a59dc9161488cb8f6a2ea6dfbd80fff55745f3b2d6e"
+      },
+      {
+        "file": "experiences/vibration-lab/src/engine/platform.test.ts",
+        "sha256": "00a0d7ab715af0f1dfad240d2ad15190484f8f717b1a63dd69e554602b0193c0"
+      },
+      {
+        "file": "experiences/vibration-lab/src/engine/scaling.ts",
+        "sha256": "f564814a09b3c6e486cc74aaa2ea8347f74f37af8c2980e3db15b063f2d47801"
+      },
+      {
+        "file": "experiences/vibration-lab/src/engine/timeline.ts",
+        "sha256": "34c4a51fde2d416952107dbcdbe98c56ebb373ff312c27d1e86aee8cfe5e5675"
+      },
+      {
+        "file": "experiences/vibration-lab/src/engine/units.ts",
+        "sha256": "73ca594e482b275358970f71acb2b7c435ee6269b4da679a0e93967cc8e8abce"
+      },
+      {
+        "file": "experiences/vibration-lab/src/engine/useGuidedTour.ts",
+        "sha256": "1caf4ce950632d4a111553a6e73e7ef8ecc21defe2fba60c21d6ee4dd3b50886"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/accelerometer/App.tsx",
+        "sha256": "72ec73db4f3acc4a3096e773688657d24b4f163bbb088c020e44d15039bac41b"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/accelerometer/Notes.tsx",
+        "sha256": "65fe9be8f0252ad3ea20ecc475086160edb77b170f0f77f608e0ca8f4a7d2dbd"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/accelerometer/Plots.tsx",
+        "sha256": "a3c0ba73ab16b738c2c8a3af03fc291798354103a78f832da710f470c929b2e2"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/accelerometer/Scene.tsx",
+        "sha256": "88c4bcf80a1b0d2e3a01cf7aea24a61de67f0c1f1cde6b920539b07662501bec"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/accelerometer/Sensor.tsx",
+        "sha256": "9dd88cf65bfc541cad8d827a06e3dd033eccc563feb740bef6068435eceac96b"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/accelerometer/format.ts",
+        "sha256": "9c452f8fba15d1935fc5096cbc9c9edacfb47ca012311d8cf5464f9d185496fe"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/accelerometer/physics.test.ts",
+        "sha256": "686a9400392679b1b6090ff0e464f3775dd12fb491e510ca4a96cb18caed6520"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/accelerometer/physics.ts",
+        "sha256": "cbd1efae0f87523d0dbb0bd5daa4a5f71c5edd607bfe63044f8f7ef67a15b0e0"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/accelerometer/style.css",
+        "sha256": "bfe5f3095a538c9cb185fdf61e753c4c63118e69c1706b1f90405093354ac451"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/accelerometer/tour.ts",
+        "sha256": "b7d8d341b0eb43f9b154abc0d716c4e495b0ea083e907184393da3483dfcb857"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/cryo/App.tsx",
+        "sha256": "1292fbc2a0ccd67b2f230da0042e59066be4ee51888863b78c735528a7b3487f"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/cryo/Equations.tsx",
+        "sha256": "a891bf24814b369ef73e40366a10199fef55b48dc3827c34afff932180b00a42"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/cryo/FourierCoverage.tsx",
+        "sha256": "3354c1f0ab9e39f912dd401f89dfa2ed7267ce2e4662a5f9a9def8f9c437b17a"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/cryo/Notes.tsx",
+        "sha256": "c832ad8a94d7393bfdd46db75bf7fe190aeed84f7bdf5fb314890818a26ba17f"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/cryo/Plots.tsx",
+        "sha256": "e0567df2f0e940bc9eb09b4682e229b9cc403d772dafd5f6fc28b28aeef1d588"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/cryo/Scene.tsx",
+        "sha256": "ad5fbfe02ea33a35eaef38ec49ce308a923789a987f5427c6165f0ed371e9c51"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/cryo/SurfaceBoundaryComparison.tsx",
+        "sha256": "9b502363ca5942855270a48a0fc7d8d035206b3a658cf59e6ec1623ada6d71ff"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/cryo/SurfaceConvergence.tsx",
+        "sha256": "31391cd4131ba39a41d9724f7fc5bf297a84a3f12719180648d6261e19df2ec1"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/cryo/fourier.test.ts",
+        "sha256": "db9a6c8944dde69b05567b264adeafd8514f978b06c4a46ceccdec338280336c"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/cryo/physics.test.ts",
+        "sha256": "bd1b0d4472dea7ad69e3acafc348c265b11cd1b7baad9e4980b180fe503b4faf"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/cryo/physics.ts",
+        "sha256": "588a747baaed5cd83565c5f823684d437241e6ee6bc4a18b1fe8389ce635150a"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/cryo/sloshBasis.test.ts",
+        "sha256": "a8e593a74f7a61522c35d9e100ea438e35838806694a46875f792f363f1c35f5"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/cryo/sloshRoots.ts",
+        "sha256": "96b23532756295f9e474426046d9b8ee738d624907ff289adb26ea8e89ceca5f"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/cryo/style.css",
+        "sha256": "d3821508a9068501dfec01b3099f28f18462a826b801746580b499b6b70e7431"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/cryo/surface.test.ts",
+        "sha256": "d7bc963c65d34a8ae1229d96a03e77904d1d9e15fe64602e42f1d351fe19eb70"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/cryo/tour.ts",
+        "sha256": "cb7fa7979a273551b3d6d573056663a5f9c0601f9e7b488bd5af3cb8c265621d"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/isolation/App.tsx",
+        "sha256": "4f1eeb6c747710d024e3c9cbe6028fe9db0c37b7438f74b3dffd7618d48bd887"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/isolation/Curve.tsx",
+        "sha256": "4327a657ed9765b9c5b500310602187ad5a6bbbab0b8d8f559766248f9c08aaa"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/isolation/Generator.tsx",
+        "sha256": "a9cc8ea6ec84bdc1235a95d0e996013aa80822e67b137f68c95767d72815de89"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/isolation/Hardware.tsx",
+        "sha256": "a65519fad1a2d0ded792c0adf88b52b0f5c2c4a57f6f430e11799d447f45b073"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/isolation/Instruments.tsx",
+        "sha256": "77c3a6b949936f9af58eade73103d14ef64fac330c27590a7d59523f170c5961"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/isolation/Scene.tsx",
+        "sha256": "97d1e44e2326f503b6a9ae00d6193f01693fd5fe3e6da9158492bae2c48f8a44"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/isolation/TestLab.tsx",
+        "sha256": "7b210e30b88a93344b576f1866a6b0ccfc622c6a0f0e53d94a05588857480d84"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/isolation/physics.test.ts",
+        "sha256": "91563dfaacb065e12c9652eaf663d68a38c591b33b87e84088d81f141cc54cd0"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/isolation/physics.ts",
+        "sha256": "080b983af8c4071d0361411aca657f3e7fceb29a157dfb564f654296ff361b5e"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/isolation/scene-layout.ts",
+        "sha256": "712c6a49dbfae0167d6cfa5155ebdd4113174708a4766a9b919a18c6d6d59dea"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/isolation/state.ts",
+        "sha256": "4e4e907e1d70d02d7a32688a782922405333e646b4ce433a62bdb3bf95f43e03"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/isolation/style.css",
+        "sha256": "2448e0aa74efc0e433254cfcda96f51b49ff880ee97b3e49974f88abf512207a"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/isolation/tour.ts",
+        "sha256": "0d13c5e7c9f8de5a5c09c02778a983e16c186b0377ce2754fed8c2bc4004c1e7"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/isolation/visualization.ts",
+        "sha256": "3cd22485cbfb59fae797a1a19c55fe49fd978ddb84b5cb46ce45cada28f9e3ca"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/modal/App.tsx",
+        "sha256": "12844631a91c427a4be7994805bcbb1349ee8da9a6f63ac4d09b2047e3b3e0e1"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/modal/Plots.tsx",
+        "sha256": "af8ae1a157173aba2cdacf6bd72f4a9205ebac9a4b5c839f92940c4a8de05d7c"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/modal/Scene.tsx",
+        "sha256": "1451241cc3dffc0d5bb8492978b9295ddc6adfeb53e0055769695721b4671034"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/modal/physics.test.ts",
+        "sha256": "1b15273b4b5e8a6f62473598aa11fdb5765522ac85654d476116e9f5551cf58a"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/modal/physics.ts",
+        "sha256": "09baa5247a352d361699ff6a647520640bb348515d47e7edbb3274d6e9784bd5"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/modal/placement.test.ts",
+        "sha256": "52356484de09e238d06c89ba716241e6b8a0f5ac73727bc750c62b691d6d4859"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/modal/placement.ts",
+        "sha256": "0f74cadeb3ca22c8d0987ed5b0c62c574a6956bfb1866c43de2da4d7f533d6ca"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/modal/plate-data.json",
+        "sha256": "c895b1c694dac824f28a8a86df0d2a36404c9559701df155cc67bb47d9e5510b"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/modal/style.css",
+        "sha256": "b8f765b202b72b4aa5a19177bf616be40fad8d23859290f0943f0d8a3909e36a"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/modal/tour.ts",
+        "sha256": "b9473fa49032c8b888ba36c07d6175f800fcbbbde7234124c4b7090ee40c0fe7"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/rs25/App.tsx",
+        "sha256": "024ab8dd26d7169fee77d6b360fd5bec61aae43c607bd7c47574b2c46fcb8f39"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/rs25/Cycle.tsx",
+        "sha256": "a1adde65dd614a334c973ac5909bb79942a81c2720e49d8aae19bc39987ea336"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/rs25/Engine.tsx",
+        "sha256": "491595adab081ef7a65e283cee96f90111a2dbb387fa0df2848bde2ba473edb6"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/rs25/Hardware.tsx",
+        "sha256": "3a618b4464c65463699fc4571da705412707349db8f56b2b0f5da4b3f8ab3855"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/rs25/Inducer.tsx",
+        "sha256": "39d6ea320696c37bda431f05bcc8bbb89684c752258f7a0a0c0ad834ad0ab758"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/rs25/Instruments.tsx",
+        "sha256": "490fdd2916a4f186879a2b1e9bb9f514da342f76a869179d01e87a332165d3f0"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/rs25/LPFTPDynamics.tsx",
+        "sha256": "c8c27feaa814d0651c7984eedab1cd8851bc3580681b37e7689f9fb3632f3f08"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/rs25/Notes.tsx",
+        "sha256": "b5781bf15b946147675b76de29ce2137be0e2be749f52870ab0d3d1ba9ef6ef1"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/rs25/Plume.tsx",
+        "sha256": "24159a5b1f08c5fc37ae2b0a37a51a4e555014ad907596fec227904bdfd4fa8a"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/rs25/PlumeControls.tsx",
+        "sha256": "ac7517b6b432c1918a3eeaf030cc920e73c1d3c8599d28c4313385140b956655"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/rs25/Powerhead.tsx",
+        "sha256": "5f951042ab99a43e7f012c8037908ed51ccf4b604d554c4cd0c32b80e2e74d1a"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/rs25/Scene.tsx",
+        "sha256": "4b64eb83fe6d0ac78a8048bdfd52e8b43626875ff561ba7069ce32624735bcd5"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/rs25/content.ts",
+        "sha256": "9888c4df865fa5dcdfc145490d2f3d0f41cfb6cb7cc349397514c22492dfa8e1"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/rs25/layout.ts",
+        "sha256": "61b54f76495df99f2e66630bb4435874a5959687381b53812721d94a0f6f3b7d"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/rs25/lpftp.test.ts",
+        "sha256": "58179a61c0da805a5f15904edf0def6f4105f9ee6a4e372a3fa06202af9aceda"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/rs25/lpftp.ts",
+        "sha256": "6d29f795f522fecb97e9440d2a9a833de6a2df8ffe3fbc84eb600f2f76f49083"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/rs25/physics.test.ts",
+        "sha256": "2771a4997d0eef3276ba9c40e8ab47c05a254f1c6cb1aec35797e1e7686539b0"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/rs25/physics.ts",
+        "sha256": "e7b8e7c969b63f3553ad92ffc71df49666ffd4c34d254c7b44ce22f479ecdca9"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/rs25/simulation.ts",
+        "sha256": "acf3ae3eb4b7675bf495e2d5064774752130a83afcd14c75585dfd1375632f43"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/rs25/style.css",
+        "sha256": "ec5b0333f88b8555b04474c2bd2cb89d5e19032f3d985577c069a225e05444cf"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/rs25/tour.ts",
+        "sha256": "6059f23bd8c822e8b1a637caf27c3de6aa057be2daecaef607708902020ea521"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/sea/App.tsx",
+        "sha256": "72425e3673c5bb09ef99b4eca06a0c06eaaeb27731da5136664afb299904e91d"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/sea/Assembly.tsx",
+        "sha256": "04bb433bbed47f711a4d05001f849af985cc1bc4a2adec6a8ed70c166e18ac5f"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/sea/Network.tsx",
+        "sha256": "250eac39525d148002614ebc30af559a338fc81714449de1109ab0ed47e44ecd"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/sea/Notes.tsx",
+        "sha256": "8344f0fe5092b571bb8659741cb56a288aa6a123a14ec7077e6f38988b196fb1"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/sea/Plots.tsx",
+        "sha256": "6cb238ba83ab1165656cdd8149b63d5732a7c8e28252e0f4c72d1fcb36aa4df6"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/sea/Scene.tsx",
+        "sha256": "b9a3221d23f823a4cca26f021b92271f9ccc54743742f709353ad047bfdfe8f8"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/sea/falcon.ts",
+        "sha256": "5100fcd5b1895166a59ac04dbb783898fb41499f2fed4127f6d121ef30117d14"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/sea/physics.test.ts",
+        "sha256": "446d35410dab77ebe1ef0bffcc7304f3396e7be84ec88104f3237642eb4dd3f0"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/sea/physics.ts",
+        "sha256": "d3380cef6e0a5de3851c669f9dd0230c6493b99b97283c9f9739c2867ca72d9f"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/sea/simulation.ts",
+        "sha256": "23b7131bfd7043b11944675d6bc7cdfad1dbc5e9008c52032338c7d1e7827483"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/sea/style.css",
+        "sha256": "0395d27aa7420a1a05db88e3f388fb6df1ebb9d3ae07b0d4f98114e9137bb71d"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/sea/tour.ts",
+        "sha256": "bd193a0b3585880e7a16c0d46b160c1d2a3ec9912e89ddfe02cb3bc4990f1ba7"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/shaker/animation/motion.ts",
+        "sha256": "95518df00143644fe00fb4720f6a72f2ca272562925a60d9870822431513466c"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/shaker/animation/state.ts",
+        "sha256": "fa4e6f0bba2035905341ce358b894d060a46fafc3f1451af8824bdcf54a61af6"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/shaker/animation/tour.ts",
+        "sha256": "3eca4c63e0dce3a25121946253cfbb7fa74a8d937d3e659e9cbc8a770ab3044b"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/shaker/magnetics/field.ts",
+        "sha256": "98170e615010f61f05e718c983e7c4fa7dd5ddab780afaf0a7ff71ed0d219d7f"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/shaker/physics/electromechanics.test.ts",
+        "sha256": "f80481736db366b564b5f11057894460c656a97779cdf62e9165f672ac558714"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/shaker/physics/electromechanics.ts",
+        "sha256": "fdd7888af8b658656a9726ae8934753cb7fb3554d82040f0123512fe0a1068fc"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/shaker/rendering/Fields.tsx",
+        "sha256": "22d7ade753533ad8cac2a9c66c257e037cbfb6a546acb8ce922e87eb3f99e88a"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/shaker/rendering/Machine.tsx",
+        "sha256": "177b06940d892a1c86cdbed2bd2d9480f677a5886765e1a4391d5fc864cb2d3b"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/shaker/rendering/Scene.tsx",
+        "sha256": "0aaccf8842404090c3419e6c44503de3a8f1a94b90588ea7a68217f84db118eb"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/shaker/rendering/TestLab.tsx",
+        "sha256": "a524430d97688a07cef20e835cfa740b1f35285ea77da094368a9221b346ba86"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/shaker/rendering/geometry.ts",
+        "sha256": "945897e53f985d8cd2c641dd7262fe985d7fc9de7c76313cc25f55efbbd095e6"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/shaker/shaker-model/model.ts",
+        "sha256": "9f18c41fa18bc4bb5810a84a4a0b8a490702c22952b06ce8757062f35a1def3b"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/shaker/ui/App.tsx",
+        "sha256": "f00c1654793aa212deb4f25a1af451b02c0f7b6b0b0c1c67a67c19232dbc8bcc"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/shaker/ui/Charts.tsx",
+        "sha256": "6c657ed885b10c84816f887f015b0ef42e23222263c6aa329d6ddafe680c2d87"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/shaker/ui/Notes.tsx",
+        "sha256": "dcd39889093d257eb8497ccc3b10b3c008ea69f9b5583b55e1de3c636fb01000"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/shaker/ui/style.css",
+        "sha256": "b7e90d6d115c2e06f38a06c3cb945282e38feca6e3b9be6ffcc62c1721ae83f2"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/tbl/App.tsx",
+        "sha256": "12888f1ced347d2999b7cfbdf23ce2665a60e6570e77dc641085f51f35f06661"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/tbl/Notes.tsx",
+        "sha256": "5f761ace8fe1832e8ece74f668ddb112f8bd83579fb04f57ac553cddb558a01b"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/tbl/Plots.tsx",
+        "sha256": "bed52046a6d45ec03dd85ebc41bb93b57747f215d9aff4e2515e543d37c6d686"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/tbl/Scene.tsx",
+        "sha256": "7b89f2f69fb94b459a592beeec0036a4fc185a2152ff52782ea349e50b4ec654"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/tbl/physics.test.ts",
+        "sha256": "17487b8757daba45b5343e5692253b0686206fa779fb07f76c54839db57fc036"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/tbl/physics.ts",
+        "sha256": "a0a57f82cc49697c6501f2fe804bb497fe8041f847565d4766194ac43f4f1e86"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/tbl/plots.css",
+        "sha256": "ec420c524308d2524a4a82d1f8aa69c4b21093da0c94f9d9f69ee9b91d5ea0f8"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/tbl/style.css",
+        "sha256": "5082628ba4f66b4210baa26957789cae7689b987016b87e7653308cb7fa6bcf7"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/tbl/tour.test.ts",
+        "sha256": "bc123f0c732842e2cc9347bbb74e2655899f241c3dfd614a9d762603e08aec87"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/tbl/tour.ts",
+        "sha256": "d2f7b12da1ff819b4e878da1f4edd242ca51f1df9796deed8240e4cab0a845a0"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/vortex/App.tsx",
+        "sha256": "dd1620b1ebf8e7bb46d73263a01c490881b95486a14660de5cb86bd81abd5183"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/vortex/Notes.tsx",
+        "sha256": "557e2e5c1e038d3a55e6474a2e128af5a1a1a63e04f1cadaec15a7a0e85dacd9"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/vortex/Plots.tsx",
+        "sha256": "31d9e9d10d402ed5ed2898172087d3be64150d2bc3c13697f70f9d1ad2cfdbc4"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/vortex/PressurePanel.tsx",
+        "sha256": "e034476f4206a52fa0863a85a83267f356d4b8f56f8057069e29b729b24238ad"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/vortex/PressureScene.tsx",
+        "sha256": "806f79adb4c0b50f4d41787095d4d50876abb724b9fc5e968f738851dc2c6729"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/vortex/Scene.tsx",
+        "sha256": "e122d71c8666c154d267c427a8ed748bf3888bc489977185d6de88ec47983cf7"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/vortex/Vehicle.tsx",
+        "sha256": "729ad3577830b80d80fb049e6a4e97af8894178e66538f97b1ca5d1f78f4a7a9"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/vortex/physics.test.ts",
+        "sha256": "253e900eb59ed601c87d903c2311b15bf61003982840c278e9ccaba14122f6e6"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/vortex/physics.ts",
+        "sha256": "bdcb0499435383da1090ea5b2102e5ffefc6b3bfbb502c53bff16ba4d677d6e2"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/vortex/pressure.test.ts",
+        "sha256": "040103d6f5ed526259e57779848889e5f67f705ec42bc38385428bc2e007bd54"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/vortex/pressure.ts",
+        "sha256": "c794aa4a8f85dcc2531f5b24335c54799ceefa397934e5af1badddda10a0f35e"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/vortex/simulation.ts",
+        "sha256": "cf08f436aff6ff819a425c2e2dc3695249ff11f0c6f0ff28af7332da3d6b9aa8"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/vortex/style.css",
+        "sha256": "3a3f82677ea4bcf33b7f76aa261de18f8e43c44cbd59c313de897dbecf6533a2"
+      },
+      {
+        "file": "experiences/vibration-lab/src/labs/vortex/tour.ts",
+        "sha256": "e0d6f9626b197eb5fe8c7530fd4ed9c45a37b06558b646549d0f572109d14676"
+      },
+      {
+        "file": "experiences/vibration-lab/src/main.tsx",
+        "sha256": "2b9ae3dc99251822c713c9428838ce190cc132464082b2d349e3ab22edb4e146"
+      },
+      {
+        "file": "experiences/vibration-lab/src/vite-env.d.ts",
+        "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5"
+      },
+      {
+        "file": "experiences/vibration-lab/tsconfig.json",
+        "sha256": "bdb857a42354897cf094316ca89f54a8cb3f88d676196ae8a216c63afd8198d9"
+      },
+      {
+        "file": "experiences/vibration-lab/vite.config.ts",
+        "sha256": "aaeee920626940c5b6a1d66ae5845aea9d60385c7c7b6044bab09e74e6b4a6ba"
+      },
+      {
+        "file": "index.html",
+        "sha256": "2faa4419410c32e745f34b35f9e7e5b6b5926cf91149d6df41f110dee09a114a"
+      },
+      {
+        "file": "js/acs519-calculators.js",
+        "sha256": "cc583a122f1e0ab51ce99e0f5abc81b45d473959cc22659737117b2ca15000a1"
+      },
+      {
+        "file": "js/acs519-data.js",
+        "sha256": "3987c2be31964882821c9ca8ae8ec24f71b92f68f270fd019c48bdaf2f0689e0"
+      },
+      {
+        "file": "js/acs519-demos.js",
+        "sha256": "99458c491464f6c552369c22c97072e6ee88dcb1881117364eca0defd0d66d44"
+      },
+      {
+        "file": "js/acs519-physics.js",
+        "sha256": "136f22b930b1575a38d9c818248b490a185645e8c54f2c1d28c5ab701cd58384"
+      },
+      {
+        "file": "js/app.js",
+        "sha256": "77016f2d87343bc7c7be14aa9ba3b7320de0a005ec59afd0e6dbb86d047e01b2"
+      },
+      {
+        "file": "js/calculators.js",
+        "sha256": "fd052494564beb350bfc278852e1d251c77a7872e816dd3f2c39dbff63323fec"
+      },
+      {
+        "file": "js/charts.js",
+        "sha256": "9b8b93785bae1fd893e52e43c9c4fb897954a75a77f3c615254acc4b7349f6bb"
+      },
+      {
+        "file": "js/compound-isolation-physics.js",
+        "sha256": "e25d2b5b96c3a425bafab104452d207d2aa2de177ca8e73a1431dc3ae881cf50"
+      },
+      {
+        "file": "js/data.js",
+        "sha256": "f7af4bbde0487e6641328cf322c89f52edb9490dcb87f7973ae5a290476c7432"
+      },
+      {
+        "file": "js/demo-takeaways.js",
+        "sha256": "fd0b444e753654af7049a8bb597cc0c6d3ad5962333e1f27ead0e33d8de7df21"
+      },
+      {
+        "file": "js/demos.js",
+        "sha256": "d20f43519de82d671fbaa46b93f7ca4bfc90a9e08fe65191522aedb101b52828"
+      },
+      {
+        "file": "js/electronics-fatigue-calculators.js",
+        "sha256": "7d57f1ff617673945341f3675b6e740c900f593d3068d62865e445177746cfbe"
+      },
+      {
+        "file": "js/electronics-fatigue-data.js",
+        "sha256": "7f6f7f749669836c63f5e02a2a3f2f5485da491c210cfb6489faf4f62340ea66"
+      },
+      {
+        "file": "js/electronics-fatigue-demos.js",
+        "sha256": "41957a0840bd85de7f4ffa35e699b870507e3b9a8f25d43bbdc97a10d328e0b6"
+      },
+      {
+        "file": "js/electronics-fatigue-physics.js",
+        "sha256": "a59451016cc86b2b6868504581a4b1e21e7f64050654c2e2bc9ffc6f86799e26"
+      },
+      {
+        "file": "js/electronics-fatigue-visuals.js",
+        "sha256": "d2797fd528df592979fa7f505f3985f54610ca8bcd33700c99b4e8ac1c2e80ec"
+      },
+      {
+        "file": "js/engineering-results.d.ts",
+        "sha256": "8f0e899204804ad34af34ee26b6f481f7c94a3ef904bef2be96ee04fcff5c8bc"
+      },
+      {
+        "file": "js/engineering-results.js",
+        "sha256": "d987c628da22260f7a88474d72594c4ded728460d2ef10daab4f13985ea1e690"
+      },
+      {
+        "file": "js/engineering-system.js",
+        "sha256": "a66e1e7cfbd41bb6c209c9335681f010f1eaf656d55c1259d579c91256f77b52"
+      },
+      {
+        "file": "js/engineering-workbenches.js",
+        "sha256": "86a6deb662dc745657b9395953de4eb04f1cf92b2ff52f4680f1c04214dda395"
+      },
+      {
+        "file": "js/extra-calculators.js",
+        "sha256": "b30e52baf3fca9bc0fc1dec40f3a93c380074b69a5f3984865e586d776ceb522"
+      },
+      {
+        "file": "js/extra-data.js",
+        "sha256": "9f95a44db22cc16a388f6dfaaed29e26f61204bd6442a477c8bab3dec28f5b54"
+      },
+      {
+        "file": "js/flight-response-tool.js",
+        "sha256": "c805a8c5e8eb69e5451589f46634d2757800d4d202133b82bd14c3c2eed887d1"
+      },
+      {
+        "file": "js/homepage.js",
+        "sha256": "54fa321a0408463d931998f47ac6844340d6bf26356fa0f354f7679ccca3bd0f"
+      },
+      {
+        "file": "js/honeycomb-paper.js",
+        "sha256": "e355a1bd5a377b441631b9310907835f9eccfc91abe0e2d08661770bdce4722a"
+      },
+      {
+        "file": "js/launch-sea-capstone.js",
+        "sha256": "33748e2d605f60e06c7ecc2a5e633e2fc49fb145bee25da4b8f31cdb869c05fd"
+      },
+      {
+        "file": "js/nastran-isolation-export.js",
+        "sha256": "5909d3157a5ce0f25ee421c3bf7267946ffb034dc3eaa8e8c11f3a6377355c93"
+      },
+      {
+        "file": "js/parker-lord-isolators.js",
+        "sha256": "d117829c574cabbefd8e6e4782e6445c09237458e84d35cf0c6fc3fd54e2f960"
+      },
+      {
+        "file": "js/pcb-accelerometers-data.js",
+        "sha256": "4be900155eb0243f76cfd376f26bda13dba01a1715a1b81113131c88b662a07e"
+      },
+      {
+        "file": "js/program-expansion-calculators.js",
+        "sha256": "6413e2b5ea22fd895028ff635fbc7a6c931eaba56ce1577906fea55123add232"
+      },
+      {
+        "file": "js/program-expansion-data.js",
+        "sha256": "d99b5c01c8abf5c95a15eb65fdc7091ed928ee45386e2c2f3619d93ae2ba69b3"
+      },
+      {
+        "file": "js/program-expansion-demos.js",
+        "sha256": "b7490cb84227aee2b19d9886498cc8337f464cb2c59ec5e3a84e4f0842e58a0a"
+      },
+      {
+        "file": "js/program-expansion-physics.js",
+        "sha256": "6fa8cc9306d097979c9b3408b749975831c4a5d834a4e1b847ea4edf45472e30"
+      },
+      {
+        "file": "js/sea-coupling.js",
+        "sha256": "a31782b7c0996a625e0641ac988761839522e93867951645ae2f9c54fefe34de"
+      },
+      {
+        "file": "js/sea-parameters-calculators.js",
+        "sha256": "cf0b2e28b181928e80beac0a2fe09988fac84cb998fc5d1adb62697f96b631c8"
+      },
+      {
+        "file": "js/sea-parameters-data.js",
+        "sha256": "9259b8c8a70c4a94fea66d773a2d5c3e845a93d9945f5456ed1682eefd8d8e00"
+      },
+      {
+        "file": "js/sea-parameters-demos.js",
+        "sha256": "fd139c26ee1ccdea5649ae7cd31bff8fd3b50154d58089c9c7f9a5046d6853ce"
+      },
+      {
+        "file": "js/sea-parameters-physics.js",
+        "sha256": "d73b1debd05114ce7d60d963527e1ce7aaf180ae0f6c5b5721a21191d84ac603"
+      },
+      {
+        "file": "js/site-components.js",
+        "sha256": "65c96feb40132a8f563efb80b169800baa2f0c4f1f1611c817ddf0bb3141a98e"
+      },
+      {
+        "file": "js/sorbothane-analysis.js",
+        "sha256": "6a3aa9f8f9d3186ec765cb9ff9b84fa73d374f4a62f5e6724fe417436bfb780a"
+      },
+      {
+        "file": "js/sorbothane-data.js",
+        "sha256": "47321cdcaeaa891d36416b67e16ebe99a116b52e995d481b352cbbe27987090a"
+      },
+      {
+        "file": "js/sorbothane-isolation.js",
+        "sha256": "9a4c06edb9432ba1b5aa3891d9ec083766590e11eddee3972913065e196989aa"
+      },
+      {
+        "file": "js/sp8072-data.js",
+        "sha256": "7594a938efff3fcd7100b19adbe4033c0c748c62f36b009657073322217d534b"
+      },
+      {
+        "file": "js/sp8072-physics.js",
+        "sha256": "a2800a20da43196ceabb517bd51adc9860b36f76b66593a949173429d988ca62"
+      },
+      {
+        "file": "js/tool-discovery.js",
+        "sha256": "8000676342f857508b13957267572c0e88b6f205a0beb235f22537ec2f06d2cb"
+      },
+      {
+        "file": "js/two-stage-isolation-physics.js",
+        "sha256": "5b604f3d820da322362af14f81401d3b5c9084ea372785fe4d69f3eb71ac000e"
+      },
+      {
+        "file": "js/two-stage-isolation.js",
+        "sha256": "ec6a4235e1b78709d3fa10707f7eda869cd0f589e85a291069873f9c81090eb7"
+      },
+      {
+        "file": "js/unit-system.js",
+        "sha256": "083b402eba4893446a60bc4b1c7115a3f67bfe56be356bc139b4fda247298cbd"
+      },
+      {
+        "file": "js/workbench-runtime.js",
+        "sha256": "ecda26196274f1d1ad78be2329b957babaccfc159df2ae3fe16efec7017860dc"
+      },
+      {
+        "file": "js/workflow-expansion-calculators.js",
+        "sha256": "747cf6355cb2603a181b9cacd19cc732eab77762d765034cc00bdafe4d493bdb"
+      },
+      {
+        "file": "js/workflow-expansion-data.js",
+        "sha256": "4c445662e4df6306f28f13dba2186ed1682f4e166b6d34903c246fabb2a6dbe1"
+      },
+      {
+        "file": "js/workflow-expansion-demos.js",
+        "sha256": "454f98c7b6647f423491c5cdd40628eefb2de97f9d67add5e95de37d3738270c"
+      },
+      {
+        "file": "js/workflow-expansion-physics.js",
+        "sha256": "6bcc066dac1c0b8bf82c9a2a59195f6ae822d13e451f27d4cec310ff482cfc5b"
+      },
+      {
+        "file": "manifest.webmanifest",
+        "sha256": "084a13603bbd01b665b45d4ca283e4e047994f804e3d639fdd8a44db0af54bad"
+      },
+      {
+        "file": "package.json",
+        "sha256": "806e56dd2e451cd4ab95ecbf8df2665220c4944934e823a2d84869f871c88cfd"
+      },
+      {
+        "file": "previews/cheat-sheet-desktop.png",
+        "sha256": "7967da1fcbc6e6a47f35c3f5510e2a35811a92321f0031cd658c02b707decc41"
+      },
+      {
+        "file": "previews/cheat-sheet-mobile.png",
+        "sha256": "fe3c9a89ba599ec6019e8bf63d9c890bc5c60dc82a20d58d8845cd7bc4c03941"
+      },
+      {
+        "file": "previews/coincidence-demo.png",
+        "sha256": "d9d8a7da53100cbb592db862d78a4dfcd1a59d050e3fee7e547310c569b0941f"
+      },
+      {
+        "file": "previews/homepage-atlas-desktop.jpg",
+        "sha256": "dbd323f91e597d70f412ce6a27739db0c286282bddb38fa24a6ee26cba4c39e3"
+      },
+      {
+        "file": "previews/homepage-atlas-mobile.jpg",
+        "sha256": "4c4ed1dc755dc0b1b90b7207ba7a920cb4fd7e2f55f9c3fd1585d49e0b6bd5b1"
+      },
+      {
+        "file": "previews/radiation-efficiency-demo.png",
+        "sha256": "672a450cb27c9b44b4cd06df89115230fdaeb84a1a31850e4875982128ffe6d5"
+      },
+      {
+        "file": "previews/ring-calculator-mobile.png",
+        "sha256": "9dff804f0cce62a178be8f67a8e2138a05cb60076143c526380b02f6958c60b9"
+      },
+      {
+        "file": "previews/sdof-calculator.png",
+        "sha256": "59e122403bf0d641920e39a335103d44b4971cc164f7d027d00b498b38ebc266"
+      },
+      {
+        "file": "previews/site-system-calculator.jpg",
+        "sha256": "bdef33cb5475e1434f16b9eb73b78318b1e99868e7baf6a117a6481a7d64db3a"
+      },
+      {
+        "file": "previews/site-system-chapter.jpg",
+        "sha256": "6792612b8ae9d33cda348af62dcdde07028abbc204bd1b9952ff3a46465b26e1"
+      },
+      {
+        "file": "previews/site-system-homepage.jpg",
+        "sha256": "65e442746270cc1314b70e76171fca94eb3ff03040d6f9bb89fef943e80023a1"
+      },
+      {
+        "file": "previews/tools-desktop.png",
+        "sha256": "843a96f357ff593cf233f075bd24948b9a76385d5c4244dc65f0fa19e4ca9a0e"
+      },
+      {
+        "file": "references/(2012) ACS537 Notes Noise Control.pdf",
+        "sha256": "62f9b9b0dd35ed3f6a5a585570f1fae8da098c9407021c23ddcb77bf5aec0b26"
+      },
+      {
+        "file": "references/12-007-TR-HoneycombPanels_ExpSEA_SAH.pdf",
+        "sha256": "093ac0545a028a19aba76616b295598bcb230d4885dc725495612fe137ad26dc"
+      },
+      {
+        "file": "references/501_Fall2011.pdf",
+        "sha256": "a531964672438669e4143364fd3067ab2d143511872fac2cb5e965ac621d401d"
+      },
+      {
+        "file": "references/ACS519_Combined.pdf",
+        "sha256": "8df114b44bdbc6454dbb5bcef601421d8e291b289feef9ad7f8171ea6e7a811e"
+      },
+      {
+        "file": "references/ESA_PSS-03-204-1_1996.pdf",
+        "sha256": "4c28221c205c7703e92a5c6355c7c1956f5dfc2946797c7139319c5d75b6922d"
+      },
+      {
+        "file": "references/NASA-19770012197-HEAO-B-Elastomeric-Isolator-Assessment.pdf",
+        "sha256": "d1552cc001a374025d32cf3a06bc5d9d7517f902424e7c06e2a6940c26bf5d5d"
+      },
+      {
+        "file": "references/NASA-20040020088-Passive-Isolators-ISS.pdf",
+        "sha256": "ebdc19ab26da472b6df9ccf4ec955b9f3d5d852ac98b204329a4ae5794da3aa7"
+      },
+      {
+        "file": "references/NASA-20140005349-Diffuser-Water-Injection.pdf",
+        "sha256": "707898c671e4a8169e66bd8660ed6af044cedff7aa39dab49352eb78569b2d62"
+      },
+      {
+        "file": "references/NASA-SP-8072-19710023719.pdf",
+        "sha256": "84f1483c2c8477810186e98765ea99e4b7f7cc71e0a47eb8f86977d3b02aabf8"
+      },
+      {
+        "file": "references/SEA_parameters_revAB.pdf",
+        "sha256": "f60e22ac1b6ff3536af4ef50cab8737a324c529aafb54df14edfa8ded44f6435"
+      },
+      {
+        "file": "references/Sorbothane-Data-Sheet-101.pdf",
+        "sha256": "3e95a58564c69e3c84f20ce621ce9564e8f80c271279f65d4216d9fc1859cc55"
+      },
+      {
+        "file": "references/Sorbothane-Data-Sheet-102.pdf",
+        "sha256": "de32f254135a32b895ecccc8cb960bf659de3e2ab915767f35ab805d05415752"
+      },
+      {
+        "file": "references/Sorbothane-Data-Sheet-105.pdf",
+        "sha256": "9d8eeff4e9568b969740c01c0043e8a05dc201196857f8c11e718e72af396df4"
+      },
+      {
+        "file": "references/Sorbothane-Engineering-Design-Guide.pdf",
+        "sha256": "758f9e8e30892a2a7bd305c3fb68327d91ec4e1460771ab39b5c4de35cc99fe1"
+      },
+      {
+        "file": "references/Sorbothane-Standard-Products-Guide-2025.pdf",
+        "sha256": "cef362fa290772a0c5453e8043469fef4a26d666d09a80d5b0956a336cc4b79f"
+      },
+      {
+        "file": "references/pcb-accelerometers-manifest.json",
+        "sha256": "e9a87971b02ae6362e60026fa15ee9510e33e14ed3f2eae68e3433ea665b049e"
+      },
+      {
+        "file": "references/sorbothane-isolation-manifest.json",
+        "sha256": "ec6aa0c2f5b30284d484dc351502c624ae0c1b9332b6db4040aeeed5769de77d"
+      },
+      {
+        "file": "references/sp8072-manifest.json",
+        "sha256": "4d092278fac67fc5c6dc502c5d711782136b96ad1331613ede00d772cfc86238"
+      },
+      {
+        "file": "robots.txt",
+        "sha256": "16ceb5ee3e0dc13aa9adf31a3ebbe45a1d965b8c2b9f72eaf84e5911e140ed95"
+      },
+      {
+        "file": "scripts/build-flight-response.mjs",
+        "sha256": "55642c0f5faa40d613391529225b80965680965574112d357b26da663a0321db"
+      },
+      {
+        "file": "scripts/serve.mjs",
+        "sha256": "3485b5d67cb8679abaf1d6a9fe85501623760d333c7ca476759efbf21016fcec"
+      },
+      {
+        "file": "scripts/sp8072-benchmarks.py",
+        "sha256": "6fc72e31cb91192f81f729afe1d5f581e9f57f5974a2289b2f1cd05a9c5366e7"
+      },
+      {
+        "file": "scripts/sp8072-manifest.mjs",
+        "sha256": "c18fbfdd3481e73e618758cf1373bb407ddb7ad7dbf41a6a853be989f877db50"
+      },
+      {
+        "file": "scripts/sp8072-verify-artifacts.mjs",
+        "sha256": "b84458e36795aa93b6bfe1da41493190e4a30fd8d67bfdb0c361626517ce1940"
+      },
+      {
+        "file": "scripts/sp8072-verify-delivery.mjs",
+        "sha256": "6b9fc93c01ec4fa583cceb62ab78c59d1cba8dc6a6c4a76e47ad1f661434a55c"
+      },
+      {
+        "file": "scripts/sp8072-verify-exports.mjs",
+        "sha256": "f4192ded7efdb78ebecb04061144a3d5dbab0ac5ecb73c48712a38e955d8eeb1"
+      },
+      {
+        "file": "scripts/sp8072-verify-visualization.mjs",
+        "sha256": "2d097fec2684d61c555a6b5cd841f30f9bb6e65d3c2300a09d25e024eb2beb4a"
+      },
+      {
+        "file": "scripts/sync-standalone.mjs",
+        "sha256": "ba9de2a8a36ac8d3dd6dc2f93304a9862f7ca560cc89856492018496703c9117"
+      },
+      {
+        "file": "scripts/update-pcb-accelerometers.mjs",
+        "sha256": "d2d5466bdb4290379a94a112c5a1e0820424c7a9003550d9c9f33def95fcf99a"
+      },
+      {
+        "file": "sitemap.template.xml",
+        "sha256": "5064b3ebed450a57b6980d327a254dd179889c40aa585d879aea5c7eef22479e"
+      },
+      {
+        "file": "tests/compound-isolation.test.mjs",
+        "sha256": "feed06c78daf36a150f1dceae9cbb428e769e219b9800902e5ecc436dd0fd6b6"
+      },
+      {
+        "file": "tests/electronics-fatigue.test.mjs",
+        "sha256": "7fa6fe089079b56b56007579f12866737f4f6b836b731c85846eeb700909eff1"
+      },
+      {
+        "file": "tests/fixtures/sp8072-benchmarks.json",
+        "sha256": "cbc7706232590ba1b42e85d961c434c2c7b32ef34920912f46c2765ff96acc65"
+      },
+      {
+        "file": "tests/sorbothane-isolation.test.mjs",
+        "sha256": "341aecf8dabe470691cd413844ce3a071c6f2e1a3cbaf66bf5ef4a31d980ae68"
+      },
+      {
+        "file": "tests/tool-discovery.test.mjs",
+        "sha256": "61edabb898df4b6ad93a6d3735dd412c69e59b0f98fff5a14c6ad54238ce05a2"
+      },
+      {
+        "file": "tests/two-stage-isolation.test.mjs",
+        "sha256": "13fb062d984f7ed78720633001ae90511e8f01386b442a0bd2e1e4dd126420e6"
+      }
+    ],
+    "gitDiffCheck": true
+  },
+  "browserEvidence": "docs/sp8072/evidence/original-checkout-browser.json",
+  "limitations": [
+    "HTTP-hosted standalone browser verified; direct-file execution and print/import/reset/download checks were not repeated during integration.",
+    "Changes are local and uncommitted."
+  ],
+  "nextAction": "Reload the already-open original standalone file or review the verified localhost:4173 standalone preview."
+}

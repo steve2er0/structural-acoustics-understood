@@ -1,0 +1,62 @@
+{
+  "createdUTC": "2026-10-14T04:05:26.568Z",
+  "standalone": {
+    "displayUnits": "English",
+    "labelFonts": [
+      {
+        "family": "SFMono-Regular, Consolas, \"Liberation Mono\", Menlo, monospace",
+        "sameAsInputLabels": true,
+        "text": "Engine & receiver geometry"
+      },
+      {
+        "family": "SFMono-Regular, Consolas, \"Liberation Mono\", Menlo, monospace",
+        "sameAsInputLabels": true,
+        "text": "Side view · XZ · Z upward"
+      },
+      {
+        "family": "SFMono-Regular, Consolas, \"Liberation Mono\", Menlo, monospace",
+        "sameAsInputLabels": true,
+        "text": "M1"
+      },
+      {
+        "family": "SFMono-Regular, Consolas, \"Liberation Mono\", Menlo, monospace",
+        "sameAsInputLabels": true,
+        "text": "M2"
+      },
+      {
+        "family": "SFMono-Regular, Consolas, \"Liberation Mono\", Menlo, monospace",
+        "sameAsInputLabels": true,
+        "text": "M3"
+      },
+      {
+        "family": "SFMono-Regular, Consolas, \"Liberation Mono\", Menlo, monospace",
+        "sameAsInputLabels": true,
+        "text": "X"
+      },
+      {
+        "family": "SFMono-Regular, Consolas, \"Liberation Mono\", Menlo, monospace",
+        "sameAsInputLabels": true,
+        "text": "Z"
+      },
+      {
+        "family": "SFMono-Regular, Consolas, \"Liberation Mono\", Menlo, monospace",
+        "sameAsInputLabels": true,
+        "text": "Top view · XY"
+      }
+    ],
+    "levels": [
+      "131.93 dB re 20 µPa",
+      "132.20 dB re 20 µPa",
+      "132.00 dB re 20 µPa"
+    ],
+    "method": "distributed",
+    "url": "http://localhost:4173/standalone.html#/tool/nasa-sp8072",
+    "viewBox": "120 0 480 300",
+    "viewport": {
+      "height": 1028,
+      "width": 1728
+    }
+  },
+  "studyInputsChanged": false,
+  "limits": "Verified the HTTP-hosted standalone from the main checkout with its saved English/distributed study. Direct-file execution, print and export/import were not repeated during checkout integration. Prior mobile/theme checks are retained separately."
+}

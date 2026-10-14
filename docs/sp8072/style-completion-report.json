@@ -1,0 +1,35 @@
+{
+  "status": "completed",
+  "summary": "Restyled the engine visualization to match the page: subdued hardware drawing, smaller XY inset, compact microphone readouts and collapsed detail notes. The same desktop panel is about 40 percent shorter, and all microphone labels fit mobile without horizontal scrolling. 165 tests pass; the complete saved example calculation, numerical model/data and original reference/owner files are unchanged. Standalone rebuilds are deterministic; desktop/mobile/themes, controls and hosted standalone/modular parity passed.",
+  "artifacts": [
+    "js/sp8072-tool.js",
+    "styles.css",
+    "service-worker.js",
+    "standalone.html",
+    "tests/sp8072.test.mjs",
+    "tests/calculators.test.mjs",
+    "scripts/sp8072-verify-style.mjs",
+    "docs/sp8072/README.md",
+    "docs/sp8072/VALIDATION.md",
+    "docs/sp8072/evidence/engine-restyle-browser-checks.json",
+    "docs/sp8072/evidence/engine-restyle-build-checks.json",
+    "docs/sp8072/evidence/engine-restyle-tests.txt",
+    "docs/sp8072/evidence/engine-restyled-desktop.jpg",
+    "docs/sp8072/evidence/engine-restyled-light.jpg",
+    "docs/sp8072/evidence/engine-restyled-mobile.jpg",
+    "docs/sp8072/evidence/engine-restyled-mobile-levels.jpg"
+  ],
+  "checks": {
+    "testsPassed": 165,
+    "completeExampleCalculationUnchanged": true,
+    "standaloneDeterministic": true,
+    "gitDiffCheck": true
+  },
+  "limitations": [
+    "Update remains in the assigned worktree; original-checkout integration is a separate scope decision.",
+    "Direct-file, print, import/reset and download delivery were not repeated in this presentation pass."
+  ],
+  "next_steps": [
+    "Review the restyled working-copy preview at http://localhost:4178/standalone.html#/tool/nasa-sp8072."
+  ]
+}

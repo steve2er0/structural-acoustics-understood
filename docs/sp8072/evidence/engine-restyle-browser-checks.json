@@ -1,0 +1,95 @@
+{
+  "schema": "sau-sp8072-restyle-browser-checks",
+  "version": 1,
+  "recordedUTC": "2026-10-14T03:34:09.870Z",
+  "finalPreview": "http://localhost:4178/standalone.html#/tool/nasa-sp8072",
+  "finalTabId": "543589002",
+  "changes": [
+    "Compact primary XZ engine view with smaller XY inset",
+    "Site typography, muted hardware outlines and compact microphone readouts",
+    "Geometry and RMS pressure details retained in the existing disclosure",
+    "Adaptive side-view framing fits all three microphones on mobile"
+  ],
+  "observations": {
+    "desktop": {
+      "viewport": [
+        1728,
+        1084
+      ],
+      "panelHeightPx": 749.484375,
+      "initialPanelHeightPx": 1264.3984375,
+      "figureHeightPx": 329.5,
+      "readoutHeightPx": 89.4921875,
+      "selectedBandLevelsDb": [
+        127.07,
+        127.35,
+        127.07
+      ]
+    },
+    "lightTheme": {
+      "levelColor": "rgb(23, 32, 39)",
+      "micTextColors": [
+        "rgb(23, 107, 139)",
+        "rgb(150, 101, 29)",
+        "rgb(103, 80, 180)"
+      ],
+      "darkThemeRestored": true,
+      "invalidComparisonTraceColorChecked": {
+        "M2Unavailable": true,
+        "M3Marker": "rgb(103, 80, 180)",
+        "M3Trace": "rgb(103, 80, 180)"
+      }
+    },
+    "mobile": {
+      "viewport": [
+        390,
+        844
+      ],
+      "documentWidthPx": 390,
+      "geometryViewportWidthPx": 332,
+      "geometryContentWidthPx": 332,
+      "allThreeSideViewLabelsVisible": true,
+      "horizontalGeometryScrollRequired": false
+    },
+    "controls": {
+      "comparisonY15LevelDb": 127.33,
+      "comparisonNearSourceErrorIsolated": true,
+      "comparisonRecoveryPassed": true,
+      "englishRmsDetailsPsi": [
+        0.006546,
+        0.006758,
+        0.006546
+      ],
+      "siUnitsRestored": true
+    },
+    "modularParity": {
+      "finalCache": "sau-v140-sp8072-layout",
+      "sideViewBox": "120 0 480 300",
+      "regionLabel": "Rocket engine and microphone geometry",
+      "mobileWidthsPx": [
+        390,
+        332,
+        332
+      ],
+      "matchingLevels": true
+    },
+    "cacheRecovery": "An intermediate cached compact layout was detected. Cache version advanced; normal activation/reload and a fresh permitted preview tab showed the final adaptive frame.",
+    "finalState": {
+      "viewportRestored": true,
+      "standaloneOpen": true,
+      "markedDeliverable": true
+    }
+  },
+  "screenshots": [
+    "docs/sp8072/evidence/engine-restyled-desktop.jpg",
+    "docs/sp8072/evidence/engine-restyled-light.jpg",
+    "docs/sp8072/evidence/engine-restyled-mobile.jpg",
+    "docs/sp8072/evidence/engine-restyled-mobile-levels.jpg"
+  ],
+  "limits": [
+    "No print, direct-file/import/reset or physical touch-device checks repeated for the restyle.",
+    "No actual downloads repeated.",
+    "Update is in the assigned worktree; original-checkout integration is separate.",
+    "No physical engine/pad correlation or qualification claimed."
+  ]
+}

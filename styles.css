@@ -4712,53 +4712,65 @@ body.site-system-subject #main-content {
   html[data-theme="light"] .site-header .primary-nav { border-color: rgba(48, 75, 87, .2); background: rgba(250, 248, 242, .99); box-shadow: 0 18px 40px rgba(37, 51, 57, .14); }
   html[data-theme="light"] body.tool-launcher-open .site-header .primary-nav { border: 0; background: transparent; box-shadow: none; }
 }
-/* NASA SP-8072 domain evidence uses the shared analysis layout and tokens. */
+/* NASA SP-8072 domain evidence follows the shared engineering panel styling. */
 [data-workbench-id="nasa-sp8072"] .workbench-domain-panel { display:block; }
-[data-workbench-id="nasa-sp8072"] .sp8072-geometry { display:block; width:100%; height:auto; min-height:0; }
-.sp8072-geometry-caption { padding:0 var(--site-space-4,16px); font:12px/1.5 var(--mono); overflow-wrap:anywhere; }
-.sp8072-geometry-caption p { margin:.25rem 0; }
-[data-workbench-id="nasa-sp8072"] .sp8072-geometry text { fill:var(--site-color-text,#f3f7fc); font:15px ui-monospace,monospace; text-anchor:start; }
-.sp8072-flow polyline { fill:none; stroke:var(--site-color-cyan,#55b8ff); stroke-width:2.5; }
-[data-workbench-id="nasa-sp8072"] .sp8072-sources circle { fill:var(--site-color-violet,#b495ef); stroke:var(--site-color-violet,#b495ef); }
 .sp8072-measurement-figure { margin:0; }
+.sp8072-geometry-layout { display:grid; grid-template-columns:minmax(0,1fr) 180px; gap:20px; padding:16px 20px 0; align-items:start; }
+.sp8072-main-view { min-width:0; }
+.sp8072-view-heading { display:flex; justify-content:space-between; gap:12px; color:var(--site-color-muted,#a4b5ca); line-height:1.5; }
+.sp8072-view-heading > span:first-child { color:var(--site-color-text,#dce8f7); font-weight:500; }
 .sp8072-geometry-scroll { overflow-x:auto; }
 .sp8072-geometry-scroll:focus-visible { outline:2px solid var(--site-color-cyan,#55b8ff); outline-offset:-2px; }
-[data-workbench-id="nasa-sp8072"] .sp8072-view-label { font-weight:700; letter-spacing:1.5px; }
-.sp8072-view-divider { stroke:var(--site-color-border,#254057); }
-.sp8072-plume polyline { fill:none; stroke:#edaa56; stroke-width:16; opacity:.15; stroke-linecap:round; }
-.sp8072-axis path { fill:none; stroke:var(--site-color-muted,#a4b5ca); stroke-width:1.5; }
-.sp8072-radiation { stroke:var(--site-color-cyan,#55b8ff); stroke-dasharray:6 6; opacity:.6; fill:none; }
-.sp8072-engine { stroke:var(--site-color-text,#dce8f7); stroke-width:1.6; fill:var(--site-color-panel,#102c49); }
+[data-workbench-id="nasa-sp8072"] .sp8072-geometry { display:block; width:100%; max-width:900px; height:270px; min-height:0; padding:0; margin:0 auto; }
+[data-workbench-id="nasa-sp8072"] .sp8072-top-geometry { display:block; width:180px; max-width:100%; height:150px; min-height:0; padding:0; }
+[data-workbench-id="nasa-sp8072"] :is(.sp8072-geometry,.sp8072-top-geometry) text { fill:var(--site-color-muted,#a4b5ca); font-family:var(--mono); font-size:11px; letter-spacing:.04em; text-anchor:start; }
+.sp8072-top-view { border-left:1px solid var(--site-color-border,#254057); padding-left:16px; }
+.sp8072-top-view h4 { margin:0 0 4px; color:var(--site-color-muted,#a4b5ca); }
+.sp8072-top-view p { margin:2px 0 0; color:var(--site-color-muted,#a4b5ca); font-size:10px; line-height:1.5; }
+.sp8072-flow polyline { fill:none; stroke:var(--site-color-gold,#f2c663); stroke-width:1.3; opacity:.7; }
+.sp8072-plume polyline { fill:none; stroke:var(--site-color-gold,#f2c663); stroke-width:10; opacity:.06; stroke-linecap:round; }
+[data-workbench-id="nasa-sp8072"] .workbench-domain-svg .sp8072-sources circle { fill:var(--site-color-violet,#b495ef); stroke:var(--site-color-violet,#b495ef); opacity:.8; }
+.sp8072-axis path { fill:none; stroke:var(--site-color-muted,#a4b5ca); stroke-width:1; opacity:.6; }
+.sp8072-radiation { stroke:var(--site-color-cyan,#55b8ff); stroke-width:1; stroke-dasharray:4 5; opacity:.4; fill:none; }
+.sp8072-engine { stroke:var(--site-color-muted,#a4b5ca); stroke-width:1.3; fill:color-mix(in srgb,var(--site-color-cyan,#55b8ff) 6%,var(--site-color-canvas,#03101e)); }
 .sp8072-engine-pipe,.sp8072-engine-ribs { fill:none; }
-.sp8072-engine-body { fill:var(--site-color-muted,#a4b5ca); }
-.sp8072-engine-hot { stroke:none; fill:#edaa56; }
-.sp8072-nozzle-origin { fill:#edaa56; stroke:var(--site-color-canvas,#03101e); }
+.sp8072-engine-body { fill:color-mix(in srgb,var(--site-color-cyan,#55b8ff) 12%,var(--site-color-canvas,#03101e)); }
+[data-workbench-id="nasa-sp8072"] .sp8072-engine :is(circle,rect) { stroke:var(--site-color-muted,#a4b5ca); fill:color-mix(in srgb,var(--site-color-cyan,#55b8ff) 6%,var(--site-color-canvas,#03101e)); }
+.sp8072-engine-hot { stroke:none; fill:var(--site-color-gold,#f2c663); opacity:.35; }
+[data-workbench-id="nasa-sp8072"] .sp8072-nozzle-origin { fill:var(--site-color-gold,#f2c663); stroke:var(--site-color-canvas,#03101e); }
 .sp8072-mic-1 { --sp-mic-color:#55b8ff; }
 .sp8072-mic-2 { --sp-mic-color:#fb923c; }
 .sp8072-mic-3 { --sp-mic-color:#b495ef; }
-.sp8072-microphone { stroke:var(--sp-mic-color); stroke-width:2; fill:var(--site-color-canvas,#03101e); }
-.sp8072-microphone path { fill:none; }
-.sp8072-microphone .sp8072-label-leader { stroke-width:1; }
-[data-workbench-id="nasa-sp8072"] .sp8072-microphone text { fill:var(--sp-mic-color); stroke:none; font-size:14px; font-weight:700; text-anchor:middle; }
-.sp8072-mic-invalid circle { stroke-dasharray:3 3; }
-.sp8072-measurement-figure figcaption { padding:0 16px 12px; color:var(--site-color-muted,#a4b5ca); font-size:12px; line-height:1.6; }
-.sp8072-geometry-legend { display:flex; gap:8px 18px; flex-wrap:wrap; }
-.sp8072-geometry-legend span::before { content:''; display:inline-block; width:9px; height:9px; margin-right:6px; border-radius:50%; background:var(--site-color-cyan,#55b8ff); }
-.sp8072-geometry-legend .sp8072-legend-flow::before { background:#edaa56; }
-.sp8072-geometry-legend .sp8072-legend-source::before { background:#b495ef; }
-.sp8072-geometry-legend .sp8072-legend-mic::before { background:transparent; border:2px solid #55b8ff; }
-.sp8072-geometry-legend .sp8072-legend-path::before { height:0; width:18px; border-top:1px dashed #55b8ff; border-radius:0; background:none; }
-.sp8072-location-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin:0 16px 16px; }
-.sp8072-location-card { padding:14px; border:1px solid var(--site-color-border,#254057); border-top:3px solid var(--sp-mic-color); border-radius:8px; min-width:0; }
-.sp8072-location-card h4 { margin:0 0 10px; color:var(--site-color-text,#f3f7fc); font-size:13px; }
-.sp8072-location-card p { margin:4px 0; font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
-.sp8072-location-card .sp8072-location-level { font:600 24px/1.3 var(--mono); color:var(--site-color-text,#f3f7fc); }
-.sp8072-location-level span { display:block; font:11px/1.6 var(--mono); color:var(--site-color-muted,#a4b5ca); }
-.sp8072-location-coordinate { color:var(--site-color-text,#f3f7fc); }
-.sp8072-actions { display:flex; flex-wrap:wrap; gap:var(--site-space-2,8px); margin:var(--site-space-3,16px) 0; }
+[data-workbench-id="nasa-sp8072"] .workbench-domain-svg .sp8072-microphone circle { stroke:var(--sp-mic-color); stroke-width:1.3; fill:var(--site-color-canvas,#03101e); }
+.sp8072-microphone path { stroke:var(--sp-mic-color); stroke-width:1; fill:none; }
+.sp8072-microphone .sp8072-label-leader { stroke-width:.7; opacity:.55; }
+[data-workbench-id="nasa-sp8072"] .sp8072-microphone .sp8072-main-mic-halo { opacity:.25; }
+[data-workbench-id="nasa-sp8072"] .workbench-domain-svg .sp8072-microphone text { fill:var(--sp-mic-color); stroke:none; font-weight:500; }
+.sp8072-mic-invalid circle { stroke-dasharray:2 2; }
+.sp8072-measurement-figure figcaption { display:flex; justify-content:space-between; gap:8px 20px; flex-wrap:wrap; padding:0 20px 12px; color:var(--site-color-muted,#a4b5ca); font-size:10px; line-height:1.5; }
+.sp8072-measurement-figure figcaption p { margin:0; }
+.sp8072-geometry-legend { display:flex; gap:8px 14px; flex-wrap:wrap; }
+.sp8072-geometry-legend span::before { content:''; display:inline-block; width:5px; height:5px; margin-right:5px; border-radius:50%; background:var(--site-color-cyan,#55b8ff); }
+.sp8072-geometry-legend .sp8072-legend-flow::before { width:12px; height:1px; border-radius:0; background:var(--site-color-gold,#f2c663); }
+.sp8072-geometry-legend .sp8072-legend-source::before { background:var(--site-color-violet,#b495ef); }
+.sp8072-geometry-legend .sp8072-legend-mic::before { background:transparent; border:1px solid var(--site-color-cyan,#55b8ff); }
+.sp8072-geometry-legend .sp8072-legend-path::before { height:0; width:12px; border-top:1px dashed var(--site-color-cyan,#55b8ff); border-radius:0; background:none; }
+.sp8072-readout-heading { display:flex; justify-content:space-between; gap:12px; padding:10px 20px 0; border-top:1px solid var(--site-color-border,#254057); color:var(--site-color-muted,#a4b5ca); }
+.sp8072-location-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); margin:0 20px; }
+.sp8072-location-card { min-width:0; padding:10px 16px 10px 0; }
+.sp8072-location-card + .sp8072-location-card { padding-left:16px; border-left:1px solid var(--site-color-border,#254057); }
+.sp8072-location-card h4 { margin:0 0 6px; color:var(--site-color-muted,#a4b5ca); }
+.sp8072-view-heading,.sp8072-top-view h4,.sp8072-readout-heading,.sp8072-location-card h4 { font-family:var(--mono); font-size:var(--site-type-label); font-weight:500; letter-spacing:.06em; text-transform:uppercase; }
+.sp8072-location-id { color:var(--sp-mic-color); font-family:var(--mono); margin-right:6px; }
+.sp8072-location-card p { margin:4px 0; font-size:10px; line-height:1.5; overflow-wrap:anywhere; }
+[data-workbench-id="nasa-sp8072"] .sp8072-location-card .sp8072-location-level { font:500 17px/1.35 var(--mono); color:var(--site-color-text,#dce8f7); }
+.sp8072-location-level span { font:10px/1.5 var(--sans,system-ui); color:var(--site-color-muted,#a4b5ca); }
+.sp8072-location-coordinate { color:var(--site-color-muted,#a4b5ca); }
+.sp8072-geometry-caption { margin:0; padding:0 20px 12px; color:var(--site-color-muted,#a4b5ca); font-size:10px; line-height:1.5; }
+.sp8072-actions { display:flex; flex-wrap:wrap; gap:8px; padding:0 20px; margin:8px 0; }
 .sp8072-actions button { min-height:44px; }
-.sp8072-method-note { padding:var(--site-space-3,16px); border:1px solid var(--site-color-border,#254057); line-height:1.6; }
-.sp8072-method-note summary { cursor:pointer; min-height:44px; }
+.sp8072-method-note { padding:12px 20px; border-top:1px solid var(--site-color-border,#254057); font-size:12px; line-height:1.6; }
+.sp8072-method-note summary { cursor:pointer; min-height:44px; display:list-item; align-content:center; }
 .sp8072-method-note a { overflow-wrap:anywhere; }
 [data-workbench-id="nasa-sp8072"] .table-wrap { max-height:520px; overflow:auto; }
 [data-workbench-id="nasa-sp8072"] .workbench-field textarea { min-height:90px; }
@@ -4766,5 +4778,36 @@ body.site-system-subject #main-content {
 [data-workbench-id="nasa-sp8072"] .chart-shell[data-wb-chart] { overflow-x:auto; }
 [data-workbench-id="nasa-sp8072"] [data-wb-chart]:focus-visible { outline:2px solid var(--site-color-cyan); outline-offset:2px; }
 [data-workbench-id="nasa-sp8072"] .chart-shell [data-legend-trace] text { fill:var(--site-color-text,#dce8f7); }
-@media (max-width:700px) { .sp8072-actions button { flex:1 1 160px; } [data-workbench-id="nasa-sp8072"] .workbench-domain-panel { min-width:0; } [data-workbench-id="nasa-sp8072"] .sp8072-geometry { min-width:680px; } .sp8072-location-cards { grid-template-columns:1fr; } }
-@media print { .sp8072-actions { display:none; } [data-workbench-id="nasa-sp8072"] .table-wrap { max-height:none; } .sp8072-geometry text { fill:#111; } }
+html[data-theme="light"] [data-workbench-id="nasa-sp8072"] .sp8072-mic-1 { --sp-mic-color:var(--site-color-cyan,#176b8b); }
+html[data-theme="light"] [data-workbench-id="nasa-sp8072"] .sp8072-mic-2 { --sp-mic-color:var(--site-color-gold,#96651d); }
+html[data-theme="light"] [data-workbench-id="nasa-sp8072"] .sp8072-mic-3 { --sp-mic-color:var(--site-color-violet,#6750b4); }
+html[data-theme="light"] [data-workbench-id="nasa-sp8072"] .sp8072-location-id { color:var(--sp-mic-color); }
+html[data-theme="light"] [data-workbench-id="nasa-sp8072"] [data-wb-chart="0"] :is(path[stroke="#55b8ff"],[data-legend-trace] line[stroke="#55b8ff"]) { stroke:var(--site-color-cyan,#176b8b); }
+html[data-theme="light"] [data-workbench-id="nasa-sp8072"] [data-wb-chart="0"] :is(path[stroke="#fb923c"],[data-legend-trace] line[stroke="#fb923c"]) { stroke:var(--site-color-gold,#96651d); }
+html[data-theme="light"] [data-workbench-id="nasa-sp8072"] [data-wb-chart="0"] :is(path[stroke="#b495ef"],[data-legend-trace] line[stroke="#b495ef"]) { stroke:var(--site-color-violet,#6750b4); }
+@media (max-width:700px) {
+  .sp8072-geometry-layout { grid-template-columns:minmax(0,1fr); padding:14px 16px 0; gap:8px; }
+  .sp8072-top-view { display:grid; grid-template-columns:120px minmax(0,1fr); grid-template-rows:auto auto; align-items:center; column-gap:16px; border-left:0; border-top:1px solid var(--site-color-border,#254057); padding:10px 0 0; }
+  .sp8072-top-view h4 { grid-column:2; grid-row:1; }
+  .sp8072-top-view p { grid-column:2; grid-row:2; align-self:start; }
+  [data-workbench-id="nasa-sp8072"] .sp8072-top-geometry { grid-column:1; grid-row:1 / 3; width:120px; height:100px; }
+  [data-workbench-id="nasa-sp8072"] .sp8072-geometry { min-width:0; height:220px; }
+  .sp8072-view-heading { flex-wrap:wrap; gap:4px 12px; }
+  .sp8072-measurement-figure figcaption { padding:10px 16px; }
+  .sp8072-readout-heading { padding:10px 16px 0; }
+  .sp8072-location-cards { margin:0 16px; grid-template-columns:1fr; }
+  .sp8072-location-card { display:grid; grid-template-columns:minmax(0,1fr) auto; padding:10px 0; gap:0 8px; }
+  .sp8072-location-card + .sp8072-location-card { border-left:0; border-top:1px solid var(--site-color-border,#254057); padding:10px 0; }
+  .sp8072-location-card h4 { align-self:center; margin:0; }
+  .sp8072-location-level { text-align:right; }
+  .sp8072-location-coordinate,.sp8072-location-card .sp8072-invalid { grid-column:1 / -1; }
+  .sp8072-geometry-caption { padding:0 16px 12px; }
+  .sp8072-actions { padding:0 16px; }
+  .sp8072-actions button { flex:1 1 140px; }
+}
+@media print {
+  .sp8072-actions { display:none; }
+  [data-workbench-id="nasa-sp8072"] .table-wrap { max-height:none; }
+  [data-workbench-id="nasa-sp8072"] :is(.sp8072-geometry,.sp8072-top-geometry) text { fill:#111; }
+  .sp8072-location-card { break-inside:avoid; }
+}

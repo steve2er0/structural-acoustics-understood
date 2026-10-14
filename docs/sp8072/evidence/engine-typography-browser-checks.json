@@ -1,0 +1,149 @@
+{
+  "createdUTC": "2026-10-14T03:56:02.455Z",
+  "desktop": {
+    "labels": [
+      {
+        "family": "SFMono-Regular, Consolas, \"Liberation Mono\", Menlo, monospace",
+        "sameFont": true,
+        "selector": ".sp8072-view-heading > span:last-child",
+        "size": "9.92px",
+        "spacing": "0.5952px",
+        "text": "Side view · XZ · Z upward",
+        "transform": "uppercase"
+      },
+      {
+        "family": "SFMono-Regular, Consolas, \"Liberation Mono\", Menlo, monospace",
+        "sameFont": true,
+        "selector": ".sp8072-top-view h4",
+        "size": "9.92px",
+        "spacing": "0.5952px",
+        "text": "Top view · XY",
+        "transform": "uppercase"
+      },
+      {
+        "family": "SFMono-Regular, Consolas, \"Liberation Mono\", Menlo, monospace",
+        "sameFont": true,
+        "selector": ".sp8072-readout-heading",
+        "size": "9.92px",
+        "spacing": "0.5952px",
+        "text": "Predicted microphone levels28.3–113.1 Hz",
+        "transform": "uppercase"
+      },
+      {
+        "family": "SFMono-Regular, Consolas, \"Liberation Mono\", Menlo, monospace",
+        "sameFont": true,
+        "selector": ".sp8072-location-card h4",
+        "size": "9.92px",
+        "spacing": "0.5952px",
+        "text": "M1 Main receiver",
+        "transform": "uppercase"
+      },
+      {
+        "family": "SFMono-Regular, Consolas, \"Liberation Mono\", Menlo, monospace",
+        "sameFont": true,
+        "selector": ".sp8072-geometry text",
+        "size": "11px",
+        "spacing": "0.44px",
+        "text": "M1",
+        "transform": "none"
+      },
+      {
+        "family": "SFMono-Regular, Consolas, \"Liberation Mono\", Menlo, monospace",
+        "sameFont": true,
+        "selector": ".sp8072-top-geometry text",
+        "size": "11px",
+        "spacing": "0.44px",
+        "text": "M1",
+        "transform": "none"
+      }
+    ],
+    "levels": [
+      "127.07 dB re 20 µPa",
+      "127.35 dB re 20 µPa",
+      "127.07 dB re 20 µPa"
+    ],
+    "reference": {
+      "family": "SFMono-Regular, Consolas, \"Liberation Mono\", Menlo, monospace",
+      "transform": "uppercase"
+    },
+    "url": "http://localhost:4178/standalone.html#/tool/nasa-sp8072",
+    "viewport": {
+      "height": 1084,
+      "width": 1728
+    }
+  },
+  "mobile": {
+    "geometry": {
+      "clientWidth": 332,
+      "contentWidth": 332
+    },
+    "labels": [
+      {
+        "left": 29,
+        "right": 199.7578125,
+        "sameFont": true,
+        "text": "Engine & receiver geometry"
+      },
+      {
+        "left": 29,
+        "right": 193.1953125,
+        "sameFont": true,
+        "text": "Side view · XZ · Z upward"
+      },
+      {
+        "left": 165,
+        "right": 361,
+        "sameFont": true,
+        "text": "Top view · XY"
+      },
+      {
+        "left": 29,
+        "right": 220.3125,
+        "sameFont": true,
+        "text": "M1 Main receiver"
+      },
+      {
+        "left": 29,
+        "right": 220.3125,
+        "sameFont": true,
+        "text": "M2 Comparison microphone"
+      },
+      {
+        "left": 29,
+        "right": 220.3125,
+        "sameFont": true,
+        "text": "M3 Comparison microphone"
+      }
+    ],
+    "levels": [
+      "127.07 dB re 20 µPa",
+      "127.35 dB re 20 µPa",
+      "127.07 dB re 20 µPa"
+    ],
+    "pageWidth": 390,
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  "lightTheme": {
+    "color": "rgb(94, 109, 115)",
+    "family": "SFMono-Regular, Consolas, \"Liberation Mono\", Menlo, monospace",
+    "sameFont": true,
+    "theme": "light"
+  },
+  "modular": {
+    "family": "SFMono-Regular, Consolas, \"Liberation Mono\", Menlo, monospace",
+    "levels": [
+      "127.07 dB re 20 µPa",
+      "127.35 dB re 20 µPa",
+      "127.07 dB re 20 µPa"
+    ],
+    "sameFont": true,
+    "transform": "uppercase",
+    "url": "http://localhost:4178/#/tool/nasa-sp8072"
+  },
+  "finalPreview": "http://localhost:4178/standalone.html#/tool/nasa-sp8072",
+  "viewportRestored": true,
+  "limits": "Emulated mobile dimensions; typography and layout checks only. Direct-file, offline, print, import/reset and downloads not repeated in this typography pass."
+}
