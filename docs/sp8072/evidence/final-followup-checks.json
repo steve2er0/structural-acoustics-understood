@@ -1,0 +1,37 @@
+{
+  "at": "2026-10-13T18:59:43.074295+00:00",
+  "owner_import": {
+    "status": "passed",
+    "source": "Owner confirmed manual import worked in this chat; explicitly requested that evidence be recorded."
+  },
+  "pressure_label": {
+    "status": "passed",
+    "baseline_db": 125.926,
+    "reflected_db": 131.926,
+    "gain_db": 6,
+    "basis": "Incident pressure with entered path corrections",
+    "source": "Actual retained Chrome modular tab after the cache version update."
+  },
+  "cache_fix": {
+    "status": "passed",
+    "version": "sau-v134-sp8072-final",
+    "reason": "Existing browser served old label code from the v133 offline cache. New cache activated and corrected labels were observed after reload."
+  },
+  "print": {
+    "status": "inconclusive",
+    "reason": "Actual Print report click timed out in Input.dispatchMouseEvent. Subsequent page evaluation was blocked. No print-layout pass is claimed."
+  },
+  "reset": {
+    "status": "pending_owner",
+    "reason": "Earlier raw-CDP reset-dialog approval rejection remains in the original agent report; requested manual Reset confirmation."
+  },
+  "offline_standalone": {
+    "status": "pending_owner",
+    "reason": "Requested manual reload and control interaction with Wi-Fi off in the directly opened standalone file. Hosted/cache/static checks do not establish direct-file offline operation."
+  },
+  "viewport_cleanup": {
+    "status": "inconclusive",
+    "reason": "Documented viewport reset returned successfully; observation after print remained blocked, so resulting browser dimensions could not be verified."
+  },
+  "acceptance": "No result accepted; no worker launched."
+}

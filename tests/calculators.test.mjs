@@ -8,6 +8,7 @@ import { PCB_ACCELEROMETER_CATALOG_META, pcbAccelerometers, pcbAccelerometerOpti
 import { extraCalculatorRegistry, fatigueDamageSpectrumState, spectralFatigueDamageFromMoments, synthesizeDamageEquivalentPsd } from '../js/extra-calculators.js';
 import { sorbothaneIsolationCalculator } from '../js/sorbothane-isolation.js';
 import { twoStageIsolationCalculator } from '../js/two-stage-isolation.js';
+import { sp8072Calculator, sp8072Tool } from '../js/sp8072-tool.js';
 import { acs519Sections, acs519ToolCatalog, acs519Demos, acs519CaseNotes } from '../js/acs519-data.js';
 import { acs519CalculatorRegistry } from '../js/acs519-calculators.js';
 import { workflowExpansionSections, workflowExpansionToolCatalog, workflowExpansionDemos, workflowExpansionCaseNotes } from '../js/workflow-expansion-data.js';
@@ -148,8 +149,8 @@ import {
 } from '../js/sea-coupling.js';
 
 const sections=[...baseSections,...acs519Sections,...workflowExpansionSections,...programExpansionSections,...seaParameterSections,...electronicsFatigueSections];
-const catalog=[...toolCatalog,...extraToolCatalog,...acs519ToolCatalog,...workflowExpansionToolCatalog,...programExpansionToolCatalog,...seaParameterToolCatalog,...electronicsFatigueToolCatalog];
-const registry={...calculatorRegistry,...extraCalculatorRegistry,...acs519CalculatorRegistry,...workflowExpansionCalculatorRegistry,...programExpansionCalculatorRegistry,...seaParameterCalculatorRegistry,...electronicsFatigueCalculatorRegistry,'sorbothane-isolation':sorbothaneIsolationCalculator,'two-stage-isolation':twoStageIsolationCalculator};
+const catalog=[sp8072Tool,...toolCatalog,...extraToolCatalog,...acs519ToolCatalog,...workflowExpansionToolCatalog,...programExpansionToolCatalog,...seaParameterToolCatalog,...electronicsFatigueToolCatalog];
+const registry={...calculatorRegistry,...extraCalculatorRegistry,...acs519CalculatorRegistry,...workflowExpansionCalculatorRegistry,...programExpansionCalculatorRegistry,...seaParameterCalculatorRegistry,...electronicsFatigueCalculatorRegistry,'sorbothane-isolation':sorbothaneIsolationCalculator,'two-stage-isolation':twoStageIsolationCalculator,'nasa-sp8072':sp8072Calculator};
 const demos=[...baseDemos,...acs519Demos,...workflowExpansionDemos,...programExpansionDemos,...seaParameterDemos,...electronicsFatigueDemos];
 const caseNotes=[...baseCaseNotes,...acs519CaseNotes,...workflowExpansionCaseNotes,...programExpansionCaseNotes,...seaParameterCaseNotes,...electronicsFatigueCaseNotes];
 const defaults=id=>Object.fromEntries(registry[id].inputs.map(f=>[f.key,f.default]));
@@ -158,7 +159,7 @@ const close=(actual,expected,rel=1e-6)=>assert.ok(Math.abs(actual-expected)<=rel
 const evidenceCollection={visual:'visuals',plot:'plots',rangeChart:'rangeCharts',heatmap:'heatmaps',surface3d:'surfaces3d',table:'tables'};
 
 test('every catalog entry has a calculator and every default case runs',()=>{
-  assert.equal(catalog.length,121);
+  assert.equal(catalog.length,122);
   assert.deepEqual(catalog.filter(t=>!registry[t.id]),[]);
   assert.deepEqual(Object.keys(registry).filter(id=>!catalog.some(t=>t.id===id)),[]);
   for(const tool of catalog){
@@ -1704,7 +1705,7 @@ test('shared engineering-tool runtime exposes decision-centered wet-tank and mod
   assert.match(wetHtml,/data-wb-unit-system/);
   assert.match(wetHtml,/Sources & validity/);
 
-  assert.deepEqual(engineeringAnalysisIds,['two-stage-isolation','modal-density']);
+  assert.deepEqual(engineeringAnalysisIds,['two-stage-isolation','nasa-sp8072','modal-density']);
   assert.ok(engineeringAnalysisDefinitions.every(definition=>definition.profile==='analysis'));
   const definition=engineeringAnalysisDefinitions.find(item=>item.id==='modal-density'),entry=engineeringAnalysisRegistry['modal-density'];
   const html=entry.render();
@@ -1934,7 +1935,8 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes current interactive runtimes',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v124'/);
+  assert.match(worker,/const CACHE = 'sau-v137-sp8072-measurements'/);
+  for (const module of ['sp8072-data','sp8072-physics','sp8072-tool']) assert.ok(worker.includes(`./js/${module}.js`));
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);
   assert.match(worker,/\.\/js\/homepage\.js/);

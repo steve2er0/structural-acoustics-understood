@@ -1,0 +1,37 @@
+{
+  "schema": "sau-sp8072-resume-checks",
+  "version": 1,
+  "date": "2026-10-13",
+  "sameBrowserSurface": "Chrome extension browser 1, local QA tab 543588896",
+  "nativeAvailabilityRecheck": "No native availability error; Mac no longer reported locked.",
+  "initialDialogRecheck": "No JavaScript dialog was found before this resumed reset attempt.",
+  "finalSavedImplementationLoaded": {"geometryViewBox": "0 0 900 350", "wrappingHtmlCaptionPresent": true},
+  "mobileCaptionCheck": {"viewport": [390,844], "pageWidth": 390, "captionWidth": 364, "passed": true, "screenshot": "docs/sp8072/evidence/resumed-mobile-geometry.png"},
+  "freshDownloads": {
+    "passed": true,
+    "files": ["docs/sp8072/evidence/fresh-study-export.json", "docs/sp8072/evidence/fresh-calculation-evidence.json", "docs/sp8072/evidence/fresh-spectrum.csv", "docs/sp8072/evidence/fresh-report.txt", "docs/sp8072/evidence/fresh-spectrum.svg"],
+    "delivery": "Actual app controls clicked once each. A native Chrome Save dialog was observed for every export and saved each new file in the approved project evidence folder.",
+    "overallDb": 125.92632640937516,
+    "independentCsvPressureEnergySumDb": 125.92632640937516,
+    "agreementRecord": "docs/sp8072/evidence/fresh-export-checks.json",
+    "observationTimeout": "After the calculation-evidence Save click, native AX observation returned Computer Use server error -10005: timeoutReached. The file nevertheless exists, parses and passes payload checks; the timeout is not counted as a failed download."
+  },
+  "resetRecheck": {
+    "status": "blocked",
+    "clickTimeout": "Timed out after 2985ms waiting for CDP command Input.dispatchMouseEvent.",
+    "dialogApiTimeout": "Timed out after 10000ms waiting for CDP command Emulation.setFocusEmulationEnabled.confirm",
+    "nativeObservationTimeout": "Computer Use server error -10005: timeoutReached",
+    "sameTabRecoveryAction": "Page.handleJavaScriptDialog with accept=true",
+    "automaticApprovalRejection": "The user declined permission for this action. Browser use cannot use raw CDP on http://localhost:4173 because the user denied permission for this request.",
+    "workaroundAfterRejection": false,
+    "resetSuccessClaimed": false,
+    "qaTabRetainedForHandoff": true
+  },
+  "importRecheck": "Not reached after the reset recovery denial; the previous exact-file import denial remains unresolved. The approved example file hash is unchanged.",
+  "directFileStandalone": "Previous file URL policy rejection remains unresolved; no native File Open, alternate surface or hosted-copy workaround was attempted.",
+  "offline": "Not run. Raw CDP is denied; the previous task-owned server session ID 7760 is no longer available (Unknown process id 7760). No process-inspection denial was bypassed and the server was not stopped.",
+  "viewportCleanup": "Previous reset() timeout remains unresolved; no successful restoration is claimed after the reset-recovery denial.",
+  "printLayout": "Not run before the reset-recovery denial.",
+  "physicalCorrelation": false,
+  "ownerAcceptance": false
+}

@@ -1,0 +1,267 @@
+{
+  "schema": "sau-sp8072-artifact-checks",
+  "version": 1,
+  "createdUTC": "2026-10-13T17:59:40.216Z",
+  "passed": true,
+  "totalArtifacts": 51,
+  "regularFiles": true,
+  "relativeProjectPaths": true,
+  "duplicates": false,
+  "excludedDirectory": "tmp/sp8072/",
+  "auditSelfEntry": "This file is checked as a regular project file after creation; its own hash is excluded to avoid recursion.",
+  "coordinatorValidation": "Not established. The supplied coordinator context repeats a generic Invalid completion artifacts failure. No coordinator code or output directory outside this project was accessed.",
+  "suppliedCoordinatorCompletionSha256": "677c129c7845a296c8bc35903f3bace06ad8e54a0cb6bfb71b93b1ee9af3b733",
+  "localCompletionReport": "docs/sp8072/completion-report.json",
+  "entries": [
+    {
+      "file": "js/sp8072-data.js",
+      "bytes": 5774,
+      "sha256": "7594a938efff3fcd7100b19adbe4033c0c748c62f36b009657073322217d534b"
+    },
+    {
+      "file": "js/sp8072-physics.js",
+      "bytes": 22056,
+      "sha256": "a2800a20da43196ceabb517bd51adc9860b36f76b66593a949173429d988ca62"
+    },
+    {
+      "file": "js/sp8072-tool.js",
+      "bytes": 28818,
+      "sha256": "6ccf20f62a55580d6649a4cf29c3bf24ff467def4d042243c0379abc7c09b3e0"
+    },
+    {
+      "file": "js/app.js",
+      "bytes": 124491,
+      "sha256": "77016f2d87343bc7c7be14aa9ba3b7320de0a005ec59afd0e6dbb86d047e01b2"
+    },
+    {
+      "file": "js/engineering-workbenches.js",
+      "bytes": 51990,
+      "sha256": "86a6deb662dc745657b9395953de4eb04f1cf92b2ff52f4680f1c04214dda395"
+    },
+    {
+      "file": "js/workbench-runtime.js",
+      "bytes": 44307,
+      "sha256": "ecda26196274f1d1ad78be2329b957babaccfc159df2ae3fe16efec7017860dc"
+    },
+    {
+      "file": "js/unit-system.js",
+      "bytes": 5907,
+      "sha256": "083b402eba4893446a60bc4b1c7115a3f67bfe56be356bc139b4fda247298cbd"
+    },
+    {
+      "file": "styles.css",
+      "bytes": 331873,
+      "sha256": "8abaab457d89c2415684f0158e7b13e5dc55b57dce2b4c4c83aff7a335f04ddd"
+    },
+    {
+      "file": "service-worker.js",
+      "bytes": 3464,
+      "sha256": "8813bc44ae57f63addbfd15081648b1791697b4157ab83ca71329beca32b3a7f"
+    },
+    {
+      "file": "scripts/sync-standalone.mjs",
+      "bytes": 36064,
+      "sha256": "ba9de2a8a36ac8d3dd6dc2f93304a9862f7ca560cc89856492018496703c9117"
+    },
+    {
+      "file": "scripts/sp8072-benchmarks.py",
+      "bytes": 4063,
+      "sha256": "6fc72e31cb91192f81f729afe1d5f581e9f57f5974a2289b2f1cd05a9c5366e7"
+    },
+    {
+      "file": "scripts/sp8072-manifest.mjs",
+      "bytes": 10640,
+      "sha256": "b636f9d0b0f7dae41a4747443ff361a9674c5ec7923a6daac6abf6b56277ef21"
+    },
+    {
+      "file": "scripts/sp8072-verify-delivery.mjs",
+      "bytes": 5290,
+      "sha256": "6b9fc93c01ec4fa583cceb62ab78c59d1cba8dc6a6c4a76e47ad1f661434a55c"
+    },
+    {
+      "file": "scripts/sp8072-verify-exports.mjs",
+      "bytes": 3778,
+      "sha256": "f4192ded7efdb78ebecb04061144a3d5dbab0ac5ecb73c48712a38e955d8eeb1"
+    },
+    {
+      "file": "scripts/sp8072-verify-artifacts.mjs",
+      "bytes": 5219,
+      "sha256": "b84458e36795aa93b6bfe1da41493190e4a30fd8d67bfdb0c361626517ce1940"
+    },
+    {
+      "file": "standalone.html",
+      "bytes": 3299495,
+      "sha256": "e1b027773b296f7d9f1e7f305a899bd51e32230a8d9e272d2f6a3cf5e72c6974"
+    },
+    {
+      "file": "references/NASA-SP-8072-19710023719.pdf",
+      "bytes": 1941998,
+      "sha256": "84f1483c2c8477810186e98765ea99e4b7f7cc71e0a47eb8f86977d3b02aabf8"
+    },
+    {
+      "file": "references/NASA-20140005349-Diffuser-Water-Injection.pdf",
+      "bytes": 3538097,
+      "sha256": "707898c671e4a8169e66bd8660ed6af044cedff7aa39dab49352eb78569b2d62"
+    },
+    {
+      "file": "references/sp8072-manifest.json",
+      "bytes": 63838,
+      "sha256": "b54571dfefa2fe37074b6e1ac3ad25373021d67a3ad02377b757b663d6dd1b8c"
+    },
+    {
+      "file": "tests/fixtures/sp8072-benchmarks.json",
+      "bytes": 6250,
+      "sha256": "cbc7706232590ba1b42e85d961c434c2c7b32ef34920912f46c2765ff96acc65"
+    },
+    {
+      "file": "tests/sp8072.test.mjs",
+      "bytes": 10036,
+      "sha256": "9ea265341a8d4dc40f990e9ac6c4b3e2e3dcad0635fdc8e10c3b14967bf12a13"
+    },
+    {
+      "file": "tests/calculators.test.mjs",
+      "bytes": 132836,
+      "sha256": "b087594b1bdcdeabb7b98a25411beb7e8a5314a77b1a924379f6fbc64d0b0fb7"
+    },
+    {
+      "file": "docs/sp8072/README.md",
+      "bytes": 23898,
+      "sha256": "18e6010cadb31f59733a4df01a84c0e6d99680036c152f7f84ce1cc5dd3fbafd"
+    },
+    {
+      "file": "docs/sp8072/VALIDATION.md",
+      "bytes": 20638,
+      "sha256": "dd2b5932d061b8f6d412c6214e5bd1ae3f0110cf974fbf5dbd8df299f8fdcf2f"
+    },
+    {
+      "file": "docs/sp8072/CONTROLS.md",
+      "bytes": 10638,
+      "sha256": "b44cdc1804e3a548850df1ee19c7655c26dfb38ec6f39673e313a2d3f7223020"
+    },
+    {
+      "file": "docs/sp8072/example-study.json",
+      "bytes": 25523,
+      "sha256": "3ffc6263728b4a70b96dc37c31b6711dbcc53a16ef37071249d0f87028037c5a"
+    },
+    {
+      "file": "README.md",
+      "bytes": 10752,
+      "sha256": "1f10d3e29665f4a3c802c610adb36f2718efc7121945326678dfc0a405c50cf5"
+    },
+    {
+      "file": "docs/sp8072/evidence/browser-checks.json",
+      "bytes": 10061,
+      "sha256": "b3e8c716c9e291e1c443cc2f0bc74389cbcdd9b477f322d15a4657a1502e06fd"
+    },
+    {
+      "file": "docs/sp8072/evidence/build-checks.json",
+      "bytes": 5261,
+      "sha256": "82a77422fae8cca603dbc5bae63f8cbc2cf46c20e3d8bda9e2a643c148fb3258"
+    },
+    {
+      "file": "docs/sp8072/evidence/download-checks.json",
+      "bytes": 4394,
+      "sha256": "e253f7b3af2cba9cbf74e4f9a46489cbd3da4478d7e303d28a57ef185e6cb8d2"
+    },
+    {
+      "file": "docs/sp8072/evidence/numerical-checks.json",
+      "bytes": 1209,
+      "sha256": "55863e58002f971055adc185471483888ab3803204573aac068f1889f9f0bb39"
+    },
+    {
+      "file": "docs/sp8072/evidence/npm-test.log",
+      "bytes": 36355,
+      "sha256": "07c7848c19a158c637f3e2c1853d5665f22122c5951031c07c0398dcd9e1b710"
+    },
+    {
+      "file": "docs/sp8072/evidence/recovered-study-export.json",
+      "bytes": 25521,
+      "sha256": "254f07b1545af4704302ab6dd75bce3ca1009ebe5e32e8b01e1ab2906e390488"
+    },
+    {
+      "file": "docs/sp8072/evidence/recovered-distributed-study-export.json",
+      "bytes": 205752,
+      "sha256": "3cc995a36ce19a8783749907b6aaaef522bdf98c9fab05225d36c8b80715f14b"
+    },
+    {
+      "file": "docs/sp8072/evidence/modular-desktop.png",
+      "bytes": 101789,
+      "sha256": "8ee8ab7a940606a2a5b3cf181cd412abc3778f88396bc53d4be108582c4cb416"
+    },
+    {
+      "file": "docs/sp8072/evidence/modular-wet-distributed.png",
+      "bytes": 129522,
+      "sha256": "2051009d89a42ff49cbf7b895e553befc1ff521e716772379444bffe0f80385d"
+    },
+    {
+      "file": "docs/sp8072/evidence/modular-final-geometry.png",
+      "bytes": 118762,
+      "sha256": "d28824dc069b41a3cf049ee074506088440ec322c8dbf602f8d33cf28cdb4bce"
+    },
+    {
+      "file": "docs/sp8072/evidence/modular-final-spectrum.png",
+      "bytes": 149247,
+      "sha256": "1b4c33f08f3495b64ee47bebaac6d12d23aba0be3c9805750dbab80b9a2e4767"
+    },
+    {
+      "file": "docs/sp8072/evidence/modular-mobile.png",
+      "bytes": 41093,
+      "sha256": "4f1414d79a54d97847e43e758e6b8769b55eadddc63602ac99eeb29229e9c397"
+    },
+    {
+      "file": "docs/sp8072/evidence/modular-mobile-geometry.png",
+      "bytes": 25693,
+      "sha256": "0413b56d1244693c8d310115c3bb7eab3bcf52b926e80f5beef89b7e8ec89577"
+    },
+    {
+      "file": "docs/sp8072/evidence/modular-mobile-spectrum.png",
+      "bytes": 43768,
+      "sha256": "67ba62aafbea792ca55e22702bf4e2207c008260db6127695d825011c2ea7d6a"
+    },
+    {
+      "file": "docs/sp8072/evidence/resumed-mobile-geometry.png",
+      "bytes": 35220,
+      "sha256": "86874d892ad4926fecfcc0f4db355e1b51ad7374b9ebd7d4942cfd54191c0aa0"
+    },
+    {
+      "file": "docs/sp8072/evidence/resume-checks.json",
+      "bytes": 3074,
+      "sha256": "ddc1834ae92494ef4250d7608a1eb4364f8abbb8cc57d44c802a0e054f24db2b"
+    },
+    {
+      "file": "docs/sp8072/evidence/fresh-study-export.json",
+      "bytes": 138030,
+      "sha256": "62f77ae70e104378cbbd123a62decb9e8357f4a1dd439c61b5024bbeb3337d18"
+    },
+    {
+      "file": "docs/sp8072/evidence/fresh-calculation-evidence.json",
+      "bytes": 138329,
+      "sha256": "3a381e4bb75b6c472d4519a03be0c59c78ecbd5ef5cda47f505132d03b702956"
+    },
+    {
+      "file": "docs/sp8072/evidence/fresh-spectrum.csv",
+      "bytes": 372,
+      "sha256": "45b933197807e064e5983a6f54d76f5f06ae6f730da36437c2dfa21170e98d6c"
+    },
+    {
+      "file": "docs/sp8072/evidence/fresh-report.txt",
+      "bytes": 141855,
+      "sha256": "51990bd6bbb67831e62d46a458a4473b07ceefb13bef2dd1d1e406d91e18b18d"
+    },
+    {
+      "file": "docs/sp8072/evidence/fresh-spectrum.svg",
+      "bytes": 7017,
+      "sha256": "e9d4848066636a11a5fd818299dbe7cf40a714d591f8381aaa280ece3176a4a9"
+    },
+    {
+      "file": "docs/sp8072/evidence/fresh-export-checks.json",
+      "bytes": 1569,
+      "sha256": "e2dcea0037b1651f5d8ea061960073a891e8c1b4d3c6b6d7f40aac59f6b2fc5a"
+    },
+    {
+      "file": "docs/sp8072/completion-report.json",
+      "bytes": 3050,
+      "sha256": "baf4495cd9b2348285956faf4eb45678dcc000edb9732549ab1c111017f867ac"
+    }
+  ]
+}

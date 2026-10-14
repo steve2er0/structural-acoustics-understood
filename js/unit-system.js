@@ -4,7 +4,7 @@ export const ENGLISH_UNIT_CONVERSIONS = Object.freeze({
   'm/s':{unit:'ft/s',factor:3.280839895},'mm/s':{unit:'in/s',factor:0.03937007874},'m/s peak':{unit:'ft/s peak',factor:3.280839895},
   'm/s²':{unit:'ft/s²',factor:3.280839895},'m/s2':{unit:'ft/s²',factor:3.280839895},'m/s2/g':{unit:'ft/s²/g',factor:3.280839895},'m/s² RMS':{unit:'ft/s² RMS',factor:3.280839895},'m/s RMS':{unit:'ft/s RMS',factor:3.280839895},'m/s RMS-equivalent':{unit:'ft/s RMS-equivalent',factor:3.280839895},
   'm RMS':{unit:'in RMS',factor:39.37007874},'m peak':{unit:'in peak',factor:39.37007874},'mm RMS':{unit:'in RMS',factor:0.03937007874},'mm/s RMS':{unit:'in/s RMS',factor:0.03937007874},
-  kg:{unit:'lbm',factor:2.204622622},'kg/m':{unit:'lbm/ft',factor:0.6719689751},'kg/m²':{unit:'lbm/ft²',factor:0.2048161436},'kg/m³':{unit:'lbm/ft³',factor:0.06242796058},
+  kg:{unit:'lbm',factor:2.204622622},'kg/s':{unit:'lbm/s',factor:2.204622622},'kg/m':{unit:'lbm/ft',factor:0.6719689751},'kg/m²':{unit:'lbm/ft²',factor:0.2048161436},'kg/m³':{unit:'lbm/ft³',factor:0.06242796058},
   N:{unit:'lbf',factor:0.2248089431},MN:{unit:'kip',factor:224.8089431},'N peak':{unit:'lbf peak',factor:0.2248089431},'N RMS':{unit:'lbf RMS',factor:0.2248089431},'N/√Hz':{unit:'lbf/√Hz',factor:0.2248089431},
   'N/m':{unit:'lbf/in',factor:0.005710147163},'N·m':{unit:'lbf·in',factor:8.850745791},'N·s/m':{unit:'lbf·s/in',factor:0.005710147163},'N/(m/s)':{unit:'lbf/(in/s)',factor:0.005710147163},
   Pa:{unit:'psi',factor:0.0001450377377},kPa:{unit:'psi',factor:0.1450377377},MPa:{unit:'ksi',factor:0.1450377377},GPa:{unit:'Mpsi',factor:0.1450377377},'Pa RMS':{unit:'psi RMS',factor:0.0001450377377},

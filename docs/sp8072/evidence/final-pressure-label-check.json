@@ -1,0 +1,6 @@
+{
+  "at": "2026-10-13T18:54:53.185Z",
+  "metric": "Selected-band OASPL\n131.926 dB re 20 µPa\n\nIncident pressure with entered path corrections; 28.3–113.1 Hz band edges.",
+  "takeaway": "ENGINEERING TAKEAWAY\nChanging engine power changes generated acoustic watts. Nozzle size and velocity set spectral similarity; source locations and deflector turning change each propagation distance and radiation angle. This result is external pressure in the incident field after the entered path corrections, not structural vibration or internal noise.",
+  "url": "http://localhost:4173/#/tool/nasa-sp8072"
+}

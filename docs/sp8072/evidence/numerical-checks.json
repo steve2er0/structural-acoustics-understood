@@ -1,0 +1,46 @@
+{
+  "schema": "sau-sp8072-numerical-checks",
+  "version": 1,
+  "cases": [
+    {
+      "id": "analytical-apparent-none",
+      "actualOverallDb": 147.98008537291307,
+      "referenceOverallDb": 147.98008537291307,
+      "errorDb": 0,
+      "toleranceDb": 1e-8,
+      "pass": true
+    },
+    {
+      "id": "analytical-apparent-open",
+      "actualOverallDb": 149.29031117847916,
+      "referenceOverallDb": 149.2903111784792,
+      "errorDb": -2.842170943040401e-14,
+      "toleranceDb": 1e-8,
+      "pass": true
+    },
+    {
+      "id": "analytical-apparent-closed",
+      "actualOverallDb": 151.6640028904915,
+      "referenceOverallDb": 151.6640028904915,
+      "errorDb": 0,
+      "toleranceDb": 1e-8,
+      "pass": true
+    },
+    {
+      "id": "analytical-apparent-twin",
+      "actualOverallDb": 149.29031117847916,
+      "referenceOverallDb": 149.2903111784792,
+      "errorDb": -2.842170943040401e-14,
+      "toleranceDb": 1e-8,
+      "pass": true
+    },
+    {
+      "id": "analytical-distributed-integral",
+      "actualOverallDb": 144.34279276699542,
+      "referenceOverallDb": 144.34277752413902,
+      "errorDb": 0.000015242856392205795,
+      "toleranceDb": 0.002,
+      "pass": true
+    }
+  ]
+}

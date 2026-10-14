@@ -62,6 +62,9 @@ const seaParameterDemosModule = await read('js/sea-parameters-demos.js');
 const launchSeaCapstoneModule = await read('js/launch-sea-capstone.js');
 const workbenchRuntimeModule = await read('js/workbench-runtime.js');
 const engineeringWorkbenchesModule = await read('js/engineering-workbenches.js');
+const sp8072DataModule = await read('js/sp8072-data.js');
+const sp8072PhysicsModule = await read('js/sp8072-physics.js');
+const sp8072ToolModule = await read('js/sp8072-tool.js');
 const demoTakeawaysModule = await read('js/demo-takeaways.js');
 const demosModule = await read('js/demos.js');
 const homepageModule = await read('js/homepage.js');
@@ -313,24 +316,25 @@ standalone = replaceRange(standalone, demoRuntimeStart, 'const __engineeringResu
 
 const frameworkSource = frameworkModule.replace(/^export /gm, '');
 const frameworkBlock = `const __engineeringResults=(()=>{\n${frameworkSource}\nreturn {buildEngineeringResult,assertEngineeringResult,createEngineeringCalculator,createEngineeringRegistry,engineeringResultToText};\n})();\n\n`;
-const workbenchRuntimeBlock = `const __workbenchRuntime=(()=>{\nconst {lineChartSvg,heatmapSvg}=__charts;\n${moduleSource(unitSystemModule)}\n${moduleSource(workbenchRuntimeModule)}\nreturn {workbenchEsc,workbenchFmt,resultValue,createEngineeringToolProject,normalizeEngineeringToolProject,engineeringDecisionState,renderEngineeringAnalysis,renderEngineeringWorkbench,bindEngineeringWorkbench,createEngineeringWorkbenchRegistry};\n})();\n\n`;
+const workbenchRuntimeBlock = `const __workbenchRuntime=(()=>{\nconst {lineChartSvg,heatmapSvg,downloadText}=__charts;\n${moduleSource(unitSystemModule)}\n${moduleSource(workbenchRuntimeModule)}\nreturn {workbenchEsc,workbenchFmt,resultValue,createEngineeringToolProject,normalizeEngineeringToolProject,engineeringDecisionState,renderEngineeringAnalysis,renderEngineeringWorkbench,bindEngineeringWorkbench,createEngineeringWorkbenchRegistry};\n})();\n\n`;
+const sp8072Block = `const __sp8072=(()=>{\nconst {createEngineeringCalculator,engineeringResultToText}=__engineeringResults;\nconst {lineChartSvg,downloadText,downloadCsv,downloadSvg}=__charts;\n${moduleSource(unitSystemModule)}\n${moduleSource(sp8072DataModule)}\n${moduleSource(sp8072PhysicsModule)}\n${moduleSource(sp8072ToolModule)}\nreturn {sp8072Calculator,sp8072Tool,sp8072WorkbenchDefinition};\n})();\n\n`;
 const engineeringWorkbenchesBlock = `const __engineeringWorkbenches=(()=>{\nconst baseCalculatorRegistry=__calculators.calculatorRegistry;\nconst extraCalculatorRegistry=__extraCalculators.extraCalculatorRegistry;\nconst acs519CalculatorRegistry=__acs519Calculators.acs519CalculatorRegistry;\nconst workflowExpansionCalculatorRegistry=__workflowExpansionCalculators.workflowExpansionCalculatorRegistry;\nconst programExpansionCalculatorRegistry=__programExpansionCalculators.programExpansionCalculatorRegistry;\nconst seaParameterCalculatorRegistry=__seaParameterCalculators.seaParameterCalculatorRegistry;\nconst {createEngineeringWorkbenchRegistry,resultValue,workbenchEsc,workbenchFmt}=__workbenchRuntime;\n${moduleSource(engineeringWorkbenchesModule)}\nreturn {engineeringWorkbenchDefinitions,engineeringWorkbenchRegistry,engineeringWorkbenchIds,engineeringAnalysisDefinitions,engineeringAnalysisRegistry,engineeringAnalysisIds};\n})();\n\n`;
 const engineeringWorkbenchesWithTwoStageBlock = engineeringWorkbenchesBlock.replace(
   'const {createEngineeringWorkbenchRegistry,resultValue,workbenchEsc,workbenchFmt}=__workbenchRuntime;',
-  'const {createEngineeringWorkbenchRegistry,resultValue,workbenchEsc,workbenchFmt}=__workbenchRuntime;\nconst {twoStageIsolationCalculator,twoStageIsolationWorkbenchDefinition}=__twoStageIsolation;'
+  'const {createEngineeringWorkbenchRegistry,resultValue,workbenchEsc,workbenchFmt}=__workbenchRuntime;\nconst {twoStageIsolationCalculator,twoStageIsolationWorkbenchDefinition}=__twoStageIsolation;\nconst {sp8072Calculator,sp8072WorkbenchDefinition}=__sp8072;'
 );
 const frameworkStart = 'const __engineeringResults=(()=>{';
 const legacyAppImports = 'const {sections,toolCatalog:baseToolCatalog,demos,caseNotes,referenceGroups,glossary}=__data;';
 const appImports = 'const {sections:baseSections,toolCatalog:baseToolCatalog,demos:baseDemos,caseNotes:baseCaseNotes,referenceGroups:baseReferenceGroups,glossary}=__data;';
 const appStartMarker = standalone.includes(appImports) ? appImports : legacyAppImports;
 if (standalone.includes(frameworkStart)) {
-  standalone = replaceRange(standalone, frameworkStart, appStartMarker, frameworkBlock + workbenchRuntimeBlock + engineeringWorkbenchesWithTwoStageBlock);
+  standalone = replaceRange(standalone, frameworkStart, appStartMarker, frameworkBlock + workbenchRuntimeBlock + sp8072Block + engineeringWorkbenchesWithTwoStageBlock);
 } else {
-  standalone = standalone.replace(appStartMarker, frameworkBlock + workbenchRuntimeBlock + engineeringWorkbenchesWithTwoStageBlock + appStartMarker);
+  standalone = standalone.replace(appStartMarker, frameworkBlock + workbenchRuntimeBlock + sp8072Block + engineeringWorkbenchesWithTwoStageBlock + appStartMarker);
 }
 
-const oldRegistry = "const calculatorRegistry = { ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, ...electronicsFatigueCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator, 'two-stage-isolation': twoStageIsolationCalculator };";
-const newRegistry = "const calculatorRegistry = createEngineeringRegistry({ ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, ...electronicsFatigueCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator, 'two-stage-isolation': twoStageIsolationCalculator });";
+const oldRegistry = "const calculatorRegistry = { ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, ...electronicsFatigueCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator, 'two-stage-isolation': twoStageIsolationCalculator, 'nasa-sp8072': sp8072Calculator };";
+const newRegistry = "const calculatorRegistry = createEngineeringRegistry({ ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, ...electronicsFatigueCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator, 'two-stage-isolation': twoStageIsolationCalculator, 'nasa-sp8072': sp8072Calculator });";
 const appPrelude = [
   moduleSource(flightResponseToolModule),
   moduleSource(unitSystemModule),
@@ -359,6 +363,7 @@ const appPrelude = [
   'const {engineeringAnalysisRegistry,engineeringWorkbenchRegistry}=__engineeringWorkbenches;',
   'const {sorbothaneIsolationCalculator,sorbothaneIsolationWorkbench}=__sorbothaneIsolation;',
   'const {twoStageIsolationCalculator}=__twoStageIsolation;',
+  'const {sp8072Calculator,sp8072Tool}=__sp8072;',
   'const {createEngineeringRegistry,engineeringResultToText}=__engineeringResults;'
 ].join('\n');
 let appSource = stripImports(app).trim();

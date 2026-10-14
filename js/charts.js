@@ -121,6 +121,18 @@ export function lineChartSvg(plot, { width = 840, height = 390 } = {}) {
   const sx = scaleFn(xmin, xmax, m.left, m.left + innerW, xLog);
   const sy = scaleFn(ymin, ymax, m.top + innerH, m.top, yLog);
   const xTicks = xLog ? logTicks(xmin, xmax) : linearTicks(xmin, xmax).map(value => ({ value, major: true }));
+  if (xLog && plot.labelLogEndpoints) {
+    // Opt-in endpoint labels keep narrow spectra readable when no decade lies inside the domain.
+    for (const value of [xmin,xmax]) {
+      const tick=xTicks.find(t=>Math.abs(t.value/value-1)<1e-10);
+      if(tick)tick.major=true;else xTicks.push({value,major:true});
+    }
+    for(const tick of xTicks) {
+      const position=Math.log(tick.value/xmin)/Math.log(xmax/xmin);
+      const endpoint=Math.abs(tick.value/xmin-1)<1e-10||Math.abs(tick.value/xmax-1)<1e-10;
+      if(!endpoint&&(position<.08||position>.92))tick.major=false;
+    }
+  }
   const yTicks = yLog ? logTicks(ymin, ymax) : linearTicks(ymin, ymax).map(value => ({ value, major: true }));
   const clipId = `clip-${Math.random().toString(36).slice(2)}`;
   const harmonic=plot.animation?.type==='harmonic';

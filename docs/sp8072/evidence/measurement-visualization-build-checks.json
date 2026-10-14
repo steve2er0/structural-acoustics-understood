@@ -1,0 +1,274 @@
+{
+  "createdUTC": "2026-10-14T03:07:50.746Z",
+  "tests": {
+    "passed": 165,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0
+  },
+  "benchmarks": [
+    {
+      "id": "analytical-apparent-none",
+      "actualDb": 147.98008537291307,
+      "referenceDb": 147.98008537291307,
+      "errorDb": 0,
+      "toleranceDb": 1e-8
+    },
+    {
+      "id": "analytical-apparent-open",
+      "actualDb": 149.29031117847916,
+      "referenceDb": 149.2903111784792,
+      "errorDb": -2.842170943040401e-14,
+      "toleranceDb": 1e-8
+    },
+    {
+      "id": "analytical-apparent-closed",
+      "actualDb": 151.6640028904915,
+      "referenceDb": 151.6640028904915,
+      "errorDb": 0,
+      "toleranceDb": 1e-8
+    },
+    {
+      "id": "analytical-apparent-twin",
+      "actualDb": 149.29031117847916,
+      "referenceDb": 149.2903111784792,
+      "errorDb": -2.842170943040401e-14,
+      "toleranceDb": 1e-8
+    },
+    {
+      "id": "analytical-distributed-integral",
+      "actualDb": 144.34279276699542,
+      "referenceDb": 144.34277752413902,
+      "errorDb": 0.000015242856392205795,
+      "toleranceDb": 0.002
+    }
+  ],
+  "standalone": {
+    "firstSha256": "663e9d5dc5f5ac6f1d26c772847906564319efb9b9d1750e175c5030f68847fc",
+    "secondSha256": "663e9d5dc5f5ac6f1d26c772847906564319efb9b9d1750e175c5030f68847fc",
+    "deterministic": true
+  },
+  "gitDiffCheck": true,
+  "preserved": [
+    {
+      "file": "experiences/flight-response/Flight-Response.html",
+      "expected": "4a7597df21068bc15a646781fab08b611d91822c3c7c8065594413b5efdce3b9",
+      "basis": "Starting checkout bytes",
+      "actual": "4a7597df21068bc15a646781fab08b611d91822c3c7c8065594413b5efdce3b9"
+    },
+    {
+      "file": "experiences/flight-response/README.md",
+      "expected": "e11b871bf7c283c6d3e221d1057b9a060219c40a09814dcfdfd30d49902df2ab",
+      "basis": "Starting checkout bytes",
+      "actual": "e11b871bf7c283c6d3e221d1057b9a060219c40a09814dcfdfd30d49902df2ab"
+    },
+    {
+      "file": "experiences/flight-response/app.mjs",
+      "expected": "6fec00630bed08087851a7f05e2e93ff0f0adae02c2a1f28c1060bfb5d1ec54c",
+      "basis": "Starting checkout bytes",
+      "actual": "6fec00630bed08087851a7f05e2e93ff0f0adae02c2a1f28c1060bfb5d1ec54c"
+    },
+    {
+      "file": "experiences/flight-response/docs/ALGORITHM.md",
+      "expected": "fbe16a382c1487a6e7687b306921e297c2c810f20d69a803f2624eb4f3cd4718",
+      "basis": "Starting checkout bytes",
+      "actual": "fbe16a382c1487a6e7687b306921e297c2c810f20d69a803f2624eb4f3cd4718"
+    },
+    {
+      "file": "experiences/flight-response/docs/VALIDATION.md",
+      "expected": "599fec9e8583c35679d86c782c54e25546e80272eafc5e2c0e2aaaf02553d256",
+      "basis": "Starting checkout bytes",
+      "actual": "599fec9e8583c35679d86c782c54e25546e80272eafc5e2c0e2aaaf02553d256"
+    },
+    {
+      "file": "experiences/flight-response/index.html",
+      "expected": "bf0fcbcf0f4ed6bea8e5d7800a3d770c721a2e0af6100f5710ea3dd3b5a98e59",
+      "basis": "Starting checkout bytes",
+      "actual": "bf0fcbcf0f4ed6bea8e5d7800a3d770c721a2e0af6100f5710ea3dd3b5a98e59"
+    },
+    {
+      "file": "experiences/flight-response/physics.mjs",
+      "expected": "28b12a05cb32a131d9e4573192856406a6c9c875a8014090bc1de50f9fee20a6",
+      "basis": "Starting checkout bytes",
+      "actual": "28b12a05cb32a131d9e4573192856406a6c9c875a8014090bc1de50f9fee20a6"
+    },
+    {
+      "file": "experiences/flight-response/style.css",
+      "expected": "1cf01707264c3441371ce343f593f1232befbe1ec02bf6c2c1a6731aa7531682",
+      "basis": "Starting checkout bytes",
+      "actual": "1cf01707264c3441371ce343f593f1232befbe1ec02bf6c2c1a6731aa7531682"
+    },
+    {
+      "file": "experiences/flight-response/tests/independent-check.py",
+      "expected": "911e821c8fa81743ce4343f7ecdf2960f6e272765d494b12ae09d02328c5a384",
+      "basis": "Starting checkout bytes",
+      "actual": "911e821c8fa81743ce4343f7ecdf2960f6e272765d494b12ae09d02328c5a384"
+    },
+    {
+      "file": "experiences/flight-response/tests/physics.test.mjs",
+      "expected": "ccf0075a1ac2e2a6a23cb744cf40f3430dfafac6abb8760025e1ef55bd08fc43",
+      "basis": "Starting checkout bytes",
+      "actual": "ccf0075a1ac2e2a6a23cb744cf40f3430dfafac6abb8760025e1ef55bd08fc43"
+    },
+    {
+      "file": "experiences/flight-response/tests/stream.test.mjs",
+      "expected": "9f0a5e553eab0fc75cbe731d06b558108255281dd610ca07ee341c435a018153",
+      "basis": "Starting checkout bytes",
+      "actual": "9f0a5e553eab0fc75cbe731d06b558108255281dd610ca07ee341c435a018153"
+    },
+    {
+      "file": "experiences/flight-response/tests/worker.test.mjs",
+      "expected": "62c7326a09f7d87dd219d336505de9f4e27d5e3fe282ef65bc1cee6238457f71",
+      "basis": "Starting checkout bytes",
+      "actual": "62c7326a09f7d87dd219d336505de9f4e27d5e3fe282ef65bc1cee6238457f71"
+    },
+    {
+      "file": "js/flight-response-tool.js",
+      "expected": "1dad15b27aadf4cce5a6a321d8bbecdb03c539e66c5507a97755cdc7a2b847b6",
+      "basis": "Starting checkout bytes",
+      "actual": "1dad15b27aadf4cce5a6a321d8bbecdb03c539e66c5507a97755cdc7a2b847b6"
+    },
+    {
+      "file": "references/NASA-SP-8072-19710023719.pdf",
+      "expected": "84f1483c2c8477810186e98765ea99e4b7f7cc71e0a47eb8f86977d3b02aabf8",
+      "basis": "Imported PDF provenance",
+      "actual": "84f1483c2c8477810186e98765ea99e4b7f7cc71e0a47eb8f86977d3b02aabf8"
+    },
+    {
+      "file": "references/NASA-20140005349-Diffuser-Water-Injection.pdf",
+      "expected": "707898c671e4a8169e66bd8660ed6af044cedff7aa39dab49352eb78569b2d62",
+      "basis": "Imported PDF provenance",
+      "actual": "707898c671e4a8169e66bd8660ed6af044cedff7aa39dab49352eb78569b2d62"
+    },
+    {
+      "file": "docs/sp8072/example-study.json",
+      "expected": "3ffc6263728b4a70b96dc37c31b6711dbcc53a16ef37071249d0f87028037c5a",
+      "basis": "Original approved example",
+      "actual": "3ffc6263728b4a70b96dc37c31b6711dbcc53a16ef37071249d0f87028037c5a"
+    }
+  ],
+  "exampleLevels": [
+    {
+      "id": "M1",
+      "position": [
+        -25,
+        0,
+        20
+      ],
+      "overallDb": 127.06875418001745
+    },
+    {
+      "id": "M2",
+      "position": [
+        -50,
+        0,
+        20
+      ],
+      "overallDb": 127.34587472013351
+    },
+    {
+      "id": "M3",
+      "position": [
+        25,
+        0,
+        20
+      ],
+      "overallDb": 127.06875418001745
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "js/sp8072-tool.js",
+      "sha256": "2593a88d1db22be6906ba8df4a68d69fb152086707c4e983c90442fa72d4aee1"
+    },
+    {
+      "file": "js/charts.js",
+      "sha256": "9b8b93785bae1fd893e52e43c9c4fb897954a75a77f3c615254acc4b7349f6bb"
+    },
+    {
+      "file": "styles.css",
+      "sha256": "cabbfec7059bbec7f61b300b44681f9485b39fccabd0756d52d4393031fb9f53"
+    },
+    {
+      "file": "service-worker.js",
+      "sha256": "1ebf687259f6ad80fe6efa237e411bec74c74766f1c7b7965333a8191f57be45"
+    },
+    {
+      "file": "standalone.html",
+      "sha256": "663e9d5dc5f5ac6f1d26c772847906564319efb9b9d1750e175c5030f68847fc"
+    },
+    {
+      "file": "tests/sp8072.test.mjs",
+      "sha256": "93e746327d3662f222c1d8e2db4c4863807022cf061cad66657759451fa56eb8"
+    },
+    {
+      "file": "tests/calculators.test.mjs",
+      "sha256": "1b8db2e165c79d60a4bc84b6dfa09b2a46f40efdbc8feb7ed31aef7cc2d0145b"
+    },
+    {
+      "file": "scripts/sp8072-manifest.mjs",
+      "sha256": "c18fbfdd3481e73e618758cf1373bb407ddb7ad7dbf41a6a853be989f877db50"
+    },
+    {
+      "file": "scripts/sp8072-verify-visualization.mjs",
+      "sha256": "2d097fec2684d61c555a6b5cd841f30f9bb6e65d3c2300a09d25e024eb2beb4a"
+    },
+    {
+      "file": "references/sp8072-manifest.json",
+      "sha256": "4d092278fac67fc5c6dc502c5d711782136b96ad1331613ede00d772cfc86238"
+    },
+    {
+      "file": "docs/sp8072/README.md",
+      "sha256": "099faff6b9493ffe240580e90b5e3410c65daecbcb3f10b02a1299f163b19b39"
+    },
+    {
+      "file": "docs/sp8072/VALIDATION.md",
+      "sha256": "1be49b117be7c8fe6b1d28a12d6e6f82afdb56bdcbc44cd1f0c9ee6e0230c3b4"
+    },
+    {
+      "file": "docs/sp8072/CONTROLS.md",
+      "sha256": "e767bfdf8e404c8e87ae93cae1401c24ed44f01492ae1cfc87fadbcacd9fc36e"
+    },
+    {
+      "file": "docs/sp8072/evidence/measurement-visualization-checks.json",
+      "sha256": "bc5fa2be237060e4447496f2f5a9f18c87123af5fecb333ea56109922e20631a"
+    },
+    {
+      "file": "docs/sp8072/evidence/measurement-visualization-tests.txt",
+      "sha256": "722389dbb52661b3ec82ac1459730b794ba85a2ae1f693e2cb8f14dfe3afebb4"
+    },
+    {
+      "file": "docs/sp8072/evidence/measurement-example-calculation.json",
+      "sha256": "19dba8060029886fa4cfaf747d7cb28591d98adefd531ebcebe6787885be6fa9"
+    },
+    {
+      "file": "docs/sp8072/evidence/measurement-example-report.txt",
+      "sha256": "32e8d4bddd08362a771102cc6752654b1a87977aeb4727d64d554836252012cb"
+    },
+    {
+      "file": "docs/sp8072/evidence/engine-measurements-desktop.jpg",
+      "sha256": "dffe6f3a8ac38e7ddfd8ec4ec8314bcc4aa556549aa00cd975421f24f4580760"
+    },
+    {
+      "file": "docs/sp8072/evidence/engine-measurements-mobile.jpg",
+      "sha256": "6298c1718de0e543fb88602b2ef0ea0f758461241d36b9c54f9f9874c7a693d4"
+    },
+    {
+      "file": "docs/sp8072/evidence/engine-measurements-mobile-levels.jpg",
+      "sha256": "66b91712fa19fd2e4688e701f7508dea21f6baec576370415f76cbfa4cf92b1c"
+    },
+    {
+      "file": "docs/sp8072/evidence/engine-measurements-standalone.jpg",
+      "sha256": "2965ad0e55fe1b7d6b9110c57bdb9ab2d72f5c7146da3aa03182fff20a96f65a"
+    },
+    {
+      "file": "docs/sp8072/evidence/engine-measurements-offline.jpg",
+      "sha256": "69b190a2d6973cbabedae2075f083eb37d08d7cae173d429c1175aee00555beb"
+    },
+    {
+      "file": "docs/sp8072/evidence/engine-measurements-spectrum.jpg",
+      "sha256": "c225f220c3ce591a04eb45cc1a2be675e14c7cb62c512a87cdbb5e764d4dc2ab"
+    }
+  ],
+  "limits": "Software checks and analytical benchmarks; browser evidence is separate. No measured engine/pad correlation or qualification."
+}

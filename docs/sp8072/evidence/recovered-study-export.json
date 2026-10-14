@@ -1,0 +1,959 @@
+{
+  "schema": "sau-engineering-tool",
+  "version": 1,
+  "toolId": "nasa-sp8072",
+  "workbenchId": "nasa-sp8072",
+  "profile": "analysis",
+  "name": "NASA SP-8072 Launch Acoustic Explorer study",
+  "activeView": "analysis",
+  "activeStep": "analysis",
+  "unitSystem": "SI",
+  "inputs": {
+    "nasa-sp8072": {
+      "method": "apparent",
+      "engines": 1,
+      "thrust": 1000000,
+      "velocity": 2200,
+      "diameter": 1.5,
+      "efficiency": 1,
+      "cluster": "merged",
+      "nozzleRadius": 0,
+      "nozzlePositions": "",
+      "receiverX": -25,
+      "receiverY": 0,
+      "receiverZ": 20,
+      "altitude": 0,
+      "receiverStep": 1,
+      "deflector": "none",
+      "standOffD": 4,
+      "turn": 90,
+      "azimuth": 0,
+      "bendRadiusD": 2,
+      "branchFraction": 0.5,
+      "sourceBasis": "handbook",
+      "transfer": "no",
+      "customSpectrum": "",
+      "customAxial": "",
+      "customLocal": "",
+      "band": "octave",
+      "linearWidth": 10,
+      "fmin": "40",
+      "fmax": "80",
+      "integration": "integral",
+      "directivity": "edge",
+      "directivityDb": 0,
+      "positionScale": 1,
+      "coreScale": 1,
+      "mach": 3,
+      "ambientSound": 343,
+      "slices": 96,
+      "axialMin": 0.1,
+      "axialMax": 4.7,
+      "water": "dry",
+      "waterFlow": 0,
+      "exhaustFlow": 0,
+      "waterReduction": 0,
+      "waterCurve": "",
+      "waterProvenance": "",
+      "injectionStationD": 4,
+      "injectionAngle": 90,
+      "injectionPressure": 0,
+      "injectorDiameter": 0,
+      "shieldStartD": 4,
+      "shieldEndD": 40,
+      "shieldDb": 0,
+      "propagationDbPerKm": 0,
+      "reflectionDb": 0,
+      "surfaceDb": 0,
+      "minimumRangeD": 0.5,
+      "vehicleMach": 0,
+      "correlation": "off",
+      "separation": 0,
+      "circumferenceAngle": 0,
+      "vehicleRadius": 3,
+      "beta": 30,
+      "exitDensity": 0.2,
+      "ambientDensity": 1.225,
+      "pressureRatio": 1,
+      "nozzleShape": "circular",
+      "areaRatio": 20
+    }
+  },
+  "selections": {
+    "traces": {}
+  },
+  "baseline": null,
+  "provenance": [],
+  "calculation": {
+    "values": [
+      {
+        "label": "Selected-band OASPL",
+        "value": 127.06875418001745,
+        "unit": "dB re 20 µPa",
+        "note": "Incident free-field pressure; 28.3–113.1 Hz band edges."
+      },
+      {
+        "label": "Reference / dry OASPL",
+        "value": 127.06875418001745,
+        "unit": "dB re 20 µPa"
+      },
+      {
+        "label": "Incremental water change",
+        "value": 0,
+        "unit": "dB"
+      },
+      {
+        "label": "Selected-band pressure RMS",
+        "value": 45.13024639975238,
+        "unit": "Pa RMS"
+      },
+      {
+        "label": "Mechanical exhaust power",
+        "value": 1100000000,
+        "unit": "W"
+      },
+      {
+        "label": "Reference acoustic power",
+        "value": 11000000,
+        "unit": "W"
+      },
+      {
+        "label": "Selected source power",
+        "value": 4842537.299572959,
+        "unit": "W"
+      },
+      {
+        "label": "Dry source power captured",
+        "value": 44.02306635975417,
+        "unit": "%"
+      },
+      {
+        "label": "Equivalent flow diameter",
+        "value": 1.5,
+        "unit": "m"
+      },
+      {
+        "label": "Core length",
+        "value": 23.69943,
+        "unit": "m"
+      },
+      {
+        "label": "Derived exhaust sound speed",
+        "value": 733.3333333333334,
+        "unit": "m/s"
+      },
+      {
+        "label": "Exhaust mass flow",
+        "value": 777.5441817634738,
+        "unit": "kg/s"
+      },
+      {
+        "label": "Water / exhaust mass ratio",
+        "value": 0,
+        "unit": ""
+      },
+      {
+        "label": "Distributed axial power captured",
+        "value": 100,
+        "unit": "%"
+      }
+    ],
+    "interpretation": {
+      "summary": "Frequency-dependent apparent sources predict 127.1 dB over 2 octave bands at (-25, 0, 20) m. The same reference geometry gives 127.1 dB before incremental water treatment.",
+      "physicalMeaning": "Changing engine power changes generated acoustic watts. Nozzle size and velocity set spectral similarity; source locations and deflector turning change each propagation distance and radiation angle. This result is external pressure in the incident free field, not structural vibration or internal noise.",
+      "engineeringConsiderations": [
+        "A deflector may lower total power and raise loading at this receiver through geometry/directivity. Compare the same reference before assigning attenuation.",
+        "Each dB reduction is applied to its named stage once; water flow has no universal noise-reduction law.",
+        "Retain source provenance and missing tails when transferring this spectrum into a structural or SEA model."
+      ]
+    },
+    "assumptions": {
+      "satisfied": [
+        "Canonical SI internally; sound power referenced to 1 pW, pressure to 20 µPa.",
+        "Source branches and frequency bands sum incoherently on an energy basis.",
+        "No hidden normalization of truncated source/spectral curves."
+      ],
+      "warnings": [
+        "Selected-band OASPL sums only the listed bands. Missing low/high spectral tails, ignition transients, shock tones, coherent reflections, structural response and internal noise are excluded."
+      ],
+      "alerts": [
+        "Selected-band OASPL sums only the listed bands. Missing low/high spectral tails, ignition transients, shock tones, coherent reflections, structural response and internal noise are excluded."
+      ],
+      "limitations": [
+        "Empirical handbook similarity and coarse digitization are not engine/pad measurement correlation or qualification.",
+        "Ignition overpressure, shock tones, multiphase water dynamics, coherent reflections, structural vibration and internal response require separate models.",
+        "Selected-band OASPL sums only the listed bands. Missing low/high spectral tails, ignition transients, shock tones, coherent reflections, structural response and internal noise are excluded."
+      ]
+    },
+    "validity": {
+      "regime": "Selected-band external acoustic loading from SP-8072 source allocation; explicitly labeled scenarios for unsupported empirical relationships.",
+      "confidence": "Approximate curve reading: ±1–1.5 dB densities/directivity, ±12–15% apparent source positions. These are reading estimates, not measured prediction tolerances.. 1 result-specific alert is active; resolve or bound it before relying on the result."
+    },
+    "relatedConcepts": [
+      {
+        "title": "Launch acoustic teaching workbench",
+        "href": "#/tool/launch-acoustic-source",
+        "description": "Preserved mechanism and sensitivity teaching envelope."
+      },
+      {
+        "title": "NASA handbook and implementation coverage",
+        "href": "https://ntrs.nasa.gov/api/citations/19710023719/downloads/19710023719.pdf",
+        "description": "§4.2 pp. 28–32; separate source, path and receiver loading."
+      }
+    ],
+    "plots": [
+      {
+        "title": "External acoustic band spectrum",
+        "xLabel": "Band center frequency (Hz)",
+        "yLabel": "Band SPL (dB re 20 µPa)",
+        "xScale": "log",
+        "traceSelector": {
+          "initial": "emphasis",
+          "label": "Spectrum comparison"
+        },
+        "traces": [
+          {
+            "name": "Current external pressure",
+            "x": [
+              40,
+              80
+            ],
+            "y": [
+              122.7114412802608,
+              125.0850933920378
+            ],
+            "emphasis": true
+          },
+          {
+            "name": "Reference / dry, same deflector",
+            "x": [
+              40,
+              80
+            ],
+            "y": [
+              122.7114412802608,
+              125.0850933920378
+            ],
+            "emphasis": false
+          },
+          {
+            "name": "Current incident field before surface correction",
+            "x": [
+              40,
+              80
+            ],
+            "y": [
+              122.7114412802608,
+              125.0850933920378
+            ],
+            "emphasis": false
+          }
+        ]
+      }
+    ],
+    "tables": [
+      {
+        "title": "Band power, loading and bandwidth closure",
+        "columns": [
+          "Center (Hz)",
+          "Lower (Hz)",
+          "Upper (Hz)",
+          "Bandwidth (Hz)",
+          "St",
+          "Reference source (W)",
+          "Current source (W)",
+          "SPL (dB re 20 µPa)",
+          "Pressure variance (Pa²)"
+        ],
+        "rows": [
+          [
+            40,
+            28.2842712474619,
+            56.568542494923804,
+            28.284271247461906,
+            0.02727272727272727,
+            2320846.5460046567,
+            2320846.5460046567,
+            122.7114412802608,
+            746.799673414078
+          ],
+          [
+            80,
+            56.5685424949238,
+            113.13708498984761,
+            56.56854249492381,
+            0.05454545454545454,
+            2521690.753568302,
+            2521690.753568302,
+            125.0850933920378,
+            1289.9394666882818
+          ]
+        ]
+      },
+      {
+        "title": "Apparent source contribution by frequency — 2 of 2 records (all in calculation JSON)",
+        "columns": [
+          "Source",
+          "Path station (m)",
+          "Range (m)",
+          "Angle from flow (deg)",
+          "DI (dB)",
+          "Band source (W)",
+          "Received band (dB re 20 µPa)"
+        ],
+        "rows": [
+          [
+            "e1/b1/f40.0000",
+            38.707708192208905,
+            63.8090510913738,
+            156.933829816631,
+            -13.847377254019701,
+            2320846.5460046567,
+            122.7114412802608
+          ],
+          [
+            "e1/b1/f80.0000",
+            31.949037205261803,
+            57.651560833629425,
+            154.3012386948416,
+            -12.715603474019785,
+            2521690.753568302,
+            125.0850933920378
+          ]
+        ]
+      },
+      {
+        "title": "Source contributions over all selected bands — 2 of 2 records",
+        "columns": [
+          "Source",
+          "Path station (m)",
+          "Total band source (W)",
+          "Contribution to selected-band OASPL (dB re 20 µPa)"
+        ],
+        "rows": [
+          [
+            "e1/b1/f40.0000",
+            38.707708192208905,
+            2320846.5460046567,
+            122.7114412802608
+          ],
+          [
+            "e1/b1/f80.0000",
+            31.949037205261803,
+            2521690.753568302,
+            125.0850933920378
+          ]
+        ]
+      }
+    ],
+    "csv": {
+      "filename": "nasa-sp8072-spectrum.csv",
+      "columns": [
+        "frequency_Hz",
+        "lower_Hz",
+        "upper_Hz",
+        "source_W",
+        "dry_source_W",
+        "SPL_dB_re20uPa",
+        "dry_SPL_dB_re20uPa",
+        "pressure_variance_Pa2"
+      ],
+      "rows": [
+        [
+          40,
+          28.2842712474619,
+          56.568542494923804,
+          2320846.5460046567,
+          2320846.5460046567,
+          122.7114412802608,
+          122.7114412802608,
+          746.799673414078
+        ],
+        [
+          80,
+          56.5685424949238,
+          113.13708498984761,
+          2521690.753568302,
+          2521690.753568302,
+          125.0850933920378,
+          125.0850933920378,
+          1289.9394666882818
+        ]
+      ]
+    },
+    "sp8072": {
+      "version": "2026-10-13.1",
+      "inputs": {
+        "method": "apparent",
+        "engines": 1,
+        "thrust": 1000000,
+        "velocity": 2200,
+        "diameter": 1.5,
+        "efficiency": 1,
+        "cluster": "merged",
+        "nozzleRadius": 0,
+        "nozzlePositions": "",
+        "mach": 3,
+        "ambientSound": 343,
+        "exitDensity": 0.2,
+        "ambientDensity": 1.225,
+        "pressureRatio": 1,
+        "nozzleShape": "circular",
+        "areaRatio": 20,
+        "altitude": 0,
+        "receiverX": -25,
+        "receiverY": 0,
+        "receiverZ": 20,
+        "receiverStep": 1,
+        "deflector": "none",
+        "standOffD": 4,
+        "turn": 90,
+        "azimuth": 0,
+        "bendRadiusD": 2,
+        "branchFraction": 0.5,
+        "sourceBasis": "handbook",
+        "customSpectrum": "",
+        "customAxial": "",
+        "customLocal": "",
+        "transfer": "no",
+        "fmin": 40,
+        "fmax": 80,
+        "band": "octave",
+        "linearWidth": 10,
+        "integration": "integral",
+        "directivity": "edge",
+        "directivityDb": 0,
+        "positionScale": 1,
+        "coreScale": 1,
+        "slices": 96,
+        "axialMin": 0.1,
+        "axialMax": 4.7,
+        "water": "dry",
+        "waterFlow": 0,
+        "exhaustFlow": 0,
+        "injectionStationD": 4,
+        "injectionAngle": 90,
+        "injectionPressure": 0,
+        "injectorDiameter": 0,
+        "waterReduction": 0,
+        "waterCurve": "",
+        "waterProvenance": "",
+        "shieldStartD": 4,
+        "shieldEndD": 40,
+        "shieldDb": 0,
+        "propagationDbPerKm": 0,
+        "reflectionDb": 0,
+        "surfaceDb": 0,
+        "minimumRangeD": 0.5,
+        "vehicleMach": 0,
+        "correlation": "off",
+        "separation": 0,
+        "circumferenceAngle": 0,
+        "vehicleRadius": 3,
+        "beta": 30
+      },
+      "diameter": 1.5,
+      "flowCount": 1,
+      "origins": [
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "branches": [
+        {
+          "az": 0,
+          "fraction": 1
+        }
+      ],
+      "mechanicalPower": 1100000000,
+      "acousticPower": 11000000,
+      "exhaustFlow": 777.5441817634738,
+      "waterRatio": 0,
+      "coreLength": 23.69943,
+      "exitSound": 733.3333333333334,
+      "axialFraction": 1,
+      "selectedSourceWatts": 4842537.299572959,
+      "drySelectedSourceWatts": 4842537.299572959,
+      "sourceFraction": 0.4402306635975417,
+      "bands": [
+        {
+          "frequency": 40,
+          "lower": 28.2842712474619,
+          "upper": 56.568542494923804,
+          "bandwidth": 28.284271247461906,
+          "strouhal": 0.02727272727272727,
+          "sourceWatts": 2320846.5460046567,
+          "drySourceWatts": 2320846.5460046567,
+          "splDb": 122.7114412802608,
+          "drySplDb": 122.7114412802608,
+          "freeFieldDb": 122.7114412802608,
+          "pressureSquared": 746.799673414078,
+          "waterDb": 0
+        },
+        {
+          "frequency": 80,
+          "lower": 56.5685424949238,
+          "upper": 113.13708498984761,
+          "bandwidth": 56.56854249492381,
+          "strouhal": 0.05454545454545454,
+          "sourceWatts": 2521690.753568302,
+          "drySourceWatts": 2521690.753568302,
+          "splDb": 125.0850933920378,
+          "drySplDb": 125.0850933920378,
+          "freeFieldDb": 125.0850933920378,
+          "pressureSquared": 1289.9394666882818,
+          "waterDb": 0
+        }
+      ],
+      "sources": [
+        {
+          "id": "e1/b1/f40.0000",
+          "e": 0,
+          "b": 0,
+          "x": 38.707708192208905,
+          "weight": 1,
+          "overallWeight": 1,
+          "position": [
+            0,
+            0,
+            -38.707708192208905
+          ],
+          "direction": [
+            0,
+            0,
+            -1
+          ],
+          "range": 63.8090510913738,
+          "theta": 156.933829816631,
+          "directivityDb": -13.847377254019701,
+          "selectedBandWatts": 2320846.5460046567,
+          "receivedBandDb": 122.7114412802608,
+          "totalSourceWatts": 2320846.5460046567,
+          "totalPressureEnergy": 1866999183535.195,
+          "selectedOverallDb": 122.7114412802608
+        },
+        {
+          "id": "e1/b1/f80.0000",
+          "e": 0,
+          "b": 0,
+          "x": 31.949037205261803,
+          "weight": 1,
+          "overallWeight": 1,
+          "position": [
+            0,
+            0,
+            -31.949037205261803
+          ],
+          "direction": [
+            0,
+            0,
+            -1
+          ],
+          "range": 57.651560833629425,
+          "theta": 154.3012386948416,
+          "directivityDb": -12.715603474019785,
+          "selectedBandWatts": 2521690.753568302,
+          "receivedBandDb": 125.0850933920378,
+          "totalSourceWatts": 2521690.753568302,
+          "totalPressureEnergy": 3224848666720.704,
+          "selectedOverallDb": 125.0850933920378
+        }
+      ],
+      "overallDb": 127.06875418001745,
+      "dryOverallDb": 127.06875418001745,
+      "pressureRms": 45.13024639975238,
+      "warnings": [
+        "Selected-band OASPL sums only the listed bands. Missing low/high spectral tails, ignition transients, shock tones, coherent reflections, structural response and internal noise are excluded."
+      ],
+      "correlation": null
+    },
+    "provenance": {
+      "dataVersion": "2026-10-13.1",
+      "sources": [
+        {
+          "title": "NASA SP-8072 — Acoustic Loads Generated by the Propulsion System",
+          "url": "https://ntrs.nasa.gov/api/citations/19710023719/downloads/19710023719.pdf",
+          "note": "§4.2, Eqs. 1–10, pp. 28–31; curves manually digitized from the official PDF. Reading uncertainty is separate from empirical accuracy."
+        },
+        {
+          "title": "Allgood et al. (2014), Reduction of Altitude Diffuser Jet Noise Using Water Injection",
+          "url": "https://ntrs.nasa.gov/citations/20140005349",
+          "note": "Subscale diffuser: injection position, angle, injector diameter and mass flow vary; excessive water can unstart the diffuser. This is not a universal launch-pad law."
+        },
+        {
+          "title": "Henderson (2010), Fifty Years of Fluidic Injection for Jet Noise Reduction",
+          "url": "https://ntrs.nasa.gov/citations/20100042122",
+          "note": "NASA abstract reviewed; injection pressure and flow matter, and frequency changes can differ. Full text unavailable on NTRS. No reduction coefficient imported."
+        }
+      ],
+      "equations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "curveDefinitions": {
+        "spectrum": {
+          "figure": 5,
+          "page": 8,
+          "uncertaintyDb": 1,
+          "x": "St = f de / Ue",
+          "y": "10 log10[W(f) Ue / (WOA de)]",
+          "points": [
+            [
+              0.002,
+              -0.5
+            ],
+            [
+              0.003,
+              3.2
+            ],
+            [
+              0.005,
+              7.2
+            ],
+            [
+              0.008,
+              9.5
+            ],
+            [
+              0.01,
+              10.5
+            ],
+            [
+              0.015,
+              11.3
+            ],
+            [
+              0.02,
+              11.3
+            ],
+            [
+              0.03,
+              10.3
+            ],
+            [
+              0.05,
+              8.3
+            ],
+            [
+              0.08,
+              6
+            ],
+            [
+              0.1,
+              4.5
+            ],
+            [
+              0.2,
+              0.2
+            ],
+            [
+              0.3,
+              -3.2
+            ],
+            [
+              0.5,
+              -7.5
+            ],
+            [
+              1,
+              -13.4
+            ],
+            [
+              2,
+              -19.4
+            ],
+            [
+              5,
+              -27
+            ]
+          ]
+        },
+        "axialPower": {
+          "figure": 12,
+          "page": 13,
+          "uncertaintyDb": 1,
+          "x": "x/xt",
+          "y": "10 log10[xt W(x) / WOA]",
+          "points": [
+            [
+              0.1,
+              -18.7
+            ],
+            [
+              0.2,
+              -15
+            ],
+            [
+              0.5,
+              -9.8
+            ],
+            [
+              1,
+              -5.2
+            ],
+            [
+              1.4,
+              -3.3
+            ],
+            [
+              1.6,
+              -3
+            ],
+            [
+              1.8,
+              -3.2
+            ],
+            [
+              2,
+              -3.6
+            ],
+            [
+              2.3,
+              -4.5
+            ],
+            [
+              2.6,
+              -6
+            ],
+            [
+              3,
+              -8.5
+            ],
+            [
+              3.5,
+              -12.1
+            ],
+            [
+              4,
+              -15
+            ],
+            [
+              4.7,
+              -20
+            ]
+          ]
+        },
+        "localSpectrum": {
+          "figure": 13,
+          "page": 14,
+          "uncertaintyDb": 1.5,
+          "x": "alpha = f x ae / (Ue a0)",
+          "y": "10 log10[W(f,x) Ue a0 / (W(x) x ae)]",
+          "points": [
+            [
+              0.05,
+              -20
+            ],
+            [
+              0.1,
+              -17
+            ],
+            [
+              0.2,
+              -13.8
+            ],
+            [
+              0.5,
+              -9.5
+            ],
+            [
+              1,
+              -7
+            ],
+            [
+              1.5,
+              -6.7
+            ],
+            [
+              2,
+              -7
+            ],
+            [
+              3,
+              -8.5
+            ],
+            [
+              5,
+              -12.5
+            ],
+            [
+              10,
+              -20
+            ],
+            [
+              20,
+              -27
+            ],
+            [
+              50,
+              -35.5
+            ],
+            [
+              60,
+              -38
+            ]
+          ]
+        },
+        "apparentOpen": {
+          "figure": 14,
+          "page": 15,
+          "uncertaintyPercent": 12,
+          "x": "St",
+          "y": "x/de (preferred solid open-scoop curve)",
+          "points": [
+            [
+              0.0012,
+              36
+            ],
+            [
+              0.002,
+              35.5
+            ],
+            [
+              0.005,
+              33.5
+            ],
+            [
+              0.01,
+              31.5
+            ],
+            [
+              0.02,
+              28
+            ],
+            [
+              0.05,
+              22
+            ],
+            [
+              0.1,
+              17
+            ],
+            [
+              0.2,
+              11.5
+            ],
+            [
+              0.5,
+              5.5
+            ],
+            [
+              1,
+              2.2
+            ],
+            [
+              1.3,
+              1
+            ],
+            [
+              1.6,
+              0.25
+            ]
+          ]
+        },
+        "apparentClosed": {
+          "figure": 14,
+          "page": 15,
+          "uncertaintyPercent": 15,
+          "x": "St",
+          "y": "x/de (closed-bucket dashed curve)",
+          "points": [
+            [
+              0.001,
+              18
+            ],
+            [
+              0.002,
+              15
+            ],
+            [
+              0.005,
+              12.5
+            ],
+            [
+              0.01,
+              11.5
+            ],
+            [
+              0.02,
+              10.5
+            ],
+            [
+              0.05,
+              8
+            ],
+            [
+              0.1,
+              5.7
+            ],
+            [
+              0.2,
+              3.6
+            ],
+            [
+              0.5,
+              1.5
+            ],
+            [
+              1,
+              0.7
+            ],
+            [
+              1.5,
+              0.4
+            ]
+          ]
+        }
+      },
+      "deflector": {
+        "id": "none",
+        "label": "Undeflected",
+        "turn": 0,
+        "standOffD": 0,
+        "radiusD": 0,
+        "basis": "Figs. 5, 14; §4.2 pp. 28–29"
+      },
+      "integration": "integral",
+      "bandConvention": "octave",
+      "referencePressurePa": 0.00002,
+      "referencePowerW": 1e-12
+    },
+    "interpretationByUnit": {
+      "English": {
+        "summary": "Frequency-dependent apparent sources predict 127.1 dB over 2 octave bands at (-82.02, 0, 65.62) ft. The same reference geometry gives 127.1 dB before incremental water treatment.",
+        "physicalMeaning": "Changing engine power changes generated acoustic watts. Nozzle size and velocity set spectral similarity; source locations and deflector turning change each propagation distance and radiation angle. This result is external pressure in the incident free field, not structural vibration or internal noise.",
+        "engineeringConsiderations": [
+          "A deflector may lower total power and raise loading at this receiver through geometry/directivity. Compare the same reference before assigning attenuation.",
+          "Each dB reduction is applied to its named stage once; water flow has no universal noise-reduction law.",
+          "Retain source provenance and missing tails when transferring this spectrum into a structural or SEA model."
+        ]
+      }
+    },
+    "presentation": {
+      "primaryEvidence": {
+        "type": "plot",
+        "index": 0
+      },
+      "primaryEvidenceStack": [
+        {
+          "type": "plot",
+          "index": 0
+        }
+      ],
+      "primaryEvidenceCount": 1,
+      "primaryValueCount": 4,
+      "animation": null
+    }
+  },
+  "calculationUnits": "canonical SI"
+}

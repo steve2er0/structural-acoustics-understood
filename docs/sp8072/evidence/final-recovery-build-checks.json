@@ -1,0 +1,10 @@
+{
+  "standalone_deterministic": true,
+  "standalone_sha256": "e1b027773b296f7d9f1e7f305a899bd51e32230a8d9e272d2f6a3cf5e72c6974",
+  "npm_tests": {
+    "passed": 162,
+    "failed": 0
+  },
+  "cache_version": "sau-v134-sp8072-final",
+  "scope": "Software verification. No engine/pad correlation or owner acceptance."
+}

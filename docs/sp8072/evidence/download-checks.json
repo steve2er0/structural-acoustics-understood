@@ -1,0 +1,145 @@
+{
+  "schema": "sau-sp8072-download-checks",
+  "version": 1,
+  "priorDownloads": [
+    {
+      "name": "nasa-sp8072-project (1).json",
+      "bytes": 205752,
+      "mtime": "2026-10-13T14:43:49.011Z",
+      "schema": "sau-engineering-tool",
+      "version": 1,
+      "toolId": "nasa-sp8072",
+      "inputs": {
+        "method": "distributed",
+        "band": "third",
+        "fmin": 20,
+        "fmax": 400
+      },
+      "exportedOverallDb": 126.85309898067239,
+      "recomputedOverallDb": 126.85309898067239,
+      "errorDb": 0,
+      "evidencePresent": true,
+      "baselinePresent": true
+    },
+    {
+      "name": "nasa-sp8072-project (2).json",
+      "bytes": 25521,
+      "mtime": "2026-10-13T14:45:27.129Z",
+      "schema": "sau-engineering-tool",
+      "version": 1,
+      "toolId": "nasa-sp8072",
+      "inputs": {
+        "method": "apparent",
+        "band": "octave",
+        "fmin": "40",
+        "fmax": "80"
+      },
+      "exportedOverallDb": 127.06875418001745,
+      "recomputedOverallDb": 127.06875418001745,
+      "errorDb": 0,
+      "evidencePresent": true,
+      "baselinePresent": false
+    },
+    {
+      "name": "nasa-sp8072-project.json",
+      "bytes": 53257,
+      "mtime": "2026-10-13T12:09:34.934Z",
+      "schema": "sau-engineering-tool",
+      "version": 1,
+      "toolId": "nasa-sp8072",
+      "inputs": {
+        "method": "distributed",
+        "band": "third",
+        "fmin": 20,
+        "fmax": 400
+      },
+      "exportedOverallDb": null,
+      "recomputedOverallDb": 126.85309898067239,
+      "errorDb": null,
+      "evidencePresent": false,
+      "baselinePresent": true
+    }
+  ],
+  "newStudyExport": {
+    "clickedOnce": true,
+    "observedNewFile": false,
+    "passed": false,
+    "note": "No new matching Downloads file observed after click; native app observation unavailable because Mac is locked."
+  },
+  "csvReportSvg": {
+    "status": "not-run",
+    "reason": "No successful new study delivery or native dialog observation"
+  },
+  "finalObservedFiles": [
+    {
+      "name": "nasa-sp8072-project (1).json",
+      "bytes": 205752,
+      "mtime": "2026-10-13T14:43:49.011Z"
+    },
+    {
+      "name": "nasa-sp8072-project (2).json",
+      "bytes": 25521,
+      "mtime": "2026-10-13T14:45:27.129Z"
+    },
+    {
+      "name": "nasa-sp8072-project.json",
+      "bytes": 53257,
+      "mtime": "2026-10-13T12:09:34.934Z"
+    }
+  ],
+  "priorDownloadCopies": [
+    "recovered-study-export.json",
+    "recovered-distributed-study-export.json"
+  ],
+  "latestFreshDelivery": {
+    "schema": "sau-sp8072-fresh-export-checks",
+    "version": 1,
+    "createdUTC": "2026-10-13T17:03:00.009Z",
+    "passed": true,
+    "delivery": "Actual app controls clicked once each; Chrome native Save dialogs saved new files within the approved project.",
+    "displayUnits": "English",
+    "calculationUnits": "canonical SI",
+    "overallDb": 125.92632640937516,
+    "csvOverallDb": 125.92632640937516,
+    "bandCount": 2,
+    "inputAgreement": true,
+    "reportAgreement": true,
+    "evidenceAgreement": true,
+    "svgDomainAndPointTitles": true,
+    "files": [
+      {
+        "file": "docs/sp8072/evidence/fresh-study-export.json",
+        "bytes": 138030,
+        "sha256": "62f77ae70e104378cbbd123a62decb9e8357f4a1dd439c61b5024bbeb3337d18"
+      },
+      {
+        "file": "docs/sp8072/evidence/fresh-calculation-evidence.json",
+        "bytes": 138329,
+        "sha256": "3a381e4bb75b6c472d4519a03be0c59c78ecbd5ef5cda47f505132d03b702956"
+      },
+      {
+        "file": "docs/sp8072/evidence/fresh-spectrum.csv",
+        "bytes": 372,
+        "sha256": "45b933197807e064e5983a6f54d76f5f06ae6f730da36437c2dfa21170e98d6c"
+      },
+      {
+        "file": "docs/sp8072/evidence/fresh-report.txt",
+        "bytes": 141855,
+        "sha256": "51990bd6bbb67831e62d46a458a4473b07ceefb13bef2dd1d1e406d91e18b18d"
+      },
+      {
+        "file": "docs/sp8072/evidence/fresh-spectrum.svg",
+        "bytes": 7017,
+        "sha256": "e9d4848066636a11a5fd818299dbe7cf40a714d591f8381aaa280ece3176a4a9"
+      }
+    ],
+    "limits": "Export consistency and pressure-energy closure, not measurement correlation; import/round-trip is a separate check."
+  },
+  "subsequentlyRecoveredThirdExport": {
+    "name": "nasa-sp8072-project (3).json",
+    "study": "SP8072 final export validation",
+    "overallDb": 127.06875418001745,
+    "baselinePresent": true,
+    "bytes": 61422
+  }
+}

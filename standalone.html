@@ -4738,6 +4738,62 @@ body.site-system-subject #main-content {
   html[data-theme="light"] .site-header .primary-nav { border-color: rgba(48, 75, 87, .2); background: rgba(250, 248, 242, .99); box-shadow: 0 18px 40px rgba(37, 51, 57, .14); }
   html[data-theme="light"] body.tool-launcher-open .site-header .primary-nav { border: 0; background: transparent; box-shadow: none; }
 }
+/* NASA SP-8072 domain evidence uses the shared analysis layout and tokens. */
+[data-workbench-id="nasa-sp8072"] .workbench-domain-panel { display:block; }
+[data-workbench-id="nasa-sp8072"] .sp8072-geometry { display:block; width:100%; height:auto; min-height:0; }
+.sp8072-geometry-caption { padding:0 var(--site-space-4,16px); font:12px/1.5 var(--mono); overflow-wrap:anywhere; }
+.sp8072-geometry-caption p { margin:.25rem 0; }
+[data-workbench-id="nasa-sp8072"] .sp8072-geometry text { fill:var(--site-color-text,#f3f7fc); font:15px ui-monospace,monospace; text-anchor:start; }
+.sp8072-flow polyline { fill:none; stroke:var(--site-color-cyan,#55b8ff); stroke-width:2.5; }
+[data-workbench-id="nasa-sp8072"] .sp8072-sources circle { fill:var(--site-color-violet,#b495ef); stroke:var(--site-color-violet,#b495ef); }
+.sp8072-measurement-figure { margin:0; }
+.sp8072-geometry-scroll { overflow-x:auto; }
+.sp8072-geometry-scroll:focus-visible { outline:2px solid var(--site-color-cyan,#55b8ff); outline-offset:-2px; }
+[data-workbench-id="nasa-sp8072"] .sp8072-view-label { font-weight:700; letter-spacing:1.5px; }
+.sp8072-view-divider { stroke:var(--site-color-border,#254057); }
+.sp8072-plume polyline { fill:none; stroke:#edaa56; stroke-width:16; opacity:.15; stroke-linecap:round; }
+.sp8072-axis path { fill:none; stroke:var(--site-color-muted,#a4b5ca); stroke-width:1.5; }
+.sp8072-radiation { stroke:var(--site-color-cyan,#55b8ff); stroke-dasharray:6 6; opacity:.6; fill:none; }
+.sp8072-engine { stroke:var(--site-color-text,#dce8f7); stroke-width:1.6; fill:var(--site-color-panel,#102c49); }
+.sp8072-engine-pipe,.sp8072-engine-ribs { fill:none; }
+.sp8072-engine-body { fill:var(--site-color-muted,#a4b5ca); }
+.sp8072-engine-hot { stroke:none; fill:#edaa56; }
+.sp8072-nozzle-origin { fill:#edaa56; stroke:var(--site-color-canvas,#03101e); }
+.sp8072-mic-1 { --sp-mic-color:#55b8ff; }
+.sp8072-mic-2 { --sp-mic-color:#fb923c; }
+.sp8072-mic-3 { --sp-mic-color:#b495ef; }
+.sp8072-microphone { stroke:var(--sp-mic-color); stroke-width:2; fill:var(--site-color-canvas,#03101e); }
+.sp8072-microphone path { fill:none; }
+.sp8072-microphone .sp8072-label-leader { stroke-width:1; }
+[data-workbench-id="nasa-sp8072"] .sp8072-microphone text { fill:var(--sp-mic-color); stroke:none; font-size:14px; font-weight:700; text-anchor:middle; }
+.sp8072-mic-invalid circle { stroke-dasharray:3 3; }
+.sp8072-measurement-figure figcaption { padding:0 16px 12px; color:var(--site-color-muted,#a4b5ca); font-size:12px; line-height:1.6; }
+.sp8072-geometry-legend { display:flex; gap:8px 18px; flex-wrap:wrap; }
+.sp8072-geometry-legend span::before { content:''; display:inline-block; width:9px; height:9px; margin-right:6px; border-radius:50%; background:var(--site-color-cyan,#55b8ff); }
+.sp8072-geometry-legend .sp8072-legend-flow::before { background:#edaa56; }
+.sp8072-geometry-legend .sp8072-legend-source::before { background:#b495ef; }
+.sp8072-geometry-legend .sp8072-legend-mic::before { background:transparent; border:2px solid #55b8ff; }
+.sp8072-geometry-legend .sp8072-legend-path::before { height:0; width:18px; border-top:1px dashed #55b8ff; border-radius:0; background:none; }
+.sp8072-location-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin:0 16px 16px; }
+.sp8072-location-card { padding:14px; border:1px solid var(--site-color-border,#254057); border-top:3px solid var(--sp-mic-color); border-radius:8px; min-width:0; }
+.sp8072-location-card h4 { margin:0 0 10px; color:var(--site-color-text,#f3f7fc); font-size:13px; }
+.sp8072-location-card p { margin:4px 0; font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
+.sp8072-location-card .sp8072-location-level { font:600 24px/1.3 var(--mono); color:var(--site-color-text,#f3f7fc); }
+.sp8072-location-level span { display:block; font:11px/1.6 var(--mono); color:var(--site-color-muted,#a4b5ca); }
+.sp8072-location-coordinate { color:var(--site-color-text,#f3f7fc); }
+.sp8072-actions { display:flex; flex-wrap:wrap; gap:var(--site-space-2,8px); margin:var(--site-space-3,16px) 0; }
+.sp8072-actions button { min-height:44px; }
+.sp8072-method-note { padding:var(--site-space-3,16px); border:1px solid var(--site-color-border,#254057); line-height:1.6; }
+.sp8072-method-note summary { cursor:pointer; min-height:44px; }
+.sp8072-method-note a { overflow-wrap:anywhere; }
+[data-workbench-id="nasa-sp8072"] .table-wrap { max-height:520px; overflow:auto; }
+[data-workbench-id="nasa-sp8072"] .workbench-field textarea { min-height:90px; }
+[data-workbench-id="nasa-sp8072"] .workbench-evidence-panel:first-child { grid-column:1 / -1; }
+[data-workbench-id="nasa-sp8072"] .chart-shell[data-wb-chart] { overflow-x:auto; }
+[data-workbench-id="nasa-sp8072"] [data-wb-chart]:focus-visible { outline:2px solid var(--site-color-cyan); outline-offset:2px; }
+[data-workbench-id="nasa-sp8072"] .chart-shell [data-legend-trace] text { fill:var(--site-color-text,#dce8f7); }
+@media (max-width:700px) { .sp8072-actions button { flex:1 1 160px; } [data-workbench-id="nasa-sp8072"] .workbench-domain-panel { min-width:0; } [data-workbench-id="nasa-sp8072"] .sp8072-geometry { min-width:680px; } .sp8072-location-cards { grid-template-columns:1fr; } }
+@media print { .sp8072-actions { display:none; } [data-workbench-id="nasa-sp8072"] .table-wrap { max-height:none; } .sp8072-geometry text { fill:#111; } }
 </style>
 </head>
 <body>
@@ -32932,6 +32988,18 @@ function lineChartSvg(plot, { width = 840, height = 390 } = {}) {
   const sx = scaleFn(xmin, xmax, m.left, m.left + innerW, xLog);
   const sy = scaleFn(ymin, ymax, m.top + innerH, m.top, yLog);
   const xTicks = xLog ? logTicks(xmin, xmax) : linearTicks(xmin, xmax).map(value => ({ value, major: true }));
+  if (xLog && plot.labelLogEndpoints) {
+    // Opt-in endpoint labels keep narrow spectra readable when no decade lies inside the domain.
+    for (const value of [xmin,xmax]) {
+      const tick=xTicks.find(t=>Math.abs(t.value/value-1)<1e-10);
+      if(tick)tick.major=true;else xTicks.push({value,major:true});
+    }
+    for(const tick of xTicks) {
+      const position=Math.log(tick.value/xmin)/Math.log(xmax/xmin);
+      const endpoint=Math.abs(tick.value/xmin-1)<1e-10||Math.abs(tick.value/xmax-1)<1e-10;
+      if(!endpoint&&(position<.08||position>.92))tick.major=false;
+    }
+  }
   const yTicks = yLog ? logTicks(ymin, ymax) : linearTicks(ymin, ymax).map(value => ({ value, major: true }));
   const clipId = `clip-${Math.random().toString(36).slice(2)}`;
   const harmonic=plot.animation?.type==='harmonic';
@@ -35675,14 +35743,14 @@ return {buildEngineeringResult,assertEngineeringResult,createEngineeringCalculat
 })();
 
 const __workbenchRuntime=(()=>{
-const {lineChartSvg,heatmapSvg}=__charts;
+const {lineChartSvg,heatmapSvg,downloadText}=__charts;
 const ENGLISH_UNIT_CONVERSIONS = Object.freeze({
   m:{unit:'ft',factor:3.280839895},mm:{unit:'in',factor:0.03937007874},'µm':{unit:'mil',factor:0.03937007874},
   'm²':{unit:'ft²',factor:10.76391042},'m² sabins':{unit:'ft² sabins',factor:10.76391042},'m³':{unit:'ft³',factor:35.31466672},'m⁴':{unit:'ft⁴',factor:115.862369},
   'm/s':{unit:'ft/s',factor:3.280839895},'mm/s':{unit:'in/s',factor:0.03937007874},'m/s peak':{unit:'ft/s peak',factor:3.280839895},
   'm/s²':{unit:'ft/s²',factor:3.280839895},'m/s2':{unit:'ft/s²',factor:3.280839895},'m/s2/g':{unit:'ft/s²/g',factor:3.280839895},'m/s² RMS':{unit:'ft/s² RMS',factor:3.280839895},'m/s RMS':{unit:'ft/s RMS',factor:3.280839895},'m/s RMS-equivalent':{unit:'ft/s RMS-equivalent',factor:3.280839895},
   'm RMS':{unit:'in RMS',factor:39.37007874},'m peak':{unit:'in peak',factor:39.37007874},'mm RMS':{unit:'in RMS',factor:0.03937007874},'mm/s RMS':{unit:'in/s RMS',factor:0.03937007874},
-  kg:{unit:'lbm',factor:2.204622622},'kg/m':{unit:'lbm/ft',factor:0.6719689751},'kg/m²':{unit:'lbm/ft²',factor:0.2048161436},'kg/m³':{unit:'lbm/ft³',factor:0.06242796058},
+  kg:{unit:'lbm',factor:2.204622622},'kg/s':{unit:'lbm/s',factor:2.204622622},'kg/m':{unit:'lbm/ft',factor:0.6719689751},'kg/m²':{unit:'lbm/ft²',factor:0.2048161436},'kg/m³':{unit:'lbm/ft³',factor:0.06242796058},
   N:{unit:'lbf',factor:0.2248089431},MN:{unit:'kip',factor:224.8089431},'N peak':{unit:'lbf peak',factor:0.2248089431},'N RMS':{unit:'lbf RMS',factor:0.2248089431},'N/√Hz':{unit:'lbf/√Hz',factor:0.2248089431},
   'N/m':{unit:'lbf/in',factor:0.005710147163},'N·m':{unit:'lbf·in',factor:8.850745791},'N·s/m':{unit:'lbf·s/in',factor:0.005710147163},'N/(m/s)':{unit:'lbf/(in/s)',factor:0.005710147163},
   Pa:{unit:'psi',factor:0.0001450377377},kPa:{unit:'psi',factor:0.1450377377},MPa:{unit:'ksi',factor:0.1450377377},GPa:{unit:'Mpsi',factor:0.1450377377},'Pa RMS':{unit:'psi RMS',factor:0.0001450377377},
@@ -35838,6 +35906,7 @@ function currentContext(definition, calculators, project) {
   let error = '';
   try {
     nativeResult = calculator.compute(inputs);
+    if (definition.decorateResult) nativeResult = definition.decorateResult(nativeResult, project);
     result = displayEngineeringResult(nativeResult, project.unitSystem);
   } catch (caught) {
     error = caught?.message ?? String(caught);
@@ -35882,6 +35951,13 @@ function inputGroupsHtml(context, fields) {
   }).join('');
   const remaining = fields.filter(field => !rendered.has(field.key));
   return `${groups}${remaining.length ? `<details class="engineering-input-group"><summary><span>Additional model inputs</span><small>${remaining.length} controls</small></summary><div>${remaining.map(field => renderField(field, project.inputs[step.toolId]?.[field.key], step.toolId, project.unitSystem)).join('')}</div></details>` : ''}`;
+}
+
+function visibleInspectorFields(context) {
+  let fields = context.step.fieldKeys?.length ? (context.calculator?.inputs ?? []).filter(field => context.step.fieldKeys.includes(field.key)) : context.calculator?.inputs ?? [];
+  const visible = context.definition.visibleFieldKeys?.(context);
+  if (visible) fields = fields.filter(field => visible.includes(field.key));
+  return fields;
 }
 
 function workflowHtml(context) {
@@ -36041,7 +36117,7 @@ function renderGuidedWorkbench(definition, calculators, projectInput = null) {
   const metrics = statusMetrics(context);
   const diagram = definition.renderDiagram?.(context) ?? '';
   const diagramTakeaway = definition.diagramTakeaway?.(context) ?? result?.interpretation?.physicalMeaning ?? definition.defaultTakeaway;
-  const inspectorFields = step.fieldKeys?.length ? (calculator?.inputs ?? []).filter(field => step.fieldKeys.includes(field.key)) : (calculator?.inputs ?? []);
+  const inspectorFields = visibleInspectorFields(context);
   return `<div class="page-shell site-page-shell site-page-shell-capstone site-page-shell-workbench" data-workbench-id="${workbenchEsc(definition.id)}" data-engineering-profile="workbench">
     <nav class="breadcrumbs site-breadcrumbs" aria-label="Breadcrumb"><a href="#/tools">Tools</a><span aria-hidden="true">›</span><span>${workbenchEsc(definition.category)}</span><span aria-hidden="true">›</span><span aria-current="page">${workbenchEsc(definition.title)}</span></nav>
     ${decisionHeroHtml(context)}
@@ -36062,7 +36138,7 @@ function renderEngineeringAnalysis(definition, calculators, projectInput = null)
   const project = normalizeEngineeringToolProject(definition, calculators, projectInput ?? createEngineeringToolProject(definition, calculators));
   const context = currentContext(definition, calculators, project);
   const { step, calculator, result } = context;
-  const inspectorFields = step.fieldKeys?.length ? (calculator?.inputs ?? []).filter(field => step.fieldKeys.includes(field.key)) : calculator?.inputs ?? [];
+  const inspectorFields = visibleInspectorFields(context);
   const diagram = definition.renderDiagram?.(context) ?? '';
   const diagramTakeaway = definition.diagramTakeaway?.(context) ?? result?.interpretation?.physicalMeaning ?? definition.defaultTakeaway;
   const quickLink = definition.quickRoute === false ? '' : `<a href="#/tool/${encodeURIComponent(step.toolId)}?mode=quick">${workbenchEsc(definition.quickLinkLabel ?? 'Open the focused quick screen')} →</a>`;
@@ -36093,13 +36169,9 @@ function propagate(definition, project, toolId, key, value) {
   }
 }
 
-function downloadProject(definition, project) {
-  const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `${definition.id}-project.json`;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(link.href), 500);
+function downloadProject(definition, project, result = null) {
+  const record = definition.retainEvidence ? { ...project, calculation: result, calculationUnits: 'canonical SI' } : project;
+  downloadText(`${definition.id}-project.json`, JSON.stringify(record, null, 2), 'application/json');
 }
 
 function traceSelectionTarget(context, key) {
@@ -36129,18 +36201,21 @@ function bindEngineeringWorkbench(definition, calculators, root = document, init
     if (!shell) return;
     const active = document.activeElement;
     const activeField = active?.dataset?.wbField ?? '';
+    const focusKey = active?.dataset?.wbFocusKey ?? '';
     const restoreProjectName = active?.matches?.('[data-wb-project-name]') ?? false;
     const selectionStart = typeof active?.selectionStart === 'number' ? active.selectionStart : null;
     const selectionEnd = typeof active?.selectionEnd === 'number' ? active.selectionEnd : null;
+    const expandedGroups = [...shell.querySelectorAll('.engineering-input-group')].map(group => group.open);
     const wrapper = document.createElement('div');
     wrapper.innerHTML = renderEngineeringWorkbench(definition, calculators, project);
     interactiveCleanup();
     shell.replaceWith(wrapper.firstElementChild);
     const nextShell = host.querySelector(`[data-workbench-id="${definition.id}"]`);
+    [...nextShell.querySelectorAll('.engineering-input-group')].forEach((group, index) => { if (expandedGroups[index] != null) group.open = expandedGroups[index]; });
     interactiveCleanup = definition.bindInteractive?.(nextShell, currentContext(definition, calculators, project)) ?? (() => {});
     const restored = activeField
       ? host.querySelector(`[data-wb-field="${activeField}"]`)
-      : restoreProjectName ? host.querySelector('[data-wb-project-name]') : null;
+      : restoreProjectName ? host.querySelector('[data-wb-project-name]') : focusKey ? [...host.querySelectorAll('[data-wb-focus-key]')].find(element => element.dataset.wbFocusKey === focusKey) : null;
     if (restored) {
       restored.focus({ preventScroll: true });
       if (selectionStart != null && typeof restored.setSelectionRange === 'function') restored.setSelectionRange(selectionStart, selectionEnd);
@@ -36174,7 +36249,7 @@ function bindEngineeringWorkbench(definition, calculators, root = document, init
       const presetKeys = Array.isArray(calculators[toolId]?.presetKeys) ? calculators[toolId].presetKeys : ['material'];
       if (presetKeys.includes(key) && typeof calculators[toolId]?.syncPreset === 'function') {
         const prior = project.inputs[toolId];
-        const synced = calculators[toolId].syncPreset(prior);
+        const synced = calculators[toolId].syncPreset(prior, key);
         project.inputs[toolId] = { ...prior, ...synced };
         for (const [syncedKey, syncedValue] of Object.entries(synced)) if (!Object.is(prior[syncedKey], syncedValue)) propagate(definition, project, toolId, syncedKey, syncedValue);
       }
@@ -36187,11 +36262,32 @@ function bindEngineeringWorkbench(definition, calculators, root = document, init
     if (event.target.matches('[data-wb-import]')) {
       const file = event.target.files?.[0];
       if (!file) return;
-      file.text().then(text => { project = normalizeEngineeringToolProject(definition, calculators, JSON.parse(text)); render(); }).catch(caught => alert(caught?.message ?? 'The selected file is not valid for this engineering tool.'));
+      file.text().then(text => {
+        const raw = JSON.parse(text);
+        definition.validateImportData?.(raw);
+        const candidate = normalizeEngineeringToolProject(definition, calculators, raw);
+        definition.validateImportedProject?.(candidate);
+        project = candidate;
+        render();
+      }).catch(caught => alert(caught?.message ?? 'The selected file is not valid for this engineering tool.'));
     }
   };
   const input = event => {
     if (!event.target.matches('[data-wb-project-name], [data-wb-field]:not(select)')) return;
+    // Preserve every edit immediately. Rendering remains debounced, but a second
+    // field edit must not cancel the first field's uncommitted value.
+    const field = event.target.closest('[data-wb-field]');
+    if (field) {
+      const separator = field.dataset.wbField.indexOf('.');
+      const toolId = field.dataset.wbField.slice(0, separator);
+      const key = field.dataset.wbField.slice(separator + 1);
+      const definitionField = calculators[toolId]?.inputs?.find(item => item.key === key);
+      const value = ['number', 'range'].includes(definitionField?.type) && field.value !== ''
+        ? fromDisplayNumber(field.value, definitionField.unit, project.unitSystem)
+        : field.value;
+      project.inputs[toolId][key] = value;
+      propagate(definition, project, toolId, key, value);
+    } else project.name = event.target.value || definition.projectName || `${definition.title} study`;
     clearTimeout(inputTimer);
     inputTimer = setTimeout(() => change(event), 220);
   };
@@ -36221,15 +36317,15 @@ function bindEngineeringWorkbench(definition, calculators, root = document, init
         assumptions: context.result.assumptions?.satisfied ?? [],
         warnings: context.result.assumptions?.alerts ?? context.result.assumptions?.warnings ?? [],
         values: context.result.values ?? [],
-        notes: `${context.profile === 'analysis' ? 'Analysis study' : 'Workbench project'}: ${project.name}`,
-        provenance: `${definition.id} · ${context.step.toolId}`
+        notes: `${context.profile === 'analysis' ? 'Analysis study' : 'Workbench project'}: ${project.name}${definition.retainEvidence ? '\nCanonical input / source / result record: ' + JSON.stringify({ inputs: context.inputs, result: context.nativeResult }) : ''}`,
+        provenance: `${definition.id} · ${context.step.toolId}${context.nativeResult?.provenance?.dataVersion ? ' · data ' + context.nativeResult.provenance.dataVersion : ''}`
       } }));
     } else if (action === 'baseline') {
       const context = currentContext(definition, calculators, project);
-      if (context.nativeResult) project.baseline = { stepId: context.step.id, toolId: context.step.toolId, values: deepClone(context.nativeResult.values), unitSystem: 'SI', savedAt: new Date().toISOString() };
+      if (context.nativeResult) project.baseline = { stepId: context.step.id, toolId: context.step.toolId, values: deepClone(context.nativeResult.values), ...(definition.retainEvidence ? { inputs: deepClone(context.inputs), result: deepClone(context.nativeResult) } : {}), unitSystem: 'SI', savedAt: new Date().toISOString() };
       render();
     } else if (action === 'clear-baseline') { project.baseline = null; render(); }
-    else if (action === 'export') downloadProject(definition, project);
+    else if (action === 'export') downloadProject(definition, project, currentContext(definition, calculators, project).nativeResult);
     else if (action === 'import') host.querySelector('[data-wb-import]')?.click();
     else if (action === 'reset' && confirm(`Reset ${definition.title} to its documented baseline?`)) { project = createEngineeringToolProject(definition, calculators); render(); }
   };
@@ -36251,6 +36347,477 @@ function createEngineeringWorkbenchRegistry(definitions, calculators) {
 return {workbenchEsc,workbenchFmt,resultValue,createEngineeringToolProject,normalizeEngineeringToolProject,engineeringDecisionState,renderEngineeringAnalysis,renderEngineeringWorkbench,bindEngineeringWorkbench,createEngineeringWorkbenchRegistry};
 })();
 
+const __sp8072=(()=>{
+const {createEngineeringCalculator,engineeringResultToText}=__engineeringResults;
+const {lineChartSvg,downloadText,downloadCsv,downloadSvg}=__charts;
+const ENGLISH_UNIT_CONVERSIONS = Object.freeze({
+  m:{unit:'ft',factor:3.280839895},mm:{unit:'in',factor:0.03937007874},'µm':{unit:'mil',factor:0.03937007874},
+  'm²':{unit:'ft²',factor:10.76391042},'m² sabins':{unit:'ft² sabins',factor:10.76391042},'m³':{unit:'ft³',factor:35.31466672},'m⁴':{unit:'ft⁴',factor:115.862369},
+  'm/s':{unit:'ft/s',factor:3.280839895},'mm/s':{unit:'in/s',factor:0.03937007874},'m/s peak':{unit:'ft/s peak',factor:3.280839895},
+  'm/s²':{unit:'ft/s²',factor:3.280839895},'m/s2':{unit:'ft/s²',factor:3.280839895},'m/s2/g':{unit:'ft/s²/g',factor:3.280839895},'m/s² RMS':{unit:'ft/s² RMS',factor:3.280839895},'m/s RMS':{unit:'ft/s RMS',factor:3.280839895},'m/s RMS-equivalent':{unit:'ft/s RMS-equivalent',factor:3.280839895},
+  'm RMS':{unit:'in RMS',factor:39.37007874},'m peak':{unit:'in peak',factor:39.37007874},'mm RMS':{unit:'in RMS',factor:0.03937007874},'mm/s RMS':{unit:'in/s RMS',factor:0.03937007874},
+  kg:{unit:'lbm',factor:2.204622622},'kg/s':{unit:'lbm/s',factor:2.204622622},'kg/m':{unit:'lbm/ft',factor:0.6719689751},'kg/m²':{unit:'lbm/ft²',factor:0.2048161436},'kg/m³':{unit:'lbm/ft³',factor:0.06242796058},
+  N:{unit:'lbf',factor:0.2248089431},MN:{unit:'kip',factor:224.8089431},'N peak':{unit:'lbf peak',factor:0.2248089431},'N RMS':{unit:'lbf RMS',factor:0.2248089431},'N/√Hz':{unit:'lbf/√Hz',factor:0.2248089431},
+  'N/m':{unit:'lbf/in',factor:0.005710147163},'N·m':{unit:'lbf·in',factor:8.850745791},'N·s/m':{unit:'lbf·s/in',factor:0.005710147163},'N/(m/s)':{unit:'lbf/(in/s)',factor:0.005710147163},
+  Pa:{unit:'psi',factor:0.0001450377377},kPa:{unit:'psi',factor:0.1450377377},MPa:{unit:'ksi',factor:0.1450377377},GPa:{unit:'Mpsi',factor:0.1450377377},'Pa RMS':{unit:'psi RMS',factor:0.0001450377377},
+  'W/m²':{unit:'W/ft²',factor:0.09290304},'W/m':{unit:'W/ft',factor:0.3048},'W/N²':{unit:'W/lbf²',factor:19.73854254},
+  J:{unit:'ft·lbf',factor:0.7375621493},'J/N²':{unit:'in/lbf',factor:175.1268352},
+  'm/(N·s)':{unit:'in/(lbf·s)',factor:175.1268352},'m/N·s':{unit:'in/(lbf·s)',factor:175.1268352},'m/N':{unit:'in/lbf',factor:175.1268352},'(m/s)/N':{unit:'(in/s)/lbf',factor:175.1268352},'(m/s²)/N':{unit:'(in/s²)/lbf',factor:175.1268352},
+  'Pa·s/m':{unit:'psi·s/in',factor:0.000003683958},'Pa·s/m²':{unit:'psi·s/in²',factor:9.357258e-8},
+  'rad/m':{unit:'rad/ft',factor:0.3048},'1/m':{unit:'1/ft',factor:0.3048},'s/kg':{unit:'s/lbm',factor:0.45359237},
+  '°C':{unit:'°F',factor:1.8,offset:32}
+});
+
+const AXIS_UNITS = Object.keys(ENGLISH_UNIT_CONVERSIONS).sort((a,b)=>b.length-a.length);
+
+const unitConversion=unit=>ENGLISH_UNIT_CONVERSIONS[unit]||null;
+const toDisplayUnit=(unit,system)=>system==='English'&&unitConversion(unit)?.unit||unit;
+const toDisplayNumber=(value,unit,system)=>{const x=Number(value),conversion=system==='English'?unitConversion(unit):null;return Number.isFinite(x)&&conversion?x*conversion.factor+(conversion.offset||0):value;};
+const fromDisplayNumber=(value,unit,system)=>{const x=Number(value),conversion=system==='English'?unitConversion(unit):null;return Number.isFinite(x)&&conversion?(x-(conversion.offset||0))/conversion.factor:value;};
+const toDisplayStep=(value,unit,system)=>{const x=Number(value),conversion=system==='English'?unitConversion(unit):null;return Number.isFinite(x)&&conversion?x*conversion.factor:value;};
+const formatDisplayInputNumber=(value,unit,system)=>{const displayed=toDisplayNumber(value,unit,system),numeric=Number(displayed);return Number.isFinite(numeric)?String(Number(numeric.toPrecision(12))):String(displayed??'');};
+
+function axisUnitInfo(label){
+  const text=String(label||'');
+  const unit=AXIS_UNITS.find(candidate=>text.endsWith(`(${candidate})`));
+  const conversion=unitConversion(unit);
+  return conversion?{unit,conversion,label:`${text.slice(0,-unit.length-2)}(${conversion.unit})`}:null;
+}
+
+function displayEngineeringResult(result,system){
+  if(system!=='English')return result;
+  const convertValue=value=>{const conversion=unitConversion(value.unit);return conversion&&Number.isFinite(Number(value.value))?{...value,value:toDisplayNumber(value.value,value.unit,system),unit:conversion.unit}:{...value};};
+  const plots=(result.plots||[]).map(plot=>{const x=axisUnitInfo(plot.xLabel),y=axisUnitInfo(plot.yLabel);return {...plot,xLabel:x?.label||plot.xLabel,yLabel:y?.label||plot.yLabel,traces:(plot.traces||[]).map(trace=>({...trace,name:trace.displayNameByUnit?.[system]||trace.name,x:x?trace.x.map(value=>toDisplayNumber(value,x.unit,system)):[...trace.x],y:y?trace.y.map(value=>toDisplayNumber(value,y.unit,system)):[...trace.y]}))};});
+  const rangeCharts=(result.rangeCharts||[]).map(chart=>{const conversion=unitConversion(chart.unit);if(!conversion)return {...chart};const convert=value=>value==null?value:toDisplayNumber(value,chart.unit,system);return {...chart,unit:conversion.unit,axisLabel:String(chart.axisLabel||'').replace(`(${chart.unit})`,`(${conversion.unit})`),min:convert(chart.min),max:convert(chart.max),lanes:(chart.lanes||[]).map(lane=>({...lane,start:convert(lane.start),end:convert(lane.end),startLabel:'',endLabel:''})),markers:(chart.markers||[]).map(marker=>({...marker,value:convert(marker.value)}))};});
+  const tables=(result.tables||[]).map(table=>{const conversions=(table.columns||[]).map(column=>axisUnitInfo(column));return {...table,columns:(table.columns||[]).map((column,index)=>conversions[index]?.label||column),rows:(table.rows||[]).map(row=>row.map((value,index)=>conversions[index]?toDisplayNumber(value,conversions[index].unit,system):value))};});
+  const visuals=(result.visuals||[]).map(visual=>({...visual,displaySystem:system}));
+  return {...result,values:(result.values||[]).map(convertValue),plots,rangeCharts,tables,visuals,interpretation:result.interpretationByUnit?.[system]||result.interpretation};
+}
+
+// Coarse manual readings of the faired curves, not the scattered measurements.
+// NASA SP-8072 (1971), printed pages cited below. No hidden tail extrapolation.
+const SP8072_VERSION = '2026-10-13.1';
+const SP8072_SOURCE = {
+  title: 'NASA SP-8072 — Acoustic Loads Generated by the Propulsion System',
+  url: 'https://ntrs.nasa.gov/api/citations/19710023719/downloads/19710023719.pdf',
+  note: '§4.2, Eqs. 1–10, pp. 28–31; curves manually digitized from the official PDF. Reading uncertainty is separate from empirical accuracy.'
+};
+const SP8072_CURVES = {
+  spectrum: { figure: 5, page: 8, uncertaintyDb: 1, x: 'St = f de / Ue', y: '10 log10[W(f) Ue / (WOA de)]', points: [[.002,-.5],[.003,3.2],[.005,7.2],[.008,9.5],[.01,10.5],[.015,11.3],[.02,11.3],[.03,10.3],[.05,8.3],[.08,6],[.1,4.5],[.2,.2],[.3,-3.2],[.5,-7.5],[1,-13.4],[2,-19.4],[5,-27]] },
+  axialPower: { figure: 12, page: 13, uncertaintyDb: 1, x: 'x/xt', y: '10 log10[xt W(x) / WOA]', points: [[.1,-18.7],[.2,-15],[.5,-9.8],[1,-5.2],[1.4,-3.3],[1.6,-3],[1.8,-3.2],[2,-3.6],[2.3,-4.5],[2.6,-6],[3,-8.5],[3.5,-12.1],[4,-15],[4.7,-20]] },
+  localSpectrum: { figure: 13, page: 14, uncertaintyDb: 1.5, x: 'alpha = f x ae / (Ue a0)', y: '10 log10[W(f,x) Ue a0 / (W(x) x ae)]', points: [[.05,-20],[.1,-17],[.2,-13.8],[.5,-9.5],[1,-7],[1.5,-6.7],[2,-7],[3,-8.5],[5,-12.5],[10,-20],[20,-27],[50,-35.5],[60,-38]] },
+  apparentOpen: { figure: 14, page: 15, uncertaintyPercent: 12, x: 'St', y: 'x/de (preferred solid open-scoop curve)', points: [[.0012,36],[.002,35.5],[.005,33.5],[.01,31.5],[.02,28],[.05,22],[.1,17],[.2,11.5],[.5,5.5],[1,2.2],[1.3,1],[1.6,.25]] },
+  apparentClosed: { figure: 14, page: 15, uncertaintyPercent: 15, x: 'St', y: 'x/de (closed-bucket dashed curve)', points: [[.001,18],[.002,15],[.005,12.5],[.01,11.5],[.02,10.5],[.05,8],[.1,5.7],[.2,3.6],[.5,1.5],[1,.7],[1.5,.4]] }
+};
+// theta is measured FROM the local direction of flow, not from the vehicle axis.
+const SP8072_DIRECTIVITY = {
+  figure: 10, page: 12, uncertaintyDb: 1.5,
+  angles: [20,30,40,50,60,80,100,120,140,160,180],
+  rows: [
+    { st: .004, db: [4,8,6,3.5,1,-4.5,-8.5,-11.5,-13.9,-15.7,-17.2] },
+    { st: .0125, db: [0,4.2,6,4.8,2.5,-2.5,-7,-10.5,-13,-15,-16.6] },
+    { st: .04, db: [-.8,2.4,4.6,5.4,3.7,-.8,-5.5,-8.9,-11.4,-13.8,-15.6] },
+    { st: .125, db: [-1.5,1.5,3.5,4.8,4.5,1,-4,-7.4,-10,-12.3,-14.3] },
+    { st: .4, db: [-2.2,.6,2.8,4,4.4,2,-2.3,-6,-8.8,-11,-13] }
+  ]
+};
+// Fig. 8 is normalized to UNDEFLECTED overall power. It already includes
+// generation changes. Never stack Fig. 4 efficiency ratios onto these spectra.
+const st8 = [.004,.008,.016,.032,.064,.128,.256];
+const SP8072_DEFLECTORS = [
+  { id: 'none', label: 'Undeflected', turn: 0, standOffD: 0, radiusD: 0, basis: 'Figs. 5, 14; §4.2 pp. 28–29' },
+  { id: 'open', label: 'Smooth open bucket / scoop', turn: 90, standOffD: 4, radiusD: 2, basis: 'Fig. 5 p. 8, Fig. 14 p. 15; 90–150° smooth buckets' },
+  { id: 'closed', label: 'Closed bucket', turn: 90, standOffD: 4, radiusD: 2, basis: 'Closed-bucket source location, Fig. 14 p. 15; spectrum uses Fig. 5 similarity assumption' },
+  { id: 'twin', label: 'Twin open deflected flows', turn: 90, standOffD: 4, radiusD: 2, basis: '§4.2 p. 31: treat individual branches in turn; split is a geometry assumption' },
+  { id: 'covered', label: 'Covered bucket / tunnel', turn: 90, standOffD: 4, radiusD: 2, basis: '§2.4 p. 24 and §4.4 p. 34; requires distributed sources and entered shielding' },
+  { id: 'flat6', label: '90° normal flat plate, 6 diameters', turn: 90, standOffD: 6, radiusD: 0, example: true, spectrum: st8.map((x,i)=>[x,[-4.3,-4.2,-.2,.3,-.3,-2.3,-9.8][i]]), basis: 'Fig. 8 p. 10 empirical example; radial outflow simplified to two opposing branches' },
+  { id: 'flat22', label: '90° normal flat plate, 22 diameters', turn: 90, standOffD: 22, radiusD: 0, example: true, spectrum: st8.map((x,i)=>[x,[2.8,8,10.7,9.6,5.6,1.4,-3.1][i]]), basis: 'Fig. 8 p. 10 empirical example; radial outflow simplified to two opposing branches' },
+  { id: 'curved45', label: '45° curved plate, 4 diameters', turn: 90, standOffD: 4, radiusD: 1, example: true, spectrum: st8.map((x,i)=>[x,[-7.7,-2.5,2.6,4.2,3.5,.7,-5.5][i]]), basis: 'Fig. 8 p. 10 empirical example; plate inclination is not a universal flow-turn law' },
+  { id: 'bucket150', label: '150° bucket, 4 diameters', turn: 150, standOffD: 4, radiusD: 2, example: true, spectrum: st8.map((x,i)=>[x,[1.8,7.1,9.6,10.2,7.6,2.5,-3][i]]), basis: 'Fig. 8 p. 10 empirical example' },
+  { id: 'conical', label: 'Conical deflector (user spectrum)', turn: 90, standOffD: 7, radiusD: 0, requiresCustom: true, basis: 'Fig. 4 p. 7 has efficiency example, no general spectrum; simplified twin geometry is a scenario' }
+];
+const SP8072_SUPPORT = [
+  SP8072_SOURCE,
+  { title: 'Allgood et al. (2014), Reduction of Altitude Diffuser Jet Noise Using Water Injection', url: 'https://ntrs.nasa.gov/citations/20140005349', note: 'Subscale diffuser: injection position, angle, injector diameter and mass flow vary; excessive water can unstart the diffuser. This is not a universal launch-pad law.' },
+  { title: 'Henderson (2010), Fifty Years of Fluidic Injection for Jet Noise Reduction', url: 'https://ntrs.nasa.gov/citations/20100042122', note: 'NASA abstract reviewed; injection pressure and flow matter, and frequency changes can differ. Full text unavailable on NTRS. No reduction coefficient imported.' }
+];
+const SP8072_CORRELATION = {
+  circumferential: { figure:18,page:21,points:[[0,1],[.1,1],[.2,.99],[.5,.88],[1,.62],[1.5,.36],[2,.15],[2.4,0],[3,-.2],[5,-.53]] },
+  longitudinal: { figure:19,page:21,points:[[0,1],[.25,.97],[.5,.86],[.75,.7],[1,.47],[1.25,.23],[1.6,0],[2,-.37],[2.5,-.65]] }
+};
+
+const SP8072_DEFAULTS = Object.freeze({
+  method:'apparent', engines:1, thrust:1e6, velocity:2200, diameter:1.5, efficiency:1,
+  cluster:'merged', nozzleRadius:0, nozzlePositions:'', mach:3, ambientSound:343,
+  exitDensity:.2, ambientDensity:1.225, pressureRatio:1, nozzleShape:'circular', areaRatio:20,
+  altitude:0, receiverX:-25, receiverY:0, receiverZ:20, receiverStep:1,
+  deflector:'none', standOffD:4, turn:90, azimuth:0, bendRadiusD:2, branchFraction:.5,
+  sourceBasis:'handbook', customSpectrum:'', customAxial:'', customLocal:'', transfer:'no',
+  fmin:20, fmax:400, band:'third', linearWidth:10, integration:'integral',
+  directivity:'edge', directivityDb:0, positionScale:1, coreScale:1, slices:96, axialMin:.1, axialMax:4.7,
+  water:'dry', waterFlow:0, exhaustFlow:0, injectionStationD:4, injectionAngle:90, injectionPressure:0, injectorDiameter:0,
+  waterReduction:0, waterCurve:'', waterProvenance:'',
+  shieldStartD:4, shieldEndD:40, shieldDb:0, propagationDbPerKm:0, reflectionDb:0, surfaceDb:0, minimumRangeD:.5,
+  vehicleMach:0, correlation:'off', separation:0, circumferenceAngle:0, vehicleRadius:3, beta:30
+});
+const SP8072_NUMERIC_BOUNDS = {
+  engines:[1,64],thrust:[1,1e9],velocity:[100,10000],diameter:[.001,100],efficiency:[.000001,100],
+  nozzleRadius:[0,1000],mach:[1,4],ambientSound:[100,1000],exitDensity:[.000001,100],ambientDensity:[.000001,100],pressureRatio:[.001,100],areaRatio:[1,1000],
+  altitude:[0,10000],receiverX:[-1e5,1e5],receiverY:[-1e5,1e5],receiverZ:[-1e5,1e5],receiverStep:[.001,100],
+  standOffD:[0,1000],turn:[0,170],azimuth:[-360,360],bendRadiusD:[0,100],branchFraction:[.001,.999],
+  fmin:[.01,1e6],fmax:[.01,1e6],linearWidth:[.001,1e5],directivityDb:[-60,60],positionScale:[.01,100],coreScale:[.01,100],slices:[8,512],axialMin:[.1,4.6],axialMax:[.11,4.7],
+  waterFlow:[0,1e7],exhaustFlow:[0,1e7],injectionStationD:[0,1000],injectionAngle:[0,180],injectionPressure:[0,1e5],injectorDiameter:[0,10],waterReduction:[0,60],
+  shieldStartD:[0,1000],shieldEndD:[0,1000],shieldDb:[0,60],propagationDbPerKm:[0,1000],reflectionDb:[-60,60],surfaceDb:[-60,60],minimumRangeD:[.001,100],vehicleMach:[0,.99],
+  separation:[0,1000],circumferenceAngle:[0,180],vehicleRadius:[.001,100],beta:[0,90]
+};
+const choices = {method:['apparent','distributed'],cluster:['merged','independent'],deflector:SP8072_DEFLECTORS.map(d=>d.id),sourceBasis:['handbook','example8','custom'],transfer:['no','yes'],band:['third','octave','linear'],integration:['integral','center'],directivity:['strict','edge','isotropic','entered'],water:['dry','source-scenario'],correlation:['off','longitudinal','circumferential'],nozzleShape:['circular','other']};
+const rad = d=>d*Math.PI/180;
+const sp8072PowerSumDb = db=>{if(!db.length)return -Infinity;const top=Math.max(...db);return top===-Infinity?top:top+10*Math.log10(db.reduce((s,v)=>s+10**((v-top)/10),0));};
+function parseSp8072Curve(text, label='Curve', positiveX=true) {
+  if(!String(text??'').trim())return null;
+  let points;
+  try { points=String(text).trim().startsWith('[')?JSON.parse(text):String(text).trim().split(/[;\n]+/).map(row=>row.trim().split(/[,\s]+/).map(Number)); } catch { throw new Error(`${label}: expected x,dB pairs.`); }
+  if(!Array.isArray(points)||points.length<2||points.length>256||points.some(p=>!Array.isArray(p)||p.length!==2||p.some(x=>typeof x!=='number'||!Number.isFinite(x))||positiveX&&p[0]<=0||Math.abs(p[1])>200)||points.some((p,i)=>i&&p[0]<=points[i-1][0]))throw new Error(`${label}: provide 2–256 finite, strictly increasing x,dB pairs; positive x and |dB| ≤ 200.`);
+  return points;
+}
+function normalizeSp8072(input={}) {
+  const v={...SP8072_DEFAULTS,...input};
+  for(const [key,[min,max]] of Object.entries(SP8072_NUMERIC_BOUNDS)){
+    if(v[key]===''||v[key]===null||typeof v[key]==='boolean'||!Number.isFinite(Number(v[key])))throw new Error(`${key}: enter a finite number.`);
+    v[key]=Number(v[key]);if(v[key]<min||v[key]>max)throw new Error(`${key}: allowed software range ${min} to ${max}.`);
+  }
+  for(const [key,options]of Object.entries(choices))if(!options.includes(v[key]))throw new Error(`${key}: unsupported selection.`);
+  if(!Number.isInteger(v.engines)||!Number.isInteger(v.slices))throw new Error('engines and slices must be integers.');
+  if(v.fmin>=v.fmax)throw new Error('fmin must be below fmax.');
+  if(v.axialMin>=v.axialMax)throw new Error('axialMin must be below axialMax.');
+  if(v.shieldStartD>v.shieldEndD)throw new Error('shieldStartD must not exceed shieldEndD.');
+  const activeCurves=[...(v.sourceBasis==='custom'?(v.method==='apparent'?['customSpectrum']:['customAxial','customLocal']):[]),...(v.water==='source-scenario'?['waterCurve']:[])];
+  for(const key of activeCurves)parseSp8072Curve(v[key],key);
+  if(v.water==='source-scenario'&&(v.waterReduction>0||String(v.waterCurve).trim())&&!String(v.waterProvenance).trim())throw new Error('waterProvenance: identify the incremental reduction assumption or measurement, relative to this same dry deflector.');
+  if(v.method==='apparent'&&(v.shieldDb>0||v.deflector==='covered'))throw new Error('Shielding / covered tunnels require the distributed method (SP-8072 p. 30).');
+  if(v.vehicleMach>0&&v.deflector!=='none')throw new Error('Fig. 16 velocity correction supports undeflected flow only. Set vehicleMach to zero for pad deflectors.');
+  const d=SP8072_DEFLECTORS.find(d=>d.id===v.deflector);
+  if(d.requiresCustom&&v.sourceBasis!=='custom')throw new Error('Conical geometry requires a user-entered source spectrum; Fig. 4 alone supplies no general spectrum.');
+  if(['flat6','flat22','curved45'].includes(v.deflector)&&v.sourceBasis==='handbook')throw new Error('This deflector changes source generation. Select its Fig. 8 example or a user spectrum; Fig. 5 similarity is not supported.');
+  if(v.sourceBasis==='custom'&&!String(v.customSpectrum).trim()&&v.method==='apparent')throw new Error('customSpectrum: supply density per unit Strouhal number, relative to the entered overall power.');
+  if(v.sourceBasis==='custom'&&v.method==='distributed'&&(!String(v.customAxial).trim()||!String(v.customLocal).trim()))throw new Error('Custom distributed sources require customAxial and customLocal curves.');
+  if(v.sourceBasis==='example8'&&(!d.spectrum||v.method!=='apparent'))throw new Error('Fig. 8 examples support the apparent-source spectrum only, for listed configurations.');
+  if(v.sourceBasis==='example8'&&v.transfer==='no'&&(v.engines!==1||v.standOffD!==d.standOffD||v.turn!==d.turn||v.bendRadiusD!==d.radiusD))throw new Error('Geometry departs from the Fig. 8 example. Enable the explicitly labeled scenario transfer, or restore its preset.');
+  if((v.velocity<1800||v.velocity>2600||v.nozzleShape!=='circular')&&v.sourceBasis==='handbook'&&v.transfer==='no')throw new Error('Fig. 5 chemical-rocket similarity is limited to 1800–2600 m/s and standard nozzles. Supply source curves or explicitly enable scenario transfer.');
+  return v;
+}
+// Interpolate in the plotted coordinates: log x / dB for densities,
+// log x / log y for Fig. 14 source positions. No implicit extrapolation.
+function sp8072Interpolate(points,x,logY=false) {
+  if(x<points[0][0]||x>points.at(-1)[0])throw new Error(`Curve domain ${points[0][0]}–${points.at(-1)[0]} excludes ${x.toPrecision(4)}.`);
+  let i=1;while(i<points.length-1&&x>points[i][0])i++;
+  const t=Math.log(x/points[i-1][0])/Math.log(points[i][0]/points[i-1][0]);
+  return logY?Math.exp(Math.log(points[i-1][1])*(1-t)+Math.log(points[i][1])*t):points[i-1][1]*(1-t)+points[i][1]*t;
+}
+// Exact integration of each power-law segment of the log-x / dB interpolant.
+function sp8072CurveIntegral(points,lower,upper) {
+  let result=0;
+  for(let i=1;i<points.length;i++){
+    const [x0,y0]=points[i-1],[x1,y1]=points[i],a=Math.max(lower,x0),b=Math.min(upper,x1);
+    if(b<=a)continue;const exponent=(y1-y0)/10/Math.log10(x1/x0),valueAtA=10**(y0/10)*(a/x0)**exponent;
+    result+=Math.abs(exponent+1)<1e-10?valueAtA*a*Math.log(b/a):valueAtA*a*Math.expm1((exponent+1)*Math.log(b/a))/(exponent+1);
+  }
+  return result;
+}
+function sp8072Directivity(st,angle,mode='strict',entered=0) {
+  if(mode==='isotropic')return 0;if(mode==='entered')return entered;
+  const {rows,angles}=SP8072_DIRECTIVITY;
+  if(angle<20||angle>180)throw new Error('Fig. 10 directivity covers 20–180° from flow. Choose an explicit isotropic/entered scenario for another angle.');
+  if(mode==='strict'&&(st<rows[0].st||st>rows.at(-1).st))throw new Error('Fig. 10 Strouhal range is 0.004–0.4. Change bands or choose the labeled nearest-curve scenario.');
+  const s=Math.max(rows[0].st,Math.min(rows.at(-1).st,st));
+  const atAngle=row=>{let i=1;while(i<angles.length-1&&angle>angles[i])i++;const t=(angle-angles[i-1])/(angles[i]-angles[i-1]);return row.db[i-1]*(1-t)+row.db[i]*t;};
+  let j=1;while(j<rows.length-1&&s>rows[j].st)j++;
+  const t=Math.log(s/rows[j-1].st)/Math.log(rows[j].st/rows[j-1].st);
+  return atAngle(rows[j-1])*(1-t)+atAngle(rows[j])*t;
+}
+function sp8072FlowPoint(distance,diameter,v,azimuth=v.azimuth,origin=[0,0,v.altitude]) {
+  if(v.deflector==='none')return {position:[origin[0],origin[1],origin[2]-distance],direction:[0,0,-1]};
+  const h=v.standOffD*diameter,R=v.bendRadiusD*diameter,B=rad(v.turn),A=rad(azimuth);
+  if(distance<h)return {position:[origin[0],origin[1],origin[2]-distance],direction:[0,0,-1]};
+  const s=distance-h,t=R>0?Math.min(B,s/R):B,remaining=Math.max(0,s-R*B),horizontal=R*(1-Math.cos(t))+remaining*Math.sin(B),vertical=R*Math.sin(t)+remaining*Math.cos(B);
+  return {position:[origin[0]+horizontal*Math.cos(A),origin[1]+horizontal*Math.sin(A),origin[2]-h-vertical],direction:[Math.sin(t)*Math.cos(A),Math.sin(t)*Math.sin(A),-Math.cos(t)]};
+}
+function bandFraction(curve,f,lo,hi,scale,integration) {
+  if(integration==='integral')return sp8072CurveIntegral(curve,lo*scale,hi*scale);
+  const x=f*scale;if(x<curve[0][0]||x>curve.at(-1)[0])return 0;
+  return 10**(sp8072Interpolate(curve,x)/10)*(hi-lo)*scale;
+}
+function calculateSp8072(input={}) {
+  const v=normalizeSp8072(input),warnings=[],d=SP8072_DEFLECTORS.find(d=>d.id===v.deflector);
+  const add=s=>{if(!warnings.includes(s))warnings.push(s);};
+  const customSpectrum=v.sourceBasis==='custom'&&v.method==='apparent'?parseSp8072Curve(v.customSpectrum):null;
+  const customAxial=v.sourceBasis==='custom'&&v.method==='distributed'?parseSp8072Curve(v.customAxial):null;
+  const customLocal=v.sourceBasis==='custom'&&v.method==='distributed'?parseSp8072Curve(v.customLocal):null;
+  const waterCurve=v.water==='source-scenario'?parseSp8072Curve(v.waterCurve):null;
+  const spectrum=v.sourceBasis==='example8'?d.spectrum:v.sourceBasis==='custom'?customSpectrum:SP8072_CURVES.spectrum.points;
+  const axial=v.sourceBasis==='custom'?customAxial:SP8072_CURVES.axialPower.points,local=v.sourceBasis==='custom'?customLocal:SP8072_CURVES.localSpectrum.points;
+  const diameter=v.cluster==='merged'?v.diameter*Math.sqrt(v.engines):v.diameter,flowCount=v.cluster==='merged'?1:v.engines;
+  const mechanicalPower=v.engines*v.thrust*v.velocity/2,acousticPower=mechanicalPower*v.efficiency/100;
+  const exhaustFlow=v.exhaustFlow>0?v.exhaustFlow:v.engines*Math.PI*v.diameter**2/4*v.exitDensity*v.velocity;
+  const coreLength=3.45*(1+.38*v.mach)**2*diameter*v.coreScale,exitSound=v.velocity/v.mach;
+  let origins=Array.from({length:flowCount},(_,i)=>[v.nozzleRadius*Math.cos(2*Math.PI*i/flowCount),v.nozzleRadius*Math.sin(2*Math.PI*i/flowCount),v.altitude]);
+  if(v.cluster==='merged')origins=[[0,0,v.altitude]];
+  if(v.cluster==='independent'&&String(v.nozzlePositions).trim()){
+    try{origins=JSON.parse(v.nozzlePositions);}catch{throw new Error('nozzlePositions: provide JSON [[x,y,z],…] in canonical metres.');}
+    if(!Array.isArray(origins)||origins.length!==v.engines||origins.some(p=>!Array.isArray(p)||p.length!==3||p.some(n=>typeof n!=='number'||!Number.isFinite(n)||Math.abs(n)>1e5)))throw new Error('nozzlePositions: one finite [x,y,z] coordinate per engine is required.');
+  }
+  const twin=['twin','flat6','flat22','conical'].includes(v.deflector),branches=twin?[{az:v.azimuth,fraction:v.branchFraction},{az:v.azimuth+180,fraction:1-v.branchFraction}]:[{az:v.azimuth,fraction:1}];
+  if(v.cluster==='independent'&&v.engines>1)add('Independent jets use separate equal engines and incoherent powers; plume mixing is excluded. Nozzle spacing has no handbook transition law.');
+  if(v.cluster==='merged'&&v.engines>1)add('Eq. 3 assumes a closely mixed cluster. Nozzle spacing is metadata in this model; use independent jets for separated flows.');
+  if(v.sourceBasis==='example8')add('Fig. 8 is a reference-specific empirical transfer normalized to undeflected power. Its ordinate already includes source reduction; Fig. 4 efficiencies are not stacked. Water conditions of that historical example are not established here.');
+  if(v.transfer==='yes')add('Scenario transfer enabled: finite results outside the handbook engine/configuration similarity are user assumptions, not handbook-validated predictions.');
+  if(v.exitDensity<.05||v.exitDensity>v.ambientDensity||v.pressureRatio>2||v.velocity>3000||v.nozzleShape==='other')add('§3.3.1 p. 26 calls for subscale tests for these exhaust/nozzle conditions unless testing is demonstrated unnecessary.');
+  if(v.method==='distributed')add(`Distributed core length is ${coreLength.toFixed(2)} m from Fig. 11; local directivity uses far-field Fig. 10 as the handbook empirical assumption (p. 14). Sources outside x/xt=${v.axialMin}–${v.axialMax} are omitted.`);
+  if(v.method==='distributed'&&v.deflector!=='none')add('Applying Figs. 11–13 along a deflected path is a preliminary similarity assumption; impingement and the curved-flow source distribution require configuration-specific correlation.');
+  if(v.correlation!=='off')add('Correlation is an auxiliary single-direction estimate from Figs. 18–19 using entered beta. It is not a structural-response or cylinder-scattering model.');
+  if(v.water==='source-scenario')add(`Water reduction is an entered incremental SOURCE-power scenario relative to the same reference deflector, not a flow-to-reduction law. Flow ratio ${(v.waterFlow/exhaustFlow).toFixed(3)} and injector metadata do not calculate attenuation. Basis: ${v.waterProvenance||'zero-reduction scenario'}.`);
+  if(v.shieldDb>0)add('Shielding loss applies once to sources inside the entered path interval; it is a user scenario, without diffraction or a universal tunnel credit.');
+  if(v.reflectionDb||v.surfaceDb||v.propagationDbPerKm)add('Entered path loss, additional reflection, and receiver surface gain are separate scenarios. Do not re-enter a measured total receiver correction in more than one stage.');
+  const bands=[],sources=[],sourceBudget=new Map(),receiver=[v.receiverX,v.receiverY,v.receiverZ],k=v.band==='third'?3:1,edge=2**(1/(2*k));
+  const frequencies=[];for(let i=0;i<=128;i++){const f=v.band==='linear'?v.fmin+i*v.linearWidth:v.fmin*2**(i/k);if(f>v.fmax*(1+1e-12))break;frequencies.push(f);}
+  if(frequencies.length>128)throw new Error('Frequency range exceeds 128 bands; increase bandwidth or narrow the range. No bands were silently discarded.');
+  if(v.band==='linear'&&v.fmin<=v.linearWidth/2)throw new Error('Linear band lower edge must be above zero.');
+  if(frequencies.length<2)throw new Error('Frequency range must contain at least two selected bands.');
+  if(flowCount*branches.length*(v.method==='distributed'?v.slices:frequencies.length)>4096)throw new Error('More than 4096 allocated source records. Reduce independent engines, branches, slice count or band count; this is a software bound.');
+  const sourcesAt=(f)=>{
+    const result=[];
+    for(let e=0;e<flowCount;e++)for(let b=0;b<branches.length;b++){
+      const branch=branches[b],weight=branch.fraction/flowCount;
+      if(v.method==='apparent'){
+        const positionCurve=v.deflector==='closed'?SP8072_CURVES.apparentClosed.points:SP8072_CURVES.apparentOpen.points;
+        const x=diameter*sp8072Interpolate(positionCurve,f*diameter/v.velocity,true)*v.positionScale;
+        result.push({id:`e${e+1}/b${b+1}/f${f.toFixed(4)}`,e,b,x,weight,overallWeight:weight,...sp8072FlowPoint(x,diameter,v,branch.az,origins[e])});
+      }else{
+        if(v.axialMin<axial[0][0]||v.axialMax>axial.at(-1)[0])throw new Error('Requested axial extent exceeds the source-power curve domain.');
+        for(let i=0;i<v.slices;i++){
+          const a=v.axialMin*(v.axialMax/v.axialMin)**(i/v.slices),z=v.axialMin*(v.axialMax/v.axialMin)**((i+1)/v.slices),x=coreLength*(a+z)/2,overallWeight=weight*sp8072CurveIntegral(axial,a,z);
+          result.push({id:`e${e+1}/b${b+1}/s${i+1}`,e,b,x,weight:overallWeight,overallWeight,...sp8072FlowPoint(x,diameter,v,branch.az,origins[e])});
+        }
+      }
+    }
+    return result;
+  };
+  const distributed=v.method==='distributed'?sourcesAt(frequencies[0]):null;
+  for(const f of frequencies){
+    const lower=v.band==='linear'?f-v.linearWidth/2:f/edge,upper=v.band==='linear'?f+v.linearWidth/2:f*edge,st=f*diameter/v.velocity,waterDb=v.water==='dry'?0:waterCurve?sp8072Interpolate(waterCurve,f):v.waterReduction;
+    if(waterDb<0)throw new Error('waterCurve must contain nonnegative source reductions.');
+    let sourceWatts=0,drySourceWatts=0,pressureEnergy=0,dryEnergy=0,unloadedEnergy=0;
+    const bandSources=distributed??sourcesAt(f);
+    for(const s of bandSources){
+      const scale=v.method==='apparent'?diameter/v.velocity:s.x*exitSound/(v.velocity*v.ambientSound),curve=v.method==='apparent'?spectrum:local;
+      if(v.method==='distributed'&&v.sourceBasis==='handbook'&&lower*scale<.25)add('Fig. 13 below alpha ≈ 0.25 uses its dashed low-frequency estimate, not a measured local spectrum; reading and similarity uncertainty are greater there.');
+      if(lower*scale<curve[0][0]||upper*scale>curve.at(-1)[0])add('Some band/source spectral support lies outside a digitized density curve: tails are omitted, never extrapolated or normalized away. Selected-band OASPL is a truncated estimate.');
+      const fraction=bandFraction(curve,f,lower,upper,scale,v.integration),dryWatts=acousticPower*s.weight*fraction,watts=dryWatts*10**(-waterDb/10);
+      const delta=receiver.map((x,i)=>x-s.position[i]),r=Math.hypot(...delta);
+      if(r<diameter*v.minimumRangeD)throw new Error(`Receiver is within minimumRangeD of source ${s.id}; point-source loading is invalid.`);
+      const theta=Math.acos(Math.max(-1,Math.min(1,s.direction.reduce((sum,x,i)=>sum+x*delta[i]/r,0))))*180/Math.PI;
+      const di=sp8072Directivity(st,theta,v.directivity,v.directivityDb);
+      if(v.directivity==='edge'&&(st<.004||st>.4))add('Fig. 10 St outside 0.004–0.4 uses the explicitly selected nearest-frequency-curve scenario; no measured directivity is claimed there.');
+      const shield=v.method==='distributed'&&s.x/diameter>=v.shieldStartD&&s.x/diameter<=v.shieldEndD?v.shieldDb:0;
+      const motion=v.vehicleMach>0?20*Math.log10(1-v.vehicleMach):0;
+      const gain=10**((-11+di+v.reflectionDb-shield-v.propagationDbPerKm*r/1000+motion)/10)/r**2*1e12;
+      sourceWatts+=watts;drySourceWatts+=dryWatts;unloadedEnergy+=watts*gain;pressureEnergy+=watts*gain*10**(v.surfaceDb/10);dryEnergy+=dryWatts*gain*10**(v.surfaceDb/10);
+      if(!sourceBudget.has(s.id)){
+        const record={...s,range:r,theta,directivityDb:di,selectedBandWatts:watts,receivedBandDb:watts>0?10*Math.log10(watts*gain)+v.surfaceDb:null,totalSourceWatts:0,totalPressureEnergy:0};
+        sources.push(record);sourceBudget.set(s.id,record);
+      }
+      const record=sourceBudget.get(s.id);record.totalSourceWatts+=watts;record.totalPressureEnergy+=watts*gain*10**(v.surfaceDb/10);
+    }
+    if(pressureEnergy<=0)throw new Error(`No source spectral support in band ${f.toPrecision(4)} Hz. Change bands or supply an identified spectrum.`);
+    bands.push({frequency:f,lower,upper,bandwidth:upper-lower,strouhal:st,sourceWatts,drySourceWatts,splDb:10*Math.log10(pressureEnergy),drySplDb:10*Math.log10(dryEnergy),freeFieldDb:10*Math.log10(unloadedEnergy),pressureSquared:4e-10*pressureEnergy,waterDb});
+  }
+  const overallDb=sp8072PowerSumDb(bands.map(b=>b.splDb)),dryOverallDb=sp8072PowerSumDb(bands.map(b=>b.drySplDb)),selectedSourceWatts=bands.reduce((s,b)=>s+b.sourceWatts,0),drySelectedSourceWatts=bands.reduce((s,b)=>s+b.drySourceWatts,0);
+  const axialFraction=v.method==='distributed'?sp8072CurveIntegral(axial,v.axialMin,v.axialMax):1;
+  const correlation=v.correlation==='off'?null:bands.map(b=>{
+    const a=2*Math.PI*b.frequency/v.ambientSound*(v.correlation==='longitudinal'?v.separation*Math.sin(rad(v.beta)):v.vehicleRadius*rad(v.circumferenceAngle)*Math.cos(rad(v.beta)));
+    const points=SP8072_CORRELATION[v.correlation].points;
+    if(a>points.at(-1)[0])return {frequency:b.frequency,coordinate:a,coefficient:null};
+    let i=1;while(i<points.length-1&&a>points[i][0])i++;const t=(a-points[i-1][0])/(points[i][0]-points[i-1][0]);
+    return {frequency:b.frequency,coordinate:a,coefficient:points[i-1][1]*(1-t)+points[i][1]*t};
+  });
+  if(correlation?.some(c=>c.coefficient===null))add('Correlation outside the inspected curve domain is unavailable; it is not silently continued to zero.');
+  add('Selected-band OASPL sums only the listed bands. Missing low/high spectral tails, ignition transients, shock tones, coherent reflections, structural response and internal noise are excluded.');
+  return {version:SP8072_VERSION,inputs:v,diameter,flowCount,origins,branches,mechanicalPower,acousticPower,exhaustFlow,waterRatio:v.waterFlow/exhaustFlow,coreLength,exitSound,axialFraction,selectedSourceWatts,drySelectedSourceWatts,sourceFraction:drySelectedSourceWatts/acousticPower,bands,sources:sources.map(s=>({...s,selectedOverallDb:s.totalPressureEnergy>0?10*Math.log10(s.totalPressureEnergy):null})),overallDb,dryOverallDb,pressureRms:2e-5*10**(overallDb/20),warnings,correlation};
+}
+
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=(v,n=2)=>Number.isFinite(v)?Number(v.toPrecision(n+2)).toString():'Unavailable';
+const select=(key,label,options,help='')=>({key,label,type:'select',default:SP8072_DEFAULTS[key],options,help});
+const number=(key,label,unit='',help='')=>({key,label,unit,type:'number',default:SP8072_DEFAULTS[key],min:SP8072_NUMERIC_BOUNDS[key]?.[0],max:SP8072_NUMERIC_BOUNDS[key]?.[1],step:['engines','slices'].includes(key)?1:'any',help});
+const text=(key,label,help='',textarea=true)=>({key,label,type:textarea?'textarea':'text',default:SP8072_DEFAULTS[key],help});
+const SP8072_MEASUREMENT_DEFAULTS = '[[-50,0,20],[25,0,20]]';
+function parseSp8072Measurements(value=SP8072_MEASUREMENT_DEFAULTS){
+  let positions;
+  try { positions=String(value).trim()?JSON.parse(value):[]; } catch { throw new Error('measurementLocations: enter JSON coordinates [[x,y,z],…] in SI metres.'); }
+  if(!Array.isArray(positions)||positions.length>2||positions.some(p=>!Array.isArray(p)||p.length!==3||p.some(n=>typeof n!=='number'||!Number.isFinite(n)||Math.abs(n)>1e5)))throw new Error('measurementLocations: use up to two finite [x,y,z] locations in SI metres, each coordinate within ±100000 m.');
+  return positions;
+}
+function measurementPredictions(s){
+  const v=s.inputs,positions=parseSp8072Measurements(v.measurementLocations);
+  return [[v.receiverX,v.receiverY,v.receiverZ],...positions].map((position,i)=>{
+    const id=`M${i+1}`;
+    try {
+      const prediction=i?calculateSp8072({...v,receiverX:position[0],receiverY:position[1],receiverZ:position[2]}):s;
+      return {id,position,overallDb:prediction.overallDb,dryOverallDb:prediction.dryOverallDb,pressureRms:prediction.pressureRms,bands:prediction.bands,warnings:prediction.warnings,error:null};
+    } catch(error){return {id,position,overallDb:null,pressureRms:null,bands:[],warnings:[],error:error.message};}
+  });
+}
+function sp8072ReportText(result,evidence){
+  const locations=['PROPOSED MEASUREMENT LOCATIONS — PREDICTIONS',
+    'Coordinates in SI metres; OASPL in dB re 20 µPa over the same selected bands. These are not measured data.',
+    ...result.measurementLocations.map(m=>`${m.id}: (${m.position.join(', ')}) m; ${m.error?`Unavailable: ${m.error}`:`OASPL ${m.overallDb.toFixed(6)} dB re 20 µPa; RMS pressure ${m.pressureRms.toPrecision(7)} Pa`}`)];
+  return `${engineeringResultToText(sp8072Tool.title,result)}\n\n${locations.join('\n')}\n\nSOURCE / CALCULATION RECORD\n${JSON.stringify(evidence,null,2)}`;
+}
+const sp8072Tool = {id:'nasa-sp8072',title:'NASA SP-8072 Launch Acoustic Explorer',category:'Aero / Distributed Loads',description:'Explore both NASA handbook source-allocation methods, engine clusters, deflected flows, acoustic spectra and explicit water scenarios.',keywords:['NASA','SP-8072','SP8072','rocket','launch','acoustic','water','suppression','deflector','spectrum'],section:'launch-acoustic-sources-deep-dive'};
+const inputs=[
+  select('method','Prediction method',[['apparent','Apparent source per band — Eqs. 1–6'],['distributed','Distributed slices — Eqs. 7–10']]),
+  number('engines','Identical engine count','', 'Eq. 1: thrust below is per engine; 1–64 is a software bound.'),number('thrust','Thrust per engine','N'),number('velocity','Fully expanded exit velocity','m/s','Fig. 5 chemical-rocket evidence: 1800–2600 m/s.'),number('diameter','Individual fully expanded nozzle diameter','m'),number('efficiency','Acoustic / mechanical power efficiency','%','Eq. 1 uses 1%; 0.5% is the handbook probable value. Mechanical power = n F Ue / 2.'),
+  select('cluster','Nozzle-flow treatment',[['merged','Mixed cluster — de = √n dei'],['independent','Separate incoherent jets']]),number('nozzleRadius','Independent nozzle layout radius','m','Regular ring in XY. Used only for independent jets.'),text('nozzlePositions','Optional independent nozzle coordinates','JSON [[x,y,z],…], one per engine. Canonical SI metres in either display system; overrides regular ring and altitude.'),
+  number('receiverX','Receiver X','m'),number('receiverY','Receiver Y','m'),number('receiverZ','Receiver Z','m'),number('altitude','Nozzle height above pad datum','m','Z points upward; undeflected flow points downward. Liftoff shifts the nozzle; fixed pad stand-off must be increased separately.'),number('receiverStep','Geometry keyboard increment','m'),
+  {...text('measurementLocations','Comparison microphone locations','Up to two proposed microphone locations: JSON [[x,y,z],…] in canonical SI metres in either display system. M1 is the main Receiver X/Y/Z; these are M2/M3. Blank hides comparisons. These are predictions, not measurements.'),default:SP8072_MEASUREMENT_DEFAULTS},
+  select('deflector','Deflector configuration',SP8072_DEFLECTORS.map(d=>[d.id,d.label]),'Selection loads a documented geometry preset. Radius and flow direction are entered geometric assumptions, not empirical noise reductions.'),number('standOffD','Nozzle-to-turn stand-off','nozzle diameters','Measured along flow; based on equivalent de for a mixed cluster.'),number('turn','Total flow turning angle','deg','From downward exhaust. 90° is horizontal; actual plate inclination does not establish a turning law.'),number('azimuth','Outlet azimuth','deg'),number('bendRadiusD','Circular bend radius','nozzle diameters','Idealized arc. Preset radius is an illustrative geometry assumption.'),number('branchFraction','Power share in first branch','','Second branch receives exactly 1 minus this share; used for twin/radial scenarios.'),
+  select('sourceBasis','Source spectrum basis',[['handbook','Handbook similarity curves'],['example8','Fig. 8 empirical reference transfer'],['custom','User-entered source curves']]),select('transfer','Out-of-family scenario transfer',[['no','Refuse unsupported engine/configuration transfer'],['yes','Explicitly accept a user scenario transfer']]),
+  text('customSpectrum','User normalized source spectrum','St,dB pairs; ordinate = 10 log[W(f) Ue/(WOA de)]. Not band SPL; no automatic normalization.'),text('customAxial','User normalized axial power','x/xt,dB pairs; ordinate = 10 log[xt W(x)/WOA]. Must cover selected axial extent.'),text('customLocal','User local spectral density','alpha,dB pairs; alpha=f x ae/(Ue a0). Used instead of Fig. 13.'),
+  select('band','Acoustic bandwidth',[['third','One third octave'],['octave','Octave'],['linear','Linear bins (including 1 Hz)']]),number('linearWidth','Linear bin bandwidth','Hz','1 Hz produces per-Hz bins; OASPL always integrates the listed bins.'),number('fmin','First band center','Hz'),number('fmax','Last allowed band center','Hz'),select('integration','Density-to-band conversion',[['integral','Integrate interpolated density across band'],['center','Handbook center-density × bandwidth']]),
+  select('directivity','Directional radiation',[['strict','Fig. 10 within tabulated St only'],['edge','Fig. 10 + nearest-St curve scenario'],['isotropic','Isotropic user scenario (DI = 0)'],['entered','Entered constant DI scenario']]),number('directivityDb','Entered directional gain','dB'),number('positionScale','Apparent-source position multiplier','','1 = digitized Fig. 14. Other values are empirical assumptions.'),number('coreScale','Core-length multiplier','','1 = Fig. 11: xt/de = 3.45(1 + 0.38 Me)².'),number('mach','Fully expanded exit Mach number','','Derived exhaust sound speed = Ue / Me; Fig. 11 plotted range supports Me ≤ 4.'),number('ambientSound','Ambient sound speed','m/s'),number('slices','Slices per flow branch'),number('axialMin','First distributed source station','core lengths'),number('axialMax','Last distributed source station','core lengths'),
+  select('water','Water treatment',[['dry','Reference / dry baseline'],['source-scenario','Entered incremental source reduction scenario']],'Flow and injector metadata alone produce no dB credit.'),number('waterFlow','Water mass flow','kg/s'),number('exhaustFlow','Exhaust mass flow override','kg/s','0 derives n π dei² ρe Ue / 4 from entered exit properties.'),number('waterReduction','Broadband incremental source reduction','dB','Applied once to source power relative to this same reference deflector. Frequency curve overrides this value.'),text('waterCurve','Incremental reduction versus frequency','Hz,positive reduction dB pairs. Must cover every band center; no extrapolation.'),text('waterProvenance','Water scenario basis','State measurement/configuration or assumption and dry reference.',false),number('injectionStationD','Water injection station','nozzle diameters'),number('injectionAngle','Injection angle','deg'),number('injectionPressure','Injection pressure','kPa'),number('injectorDiameter','Injector diameter','m'),
+  number('shieldStartD','Shielded source interval start','nozzle diameters'),number('shieldEndD','Shielded source interval end','nozzle diameters'),number('shieldDb','Incremental source-path shielding loss','dB','Distributed sources only; no diffraction calculation or automatic roof credit.'),number('propagationDbPerKm','Entered atmospheric path loss','dB/km'),number('reflectionDb','Additional reflected-field gain','dB','No coherent image-source calculation. Keep separate from receiver surface loading.'),number('surfaceDb','Receiver surface pressure correction','dB','0 = incident free-field pressure; user-entered scattering/loading scenario otherwise.'),number('minimumRangeD','Minimum source-to-receiver range','nozzle diameters','Numerical/model exclusion radius; not a handbook-certified near-field boundary.'),number('vehicleMach','Vehicle free-stream Mach number','','Fig. 16: 20 log10(1−M), undeflected subsonic flow only.'),
+  select('correlation','Auxiliary spatial correlation',[['off','Off'],['longitudinal','Longitudinal — Fig. 19'],['circumferential','Circumferential — Fig. 18 theory']]),number('separation','Longitudinal receiver separation','m'),number('circumferenceAngle','Circumferential separation angle','deg'),number('vehicleRadius','Vehicle radius for correlation','m'),number('beta','Incidence angle beta for correlation','deg','Angle from the surface-normal direction as in Fig. 17; entered single-direction approximation, not cylinder scattering.'),
+  number('exitDensity','Exit-gas density','kg/m³'),number('ambientDensity','Ambient gas density','kg/m³'),number('pressureRatio','Exit / ambient static-pressure ratio'),select('nozzleShape','Nozzle similarity class',[['circular','Standard circular nozzle'],['other','Nonstandard (requires scenario/custom data)']]),number('areaRatio','Nozzle expansion area ratio','','Recorded applicability metadata; SP-8072 provides no independent area-ratio correction in Eqs. 1–10.')
+];
+const sp8072Calculator = createEngineeringCalculator('nasa-sp8072',{
+  category:sp8072Tool.category,basis:'NASA SP-8072 §4.2 Eqs. 1–10, Figs. 5 and 10–14; separately entered mitigation/loading scenarios',confidence:'Preliminary empirical external acoustic loading; coarse manual curve readings, no measured engine/pad correlation',inputs,references:SP8072_SUPPORT,
+  presetKeys:['deflector','method'],syncPreset(v,key){
+    if(key==='method')return v.method==='distributed'&&v.sourceBasis==='example8'?{sourceBasis:'custom'}:{};
+    const d=SP8072_DEFLECTORS.find(d=>d.id===v.deflector);return {standOffD:d.standOffD,turn:d.turn,bendRadiusD:d.radiusD,sourceBasis:d.requiresCustom?'custom':d.example?'example8':'handbook',...(d.id==='covered'?{method:'distributed'}:{})};
+  },
+  compute(input){
+    const s=calculateSp8072(input),v=s.inputs,f=s.bands.map(b=>b.frequency),trace=(name,y,emphasis=false)=>({name,x:f,y,emphasis});
+    const measurements=measurementPredictions(s);
+    const hasPathScenario=Boolean(v.reflectionDb||v.shieldDb||v.propagationDbPerKm);
+    const pressureBasis=v.surfaceDb?'Entered surface loading':hasPathScenario?'Incident pressure with entered path corrections':'Incident free-field pressure';
+    const result = {
+      values:[{label:'Selected-band OASPL',value:s.overallDb,unit:'dB re 20 µPa',note:`${pressureBasis}; ${s.bands[0].lower.toFixed(1)}–${s.bands.at(-1).upper.toFixed(1)} Hz band edges.`},{label:'Reference / dry OASPL',value:s.dryOverallDb,unit:'dB re 20 µPa'},{label:'Incremental water change',value:s.overallDb-s.dryOverallDb,unit:'dB'},{label:'Selected-band pressure RMS',value:s.pressureRms,unit:'Pa RMS'},{label:'Mechanical exhaust power',value:s.mechanicalPower,unit:'W'},{label:'Reference acoustic power',value:s.acousticPower,unit:'W'},{label:'Selected source power',value:s.selectedSourceWatts,unit:'W'},{label:'Dry source power captured',value:s.sourceFraction*100,unit:'%'},{label:'Equivalent flow diameter',value:s.diameter,unit:'m'},{label:'Core length',value:s.coreLength,unit:'m'},{label:'Derived exhaust sound speed',value:s.exitSound,unit:'m/s'},{label:'Exhaust mass flow',value:s.exhaustFlow,unit:'kg/s'},{label:'Water / exhaust mass ratio',value:s.waterRatio,unit:''},{label:'Distributed axial power captured',value:100*s.axialFraction,unit:'%'}],
+      interpretation:{summary:`${v.method==='apparent'?'Frequency-dependent apparent sources':'Distributed source slices'} predict ${s.overallDb.toFixed(1)} dB over ${s.bands.length} ${v.band==='third'?'one-third-octave':v.band==='octave'?'octave':'linear'} bands at (${v.receiverX}, ${v.receiverY}, ${v.receiverZ}) m. The same reference geometry gives ${s.dryOverallDb.toFixed(1)} dB before incremental water treatment.`,physicalMeaning:`Changing engine power changes generated acoustic watts. Nozzle size and velocity set spectral similarity; source locations and deflector turning change each propagation distance and radiation angle. This result is external pressure ${v.surfaceDb?'with the entered surface correction':hasPathScenario?'in the incident field after the entered path corrections':'in the incident free field'}, not structural vibration or internal noise.`,engineeringConsiderations:['A deflector may lower total power and raise loading at this receiver through geometry/directivity. Compare the same reference before assigning attenuation.','Each dB reduction is applied to its named stage once; water flow has no universal noise-reduction law.','Retain source provenance and missing tails when transferring this spectrum into a structural or SEA model.']},
+      assumptions:{satisfied:['Canonical SI internally; sound power referenced to 1 pW, pressure to 20 µPa.','Source branches and frequency bands sum incoherently on an energy basis.','No hidden normalization of truncated source/spectral curves.'],warnings:s.warnings,alerts:s.warnings,limitations:['Empirical handbook similarity and coarse digitization are not engine/pad measurement correlation or qualification.','Ignition overpressure, shock tones, multiphase water dynamics, coherent reflections, structural vibration and internal response require separate models.']},
+      validity:{regime:'Selected-band external acoustic loading from SP-8072 source allocation; explicitly labeled scenarios for unsupported empirical relationships.',confidence:'Approximate curve reading: ±1–1.5 dB densities/directivity, ±12–15% apparent source positions. These are reading estimates, not measured prediction tolerances.'},
+      relatedConcepts:[{title:'Launch acoustic teaching workbench',href:'#/tool/launch-acoustic-source',description:'Preserved mechanism and sensitivity teaching envelope.'},{title:'NASA handbook and implementation coverage',href:SP8072_SOURCE.url,description:'§4.2 pp. 28–32; separate source, path and receiver loading.'}],
+      plots:[{title:'External acoustic band spectrum',xLabel:'Band center frequency (Hz)',yLabel:'Band SPL (dB re 20 µPa)',xScale:'log',traceSelector:{initial:'emphasis',label:'Spectrum comparison'},traces:[trace('Current external pressure',s.bands.map(b=>b.splDb),true),trace('Reference / dry, same deflector',s.bands.map(b=>b.drySplDb)),trace('Current incident field before surface correction',s.bands.map(b=>b.freeFieldDb))]}],
+      tables:[{title:'Band power, loading and bandwidth closure',columns:['Center (Hz)','Lower (Hz)','Upper (Hz)','Bandwidth (Hz)','St','Reference source (W)','Current source (W)','SPL (dB re 20 µPa)','Pressure variance (Pa²)'],rows:s.bands.map(b=>[b.frequency,b.lower,b.upper,b.bandwidth,b.strouhal,b.drySourceWatts,b.sourceWatts,b.splDb,b.pressureSquared])},{title:(v.method==='apparent'?'Apparent source contribution by frequency':'Distributed source contribution in first band')+` — ${Math.min(s.sources.length,400)} of ${s.sources.length} records (all in calculation JSON)`,columns:['Source','Path station (m)','Range (m)','Angle from flow (deg)','DI (dB)','Band source (W)','Received band (dB re 20 µPa)'],rows:s.sources.slice(0,400).map(p=>[p.id,p.x,p.range,p.theta,p.directivityDb,p.selectedBandWatts,p.receivedBandDb??'No spectral support'])},{title:`Source contributions over all selected bands — ${Math.min(s.sources.length,400)} of ${s.sources.length} records`,columns:['Source','Path station (m)','Total band source (W)','Contribution to selected-band OASPL (dB re 20 µPa)'],rows:s.sources.slice(0,400).map(p=>[p.id,p.x,p.totalSourceWatts,p.selectedOverallDb??'No spectral support'])},...(s.correlation?[{title:'Auxiliary spatial correlation — single-direction estimate',columns:['Frequency (Hz)','Nondimensional separation','Correlation coefficient'],rows:s.correlation.map(c=>[c.frequency,c.coordinate,c.coefficient??'Outside curve domain'])}]:[])],
+      csv:{filename:'nasa-sp8072-spectrum.csv',columns:['frequency_Hz','lower_Hz','upper_Hz','source_W','dry_source_W','SPL_dB_re20uPa','dry_SPL_dB_re20uPa','pressure_variance_Pa2'],rows:s.bands.map(b=>[b.frequency,b.lower,b.upper,b.sourceWatts,b.drySourceWatts,b.splDb,b.drySplDb,b.pressureSquared])},
+      presentation:{primaryValueCount:4,primaryEvidence:{type:'plot',index:0}},sp8072:s,measurementLocations:measurements,
+      provenance:{dataVersion:SP8072_VERSION,sources:SP8072_SUPPORT,equations:[1,2,3,4,5,6,7,8,9,10],curveDefinitions:SP8072_CURVES,directivity:SP8072_DIRECTIVITY,correlation:SP8072_CORRELATION,deflector:SP8072_DEFLECTORS.find(d=>d.id===v.deflector),integration:v.integration,bandConvention:v.band,referencePressurePa:2e-5,referencePowerW:1e-12}
+    };
+    result.plots[0].traces[0].name='M1 · Current external pressure';
+    result.plots[0].labelLogEndpoints=true;
+    result.plots[0].traces[0].color='#55b8ff';
+    for(const [i,m] of measurements.slice(1).entries())if(!m.error)result.plots[0].traces.push({...trace(`${m.id} · Predicted external pressure`,m.bands.map(b=>b.splDb),true),color:['#fb923c','#b495ef'][i]});
+    result.tables.unshift({title:'Proposed measurement locations — predicted selected-band levels',columns:['Microphone','X (m)','Y (m)','Z (m)','OASPL (dB re 20 µPa)','Pressure RMS (Pa)','Status'],rows:measurements.map(m=>[m.id,...m.position,m.overallDb??'Unavailable',m.pressureRms??'Unavailable',m.error??(m.id==='M1'?'Main receiver prediction':'Comparison prediction')])});
+    for(const m of measurements)if(m.error)result.assumptions.warnings.push(`${m.id} prediction unavailable: ${m.error}`);
+    result.interpretationByUnit={English:{...result.interpretation,summary:`${v.method==='apparent'?'Frequency-dependent apparent sources':'Distributed source slices'} predict ${s.overallDb.toFixed(1)} dB over ${s.bands.length} ${v.band==='third'?'one-third-octave':v.band==='octave'?'octave':'linear'} bands at (${[v.receiverX,v.receiverY,v.receiverZ].map(x=>fmt(Number(toDisplayNumber(x,'m','English')))).join(', ')}) ft. The same reference geometry gives ${s.dryOverallDb.toFixed(1)} dB before incremental water treatment.`}};
+    return result;
+  }
+});
+
+function sp8072VisibleKeys(context){
+  const v=context.inputs,hidden=new Set();
+  if(v.band!=='linear')hidden.add('linearWidth');
+  if(v.method!=='distributed')for(const key of ['coreScale','slices','axialMin','axialMax','customAxial','customLocal','shieldStartD','shieldEndD','shieldDb'])hidden.add(key);
+  else for(const key of ['positionScale','customSpectrum'])hidden.add(key);
+  if(v.sourceBasis!=='custom')for(const key of ['customSpectrum','customAxial','customLocal'])hidden.add(key);
+  if(v.cluster!=='independent')for(const key of ['nozzleRadius','nozzlePositions'])hidden.add(key);
+  if(v.deflector==='none')for(const key of ['standOffD','turn','azimuth','bendRadiusD','branchFraction'])hidden.add(key);
+  else if(!['twin','flat6','flat22','conical'].includes(v.deflector))hidden.add('branchFraction');
+  if(v.directivity!=='entered')hidden.add('directivityDb');
+  if(v.water==='dry')for(const key of ['waterFlow','waterReduction','waterCurve','waterProvenance','injectionStationD','injectionAngle','injectionPressure','injectorDiameter'])hidden.add(key);
+  if(v.correlation==='off')for(const key of ['separation','circumferenceAngle','vehicleRadius','beta'])hidden.add(key);
+  if(v.correlation==='longitudinal')for(const key of ['circumferenceAngle','vehicleRadius'])hidden.add(key);
+  if(v.correlation==='circumferential')hidden.add('separation');
+  return inputs.filter(f=>!hidden.has(f.key)).map(f=>f.key);
+}
+function measurementFigure(context,s){
+  const v=s.inputs,measurements=context.nativeResult.measurementLocations;
+  const display=n=>`${fmt(Number(toDisplayNumber(n,'m',context.project.unitSystem)))} ${toDisplayUnit('m',context.project.unitSystem)}`;
+  const paths=[],maxStation=Math.max(...s.sources.map(p=>p.x),s.diameter*40);
+  for(const origin of s.origins)for(const branch of s.branches)paths.push(Array.from({length:80},(_,i)=>sp8072FlowPoint(maxStation*i/79,s.diameter,v,branch.az,origin).position));
+  const points=[...paths.flat(),...measurements.map(m=>m.position),...s.origins];
+  const projection=(horizontal,vertical,left,top,width,height)=>{
+    const a=points.map(p=>p[horizontal]),b=points.map(p=>p[vertical]),amin=Math.min(...a),bmax=Math.max(...b);
+    const spanA=Math.max(1,Math.max(...a)-amin),spanB=Math.max(1,bmax-Math.min(...b)),scale=Math.min(width/spanA,height/spanB);
+    return p=>[left+(width-spanA*scale)/2+(p[horizontal]-amin)*scale,top+(height-spanB*scale)/2+(bmax-p[vertical])*scale];
+  };
+  const xz=projection(0,2,65,135,520,230),xy=projection(0,1,690,115,160,145);
+  const flow=project=>paths.map(path=>`<polyline points="${path.map(project).map(p=>p.join(',')).join(' ')}"/>`).join('');
+  const sources=s.sources.filter((_,i)=>i%Math.max(1,Math.ceil(s.sources.length/80))===0);
+  const marks=project=>sources.map(p=>{const [x,y]=project(p.position);return `<circle cx="${x}" cy="${y}" r="3"><title>Acoustic source station ${esc(p.id)}, not a microphone</title></circle>`;}).join('');
+  const microphones=project=>{
+    const labels=[];
+    return measurements.map((m,i)=>{
+      const [x,y]=project(m.position),lx=Math.min(x+15,project===xz?585:842);
+      let ly=y-20;
+      while(labels.some(p=>Math.abs(p[0]-lx)<40&&Math.abs(p[1]-ly)<27))ly+=28;
+      labels.push([lx,ly]);
+      return `<g class="sp8072-microphone sp8072-mic-${i+1}${m.error?' sp8072-mic-invalid':''}"><title>${m.id}: proposed microphone at (${m.position.join(', ')}) m; ${m.error?esc(m.error):`${m.overallDb.toFixed(2)} dB re 20 µPa, predicted selected-band OASPL`}</title><circle cx="${x}" cy="${y}" r="10"/><path d="M${x-5},${y}h10 M${x},${y-5}v10"/><path class="sp8072-label-leader" d="M${x+8},${y-6}L${lx},${ly+12}"/><rect x="${lx}" y="${ly}" width="36" height="24" rx="5"/><text x="${lx+18}" y="${ly+17}" text-anchor="middle">${m.id}</text></g>`;
+    }).join('');
+  };
+  const engine=s.origins.slice(0,8).map(p=>{
+    const [x,y]=xz(p);
+    return `<g class="sp8072-engine" transform="translate(${x} ${y})"><title>Illustrative rocket engine: feed lines, combustion chamber, throat and bell nozzle. Outline not to scale; nozzle exit anchored at the calculated origin.</title><path class="sp8072-engine-pipe" d="M-13,-89V-63 M13,-89V-73H32V-47H12 M-12,-64H-30V-40H-10"/><circle cx="32" cy="-58" r="8"/><rect x="-14" y="-73" width="28" height="9" rx="2"/><path class="sp8072-engine-body" d="M-12,-64Q-17,-54 -12,-42Q-6,-33 -8,-24Q-12,-10 -27,0H27Q12,-10 8,-24Q6,-33 12,-42Q17,-54 12,-64Z"/><path class="sp8072-engine-hot" d="M-5,-52Q-7,-40 0,-30Q7,-40 5,-52Z"/><path class="sp8072-engine-ribs" d="M-14,-14H14 M-19,-7H19 M-27,0H27"/></g>`;
+  }).join('');
+  const dominant=s.sources.reduce((best,p)=>p.totalPressureEnergy>best.totalPressureEnergy?p:best,s.sources[0]);
+  const source=xz(dominant.position),receiver=xz(measurements[0].position);
+  const origins=project=>s.origins.map(p=>{const [x,y]=project(p);return `<circle class="sp8072-nozzle-origin" cx="${x}" cy="${y}" r="4"/>`;}).join('');
+  const cards=measurements.map((m,i)=>`<article class="sp8072-location-card sp8072-mic-${i+1}" aria-label="${m.id} predicted measurement location"><h4>${m.id} · ${i?'Comparison microphone':'Main receiver'}</h4><p class="sp8072-location-level">${m.error?'Unavailable':`${m.overallDb.toFixed(2)} <span>dB re 20 µPa</span>`}</p><p>Predicted selected-band OASPL</p><p class="sp8072-location-coordinate">X ${esc(display(m.position[0]))} · Y ${esc(display(m.position[1]))} · Z ${esc(display(m.position[2]))}</p>${m.error?`<p class="sp8072-invalid">${esc(m.error)}</p>`:`<p>RMS pressure ${esc(fmt(Number(toDisplayNumber(m.pressureRms,'Pa RMS',context.project.unitSystem))))} ${esc(toDisplayUnit('Pa RMS',context.project.unitSystem))}</p>`}</article>`).join('');
+  return `<figure class="sp8072-measurement-figure"><div class="sp8072-geometry-scroll" tabindex="0" role="region" aria-label="Rocket engine and microphone geometry; scroll horizontally on narrow screens"><svg class="workbench-domain-svg sp8072-geometry" viewBox="0 0 900 440" role="img" aria-label="Rocket engine illustration and proposed microphone locations M1${measurements.slice(1).map(m=>`, ${m.id}`).join('')}, side and top views"><title>Rocket engine and predicted measurement locations</title><desc>Side view XZ, Z upward; top view XY shows out-of-plane separation. Engine outline and plume width are illustrative, not to scale. Microphone centers and source stations use the entered geometry. M1 is the main receiver, with the same prediction as the main result and spectrum. All locations are predictions, not measured data.</desc><text class="sp8072-view-label" x="30" y="32">SIDE VIEW · XZ</text><text class="sp8072-view-label" x="680" y="32">TOP VIEW · XY</text><path class="sp8072-view-divider" d="M650,20V404"/><g class="sp8072-plume">${flow(xz)}</g><g class="sp8072-flow">${flow(xz)}</g><path class="sp8072-radiation" d="M${source.join(',')}L${receiver.join(',')}"><title>Illustrative path from the strongest selected-band source contribution to M1. Calculation sums all sources with full 3D ranges and angles.</title></path><g class="sp8072-sources">${marks(xz)}</g>${engine}${origins(xz)}${microphones(xz)}<g class="sp8072-flow">${flow(xy)}</g><g class="sp8072-sources">${marks(xy)}</g>${origins(xy)}${microphones(xy)}<g class="sp8072-axis"><path d="M34,392h44m-5,-4 5,4 -5,4 M34,392v-44m-4,5 4,-5 4,5"/><text x="85" y="397">X</text><text x="27" y="339">Z</text></g><g class="sp8072-axis"><path d="M695,295h34 M695,295v-32"/><text x="737" y="300">X</text><text x="688" y="252">Y</text></g><text x="680" y="346">Full XYZ ranges</text><text x="680" y="370">in every prediction</text></svg></div><figcaption><div class="sp8072-geometry-legend"><span class="sp8072-legend-flow">Exhaust flow</span><span class="sp8072-legend-source">Acoustic source stations</span><span class="sp8072-legend-mic">Proposed microphones</span><span class="sp8072-legend-path">Example path to M1</span></div><p>Engine outline and plume width are illustrative, not to scale. Nozzle exits, source stations and microphone centers follow the entered coordinates. ${s.origins.length>8?'Eight engine icons shown; all nozzle origins are marked. ':''}${v.cluster==='merged'&&v.engines>1?'The engine icon represents the equivalent mixed flow, not individual cluster hardware. ':''}Z = 0 is the pad datum; no ground geometry or reflection model is drawn.</p></figcaption></figure><div class="sp8072-location-cards">${cards}</div><div class="sp8072-geometry-caption"><p>${esc(SP8072_DEFLECTORS.find(d=>d.id===v.deflector).label)} · equivalent flow diameter ${esc(display(s.diameter))} · ${s.sources.length} source allocation records (markers sampled)</p><p>All levels cover ${s.bands[0].lower.toFixed(1)}–${s.bands.at(-1).upper.toFixed(1)} Hz. M1 follows Receiver X/Y/Z; edit Comparison microphone locations for M2/M3. Matching microphone traces appear in the spectrum. These locations are proposed sampling positions, not measured results.</p></div>`;
+}
+function diagram(context){
+  const s=context.nativeResult?.sp8072;if(!s)return '<p class="sp8072-invalid">Resolve the field error below to recover the geometry and prediction.</p>';
+  return `${measurementFigure(context,s)}
+  <div class="sp8072-actions"><button type="button" class="button-quiet" data-sp-action="evidence">Export calculation JSON</button><button type="button" class="button-quiet" data-sp-action="csv">Export spectrum CSV</button><button type="button" class="button-quiet" data-sp-action="report">Export report</button><button type="button" class="button-quiet" data-sp-action="svg">Export spectrum SVG</button><button type="button" class="button-quiet" data-sp-action="print">Print report</button><button type="button" class="button-secondary" data-sp-move="x-" data-wb-focus-key="receiver-x-minus">Receiver −X</button><button type="button" class="button-secondary" data-sp-move="x+" data-wb-focus-key="receiver-x-plus">Receiver +X</button><button type="button" class="button-secondary" data-sp-move="z-" data-wb-focus-key="receiver-z-minus">Receiver −Z</button><button type="button" class="button-secondary" data-sp-move="z+" data-wb-focus-key="receiver-z-plus">Receiver +Z</button></div>
+  <details class="sp8072-method-note"><summary>Equations, curve provenance and exploration guide</summary><p>1. Change thrust: acoustic watts scale linearly at fixed velocity and efficiency. 2. Change diameter or engine count: spectral similarity and apparent source positions shift. 3. Save a baseline, then turn the flow: range and directivity may raise loading. 4. Enter a water scenario and its basis; water metadata alone gives no reduction.</p><p>Eq. 1: WOA = 0.005 n F Ue (1% efficiency). Eqs. 4/8: convert normalized density to actual bandwidth. Eqs. 5/9: SPL = Lw,band − 20 log10 r − 11 + DI. Eqs. 6/10: incoherent energy sums. Eq. 7: axial source power. Fig. 11: xt/de = 3.45(1 + 0.38 Me)². Fig. 16: 20 log10(1−M∞).</p><p>Density curves: log-abscissa / dB interpolation, exact power-law band integrals or selectable center approximation. Fig. 14: log/log source-position interpolation. Fig. 10: angle-linear, Strouhal-log interpolation. Missing density tails are omitted and reported; source positions outside their curve fail. Coarse manual reading uncertainty: ±1–1.5 dB and ±12–15% positions. No hidden normalization.</p><p>Printed Eq. 8 shows “+ log Δfb”; a power level requires 10 log Δfb. This tool applies dimensional linear-power bandwidth conversion, consistent with Eq. 4. Both methods use the printed rounded −11 dB spherical-spreading constant.</p><p>Fig. 20 is a rough, configuration-specific octave estimate, not recommended for formal preliminary loads (§4.2 p. 28); its generalization is excluded. Figs. 18–19 provide auxiliary correlation only. No structural or internal-response model is implied.</p><ul>${SP8072_SUPPORT.map(r=>`<li><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a> — ${esc(r.note)}</li>`).join('')}</ul></details>`;
+}
+function bindInteractive(root,context){
+  const chart=root.querySelector('[data-wb-chart="0"]');
+  if(chart){chart.tabIndex=0;chart.setAttribute('role','region');chart.setAttribute('aria-label','Scrollable external acoustic band spectrum');}
+  const handler=event=>{
+    const move=event.target.closest('[data-sp-move]');
+    if(move){const direction=move.dataset.spMove,key=direction[0]==='x'?'receiverX':'receiverZ',field=root.querySelector(`[data-wb-field="nasa-sp8072.${key}"]`);if(field){field.value=toDisplayNumber(Number(context.inputs[key])+(direction[1]==='+'?1:-1)*Number(context.inputs.receiverStep),'m',context.project.unitSystem);field.dispatchEvent(new Event('change',{bubbles:true}));}return;}
+    const action=event.target.closest('[data-sp-action]')?.dataset.spAction;if(!action||!context.nativeResult)return;
+    const result=context.nativeResult,evidence={schema:'sau-sp8072-evidence',version:1,createdUTC:new Date().toISOString(),study:context.project,result,units:'canonical SI',dataVersion:SP8072_VERSION};
+    if(action==='evidence')downloadText('nasa-sp8072-evidence.json',JSON.stringify(evidence,null,2),'application/json');
+    if(action==='csv')downloadCsv(result.csv);
+    if(action==='report')downloadText('nasa-sp8072-report.txt',sp8072ReportText(result,evidence));
+    if(action==='svg')downloadSvg('nasa-sp8072-spectrum.svg',lineChartSvg(context.result.plots[0]));
+    if(action==='print')globalThis.print();
+  };
+  root.addEventListener('click',handler);return ()=>root.removeEventListener('click',handler);
+}
+const sp8072WorkbenchDefinition={
+  id:'nasa-sp8072',toolId:'nasa-sp8072',profile:'analysis',quickRoute:false,title:sp8072Tool.title,category:sp8072Tool.category,eyebrow:'NASA handbook · external pressure loading',summary:'Explore source power, allocation, deflected flow and receiver acoustic loading. Both recommended source-allocation methods are available; water and installed-path corrections require explicit scenario evidence.',instruction:'Start with the chemical-rocket example, then explore geometry and spectrum. Advanced groups expose curve and applicability assumptions. SI is the canonical study unit system.',inputTitle:'Define the source, flow path and receiver',visualLabel:'Predicted sampling positions',visualTitle:'Rocket engine and measurement locations',visualLegend:'engine · exhaust flow · acoustic sources · proposed microphones',evidenceTitle:'External pressure spectrum and power budget',defaultTakeaway:'Separate acoustic generation, flow geometry, propagation and receiver loading.',sources:SP8072_SUPPORT,renderDiagram:diagram,bindInteractive,visibleFieldKeys:sp8072VisibleKeys,retainEvidence:true,
+  validateImportedProject(project){normalizeSp8072(project.inputs['nasa-sp8072']);parseSp8072Measurements(project.inputs['nasa-sp8072'].measurementLocations);if(project.baseline){if(!project.baseline.inputs)throw new Error('Retained SP-8072 baseline requires its canonical inputs.');const result=sp8072Calculator.compute(project.baseline.inputs);project.baseline={...project.baseline,result,values:result.values,unitSystem:'SI'};}},
+  validateImportData(data){if(data.schema!=='sau-engineering-tool'||data.version!==1||data.toolId!=='nasa-sp8072'||!data.inputs?.['nasa-sp8072'])throw new Error('Import requires a version 1 NASA SP-8072 study with its tool identity and inputs.');},
+  decorateResult(result,project){if(project.baseline?.result?.plots?.[0])result.plots[0].traces.push({...project.baseline.result.plots[0].traces[0],name:'Retained baseline spectrum',emphasis:false});return result;},
+  inputGroups:[
+    {title:'Engine and source allocation',open:true,fieldKeys:['method','engines','thrust','velocity','diameter','efficiency','cluster','nozzleRadius','nozzlePositions']},
+    {title:'Receiver and flow geometry',open:true,fieldKeys:['receiverX','receiverY','receiverZ','measurementLocations','altitude','receiverStep','deflector','standOffD','turn','azimuth','bendRadiusD','branchFraction']},
+    {title:'Spectrum and empirical basis',open:true,fieldKeys:['sourceBasis','transfer','fmin','fmax','band','linearWidth','integration','customSpectrum','customAxial','customLocal']},
+    {title:'Water suppression scenario',open:true,fieldKeys:['water','waterFlow','exhaustFlow','waterReduction','waterCurve','waterProvenance','injectionStationD','injectionAngle','injectionPressure','injectorDiameter']},
+    {title:'Source / directivity assumptions',fieldKeys:['directivity','directivityDb','positionScale','coreScale','mach','ambientSound','slices','axialMin','axialMax']},
+    {title:'Propagation and receiver loading',fieldKeys:['shieldStartD','shieldEndD','shieldDb','propagationDbPerKm','reflectionDb','surfaceDb','minimumRangeD','vehicleMach']},
+    {title:'Spatial correlation',fieldKeys:['correlation','separation','circumferenceAngle','vehicleRadius','beta']},
+    {title:'Applicability and exhaust metadata',fieldKeys:['exitDensity','ambientDensity','pressureRatio','nozzleShape','areaRatio']}
+  ],
+  decision:context=>({question:'How does the propulsion flow load this receiver?',metric:context.result?.values[0],status:'review',statusLabel:'Preliminary empirical prediction / scenario',keyLimitation:'Selected-band external pressure only. Curve reading, engine/pad similarity and entered water/path assumptions require review; no measured correlation or owner acceptance is claimed.'})
+};
+
+return {sp8072Calculator,sp8072Tool,sp8072WorkbenchDefinition};
+})();
+
 const __engineeringWorkbenches=(()=>{
 const baseCalculatorRegistry=__calculators.calculatorRegistry;
 const extraCalculatorRegistry=__extraCalculators.extraCalculatorRegistry;
@@ -36260,6 +36827,7 @@ const programExpansionCalculatorRegistry=__programExpansionCalculators.programEx
 const seaParameterCalculatorRegistry=__seaParameterCalculators.seaParameterCalculatorRegistry;
 const {createEngineeringWorkbenchRegistry,resultValue,workbenchEsc,workbenchFmt}=__workbenchRuntime;
 const {twoStageIsolationCalculator,twoStageIsolationWorkbenchDefinition}=__twoStageIsolation;
+const {sp8072Calculator,sp8072WorkbenchDefinition}=__sp8072;
 const calculators = {
   ...baseCalculatorRegistry,
   ...extraCalculatorRegistry,
@@ -36267,7 +36835,8 @@ const calculators = {
   ...workflowExpansionCalculatorRegistry,
   ...programExpansionCalculatorRegistry,
   ...seaParameterCalculatorRegistry,
-  'two-stage-isolation': twoStageIsolationCalculator
+  'two-stage-isolation': twoStageIsolationCalculator,
+  'nasa-sp8072': sp8072Calculator
 };
 
 const clamp = (value, low, high) => Math.max(low, Math.min(high, Number(value) || 0));
@@ -36567,6 +37136,7 @@ const engineeringWorkbenchIds = Object.freeze(engineeringWorkbenchDefinitions.ma
 
 const engineeringAnalysisDefinitions = [
   twoStageIsolationWorkbenchDefinition,
+  sp8072WorkbenchDefinition,
   {
     id: 'modal-density',
     toolId: 'modal-density',
@@ -36636,7 +37206,7 @@ const ENGLISH_UNIT_CONVERSIONS = Object.freeze({
   'm/s':{unit:'ft/s',factor:3.280839895},'mm/s':{unit:'in/s',factor:0.03937007874},'m/s peak':{unit:'ft/s peak',factor:3.280839895},
   'm/s²':{unit:'ft/s²',factor:3.280839895},'m/s2':{unit:'ft/s²',factor:3.280839895},'m/s2/g':{unit:'ft/s²/g',factor:3.280839895},'m/s² RMS':{unit:'ft/s² RMS',factor:3.280839895},'m/s RMS':{unit:'ft/s RMS',factor:3.280839895},'m/s RMS-equivalent':{unit:'ft/s RMS-equivalent',factor:3.280839895},
   'm RMS':{unit:'in RMS',factor:39.37007874},'m peak':{unit:'in peak',factor:39.37007874},'mm RMS':{unit:'in RMS',factor:0.03937007874},'mm/s RMS':{unit:'in/s RMS',factor:0.03937007874},
-  kg:{unit:'lbm',factor:2.204622622},'kg/m':{unit:'lbm/ft',factor:0.6719689751},'kg/m²':{unit:'lbm/ft²',factor:0.2048161436},'kg/m³':{unit:'lbm/ft³',factor:0.06242796058},
+  kg:{unit:'lbm',factor:2.204622622},'kg/s':{unit:'lbm/s',factor:2.204622622},'kg/m':{unit:'lbm/ft',factor:0.6719689751},'kg/m²':{unit:'lbm/ft²',factor:0.2048161436},'kg/m³':{unit:'lbm/ft³',factor:0.06242796058},
   N:{unit:'lbf',factor:0.2248089431},MN:{unit:'kip',factor:224.8089431},'N peak':{unit:'lbf peak',factor:0.2248089431},'N RMS':{unit:'lbf RMS',factor:0.2248089431},'N/√Hz':{unit:'lbf/√Hz',factor:0.2248089431},
   'N/m':{unit:'lbf/in',factor:0.005710147163},'N·m':{unit:'lbf·in',factor:8.850745791},'N·s/m':{unit:'lbf·s/in',factor:0.005710147163},'N/(m/s)':{unit:'lbf/(in/s)',factor:0.005710147163},
   Pa:{unit:'psi',factor:0.0001450377377},kPa:{unit:'psi',factor:0.1450377377},MPa:{unit:'ksi',factor:0.1450377377},GPa:{unit:'Mpsi',factor:0.1450377377},'Pa RMS':{unit:'psi RMS',factor:0.0001450377377},
@@ -36847,11 +37417,12 @@ const {renderLaunchSeaCapstone,bindLaunchSeaCapstone}=__launchSeaCapstone;
 const {engineeringAnalysisRegistry,engineeringWorkbenchRegistry}=__engineeringWorkbenches;
 const {sorbothaneIsolationCalculator,sorbothaneIsolationWorkbench}=__sorbothaneIsolation;
 const {twoStageIsolationCalculator}=__twoStageIsolation;
+const {sp8072Calculator,sp8072Tool}=__sp8072;
 const {createEngineeringRegistry,engineeringResultToText}=__engineeringResults;
 
 const sections = [...baseSections, ...acs519Sections, ...workflowExpansionSections, ...programExpansionSections, ...seaParameterSections, ...electronicsFatigueSections];
-const calculatorRegistry = createEngineeringRegistry({ ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, ...electronicsFatigueCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator, 'two-stage-isolation': twoStageIsolationCalculator });
-const toolCatalog = [flightResponseTool, ...baseToolCatalog, ...extraToolCatalog, ...acs519ToolCatalog, ...workflowExpansionToolCatalog, ...programExpansionToolCatalog, ...seaParameterToolCatalog, ...electronicsFatigueToolCatalog];
+const calculatorRegistry = createEngineeringRegistry({ ...baseCalculatorRegistry, ...extraCalculatorRegistry, ...acs519CalculatorRegistry, ...workflowExpansionCalculatorRegistry, ...programExpansionCalculatorRegistry, ...seaParameterCalculatorRegistry, ...electronicsFatigueCalculatorRegistry, 'sorbothane-isolation': sorbothaneIsolationCalculator, 'two-stage-isolation': twoStageIsolationCalculator, 'nasa-sp8072': sp8072Calculator });
+const toolCatalog = [flightResponseTool, sp8072Tool, ...baseToolCatalog, ...extraToolCatalog, ...acs519ToolCatalog, ...workflowExpansionToolCatalog, ...programExpansionToolCatalog, ...seaParameterToolCatalog, ...electronicsFatigueToolCatalog];
 const demos = [...baseDemos, ...acs519Demos, ...workflowExpansionDemos, ...programExpansionDemos, ...seaParameterDemos, ...electronicsFatigueDemos];
 const caseNotes = [...baseCaseNotes, ...acs519CaseNotes, ...workflowExpansionCaseNotes, ...programExpansionCaseNotes, ...seaParameterCaseNotes, ...electronicsFatigueCaseNotes];
 const referenceGroups = [...baseReferenceGroups, ...acs519ReferenceGroups, ...workflowExpansionReferenceGroups, ...programExpansionReferenceGroups, ...seaParameterReferenceGroups, ...electronicsFatigueReferenceGroups];

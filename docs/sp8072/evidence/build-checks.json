@@ -1,0 +1,127 @@
+{
+  "schema": "sau-sp8072-build-checks",
+  "version": 1,
+  "createdUTC": "2026-10-13T17:59:40.130Z",
+  "tests": {
+    "command": "npm test",
+    "tests": 162,
+    "passed": 162,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "log": "docs/sp8072/evidence/npm-test.log"
+  },
+  "independentNumericalCases": {
+    "passed": 5,
+    "total": 5,
+    "measuredCorrelation": false
+  },
+  "fixtureRegeneration": {
+    "sha256": "cbc7706232590ba1b42e85d961c434c2c7b32ef34920912f46c2765ff96acc65",
+    "deterministic": true
+  },
+  "standalone": {
+    "firstBuildSha256": "e1b027773b296f7d9f1e7f305a899bd51e32230a8d9e272d2f6a3cf5e72c6974",
+    "secondBuildSha256": "e1b027773b296f7d9f1e7f305a899bd51e32230a8d9e272d2f6a3cf5e72c6974",
+    "deterministic": true,
+    "outsideIntendedRangesPreserved": true,
+    "ownerEmbeddedFlightResponsePreserved": true,
+    "browserDirectFilePassed": false
+  },
+  "gitDiffCheck": {
+    "exitCode": 0,
+    "passed": true
+  },
+  "ownerFiles": [
+    {
+      "file": "experiences/flight-response/Flight-Response.html",
+      "expectedSha256": "62a6f6b3ba14b89bf46b349312b968dd65cb03e92945891d74f7589747eccc80",
+      "actualSha256": "62a6f6b3ba14b89bf46b349312b968dd65cb03e92945891d74f7589747eccc80",
+      "unchanged": true
+    },
+    {
+      "file": "experiences/flight-response/README.md",
+      "expectedSha256": "88b060f5adaa31a8ca8364b770c837614d4582b50b3aa8646d8f5c2255c5e1b8",
+      "actualSha256": "88b060f5adaa31a8ca8364b770c837614d4582b50b3aa8646d8f5c2255c5e1b8",
+      "unchanged": true
+    },
+    {
+      "file": "experiences/flight-response/app.mjs",
+      "expectedSha256": "c8c8be4941b5e7072a32817afde34f7650f308f4f47db2418a8be162b3fdf5c5",
+      "actualSha256": "c8c8be4941b5e7072a32817afde34f7650f308f4f47db2418a8be162b3fdf5c5",
+      "unchanged": true
+    },
+    {
+      "file": "experiences/flight-response/docs/ALGORITHM.md",
+      "expectedSha256": "80cb4f0b17910b812aa9aaf1ae7fa400e2cae37784a1bfea0478cd63a6668326",
+      "actualSha256": "80cb4f0b17910b812aa9aaf1ae7fa400e2cae37784a1bfea0478cd63a6668326",
+      "unchanged": true
+    },
+    {
+      "file": "experiences/flight-response/docs/VALIDATION.md",
+      "expectedSha256": "5db2281bd09c69b83328f3b31af0df7bc2f722e5e6b647340a924b0e7698ba0c",
+      "actualSha256": "5db2281bd09c69b83328f3b31af0df7bc2f722e5e6b647340a924b0e7698ba0c",
+      "unchanged": true
+    },
+    {
+      "file": "experiences/flight-response/index.html",
+      "expectedSha256": "87d00957a1fb6444509b02cf3821b58acafe10b7cdf8d6643b2c6c2cf1df326f",
+      "actualSha256": "87d00957a1fb6444509b02cf3821b58acafe10b7cdf8d6643b2c6c2cf1df326f",
+      "unchanged": true
+    },
+    {
+      "file": "experiences/flight-response/physics.mjs",
+      "expectedSha256": "4125b6f4a7e4af850e513f394ab4557a120a37813e4b9850641f4764057ebac6",
+      "actualSha256": "4125b6f4a7e4af850e513f394ab4557a120a37813e4b9850641f4764057ebac6",
+      "unchanged": true
+    },
+    {
+      "file": "experiences/flight-response/style.css",
+      "expectedSha256": "f1a352c5a3321f538938a55a7d20614bb0984a491a2fe91cc04f421865ce24ba",
+      "actualSha256": "f1a352c5a3321f538938a55a7d20614bb0984a491a2fe91cc04f421865ce24ba",
+      "unchanged": true
+    },
+    {
+      "file": "experiences/flight-response/tests/independent-check.py",
+      "expectedSha256": "789769baa22a9733d8a0d7168190d52d611a89dc0f132921ff3f2ab2f963110d",
+      "actualSha256": "789769baa22a9733d8a0d7168190d52d611a89dc0f132921ff3f2ab2f963110d",
+      "unchanged": true
+    },
+    {
+      "file": "experiences/flight-response/tests/physics.test.mjs",
+      "expectedSha256": "2f145b15d5893cc3a160967e4fccdee433bde0937e4d751e0646ede10bad2411",
+      "actualSha256": "2f145b15d5893cc3a160967e4fccdee433bde0937e4d751e0646ede10bad2411",
+      "unchanged": true
+    },
+    {
+      "file": "experiences/flight-response/tests/stream.test.mjs",
+      "expectedSha256": "a707678196629432369bf36fef2f00dabb88f7f4028e5f792144e0312210b370",
+      "actualSha256": "a707678196629432369bf36fef2f00dabb88f7f4028e5f792144e0312210b370",
+      "unchanged": true
+    },
+    {
+      "file": "experiences/flight-response/tests/worker.test.mjs",
+      "expectedSha256": "1d40e3d40306a4e1dfe28c2265273517b42173253846e8a21cdfba82d0441ac9",
+      "actualSha256": "1d40e3d40306a4e1dfe28c2265273517b42173253846e8a21cdfba82d0441ac9",
+      "unchanged": true
+    },
+    {
+      "file": "js/flight-response-tool.js",
+      "expectedSha256": "c805a8c5e8eb69e5451589f46634d2757800d4d202133b82bd14c3c2eed887d1",
+      "actualSha256": "c805a8c5e8eb69e5451589f46634d2757800d4d202133b82bd14c3c2eed887d1",
+      "unchanged": true
+    }
+  ],
+  "sourceFiles": [
+    {
+      "file": "references/NASA-SP-8072-19710023719.pdf",
+      "sha256": "84f1483c2c8477810186e98765ea99e4b7f7cc71e0a47eb8f86977d3b02aabf8"
+    },
+    {
+      "file": "references/NASA-20140005349-Diffuser-Water-Injection.pdf",
+      "sha256": "707898c671e4a8169e66bd8660ed6af044cedff7aa39dab49352eb78569b2d62"
+    }
+  ],
+  "approvedExampleSha256": "3ffc6263728b4a70b96dc37c31b6711dbcc53a16ef37071249d0f87028037c5a",
+  "limits": "Browser blocks and unperformed modes are recorded in browser-checks.json. Static build evidence does not establish direct-file/offline delivery, measurement correlation or owner acceptance."
+}

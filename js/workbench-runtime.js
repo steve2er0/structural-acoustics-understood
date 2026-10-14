@@ -1,4 +1,4 @@
-import { lineChartSvg, heatmapSvg } from './charts.js';
+import { lineChartSvg, heatmapSvg, downloadText } from './charts.js';
 import { displayEngineeringResult, fromDisplayNumber, toDisplayNumber, toDisplayStep, toDisplayUnit } from './unit-system.js';
 
 const deepClone = value => JSON.parse(JSON.stringify(value));
@@ -119,6 +119,7 @@ function currentContext(definition, calculators, project) {
   let error = '';
   try {
     nativeResult = calculator.compute(inputs);
+    if (definition.decorateResult) nativeResult = definition.decorateResult(nativeResult, project);
     result = displayEngineeringResult(nativeResult, project.unitSystem);
   } catch (caught) {
     error = caught?.message ?? String(caught);
@@ -163,6 +164,13 @@ function inputGroupsHtml(context, fields) {
   }).join('');
   const remaining = fields.filter(field => !rendered.has(field.key));
   return `${groups}${remaining.length ? `<details class="engineering-input-group"><summary><span>Additional model inputs</span><small>${remaining.length} controls</small></summary><div>${remaining.map(field => renderField(field, project.inputs[step.toolId]?.[field.key], step.toolId, project.unitSystem)).join('')}</div></details>` : ''}`;
+}
+
+function visibleInspectorFields(context) {
+  let fields = context.step.fieldKeys?.length ? (context.calculator?.inputs ?? []).filter(field => context.step.fieldKeys.includes(field.key)) : context.calculator?.inputs ?? [];
+  const visible = context.definition.visibleFieldKeys?.(context);
+  if (visible) fields = fields.filter(field => visible.includes(field.key));
+  return fields;
 }
 
 function workflowHtml(context) {
@@ -322,7 +330,7 @@ function renderGuidedWorkbench(definition, calculators, projectInput = null) {
   const metrics = statusMetrics(context);
   const diagram = definition.renderDiagram?.(context) ?? '';
   const diagramTakeaway = definition.diagramTakeaway?.(context) ?? result?.interpretation?.physicalMeaning ?? definition.defaultTakeaway;
-  const inspectorFields = step.fieldKeys?.length ? (calculator?.inputs ?? []).filter(field => step.fieldKeys.includes(field.key)) : (calculator?.inputs ?? []);
+  const inspectorFields = visibleInspectorFields(context);
   return `<div class="page-shell site-page-shell site-page-shell-capstone site-page-shell-workbench" data-workbench-id="${workbenchEsc(definition.id)}" data-engineering-profile="workbench">
     <nav class="breadcrumbs site-breadcrumbs" aria-label="Breadcrumb"><a href="#/tools">Tools</a><span aria-hidden="true">›</span><span>${workbenchEsc(definition.category)}</span><span aria-hidden="true">›</span><span aria-current="page">${workbenchEsc(definition.title)}</span></nav>
     ${decisionHeroHtml(context)}
@@ -343,7 +351,7 @@ export function renderEngineeringAnalysis(definition, calculators, projectInput 
   const project = normalizeEngineeringToolProject(definition, calculators, projectInput ?? createEngineeringToolProject(definition, calculators));
   const context = currentContext(definition, calculators, project);
   const { step, calculator, result } = context;
-  const inspectorFields = step.fieldKeys?.length ? (calculator?.inputs ?? []).filter(field => step.fieldKeys.includes(field.key)) : calculator?.inputs ?? [];
+  const inspectorFields = visibleInspectorFields(context);
   const diagram = definition.renderDiagram?.(context) ?? '';
   const diagramTakeaway = definition.diagramTakeaway?.(context) ?? result?.interpretation?.physicalMeaning ?? definition.defaultTakeaway;
   const quickLink = definition.quickRoute === false ? '' : `<a href="#/tool/${encodeURIComponent(step.toolId)}?mode=quick">${workbenchEsc(definition.quickLinkLabel ?? 'Open the focused quick screen')} →</a>`;
@@ -374,13 +382,9 @@ function propagate(definition, project, toolId, key, value) {
   }
 }
 
-function downloadProject(definition, project) {
-  const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `${definition.id}-project.json`;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(link.href), 500);
+function downloadProject(definition, project, result = null) {
+  const record = definition.retainEvidence ? { ...project, calculation: result, calculationUnits: 'canonical SI' } : project;
+  downloadText(`${definition.id}-project.json`, JSON.stringify(record, null, 2), 'application/json');
 }
 
 function traceSelectionTarget(context, key) {
@@ -410,18 +414,21 @@ export function bindEngineeringWorkbench(definition, calculators, root = documen
     if (!shell) return;
     const active = document.activeElement;
     const activeField = active?.dataset?.wbField ?? '';
+    const focusKey = active?.dataset?.wbFocusKey ?? '';
     const restoreProjectName = active?.matches?.('[data-wb-project-name]') ?? false;
     const selectionStart = typeof active?.selectionStart === 'number' ? active.selectionStart : null;
     const selectionEnd = typeof active?.selectionEnd === 'number' ? active.selectionEnd : null;
+    const expandedGroups = [...shell.querySelectorAll('.engineering-input-group')].map(group => group.open);
     const wrapper = document.createElement('div');
     wrapper.innerHTML = renderEngineeringWorkbench(definition, calculators, project);
     interactiveCleanup();
     shell.replaceWith(wrapper.firstElementChild);
     const nextShell = host.querySelector(`[data-workbench-id="${definition.id}"]`);
+    [...nextShell.querySelectorAll('.engineering-input-group')].forEach((group, index) => { if (expandedGroups[index] != null) group.open = expandedGroups[index]; });
     interactiveCleanup = definition.bindInteractive?.(nextShell, currentContext(definition, calculators, project)) ?? (() => {});
     const restored = activeField
       ? host.querySelector(`[data-wb-field="${activeField}"]`)
-      : restoreProjectName ? host.querySelector('[data-wb-project-name]') : null;
+      : restoreProjectName ? host.querySelector('[data-wb-project-name]') : focusKey ? [...host.querySelectorAll('[data-wb-focus-key]')].find(element => element.dataset.wbFocusKey === focusKey) : null;
     if (restored) {
       restored.focus({ preventScroll: true });
       if (selectionStart != null && typeof restored.setSelectionRange === 'function') restored.setSelectionRange(selectionStart, selectionEnd);
@@ -455,7 +462,7 @@ export function bindEngineeringWorkbench(definition, calculators, root = documen
       const presetKeys = Array.isArray(calculators[toolId]?.presetKeys) ? calculators[toolId].presetKeys : ['material'];
       if (presetKeys.includes(key) && typeof calculators[toolId]?.syncPreset === 'function') {
         const prior = project.inputs[toolId];
-        const synced = calculators[toolId].syncPreset(prior);
+        const synced = calculators[toolId].syncPreset(prior, key);
         project.inputs[toolId] = { ...prior, ...synced };
         for (const [syncedKey, syncedValue] of Object.entries(synced)) if (!Object.is(prior[syncedKey], syncedValue)) propagate(definition, project, toolId, syncedKey, syncedValue);
       }
@@ -468,11 +475,32 @@ export function bindEngineeringWorkbench(definition, calculators, root = documen
     if (event.target.matches('[data-wb-import]')) {
       const file = event.target.files?.[0];
       if (!file) return;
-      file.text().then(text => { project = normalizeEngineeringToolProject(definition, calculators, JSON.parse(text)); render(); }).catch(caught => alert(caught?.message ?? 'The selected file is not valid for this engineering tool.'));
+      file.text().then(text => {
+        const raw = JSON.parse(text);
+        definition.validateImportData?.(raw);
+        const candidate = normalizeEngineeringToolProject(definition, calculators, raw);
+        definition.validateImportedProject?.(candidate);
+        project = candidate;
+        render();
+      }).catch(caught => alert(caught?.message ?? 'The selected file is not valid for this engineering tool.'));
     }
   };
   const input = event => {
     if (!event.target.matches('[data-wb-project-name], [data-wb-field]:not(select)')) return;
+    // Preserve every edit immediately. Rendering remains debounced, but a second
+    // field edit must not cancel the first field's uncommitted value.
+    const field = event.target.closest('[data-wb-field]');
+    if (field) {
+      const separator = field.dataset.wbField.indexOf('.');
+      const toolId = field.dataset.wbField.slice(0, separator);
+      const key = field.dataset.wbField.slice(separator + 1);
+      const definitionField = calculators[toolId]?.inputs?.find(item => item.key === key);
+      const value = ['number', 'range'].includes(definitionField?.type) && field.value !== ''
+        ? fromDisplayNumber(field.value, definitionField.unit, project.unitSystem)
+        : field.value;
+      project.inputs[toolId][key] = value;
+      propagate(definition, project, toolId, key, value);
+    } else project.name = event.target.value || definition.projectName || `${definition.title} study`;
     clearTimeout(inputTimer);
     inputTimer = setTimeout(() => change(event), 220);
   };
@@ -502,15 +530,15 @@ export function bindEngineeringWorkbench(definition, calculators, root = documen
         assumptions: context.result.assumptions?.satisfied ?? [],
         warnings: context.result.assumptions?.alerts ?? context.result.assumptions?.warnings ?? [],
         values: context.result.values ?? [],
-        notes: `${context.profile === 'analysis' ? 'Analysis study' : 'Workbench project'}: ${project.name}`,
-        provenance: `${definition.id} · ${context.step.toolId}`
+        notes: `${context.profile === 'analysis' ? 'Analysis study' : 'Workbench project'}: ${project.name}${definition.retainEvidence ? '\nCanonical input / source / result record: ' + JSON.stringify({ inputs: context.inputs, result: context.nativeResult }) : ''}`,
+        provenance: `${definition.id} · ${context.step.toolId}${context.nativeResult?.provenance?.dataVersion ? ' · data ' + context.nativeResult.provenance.dataVersion : ''}`
       } }));
     } else if (action === 'baseline') {
       const context = currentContext(definition, calculators, project);
-      if (context.nativeResult) project.baseline = { stepId: context.step.id, toolId: context.step.toolId, values: deepClone(context.nativeResult.values), unitSystem: 'SI', savedAt: new Date().toISOString() };
+      if (context.nativeResult) project.baseline = { stepId: context.step.id, toolId: context.step.toolId, values: deepClone(context.nativeResult.values), ...(definition.retainEvidence ? { inputs: deepClone(context.inputs), result: deepClone(context.nativeResult) } : {}), unitSystem: 'SI', savedAt: new Date().toISOString() };
       render();
     } else if (action === 'clear-baseline') { project.baseline = null; render(); }
-    else if (action === 'export') downloadProject(definition, project);
+    else if (action === 'export') downloadProject(definition, project, currentContext(definition, calculators, project).nativeResult);
     else if (action === 'import') host.querySelector('[data-wb-import]')?.click();
     else if (action === 'reset' && confirm(`Reset ${definition.title} to its documented baseline?`)) { project = createEngineeringToolProject(definition, calculators); render(); }
   };

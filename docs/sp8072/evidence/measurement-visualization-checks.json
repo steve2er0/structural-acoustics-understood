@@ -1,0 +1,162 @@
+{
+  "schema": "sau-sp8072-measurement-visualization-checks",
+  "version": 1,
+  "recordedUTC": "2026-10-14T02:32:23.333Z",
+  "projectRoute": "http://localhost:4178/#/tool/nasa-sp8072",
+  "checkout": "Current task worktree",
+  "browser": "Chrome Work profile, documented cua browser API; no raw CDP",
+  "case": {
+    "fmin": 40,
+    "fmax": 80,
+    "band": "octave",
+    "bandEdgesHz": [
+      28.2842712474619,
+      113.13708498984761
+    ],
+    "receiver": [
+      -25,
+      0,
+      20
+    ],
+    "comparisons": [
+      [
+        -50,
+        0,
+        20
+      ],
+      [
+        25,
+        0,
+        20
+      ]
+    ]
+  },
+  "observations": {
+    "engineIllustration": true,
+    "viewLabelsAfterCacheReload": "SIDE VIEW · XZ; TOP VIEW · XY; text-anchor start",
+    "defaultDisplayedDb": [
+      127.07,
+      127.35,
+      127.07
+    ],
+    "doubledThrustDisplayedDb": [
+      130.08,
+      130.36,
+      130.08
+    ],
+    "comparisonY15": {
+      "displayedDb": 127.33,
+      "topViewMicY": [
+        203.5,
+        171.5,
+        203.5
+      ],
+      "mainUnchanged": true
+    },
+    "invalidComparison": {
+      "position": [
+        0,
+        0,
+        -38.707708192208905
+      ],
+      "error": "Receiver is within minimumRangeD of source e1/b1/f40.0000; point-source loading is invalid.",
+      "m2Unavailable": true,
+      "m1AndM3Valid": true,
+      "recovered": true
+    },
+    "english": {
+      "sameLevels": true,
+      "mainCoordinateFt": [
+        -82.02,
+        0,
+        65.62
+      ],
+      "mainPressurePsiRms": 0.006546,
+      "coordinateJsonRemainsSI": true
+    },
+    "distributedDisplayedDb": [
+      126,
+      126.2,
+      126
+    ],
+    "openBucketDisplayedDb": [
+      127.7,
+      123.87,
+      142.75
+    ],
+    "keyboardAndReload": {
+      "mainXMetres": -24,
+      "mainDisplayedDb": 127.03,
+      "comparisonsUnchanged": true,
+      "reloadRestored": true,
+      "restoredToMinus25": true
+    },
+    "mobile": {
+      "viewport": [
+        390,
+        844
+      ],
+      "documentWidth": 390,
+      "geometryViewportWidth": 364,
+      "geometryContentWidth": 680,
+      "observedHorizontalOffsetsPx": [
+        7,
+        80
+      ],
+      "keyboardFocusRetained": true,
+      "stackedCardWidth": 332,
+      "physicalTouchDevice": false
+    },
+    "viewportRestored": {
+      "width": 1728,
+      "height": 1084,
+      "widthObserved": true
+    },
+    "standaloneHTTP": {
+      "passed": true,
+      "url": "http://localhost:4178/standalone.html#/tool/nasa-sp8072?fmin=40&fmax=80&band=octave",
+      "levels": [
+        127.07,
+        127.35,
+        127.07
+      ],
+      "engine": true,
+      "matchingMicTraces": true,
+      "directFile": false
+    },
+    "offlineReload": {
+      "passed": true,
+      "method": "Stopped only the task-owned server, confirmed curl connection refused, reloaded modular route through browser API, observed engine, inputs and three matching levels, restarted server",
+      "globalNetworkSettingsChanged": false,
+      "finalCacheVersion": "sau-v137-sp8072-measurements",
+      "endpointLabelsAlsoObserved": [
+        "40.00",
+        "80.00"
+      ]
+    },
+    "spectrum": {
+      "axisEndpointLabelsHz": [
+        "40.00",
+        "80.00"
+      ],
+      "legendTextColor": "rgb(243, 247, 252)",
+      "applicationErrorsObserved": [],
+      "matchingMicColors": true
+    }
+  },
+  "screenshots": [
+    "docs/sp8072/evidence/engine-measurements-desktop.jpg",
+    "docs/sp8072/evidence/engine-measurements-mobile.jpg",
+    "docs/sp8072/evidence/engine-measurements-mobile-levels.jpg",
+    "docs/sp8072/evidence/engine-measurements-standalone.jpg",
+    "docs/sp8072/evidence/engine-measurements-offline.jpg",
+    "docs/sp8072/evidence/engine-measurements-spectrum.jpg"
+  ],
+  "limits": [
+    "No actual downloads repeated in this update; JSON/report/SVG content checked in software.",
+    "No reset-dialog, print-preview or direct-file/import browser automation in this update. Earlier owner-observed import remains separate.",
+    "Engine outline/plume width are illustrative. Proposed microphones have predicted levels, not measured data.",
+    "No engine/pad correlation, physical mobile testing, qualification or owner acceptance claimed.",
+    "No public source downloads, publishing, uploads or external messages."
+  ]
+}

@@ -1,0 +1,210 @@
+{
+  "schema": "sau-sp8072-benchmarks",
+  "version": 1,
+  "limits": "Analytical software diagnostics, not measured correlation. 1e-8 dB for algebra; 0.002 dB for finite-slice approximation to an independent continuous integral. Curve reading uncertainty is separate.",
+  "cases": [
+    {
+      "id": "analytical-apparent-none",
+      "provenance": "SP-8072 Eqs. 1\u20136; constant unit-Strouhal density; Fig. 14 knot positions; hand-computed squared distances. Twin branches are symmetric and share power.",
+      "inputs": {
+        "thrust": 1000000,
+        "velocity": 2000,
+        "diameter": 1,
+        "efficiency": 1,
+        "fmin": 200,
+        "fmax": 400,
+        "band": "octave",
+        "directivity": "isotropic",
+        "sourceBasis": "custom",
+        "customSpectrum": "0.001,0\n1,0",
+        "receiverX": 0,
+        "receiverY": 10,
+        "receiverZ": 0,
+        "bendRadiusD": 0,
+        "standOffD": 4,
+        "turn": 90,
+        "deflector": "none"
+      },
+      "toleranceDb": 1e-08,
+      "expected": {
+        "acousticPower": 10000000.0,
+        "overallDb": 147.98008537291307,
+        "bands": [
+          {
+            "frequency": 200.0,
+            "sourceWatts": 707106.7811865476,
+            "splDb": 141.59535400842302
+          },
+          {
+            "frequency": 400.0,
+            "sourceWatts": 1414213.5623730952,
+            "splDb": 146.8455927516631
+          }
+        ]
+      }
+    },
+    {
+      "id": "analytical-apparent-open",
+      "provenance": "SP-8072 Eqs. 1\u20136; constant unit-Strouhal density; Fig. 14 knot positions; hand-computed squared distances. Twin branches are symmetric and share power.",
+      "inputs": {
+        "thrust": 1000000,
+        "velocity": 2000,
+        "diameter": 1,
+        "efficiency": 1,
+        "fmin": 200,
+        "fmax": 400,
+        "band": "octave",
+        "directivity": "isotropic",
+        "sourceBasis": "custom",
+        "customSpectrum": "0.001,0\n1,0",
+        "receiverX": 0,
+        "receiverY": 10,
+        "receiverZ": 0,
+        "bendRadiusD": 0,
+        "standOffD": 4,
+        "turn": 90,
+        "deflector": "open"
+      },
+      "toleranceDb": 1e-08,
+      "expected": {
+        "acousticPower": 10000000.0,
+        "overallDb": 149.2903111784792,
+        "bands": [
+          {
+            "frequency": 200.0,
+            "sourceWatts": 707106.7811865476,
+            "splDb": 142.946401421595
+          },
+          {
+            "frequency": 400.0,
+            "sourceWatts": 1414213.5623730952,
+            "splDb": 148.1435576725233
+          }
+        ]
+      }
+    },
+    {
+      "id": "analytical-apparent-closed",
+      "provenance": "SP-8072 Eqs. 1\u20136; constant unit-Strouhal density; Fig. 14 knot positions; hand-computed squared distances. Twin branches are symmetric and share power.",
+      "inputs": {
+        "thrust": 1000000,
+        "velocity": 2000,
+        "diameter": 1,
+        "efficiency": 1,
+        "fmin": 200,
+        "fmax": 400,
+        "band": "octave",
+        "directivity": "isotropic",
+        "sourceBasis": "custom",
+        "customSpectrum": "0.001,0\n1,0",
+        "receiverX": 0,
+        "receiverY": 10,
+        "receiverZ": 0,
+        "bendRadiusD": 0,
+        "standOffD": 4,
+        "turn": 90,
+        "deflector": "closed"
+      },
+      "toleranceDb": 1e-08,
+      "expected": {
+        "acousticPower": 10000000.0,
+        "overallDb": 151.6640028904915,
+        "bands": [
+          {
+            "frequency": 200.0,
+            "sourceWatts": 707106.7811865476,
+            "splDb": 146.74339675114157
+          },
+          {
+            "frequency": 400.0,
+            "sourceWatts": 1414213.5623730952,
+            "splDb": 149.9759031412426
+          }
+        ]
+      }
+    },
+    {
+      "id": "analytical-apparent-twin",
+      "provenance": "SP-8072 Eqs. 1\u20136; constant unit-Strouhal density; Fig. 14 knot positions; hand-computed squared distances. Twin branches are symmetric and share power.",
+      "inputs": {
+        "thrust": 1000000,
+        "velocity": 2000,
+        "diameter": 1,
+        "efficiency": 1,
+        "fmin": 200,
+        "fmax": 400,
+        "band": "octave",
+        "directivity": "isotropic",
+        "sourceBasis": "custom",
+        "customSpectrum": "0.001,0\n1,0",
+        "receiverX": 0,
+        "receiverY": 10,
+        "receiverZ": 0,
+        "bendRadiusD": 0,
+        "standOffD": 4,
+        "turn": 90,
+        "deflector": "twin"
+      },
+      "toleranceDb": 1e-08,
+      "expected": {
+        "acousticPower": 10000000.0,
+        "overallDb": 149.2903111784792,
+        "bands": [
+          {
+            "frequency": 200.0,
+            "sourceWatts": 707106.7811865476,
+            "splDb": 142.946401421595
+          },
+          {
+            "frequency": 400.0,
+            "sourceWatts": 1414213.5623730952,
+            "splDb": 148.1435576725233
+          }
+        ]
+      }
+    },
+    {
+      "id": "analytical-distributed-integral",
+      "provenance": "SP-8072 Eqs. 7\u201310 and Fig. 11; uniform diagnostic axial power and local density; closed-form continuous axial receiver integral above. Does not import model slices or source data.",
+      "inputs": {
+        "method": "distributed",
+        "sourceBasis": "custom",
+        "thrust": 1000000,
+        "velocity": 2000,
+        "diameter": 1,
+        "efficiency": 1,
+        "mach": 3,
+        "ambientSound": 343,
+        "fmin": 20,
+        "fmax": 40,
+        "band": "octave",
+        "directivity": "isotropic",
+        "receiverX": 25,
+        "receiverY": 0,
+        "receiverZ": 20,
+        "customAxial": "0.1,-6.627578316815741\n4.7,-6.627578316815741",
+        "customLocal": "0.000001,0\n1000,0",
+        "slices": 256
+      },
+      "toleranceDb": 0.002,
+      "expected": {
+        "acousticPower": 10000000.0,
+        "coreLength": 15.79962,
+        "axialFraction": 1,
+        "overallDb": 144.34277752413902,
+        "bands": [
+          {
+            "frequency": 20.0,
+            "sourceWatts": 5211437.174190369,
+            "splDb": 139.5715649769424
+          },
+          {
+            "frequency": 40.0,
+            "sourceWatts": 10422874.348380739,
+            "splDb": 142.5818649335822
+          }
+        ]
+      }
+    }
+  ]
+}

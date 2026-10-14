@@ -1,0 +1,187 @@
+{
+  "schema": "sau-sp8072-browser-checks",
+  "version": 1,
+  "date": "2026-10-13",
+  "browser": "Chrome extension surface, browser 1; no alternate browser surface used",
+  "overallStatus": "blocked",
+  "modular": {
+    "route": "http://localhost:4173/#/tool/nasa-sp8072",
+    "status": "partial-pass",
+    "checked": [
+      "both source-allocation methods",
+      "baseline retention",
+      "engine-power sensitivity",
+      "open and twin deflectors",
+      "entered incremental water scenario",
+      "invalid numeric input and recovery",
+      "English unit display",
+      "normal-route persistence",
+      "rapid edits",
+      "repeated Enter receiver movement and retained focus",
+      "Tab navigation",
+      "desktop spectrum",
+      "mobile controls and keyboard chart panning"
+    ],
+    "defaultOverallDbRounded": 131.577,
+    "doubledThrustOverallDbRounded": 134.588,
+    "openWetApparentOverallDbRounded": 129.231,
+    "openWetDistributedOverallDbRounded": 126.659,
+    "twoOctaveDefaultOverallDbRounded": 127.069,
+    "twoOctaveDistributedReceiverXMinus23mOverallDbRounded": 125.926,
+    "twoOctaveTwinDistributedWetReceiverXMinus23mOverallDbRounded": 132.004,
+    "rapidEditValuesRetained": {
+      "waterReductionDb": 6,
+      "waterProvenance": "Software-only 6 dB source scenario relative to the twin dry reference"
+    },
+    "persistence": "Normal route restored distributed method, receiver X=-23 m, English display, 125.926 dB. A query-bearing route deliberately reapplies supplied route parameters on reload.",
+    "desktop": {
+      "viewport": [
+        1440,
+        1000
+      ],
+      "pageHorizontalOverflow": false,
+      "finalChartClientWidth": 977,
+      "finalChartScrollWidth": 977
+    },
+    "mobile": {
+      "viewport": [
+        390,
+        844
+      ],
+      "pageHorizontalOverflow": false,
+      "chartClientWidth": 328,
+      "chartScrollWidth": 680,
+      "observedKeyboardScrollLeft": 30.5,
+      "touchHardwareTested": false
+    },
+    "chartFix": "Previously clipped by the shared chart minimum width. The SP-8072 plot now spans the desktop evidence grid and exposes a focusable horizontal scroll region on narrow screens.",
+    "finalInactiveCurveRecoveryFix": "Verified by focused numerical regression; not subsequently exercised in the browser because the reset/dialog harness timed out.",
+    "finalGeometryCaptionFix": "Visually verified in resumed-mobile-geometry.png at 390 by 844; captions wrap and page width is 390 px.",
+    "finalPathScenarioLabelFix": "Entered reflection/shield/absorption scenarios now identify incident pressure with entered path corrections rather than claiming a free field. Focused software checks cover reflection gain and labeling; browser recheck not run after reset recovery denial."
+  },
+  "import": {
+    "status": "blocked",
+    "approvedFile": "docs/sp8072/example-study.json",
+    "sha256": "3ffc6263728b4a70b96dc37c31b6711dbcc53a16ef37071249d0f87028037c5a",
+    "destination": "http://localhost:4173/#/tool/nasa-sp8072?fmin=40&fmax=80&band=octave",
+    "freshOwnerApprovalUsed": true,
+    "action": "fileChooser.setFiles",
+    "rejection": "The user declined permission for this action. Browser use cannot upload files to http://localhost:4173/#/tool/nasa-sp8072?fmin=40&fmax=80&band=octave because the user denied permission for this request.",
+    "workaroundAttempted": false,
+    "roundTripPassed": false
+  },
+  "directFileStandalone": {
+    "status": "blocked",
+    "url": "file:///Users/stephenwells/Documents/DevOps/structural-acoustics-understood/standalone.html#/tool/nasa-sp8072",
+    "rejection": "The requested URL protocol is not allowed. Allowed protocols: http:, https:.",
+    "workaroundAttempted": false,
+    "hostedCopyCountedAsDirectFile": false
+  },
+  "downloads": {
+    "priorStudyPayloads": "Two recovered exports with current calculation records parse and match independently rerun model values exactly; see download-checks.json.",
+    "newStudyExport": "One actual app-control click, with Downloads metadata recorded before and after; no new matching file observed.",
+    "csvReportSvg": "not-run",
+    "downloadEventHarness": "Earlier timeouts did not mean absent downloads; actual prior files were recovered.",
+    "nativeObservationBlocker": "The Mac is locked and automatic unlock could not unlock it.",
+    "freshActualDelivery": "Five files saved inside the project through actual Chrome Save dialogs; all passed fresh-export-checks.json."
+  },
+  "offline": {
+    "modularActualReload": "not-run",
+    "standaloneActualOperation": "blocked by file URL policy",
+    "staticCacheAndEmbeddedDataChecks": "passed in the automated suite",
+    "serverControlPreparation": "lsof identified node on 127.0.0.1:4173. ps -p 76052 -o pid=,command= was rejected: zsh:1: operation not permitted: ps (exit 127). The server was not stopped, and no alternate process-inspection or permission escalation was attempted."
+  },
+  "resetAndCleanup": {
+    "reset": "inconclusive: Reset click timed out waiting for Input.dispatchMouseEvent; getJsDialog then timed out and reset the browser-control kernel. No successful reset is claimed.",
+    "viewportCleanup": "reset() attempted but timed out; restoration of normal browser dimensions is unconfirmed.",
+    "possiblePendingDialog": "not established; inspect the local QA tab manually before continuing",
+    "latest": {
+      "status": "blocked",
+      "clickTimeout": "Timed out after 2985ms waiting for CDP command Input.dispatchMouseEvent.",
+      "dialogApiTimeout": "Timed out after 10000ms waiting for CDP command Emulation.setFocusEmulationEnabled.confirm",
+      "nativeObservationTimeout": "Computer Use server error -10005: timeoutReached",
+      "sameTabRecoveryAction": "Page.handleJavaScriptDialog with accept=true",
+      "automaticApprovalRejection": "The user declined permission for this action. Browser use cannot use raw CDP on http://localhost:4173 because the user denied permission for this request.",
+      "workaroundAfterRejection": false,
+      "resetSuccessClaimed": false,
+      "qaTabRetainedForHandoff": true
+    }
+  },
+  "notEstablished": [
+    "direct-file browser parity",
+    "actual offline reload",
+    "complete export/import round trip",
+    "print layout",
+    "full traversal of every conditional control",
+    "physical mobile touch",
+    "Safari/Firefox/Windows delivery",
+    "measured engine/pad correlation",
+    "owner acceptance",
+    "final path-scenario label browser check"
+  ],
+  "screenshots": [
+    "modular-desktop.png",
+    "modular-wet-distributed.png",
+    "modular-final-geometry.png",
+    "modular-final-spectrum.png",
+    "modular-mobile.png",
+    "modular-mobile-geometry.png",
+    "modular-mobile-spectrum.png",
+    "resumed-mobile-geometry.png"
+  ],
+  "latestResume": {
+    "schema": "sau-sp8072-resume-checks",
+    "version": 1,
+    "date": "2026-10-13",
+    "sameBrowserSurface": "Chrome extension browser 1, local QA tab 543588896",
+    "nativeAvailabilityRecheck": "No native availability error; Mac no longer reported locked.",
+    "initialDialogRecheck": "No JavaScript dialog was found before this resumed reset attempt.",
+    "finalSavedImplementationLoaded": {
+      "geometryViewBox": "0 0 900 350",
+      "wrappingHtmlCaptionPresent": true
+    },
+    "mobileCaptionCheck": {
+      "viewport": [
+        390,
+        844
+      ],
+      "pageWidth": 390,
+      "captionWidth": 364,
+      "passed": true,
+      "screenshot": "docs/sp8072/evidence/resumed-mobile-geometry.png"
+    },
+    "freshDownloads": {
+      "passed": true,
+      "files": [
+        "docs/sp8072/evidence/fresh-study-export.json",
+        "docs/sp8072/evidence/fresh-calculation-evidence.json",
+        "docs/sp8072/evidence/fresh-spectrum.csv",
+        "docs/sp8072/evidence/fresh-report.txt",
+        "docs/sp8072/evidence/fresh-spectrum.svg"
+      ],
+      "delivery": "Actual app controls clicked once each. A native Chrome Save dialog was observed for every export and saved each new file in the approved project evidence folder.",
+      "overallDb": 125.92632640937516,
+      "independentCsvPressureEnergySumDb": 125.92632640937516,
+      "agreementRecord": "docs/sp8072/evidence/fresh-export-checks.json",
+      "observationTimeout": "After the calculation-evidence Save click, native AX observation returned Computer Use server error -10005: timeoutReached. The file nevertheless exists, parses and passes payload checks; the timeout is not counted as a failed download."
+    },
+    "resetRecheck": {
+      "status": "blocked",
+      "clickTimeout": "Timed out after 2985ms waiting for CDP command Input.dispatchMouseEvent.",
+      "dialogApiTimeout": "Timed out after 10000ms waiting for CDP command Emulation.setFocusEmulationEnabled.confirm",
+      "nativeObservationTimeout": "Computer Use server error -10005: timeoutReached",
+      "sameTabRecoveryAction": "Page.handleJavaScriptDialog with accept=true",
+      "automaticApprovalRejection": "The user declined permission for this action. Browser use cannot use raw CDP on http://localhost:4173 because the user denied permission for this request.",
+      "workaroundAfterRejection": false,
+      "resetSuccessClaimed": false,
+      "qaTabRetainedForHandoff": true
+    },
+    "importRecheck": "Not reached after the reset recovery denial; the previous exact-file import denial remains unresolved. The approved example file hash is unchanged.",
+    "directFileStandalone": "Previous file URL policy rejection remains unresolved; no native File Open, alternate surface or hosted-copy workaround was attempted.",
+    "offline": "Not run. Raw CDP is denied; the previous task-owned server session ID 7760 is no longer available (Unknown process id 7760). No process-inspection denial was bypassed and the server was not stopped.",
+    "viewportCleanup": "Previous reset() timeout remains unresolved; no successful restoration is claimed after the reset-recovery denial.",
+    "printLayout": "Not run before the reset-recovery denial.",
+    "physicalCorrelation": false,
+    "ownerAcceptance": false
+  }
+}

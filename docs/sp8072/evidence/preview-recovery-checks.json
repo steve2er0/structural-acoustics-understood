@@ -1,0 +1,156 @@
+{
+  "issue": "Owner opened the original checkout standalone file, which retains the old two-dot geometry. The update exists in the assigned task worktree.",
+  "updatedPreviewURL": "http://localhost:4178/standalone.html#/tool/nasa-sp8072",
+  "originalCheckout": "/Users/stephenwells/Documents/DevOps/structural-acoustics-understood",
+  "runtimeUnchangedFromVerifiedBuild": [
+    {
+      "file": "js/sp8072-tool.js",
+      "matchesVerifiedBuild": true
+    },
+    {
+      "file": "js/charts.js",
+      "matchesVerifiedBuild": true
+    },
+    {
+      "file": "styles.css",
+      "matchesVerifiedBuild": true
+    },
+    {
+      "file": "service-worker.js",
+      "matchesVerifiedBuild": true
+    },
+    {
+      "file": "standalone.html",
+      "matchesVerifiedBuild": true
+    }
+  ],
+  "originalIntegration": "Awaiting owner scope approval; original checkout has not been modified.",
+  "proposedIntegration": [
+    {
+      "file": "js/sp8072-tool.js",
+      "originalSha256": "6ccf20f62a55580d6649a4cf29c3bf24ff467def4d042243c0379abc7c09b3e0",
+      "baselineSha256": "6ccf20f62a55580d6649a4cf29c3bf24ff467def4d042243c0379abc7c09b3e0",
+      "originalMatchesRecordedBaseline": true,
+      "proposedSha256": "2593a88d1db22be6906ba8df4a68d69fb152086707c4e983c90442fa72d4aee1"
+    },
+    {
+      "file": "js/charts.js",
+      "originalSha256": "04b89d65ae100cb8cc4d61e15778804b447bb61db541a8b4e3ddf0e31d91fd73",
+      "baselineSha256": null,
+      "originalMatchesRecordedBaseline": null,
+      "proposedSha256": "9b8b93785bae1fd893e52e43c9c4fb897954a75a77f3c615254acc4b7349f6bb"
+    },
+    {
+      "file": "styles.css",
+      "originalSha256": "8abaab457d89c2415684f0158e7b13e5dc55b57dce2b4c4c83aff7a335f04ddd",
+      "baselineSha256": "8abaab457d89c2415684f0158e7b13e5dc55b57dce2b4c4c83aff7a335f04ddd",
+      "originalMatchesRecordedBaseline": true,
+      "proposedSha256": "cabbfec7059bbec7f61b300b44681f9485b39fccabd0756d52d4393031fb9f53"
+    },
+    {
+      "file": "service-worker.js",
+      "originalSha256": "6f73e3dcc9ba0989a51305ab00cd23d5237b6bad4700771f3e7ee947e13a598e",
+      "baselineSha256": "8813bc44ae57f63addbfd15081648b1791697b4157ab83ca71329beca32b3a7f",
+      "originalMatchesRecordedBaseline": false,
+      "proposedSha256": "1ebf687259f6ad80fe6efa237e411bec74c74766f1c7b7965333a8191f57be45"
+    },
+    {
+      "file": "standalone.html",
+      "originalSha256": "e1b027773b296f7d9f1e7f305a899bd51e32230a8d9e272d2f6a3cf5e72c6974",
+      "baselineSha256": "e1b027773b296f7d9f1e7f305a899bd51e32230a8d9e272d2f6a3cf5e72c6974",
+      "originalMatchesRecordedBaseline": true,
+      "proposedSha256": "ec8b6308e8aae5d12a2cd74d75f8f603d17baa2aeb581f83a7f9e255f11b2a4f"
+    },
+    {
+      "file": "tests/sp8072.test.mjs",
+      "originalSha256": "9ea265341a8d4dc40f990e9ac6c4b3e2e3dcad0635fdc8e10c3b14967bf12a13",
+      "baselineSha256": "9ea265341a8d4dc40f990e9ac6c4b3e2e3dcad0635fdc8e10c3b14967bf12a13",
+      "originalMatchesRecordedBaseline": true,
+      "proposedSha256": "93e746327d3662f222c1d8e2db4c4863807022cf061cad66657759451fa56eb8"
+    },
+    {
+      "file": "tests/calculators.test.mjs",
+      "originalSha256": "06babbcb72a53dddee3edbd09ce5a0af28dc90426ce3d5de8e860adeaebe86ab",
+      "baselineSha256": "b087594b1bdcdeabb7b98a25411beb7e8a5314a77b1a924379f6fbc64d0b0fb7",
+      "originalMatchesRecordedBaseline": false,
+      "proposedSha256": "1b8db2e165c79d60a4bc84b6dfa09b2a46f40efdbc8feb7ed31aef7cc2d0145b"
+    },
+    {
+      "file": "scripts/sp8072-manifest.mjs",
+      "originalSha256": "b636f9d0b0f7dae41a4747443ff361a9674c5ec7923a6daac6abf6b56277ef21",
+      "baselineSha256": "b636f9d0b0f7dae41a4747443ff361a9674c5ec7923a6daac6abf6b56277ef21",
+      "originalMatchesRecordedBaseline": true,
+      "proposedSha256": "c18fbfdd3481e73e618758cf1373bb407ddb7ad7dbf41a6a853be989f877db50"
+    },
+    {
+      "file": "scripts/sp8072-verify-visualization.mjs",
+      "originalSha256": null,
+      "baselineSha256": null,
+      "originalMatchesRecordedBaseline": null,
+      "proposedSha256": "139e161ad4431de7d45cbb2a1496e8ca150da6c892bd72251e8c6de418bf9f65"
+    },
+    {
+      "file": "references/sp8072-manifest.json",
+      "originalSha256": "b54571dfefa2fe37074b6e1ac3ad25373021d67a3ad02377b757b663d6dd1b8c",
+      "baselineSha256": "b54571dfefa2fe37074b6e1ac3ad25373021d67a3ad02377b757b663d6dd1b8c",
+      "originalMatchesRecordedBaseline": true,
+      "proposedSha256": "4d092278fac67fc5c6dc502c5d711782136b96ad1331613ede00d772cfc86238"
+    },
+    {
+      "file": "docs/sp8072/README.md",
+      "originalSha256": "18e6010cadb31f59733a4df01a84c0e6d99680036c152f7f84ce1cc5dd3fbafd",
+      "baselineSha256": "18e6010cadb31f59733a4df01a84c0e6d99680036c152f7f84ce1cc5dd3fbafd",
+      "originalMatchesRecordedBaseline": true,
+      "proposedSha256": "96d661da9b3f9d85330407561781fd04fb2a7e02ca1ad5bfaef682d0f4f2a36d"
+    },
+    {
+      "file": "docs/sp8072/VALIDATION.md",
+      "originalSha256": "09d9980811bb9b0bfb9fc74b616d5a2e670ebd3a5999d16841f0cf5d01bda602",
+      "baselineSha256": "dd2b5932d061b8f6d412c6214e5bd1ae3f0110cf974fbf5dbd8df299f8fdcf2f",
+      "originalMatchesRecordedBaseline": false,
+      "proposedSha256": "716382c0a22d8038d317e01e315240e57f3794c24ff4c21de3dd5318d9bd3a96"
+    },
+    {
+      "file": "docs/sp8072/CONTROLS.md",
+      "originalSha256": "b44cdc1804e3a548850df1ee19c7655c26dfb38ec6f39673e313a2d3f7223020",
+      "baselineSha256": "b44cdc1804e3a548850df1ee19c7655c26dfb38ec6f39673e313a2d3f7223020",
+      "originalMatchesRecordedBaseline": true,
+      "proposedSha256": "e767bfdf8e404c8e87ae93cae1401c24ed44f01492ae1cfc87fadbcacd9fc36e"
+    }
+  ],
+  "browserLimit": "Control of original file:// tab was rejected by URL policy; no workaround attempted. Updated worktree HTTP preview was verified separately.",
+  "observedPreview": {
+    "engineCount": 1,
+    "microphoneLevelsDb": [
+      127.07,
+      127.35,
+      127.07
+    ],
+    "oldCaptionPresent": false
+  },
+  "previewLauncher": "scripts/sp8072-preview.mjs",
+  "launcherChecks": [
+    "First invocation started server and verified exact served standalone SHA-256",
+    "Second invocation reused server and verified the same SHA-256",
+    "node --check passed",
+    "Detached server observed with parent PID 1 and its own process group",
+    "Direct HTTP HTML and local standalone SHA-256 match: ec8b6308e8aae5d12a2cd74d75f8f603d17baa2aeb581f83a7f9e255f11b2a4f"
+  ],
+  "screenshot": "docs/sp8072/evidence/engine-preview-recovery.jpg",
+  "originalOwnerAndReferenceFiles": {
+    "checked": 16,
+    "mismatches": []
+  },
+  "baselineDifferencesReviewed": {
+    "service-worker.js": "Only the expected v134 to v137 cache change",
+    "tests/calculators.test.mjs": "Only the corresponding cache version assertion",
+    "docs/sp8072/VALIDATION.md": "Current update evidence added above the preserved earlier handoff"
+  },
+  "updatedPreviewTabId": "543588956",
+  "artifactFiles": [
+    "scripts/sp8072-preview.mjs",
+    "docs/sp8072/README.md",
+    "docs/sp8072/evidence/preview-recovery-checks.json",
+    "docs/sp8072/evidence/engine-preview-recovery.jpg"
+  ]
+}
