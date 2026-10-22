@@ -10,7 +10,8 @@ export function validateSettings(s) {
   assert(s.q>=1 && s.q<=100, 'Q must be between 1 and 100 (underdamped).');
   assert(['absolute','pseudo'].includes(s.response), 'Select absolute or pseudo acceleration.');
   assert(s.fmin>=1 && s.fmax>s.fmin, 'Natural frequencies must increase from at least 1 Hz.');
-  assert(s.fs>=20*s.fmax && s.fs<=200000, 'Sample rate must be at least 20 × maximum natural frequency and at most 200 kHz.');
+  assert(s.fs>0 && s.fs<=200000, 'Sample rate must be positive and at most 200 kHz.');
+  assert(s.fs>=2*s.fmax, `Highest natural frequency must be ≤ sample rate / 2 (Nyquist): ${s.fs} Hz permits up to ${s.fs/2} Hz; requested ${s.fmax} Hz.`);
   assert(s.pointsPerOctave>=Math.ceil(6*s.q*Math.LN2) && s.pointsPerOctave<=600, `Use at least ${Math.ceil(6*s.q*Math.LN2)} points/octave for this Q (six points per resonant bandwidth). Refine again to check convergence.`);
   assert(s.duration>0 && s.duration<=LIMITS.duration && s.qualDuration>0 && s.qualDuration<=1e7, 'Flight duration must be positive and ≤24 hours; qualification duration must be positive and ≤10 million s.');
   assert(Number.isInteger(s.seed) && s.seed>=0 && s.seed<=0xffffffff, 'Seed must be a 32-bit unsigned integer.');
@@ -160,10 +161,23 @@ export function compute(record,s,progress=()=>{}) {
   }
   progress(1);return {grid,peaks,running,final,primary,residual,bins,binWidth:s.binWidth,recordDuration:record.duration,totalDuration:(total-1)/fs,ringdown,fs,source:record.source,synthetic:record.synthetic,sampleCount:n,steps,summaryBytes};
 }
-// Exact local maxima, then maximum-envelope aggregation only for heatmap pixels.
-export function mapColumn(result,reference,window,k,stride,values) {
-  const n=result.grid.length,count=Math.max(1,Math.round(window/result.binWidth)),queue=new Uint32Array(count+1);let head=0,length=0;
-  for(let j=0;j<result.bins;j++){while(length&&queue[head]<=j-count){head=(head+1)%queue.length;length--;}const y=result.peaks[j*n+k];while(length&&result.peaks[queue[(head+length-1)%queue.length]*n+k]<=y)length--;queue[(head+length)%queue.length]=j;length++;const idx=Math.floor(j/stride)*n+k;values[idx]=Math.max(values[idx],result.peaks[queue[head]*n+k]/reference[k]);}
+// Display bounds snap outward to complete 50 ms bins; the final bin may be partial.
+export function mapTimeRange(result,start=0,end=result.totalDuration) {
+  assert(Number.isFinite(start)&&Number.isFinite(end),'Map start and end times must be finite.');
+  assert(start>=0&&end>start&&end<=result.totalDuration,`Use 0 ≤ start < end ≤ ${result.totalDuration.toFixed(6)} s (record plus residual).`);
+  const first=Math.min(result.bins-1,Math.floor(start/result.binWidth+1e-9)),last=Math.max(first,Math.min(result.bins-1,Math.ceil(end/result.binWidth-1e-9)-1));
+  return {first,last,start:first*result.binWidth,end:Math.min((last+1)*result.binWidth,result.totalDuration),bins:last-first+1};
+}
+export function mapBinAtTime(result,range,time) {
+  assert(Number.isFinite(time),'Map seek time must be finite.');
+  return Math.max(range.first,Math.min(range.last,Math.floor(time/result.binWidth+1e-9)));
+}
+// Exact local maxima retain lookback before the visible interval, then aggregate visible bins only.
+export function mapColumn(result,reference,window,k,stride,values,bounds={first:0,last:result.bins-1}) {
+  const {first,last}=bounds,n=result.grid.length,count=Math.max(1,Math.round(window/result.binWidth)),queue=new Uint32Array(count+1);let head=0,length=0;
+  assert(Number.isInteger(first)&&Number.isInteger(last)&&first>=0&&last>=first&&last<result.bins,'Invalid heatmap bin range.');
+  assert(Number.isInteger(stride)&&stride>=1&&values.length>=Math.ceil((last-first+1)/stride)*n,'Invalid heatmap storage.');
+  for(let j=Math.max(0,first-count+1);j<=last;j++){while(length&&queue[head]<=j-count){head=(head+1)%queue.length;length--;}const y=result.peaks[j*n+k];while(length&&result.peaks[queue[(head+length-1)%queue.length]*n+k]<=y)length--;queue[(head+length)%queue.length]=j;length++;if(j>=first){const idx=Math.floor((j-first)/stride)*n+k;values[idx]=Math.max(values[idx],result.peaks[queue[head]*n+k]/reference[k]);}}
 }
 export function localCurve(result,bin,window) {
   const count=Math.max(1,Math.round(window/result.binWidth)),first=Math.max(0,bin-count+1),values=new Float64Array(result.grid.length);

@@ -7,10 +7,11 @@ from scipy.integrate import quad
 
 root=Path(__file__).resolve().parent.parent
 source="""
-import {coefficients,spectralMoments,parseCurve,DEMO_PSD} from './physics.mjs';
-const cases=[];for(const fn of [1,30,100,800])for(const q of [1,10,50,100])for(const fs of [20000,200000])cases.push({fn,q,fs,c:coefficients(fn,q,fs)});
+import {coefficients,responseHistory,spectralMoments,parseCurve,DEMO_PSD} from './physics.mjs';
+const cases=[];for(const fn of [1,30,100,800])for(const q of [1,10,50,100])for(const fs of [20000,200000])cases.push({fn,q,fs,c:coefficients(fn,q,fs)});for(const fn of [2000,2499,2500])for(const q of [1,10,50,100])cases.push({fn,q,fs:5000,c:coefficients(fn,q,5000)});
 const curve=parseCurve(DEMO_PSD,'m/s^2','psd');const spectra=[];for(const fn of [10,70,420,800])for(const q of [2,10,50])for(const response of ['absolute','pseudo'])spectra.push({fn,q,response,m:spectralMoments(curve,fn,q,response,2)});
-console.log(JSON.stringify({cases,spectra,curve}));
+const fs=5000,input=Float64Array.from({length:513},(_,i)=>.7*Math.cos(2*Math.PI*2490*i/fs)+.2*Math.sin(2*Math.PI*73*i/fs));const histories=[];for(const fn of [2499,2500])for(const q of [1,10,50,100])for(const response of ['absolute','pseudo'])histories.push({fn,q,fs,response,y:Array.from(responseHistory(input,fs,fn,q,response))});
+console.log(JSON.stringify({cases,spectra,curve,input:Array.from(input),histories}));
 """
 data=json.loads(subprocess.check_output(['node','--input-type=module','-e',source],cwd=root,text=True))
 max_state_error=0
@@ -22,6 +23,16 @@ for case in data['cases']:
     actual=np.array([c['p00']*u+c['p01']*v+c['b00']*prev+c['b10']*now,c['p10']*u+c['p11']*v+c['b01']*prev+c['b11']*now])
     max_state_error=max(max_state_error,float(np.max(np.abs(actual-independent))))
 assert max_state_error<1e-10,max_state_error
+max_history_error=0
+for case in data['histories']:
+    fn,q,fs=case['fn'],case['q'],case['fs'];w=2*np.pi*fn;z=1/(2*q)
+    A=np.array([[0,w,0,0],[-w,-2*z*w,w,0],[0,0,0,1],[0,0,0,0]])
+    transition=expm(A/fs);state=np.zeros(2);independent=[0.]
+    for prev,now in zip(data['input'][:-1],data['input'][1:]):
+        state=(transition@np.array([*state,prev,(now-prev)*fs]))[:2]
+        independent.append(state[0]+2*z*state[1] if case['response']=='absolute' else -state[0])
+    max_history_error=max(max_history_error,float(np.max(np.abs(np.array(case['y'])-independent))))
+assert max_history_error<1e-10,max_history_error
 curve=data['curve'];logs=np.log(curve['f']);levels=np.log(curve['y']);max_moment_error=0
 for case in data['spectra']:
     fn,q,response=case['fn'],case['q'],case['response']
@@ -41,5 +52,5 @@ envelopes=rng.rayleigh(size=(trials,N));observed=float(np.mean(envelopes.max(axi
 one=np.sqrt(2*np.log(N));exceedance=float(np.mean((envelopes>one).sum(axis=1)))
 assert abs(observed-p)<.003,(observed,p)
 assert abs(exceedance-1)<.012,exceedance
-report={'state_cases':len(data['cases']),'scipy_expm_max_absolute_error':max_state_error,'spectral_cases':len(data['spectra']),'scipy_quad_max_relative_error':max_moment_error,'independent_Rayleigh_envelope_trials':trials,'target_probability':p,'observed_probability':observed,'one_expected_exceedance_observed':exceedance,'scope':'Independent mathematical/numerical checks only; no validation of real Gaussianity, narrowband assumptions or achieved qualification.'}
+report={'state_cases':len(data['cases']),'scipy_expm_max_absolute_error':max_state_error,'nyquist_history_cases':len(data['histories']),'scipy_expm_history_max_absolute_error':max_history_error,'spectral_cases':len(data['spectra']),'scipy_quad_max_relative_error':max_moment_error,'independent_Rayleigh_envelope_trials':trials,'target_probability':p,'observed_probability':observed,'one_expected_exceedance_observed':exceedance,'scope':'Independent mathematical/numerical checks only; no validation of real Gaussianity, narrowband assumptions or achieved qualification.'}
 print(json.dumps(report,indent=2))
