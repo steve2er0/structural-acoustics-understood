@@ -5,6 +5,7 @@ import {
   NASTRAN_PLATE_MATERIALS,
   SORBOTHANE_UNITS,
   analyzeSorbothaneIsolation,
+  isolationMountCoordinates,
   isParkerLordConfig,
   normalizeSorbothaneConfig,
   rigidBodyResponseAtFrequency,
@@ -147,7 +148,7 @@ function inputSidebar(config) {
     input(config, 'isolator.temperatureC', 'Temperature', { quantity: 'temperature', step: 1 })
   ].join('');
   return `<aside class="sorbo-sidebar" aria-label="Isolation system inputs">
-    <header><p class="eyebrow">Design inputs</p><h2>Four-point component isolation</h2><label class="sorbo-unit-switch"><span>Display units</span><select data-sorbo-units><option${config.units === 'English' ? ' selected' : ''}>English</option><option${config.units === 'SI' ? ' selected' : ''}>SI</option></select></label></header>
+    <header><p class="eyebrow">Design inputs</p><h2>Component isolation</h2><label class="sorbo-unit-switch"><span>Display units</span><select data-sorbo-units><option${config.units === 'English' ? ' selected' : ''}>English</option><option${config.units === 'SI' ? ' selected' : ''}>SI</option></select></label></header>
     ${group('Isolator model', `<div class="sorbo-model-select">${select(config, 'isolator.kind', 'Hardware library', [['sorbothane-element', 'Sorbothane captured elements'], ['parker-lord-am', 'Parker LORD AM mounts']], { help: 'Each library uses its own catalog data and stiffness model.' })}</div><div class="sorbo-response-options sorbo-model-options" role="group" aria-label="Choose isolator hardware library"><button type="button" data-sorbo-model-choice="sorbothane-element" class="${lord ? '' : 'active'}" aria-pressed="${lord ? 'false' : 'true'}"><b>Sorbothane</b><span>Captured pad elements</span></button><button type="button" data-sorbo-model-choice="parker-lord-am" class="${lord ? 'active' : ''}" aria-pressed="${lord ? 'true' : 'false'}"><b>Parker LORD</b><span>Complete AM mounts</span></button></div>`, true)}
     ${group('Component', [
       input(config, 'component.massKg', 'Mass', { quantity: 'mass', min: 0.01, step: 0.1 }),
@@ -163,14 +164,16 @@ function inputSidebar(config) {
       `<div class="sorbo-manual-inertia" data-manual-inertia>${['Ixx', 'Iyy', 'Izz', 'Ixy', 'Ixz', 'Iyz'].map((label, index) => input(config, `component.inertiaKgM2.${index}`, label, { quantity: 'inertia', step: 0.01 })).join('')}</div>`
     ].join(''))}
     ${group('Mount geometry', [
-      input(config, 'mounts.spacingM.0', 'X mount spacing', { quantity: 'length', min: 0.1, step: 0.05 }),
-      input(config, 'mounts.spacingM.1', 'Y mount spacing', { quantity: 'length', min: 0.1, step: 0.05 }),
+      select(config, 'mounts.count', 'Isolation legs', [[4, '4 legs · 2 on each side'], [8, '8 legs · 4 on each side']], { help: 'Supports are divided equally between two opposing sides. Upper/lower stack counts apply at each leg.' }),
+      select(config, 'mounts.rowAxis', 'Row direction', [['x', 'Along X · on ±Y sides'], ['y', 'Along Y · on ±X sides']], { help: 'Choose which pair of component sides carries the rows. X and Y spacing always describe the full footprint extents along those axes.' }),
+      input(config, 'mounts.spacingM.0', 'X mount spacing', { quantity: 'length', min: 0.1, step: 0.05, help: 'Overall center-to-center extent along X.' }),
+      input(config, 'mounts.spacingM.1', 'Y mount spacing', { quantity: 'length', min: 0.1, step: 0.05, help: 'Overall center-to-center extent along Y.' }),
       derivedLengthInput(config, 'X edge inset', (config.component.dimensionsM[0] - config.mounts.spacingM[0]) / 2, 'data-sorbo-inset-axis="0"', 'Changing inset updates the corresponding center-to-center spacing.'),
       derivedLengthInput(config, 'Y edge inset', (config.component.dimensionsM[1] - config.mounts.spacingM[1]) / 2, 'data-sorbo-inset-axis="1"', 'Changing inset updates the corresponding center-to-center spacing.'),
       input(config, 'mounts.planeZM', 'Mount-plane Z from origin', { quantity: 'length', step: 0.01, help: 'The coordinate origin is the component footprint center on the isolated plate.' }),
       derivedLengthInput(config, 'Mount plane relative to CG', config.mounts.planeZM - config.component.cgM[2], 'data-sorbo-plane-relative', 'Negative values place the mount plane below the CG.'),
       arrangementFields
-    ].join(''))}
+    ].join(''), true)}
     ${group(lord ? 'Parker LORD AM mount' : 'Sorbothane element', isolatorFields, true)}
     ${group('Preload & acceleration', [
       lord ? '' : select(config, 'isolator.preloadMode', 'Design basis', [['compression', 'Compression-driven'], ['preload', 'Preload-driven']]),
@@ -247,7 +250,7 @@ function sceneSvg(config, analysis, modeIndex = null, phase = 0, camera = { yaw:
     [-length / 2, -width / 2, height], [length / 2, -width / 2, height], [length / 2, width / 2, height], [-length / 2, width / 2, height]
   ];
   const base = [[-length * .72, -width * .72, plane - height * .18], [length * .72, -width * .72, plane - height * .18], [length * .72, width * .72, plane - height * .18], [-length * .72, width * .72, plane - height * .18]];
-  const mountXY = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sy]) => [sx * config.mounts.spacingM[0] / 2, sy * config.mounts.spacingM[1] / 2]);
+  const mountXY = isolationMountCoordinates(config);
   const mounts = mountXY.map(([x, y], index) => {
     const bottom = baseProject([x, y, plane - height * .12]);
     const top = project([x, y, plane + height * .06]);
@@ -256,7 +259,7 @@ function sceneSvg(config, analysis, modeIndex = null, phase = 0, camera = { yaw:
   const cg = project([cgX, cgY, cgZ]);
   const origin = baseProject([0, 0, plane]);
   const axis = (point, label, className) => { const end = baseProject(point); return `<g class="sorbo-axis ${className}"><line x1="${origin[0]}" y1="${origin[1]}" x2="${end[0]}" y2="${end[1]}"/><text x="${end[0] + 5}" y="${end[1] - 5}">${label}</text></g>`; };
-  return `<svg class="sorbo-scene" viewBox="0 0 840 500" role="img" aria-label="Rotatable view of the component, center of gravity, isolated plate, and four isolation mounts">
+  return `<svg class="sorbo-scene" viewBox="0 0 840 500" role="img" aria-label="Rotatable view of the component, center of gravity, isolated plate, and ${config.mounts.count} isolation mounts">
     ${basePolygon(base, 'sorbo-base-plane')}
     ${mounts}
     ${polygon([corners[0], corners[1], corners[2], corners[3]], 'sorbo-box-bottom')}
@@ -414,7 +417,7 @@ function overviewPanel(config, analysis) {
     ? `<div><dt>Mount model</dt><dd>Parker LORD ${esc(catalog.family)}</dd></div><div><dt>Arrangement</dt><dd>${config.isolator.mountsPerPoint === 2 ? 'Back-to-back pair' : 'Single mount'} / support point</dd></div><div><dt>Published rates</dt><dd>${fmt(catalog.dynamicAxialSpringRateLbPerIn, 0)} axial / ${fmt(catalog.dynamicRadialSpringRateLbPerIn, 0)} radial lb/in</dd></div><div><dt>Installed resultant load</dt><dd>${[Math.min(...loadRange), Math.max(...loadRange)].map(value => fmt(value, 2)).join('–')} lbf / support point</dd></div><div><dt>Rated capacity</dt><dd>${fmt(catalog.ratedLoadLb * config.isolator.mountsPerPoint, 1)} lbf / support point</dd></div><div><dt>Catalog load check</dt><dd>${analysis.preload.catalogCompliant ? 'Within rating' : 'Outside rating'}</dd></div>`
     : `<div><dt>Material formulation</dt><dd>${esc(analysis.material.label)}</dd></div><div><dt>Shape factor</dt><dd>${fmt(analysis.geometry.shapeFactor, 3)}</dd></div><div><dt>Nominal precompression force</dt><dd>${fmt(analysis.preload.preloadN / LBF, 2)} lbf / element</dd></div><div><dt>Installed element loads</dt><dd>${[Math.min(...loadRange), Math.max(...loadRange)].map(value => fmt(value, 2)).join('–')} lbf</dd></div><div><dt>Opposing elements</dt><dd>${analysis.preload.allEngaged ? 'Engaged' : 'UNLOADED'}</dd></div><div><dt>Catalog load rating</dt><dd>${analysis.preload.catalogCompliant ? 'Within / not applicable' : 'Outside rating'}</dd></div><div><dt>Compression recommendation</dt><dd>${analysis.preload.compressionCompliant ? 'Within 10–20%' : 'Outside 10–20%'}</dd></div>`;
   return `<section class="sorbo-tab-panel is-active" data-sorbo-panel="overview">
-    <div class="sorbo-overview-grid"><section class="sorbo-card sorbo-geometry-card"><header><div><p class="eyebrow">Hardware geometry</p><h2>Component on four ${lord ? 'complete mounts' : 'captured mounts'}</h2></div><span>Drag to rotate</span></header><div data-sorbo-overview-scene>${sceneSvg(config, analysis)}</div><p class="sorbo-caption">Coordinate origin: component footprint center on the isolated plate. +Z is upward. CG and mount offsets are rendered from the same coordinates.</p></section>
+    <div class="sorbo-overview-grid"><section class="sorbo-card sorbo-geometry-card"><header><div><p class="eyebrow">Hardware geometry</p><h2>Component on ${config.mounts.count} ${lord ? 'complete mounts' : 'captured mounts'}</h2></div><span>Drag to rotate</span></header><div data-sorbo-overview-scene>${sceneSvg(config, analysis)}</div><p class="sorbo-caption">Coordinate origin: component footprint center on the isolated plate. +Z is upward. CG and mount offsets are rendered from the same coordinates.</p></section>
     <section class="sorbo-card sorbo-decision-card"><p class="eyebrow">Current decision</p><h2 class="${analysis.passes ? 'pass-text' : 'fail-text'}">${analysis.passes ? 'All defined criteria pass' : 'Design review required'}</h2><dl><div><dt>Isolator</dt><dd>${esc(catalog.productNumber)}</dd></div>${decisionDetails}</dl></section></div>
     <section class="sorbo-mode-dashboard"><header><div><p class="eyebrow">Calculated eigenproblem</p><h2>Six rigid-body modes</h2></div><p>Modes are classified by normalized translational and characteristic-length rotational participation; coupling is retained.</p></header><div class="sorbo-mode-cards">${modeCards(analysis)}</div></section>
     <section class="sorbo-card"><header><div><p class="eyebrow">Pass / fail</p><h2>Isolation and resonance requirements</h2></div><span>Direct X / Y / Z base excitation</span></header>${requirementTable(analysis)}</section>
@@ -452,9 +455,9 @@ function parkerLordPanel(config, analysis) {
   const lossBasis = item.lossFactorProvenance === 'engineering-assumption'
     ? 'Editable engineering assumption; no catalog damping value was found for this MEA record.'
     : 'Editable estimate digitized from the catalog typical transmissibility curve; not a tabulated manufacturer value.';
-  return `<section class="sorbo-tab-panel" data-sorbo-panel="sorbothane"><div class="sorbo-lower-grid"><section class="sorbo-card"><p class="eyebrow">Selected complete mount</p><h2>${esc(item.productNumber)}</h2><dl class="sorbo-detail-list"><div><dt>Manufacturer / family</dt><dd>Parker LORD · ${esc(item.family)}</dd></div><div><dt>Elastomer</dt><dd>${esc(item.elastomer)}</dd></div><div><dt>Rated load</dt><dd>${fmt(item.ratedLoadLb, 1)} lbf / mount</dd></div><div><dt>Rated-load natural frequency</dt><dd>${fmt(item.nominalNaturalFrequencyHz, 0)} Hz</dd></div><div><dt>Axial dynamic rate</dt><dd>${fmt(item.dynamicAxialSpringRateLbPerIn, 0)} lb/in</dd></div><div><dt>Radial dynamic rate</dt><dd>${fmt(item.dynamicRadialSpringRateLbPerIn, 0)} lb/in</dd></div><div><dt>Maximum dynamic input</dt><dd>${fmt(item.maxDynamicInputDAIn, 3)} in double amplitude</dd></div><div><dt>Weight</dt><dd>${fmt(item.weightOz, 2)} oz / mount</dd></div><div><dt>Temperature range</dt><dd>${esc(temperature)}</dd></div><div><dt>Reference envelope</dt><dd>${fmt(item.envelopeIn.footprint, 3)} in footprint · Ø ${fmt(item.envelopeIn.bodyDiameter, 3)} × ${fmt(item.envelopeIn.height, 3)} in body</dd></div></dl></section><section class="sorbo-card"><p class="eyebrow">Installed screening model</p><h2>${esc(arrangement)}</h2><dl class="sorbo-detail-list"><div><dt>Mounts / point</dt><dd>${config.isolator.mountsPerPoint}</dd></div><div><dt>Total mount quantity</dt><dd>${config.isolator.mountsPerPoint * 4}</dd></div><div><dt>Capacity / point</dt><dd>${fmt(item.ratedLoadLb * config.isolator.mountsPerPoint, 1)} lbf</dd></div><div><dt>Axial rate / point</dt><dd>${fmt(item.dynamicAxialSpringRateLbPerIn * config.isolator.mountsPerPoint * config.isolator.modulusScale, 0)} lb/in</dd></div><div><dt>Radial rate / point</dt><dd>${fmt(item.dynamicRadialSpringRateLbPerIn * config.isolator.mountsPerPoint * config.isolator.modulusScale, 0)} lb/in</dd></div><div><dt>Loss factor η</dt><dd>${fmt(config.isolator.lordLossFactor * config.isolator.lossScale, 3)}</dd></div><div><dt>Loss-factor basis</dt><dd>${esc(lossBasis)}</dd></div></dl><p class="sorbo-caption">The solver uses the published complete-mount axial and radial dynamic rates directly. It does not apply Sorbothane pad shape-factor, durometer, compression, or stack-series equations.</p></section></div>
+  return `<section class="sorbo-tab-panel" data-sorbo-panel="sorbothane"><div class="sorbo-lower-grid"><section class="sorbo-card"><p class="eyebrow">Selected complete mount</p><h2>${esc(item.productNumber)}</h2><dl class="sorbo-detail-list"><div><dt>Manufacturer / family</dt><dd>Parker LORD · ${esc(item.family)}</dd></div><div><dt>Elastomer</dt><dd>${esc(item.elastomer)}</dd></div><div><dt>Rated load</dt><dd>${fmt(item.ratedLoadLb, 1)} lbf / mount</dd></div><div><dt>Rated-load natural frequency</dt><dd>${fmt(item.nominalNaturalFrequencyHz, 0)} Hz</dd></div><div><dt>Axial dynamic rate</dt><dd>${fmt(item.dynamicAxialSpringRateLbPerIn, 0)} lb/in</dd></div><div><dt>Radial dynamic rate</dt><dd>${fmt(item.dynamicRadialSpringRateLbPerIn, 0)} lb/in</dd></div><div><dt>Maximum dynamic input</dt><dd>${fmt(item.maxDynamicInputDAIn, 3)} in double amplitude</dd></div><div><dt>Weight</dt><dd>${fmt(item.weightOz, 2)} oz / mount</dd></div><div><dt>Temperature range</dt><dd>${esc(temperature)}</dd></div><div><dt>Reference envelope</dt><dd>${fmt(item.envelopeIn.footprint, 3)} in footprint · Ø ${fmt(item.envelopeIn.bodyDiameter, 3)} × ${fmt(item.envelopeIn.height, 3)} in body</dd></div></dl></section><section class="sorbo-card"><p class="eyebrow">Installed screening model</p><h2>${esc(arrangement)}</h2><dl class="sorbo-detail-list"><div><dt>Mounts / point</dt><dd>${config.isolator.mountsPerPoint}</dd></div><div><dt>Total mount quantity</dt><dd>${config.isolator.mountsPerPoint * config.mounts.count}</dd></div><div><dt>Capacity / point</dt><dd>${fmt(item.ratedLoadLb * config.isolator.mountsPerPoint, 1)} lbf</dd></div><div><dt>Axial rate / point</dt><dd>${fmt(item.dynamicAxialSpringRateLbPerIn * config.isolator.mountsPerPoint * config.isolator.modulusScale, 0)} lb/in</dd></div><div><dt>Radial rate / point</dt><dd>${fmt(item.dynamicRadialSpringRateLbPerIn * config.isolator.mountsPerPoint * config.isolator.modulusScale, 0)} lb/in</dd></div><div><dt>Loss factor η</dt><dd>${fmt(config.isolator.lordLossFactor * config.isolator.lossScale, 3)}</dd></div><div><dt>Loss-factor basis</dt><dd>${esc(lossBasis)}</dd></div></dl><p class="sorbo-caption">The solver uses the published complete-mount axial and radial dynamic rates directly. It does not apply Sorbothane pad shape-factor, durometer, compression, or stack-series equations.</p></section></div>
     ${currentDesignDrawings(config, analysis)}
-    <section class="sorbo-card"><header><div><p class="eyebrow">Static load screen</p><h2>Resultant load versus rated capacity</h2></div><span>Four support points</span></header><div class="table-wrap"><table><thead><tr><th>Support</th><th>X</th><th>Y</th><th>Vertical load</th><th>Lateral load</th><th>Resultant</th><th>Rated capacity</th><th>Status</th></tr></thead><tbody>${analysis.preload.mounts.map(mount => `<tr><td>${mount.index}</td><td>${fmt(mount.positionM[0] / INCH, 2)} in</td><td>${fmt(mount.positionM[1] / INCH, 2)} in</td><td>${fmt(mount.payloadN / LBF, 2)} lbf</td><td>${fmt(mount.lateralLoadN / LBF, 2)} lbf</td><td>${fmt(mount.resultantLoadN / LBF, 2)} lbf</td><td>${fmt(mount.ratedLoadN / LBF, 2)} lbf</td><td>${mount.flags.length ? `<span class="sorbo-status fail">${esc(mount.flags.join('; '))}</span>` : '<span class="sorbo-status pass">WITHIN RATING</span>'}</td></tr>`).join('')}</tbody></table></div><p class="sorbo-caption">Preliminary vector-load screen using the distributed static acceleration field. Confirm allowable combined axial/radial loading and installation orientation with Parker LORD.</p></section>
+    <section class="sorbo-card"><header><div><p class="eyebrow">Static load screen</p><h2>Resultant load versus rated capacity</h2></div><span>${config.mounts.count} support points</span></header><div class="table-wrap"><table><thead><tr><th>Support</th><th>X</th><th>Y</th><th>Vertical load</th><th>Lateral load</th><th>Resultant</th><th>Rated capacity</th><th>Status</th></tr></thead><tbody>${analysis.preload.mounts.map(mount => `<tr><td>${mount.index}</td><td>${fmt(mount.positionM[0] / INCH, 2)} in</td><td>${fmt(mount.positionM[1] / INCH, 2)} in</td><td>${fmt(mount.payloadN / LBF, 2)} lbf</td><td>${fmt(mount.lateralLoadN / LBF, 2)} lbf</td><td>${fmt(mount.resultantLoadN / LBF, 2)} lbf</td><td>${fmt(mount.ratedLoadN / LBF, 2)} lbf</td><td>${mount.flags.length ? `<span class="sorbo-status fail">${esc(mount.flags.join('; '))}</span>` : '<span class="sorbo-status pass">WITHIN RATING</span>'}</td></tr>`).join('')}</tbody></table></div><p class="sorbo-caption">Preliminary vector-load screen using the distributed static acceleration field. Confirm allowable combined axial/radial loading and installation orientation with Parker LORD.</p></section>
     <section class="sorbo-card"><p class="eyebrow">Primary source</p><h2>${esc(PARKER_LORD_SOURCE.title)}</h2><p>${esc(PARKER_LORD_SOURCE.document)} · AM Low Profile Avionics Mounts. Catalog values were transcribed per part number; configuration and availability remain subject to confirmation.</p><a class="button-quiet" href="${esc(PARKER_LORD_SOURCE.url)}" target="_blank" rel="noreferrer">Open official Parker LORD catalog ↗</a></section>
   </section>`;
 }
@@ -678,7 +681,7 @@ function catalogScreenControls(config, settingsInput = {}) {
   const formulationNote = settings.library === 'sorbothane' && config.isolator.formulation === 'water-resistant'
     ? '<p class="sorbo-caption">The screen applies water-resistant material curves to Standard Products Guide geometry. Confirm water-resistant availability, rated load, and the orderable part number with Sorbothane.</p>'
     : '';
-  return `<div class="sorbo-catalog-controls">${library}${filters}<button type="button" class="button" data-sorbo-action="screen-catalog">Screen full catalog</button>${formulationNote}</div>`;
+  return `<div class="sorbo-catalog-controls">${library}${filters}<button type="button" class="button" data-sorbo-action="screen-catalog">Screen full catalog</button>${formulationNote}</div><p class="sorbo-caption">Active support layout: ${config.mounts.count} legs · rows along ${config.mounts.rowAxis.toUpperCase()} on the ±${config.mounts.rowAxis === 'x' ? 'Y' : 'X'} sides.</p>`;
 }
 
 function catalogToneCriteriaRows(settings) {
@@ -762,7 +765,7 @@ function catalogScreenResult(screen, selection = null) {
   const winner = screen.recommendations[0];
   const item = winner.item;
   const selected = catalogSelectionMatches(winner, selection);
-  return `${summary}<article class="sorbo-catalog-recommendation${selected ? ' is-selected-design' : ''}"${selected ? ' data-sorbo-selected-design' : ''}><div><p class="eyebrow">${selected ? 'Selected catalog configuration' : 'Recommended catalog configuration'}</p><h3>${esc(item.productNumber)}</h3><p>${esc(item.geometry)} · ${item.durometer} Shore 00 · ${fmt(item.odIn, 3)} OD × ${fmt(item.idIn, 3)} ID × ${fmt(item.thicknessIn, 3)} in thick</p></div><div><strong>${winner.stackCount}</strong><span>element${winner.stackCount === 1 ? '' : 's'} per side at each mount</span><small>${winner.totalElementCount} elements total for four captured mounts</small></div><button type="button" class="button" data-sorbo-catalog-use="${esc(item.productNumber)}" data-sorbo-catalog-kind="sorbothane-element" data-sorbo-catalog-stack="${winner.stackCount}"${selected ? ' disabled' : ''}>${selected ? 'Selected design' : 'Use recommended design'}</button></article><h3>Passing part-number recommendations</h3><p class="sorbo-caption">For each part, the table keeps the smallest stack count that passes. Parts are then ranked by tone attenuation and resonance margin.</p>${catalogCandidateTable(screen.recommendations, screen.criteria, false, selection)}${exclusion}`;
+  return `${summary}<article class="sorbo-catalog-recommendation${selected ? ' is-selected-design' : ''}"${selected ? ' data-sorbo-selected-design' : ''}><div><p class="eyebrow">${selected ? 'Selected catalog configuration' : 'Recommended catalog configuration'}</p><h3>${esc(item.productNumber)}</h3><p>${esc(item.geometry)} · ${item.durometer} Shore 00 · ${fmt(item.odIn, 3)} OD × ${fmt(item.idIn, 3)} ID × ${fmt(item.thicknessIn, 3)} in thick</p></div><div><strong>${winner.stackCount}</strong><span>element${winner.stackCount === 1 ? '' : 's'} per side at each mount</span><small>${winner.totalElementCount} elements total for ${screen.supportCount} captured mounts</small></div><button type="button" class="button" data-sorbo-catalog-use="${esc(item.productNumber)}" data-sorbo-catalog-kind="sorbothane-element" data-sorbo-catalog-stack="${winner.stackCount}"${selected ? ' disabled' : ''}>${selected ? 'Selected design' : 'Use recommended design'}</button></article><h3>Passing part-number recommendations</h3><p class="sorbo-caption">For each part, the table keeps the smallest stack count that passes. Parts are then ranked by tone attenuation and resonance margin.</p>${catalogCandidateTable(screen.recommendations, screen.criteria, false, selection)}${exclusion}`;
 }
 
 function currentDesignPanel(config, settings) {
@@ -828,7 +831,7 @@ function isolatorStackDrawing(config, analysis) {
   const bottomInstalledIn = installedElementIn * bottomCount;
   const topPlural = topCount === 1 ? 'element' : 'elements';
   const bottomPlural = bottomCount === 1 ? 'element' : 'elements';
-  return `<figure class="sorbo-design-drawing"><header><div><p class="eyebrow">Installed mount section</p><h3>Captured stack · 1 of 4 mounts</h3></div><span>${fmt(compressionPct, 1)}% compression</span></header><svg viewBox="0 0 560 300" role="img" aria-label="Captured mount stack configuration">
+  return `<figure class="sorbo-design-drawing"><header><div><p class="eyebrow">Installed mount section</p><h3>Captured stack · 1 of ${config.mounts.count} mounts</h3></div><span>${fmt(compressionPct, 1)}% compression</span></header><svg viewBox="0 0 560 300" role="img" aria-label="Captured mount stack configuration">
     <line class="sorbo-drawing-centerline" x1="276" y1="18" x2="276" y2="282"/><text class="sorbo-drawing-view-label" x="276" y="18">ONE MOUNT LOCATION · SECTION</text>
     <rect class="sorbo-drawing-capture" x="182" y="32" width="188" height="13" rx="2"/><text class="sorbo-drawing-hardware-label" x="386" y="42">Upper capture plate</text>
     ${stackElementsSvg(topCount, 54, 121, boreRatio, 'upper')}
@@ -838,12 +841,41 @@ function isolatorStackDrawing(config, analysis) {
     <line class="sorbo-drawing-leader" x1="214" y1="87" x2="144" y2="87"/><text class="sorbo-drawing-stack-label" x="136" y="82" text-anchor="end">UPPER STACK · ${topCount}</text><text class="sorbo-drawing-stack-detail" x="136" y="98" text-anchor="end">${topPlural} in series · ${fmt(topInstalledIn, 3)} in</text>
     <line class="sorbo-drawing-leader" x1="214" y1="207" x2="144" y2="207"/><text class="sorbo-drawing-stack-label" x="136" y="202" text-anchor="end">LOWER STACK · ${bottomCount}</text><text class="sorbo-drawing-stack-detail" x="136" y="218" text-anchor="end">${bottomPlural} in series · ${fmt(bottomInstalledIn, 3)} in</text>
     <text class="sorbo-drawing-note" x="386" y="92">Upper + lower stacks</text><text class="sorbo-drawing-note" x="386" y="108">act in parallel dynamically</text><text class="sorbo-drawing-note" x="386" y="202">Each element: ${fmt(installedElementIn, 3)} in installed</text><text class="sorbo-drawing-note" x="386" y="218">Dashed line: mount axis only</text><text class="sorbo-drawing-note" x="386" y="234">No rigid short circuit modeled</text>
-  </svg><figcaption>At each of the four mount posts, ${topCount} upper ${topPlural} and ${bottomCount} lower ${bottomPlural} capture the isolated plate. Elements within each physical stack act in series; the opposing stacks act in parallel for small incremental motion.</figcaption></figure>`;
+  </svg><figcaption>At each of the ${config.mounts.count} mount posts, ${topCount} upper ${topPlural} and ${bottomCount} lower ${bottomPlural} capture the isolated plate. Elements within each physical stack act in series; the opposing stacks act in parallel for small incremental motion.</figcaption></figure>`;
+}
+
+function supportFootprintDrawing(config) {
+  const [length, width] = config.component.dimensionsM;
+  const [spanX, spanY] = config.mounts.spacingM;
+  const scale = Math.min(390 / Math.max(length, spanX), 180 / Math.max(width, spanY));
+  const xMap = value => 280 + value * scale;
+  const yMap = value => 135 - value * scale;
+  const unit = unitDefinitions.length[config.units];
+  const lengthLabel = value => `${fmt(unit.fromSI(value), 3)} ${unit.unit}`;
+  const perSide = config.mounts.count / 2;
+  const alongY = config.mounts.rowAxis === 'y';
+  const rowAxis = config.mounts.rowAxis.toUpperCase();
+  const sideAxis = alongY ? 'X' : 'Y';
+  const rowSpan = alongY ? spanY : spanX;
+  const separation = alongY ? spanX : spanY;
+  const points = isolationMountCoordinates(config);
+  const markers = points.map(([x, y], index) => `<g data-sorbo-support-marker="${index + 1}"><title>Leg ${index + 1}: X ${lengthLabel(x)}, Y ${lengthLabel(y)}</title><circle class="sorbo-drawing-element" cx="${xMap(x)}" cy="${yMap(y)}" r="12"/><text class="sorbo-support-number" x="${xMap(x)}" y="${yMap(y) + 4}">${index + 1}</text></g>`).join('');
+  const rowLines = [points.slice(0, perSide), points.slice(perSide)].map(row => `<line class="sorbo-drawing-centerline" x1="${xMap(row[0][0])}" y1="${yMap(row[0][1])}" x2="${xMap(row.at(-1)[0])}" y2="${yMap(row.at(-1)[1])}"/>`).join('');
+  const sideLabels = alongY
+    ? `<text class="sorbo-drawing-note" x="${xMap(-spanX / 2)}" y="${yMap(spanY / 2) - 22}" text-anchor="middle">−X side</text><text class="sorbo-drawing-note" x="${xMap(spanX / 2)}" y="${yMap(spanY / 2) - 22}" text-anchor="middle">+X side</text>`
+    : `<text class="sorbo-drawing-note" x="18" y="${yMap(spanY / 2) + 3}">+Y side</text><text class="sorbo-drawing-note" x="18" y="${yMap(-spanY / 2) + 3}">−Y side</text>`;
+  const total = isParkerLordConfig(config)
+    ? `${config.mounts.count * config.isolator.mountsPerPoint} complete mounts total`
+    : `${config.mounts.count * (config.mounts.stackTop + config.mounts.stackBottom)} Sorbothane elements total`;
+  return `<figure class="sorbo-design-drawing sorbo-support-footprint"><header><div><p class="eyebrow">Mounting footprint · rows along ${rowAxis}</p><h3>${config.mounts.count} legs · ${perSide} on each side</h3></div><span>${esc(total)}</span></header>
+    <svg viewBox="0 0 560 300" role="img" aria-label="Isolation support footprint with ${config.mounts.count} legs, rows along ${rowAxis}"><rect class="sorbo-drawing-component" x="${xMap(-length / 2)}" y="${yMap(width / 2)}" width="${length * scale}" height="${width * scale}" rx="4"/>${rowLines}${markers}${sideLabels}<text class="sorbo-drawing-component-label" x="280" y="135">ISOLATED PLATE · +X →</text><text class="sorbo-drawing-dim-label" x="280" y="252">${rowAxis} row span ${lengthLabel(rowSpan)} · Adjacent legs ${lengthLabel(rowSpan / (perSide - 1))}</text><text class="sorbo-drawing-dim-label" x="280" y="275">${sideAxis} row separation ${lengthLabel(separation)}</text></svg>
+    <figcaption>Leg numbers match the 3D view and static load table. Rows run along ${rowAxis} on the ±${sideAxis} sides, with ${perSide} evenly spaced supports per row. Stack counts set the upper and lower elements at each leg.</figcaption></figure>`;
 }
 
 function currentDesignDrawings(config, analysis) {
-  if (isParkerLordConfig(config)) return parkerLordDesignDrawings(config);
-  return `<section class="sorbo-design-drawings" aria-label="Current isolator and stack drawings">${isolatorElementDrawing(config)}${isolatorStackDrawing(config, analysis)}</section>`;
+  const footprint = supportFootprintDrawing(config);
+  if (isParkerLordConfig(config)) return footprint + parkerLordDesignDrawings(config);
+  return `${footprint}<section class="sorbo-design-drawings" aria-label="Current isolator and stack drawings">${isolatorElementDrawing(config)}${isolatorStackDrawing(config, analysis)}</section>`;
 }
 
 function parkerLordDesignDrawings(config) {
@@ -851,7 +883,7 @@ function parkerLordDesignDrawings(config) {
   const envelope = item.envelopeIn;
   const pair = config.isolator.mountsPerPoint === 2;
   const mount = (centerY, flipped = false) => `<g transform="translate(0 ${centerY})${flipped ? ' scale(1 -1)' : ''}"><rect class="sorbo-drawing-capture" x="190" y="-38" width="180" height="12" rx="3"/><path class="sorbo-drawing-element" d="M220,-26 C225,-4 238,4 250,8 L310,8 C322,4 335,-4 340,-26 Z"/><rect class="sorbo-drawing-capture" x="258" y="8" width="44" height="18" rx="3"/></g>`;
-  return `<section class="sorbo-design-drawings" aria-label="Current Parker LORD mount and arrangement drawings"><figure class="sorbo-design-drawing"><header><div><p class="eyebrow">Selected complete mount</p><h3>${esc(item.productNumber)} · ${esc(item.family)}</h3></div><span>${esc(item.elastomer)}</span></header><svg viewBox="0 0 560 270" role="img" aria-label="Schematic plan and section of Parker LORD AM mount"><text class="sorbo-drawing-view-label" x="140" y="28">PLAN</text><text class="sorbo-drawing-view-label" x="412" y="28">SECTION</text><line class="sorbo-drawing-centerline" x1="45" y1="130" x2="235" y2="130"/><line class="sorbo-drawing-centerline" x1="140" y1="38" x2="140" y2="222"/><circle class="sorbo-drawing-element" cx="140" cy="130" r="57"/><circle class="sorbo-drawing-bore" cx="140" cy="130" r="19"/><path class="sorbo-drawing-capture" d="M66 80 H214 V102 H192 V158 H214 V180 H66 V158 H88 V102 H66 Z"/><line class="sorbo-drawing-dimension" x1="66" y1="218" x2="214" y2="218"/><text class="sorbo-drawing-dim-label" x="140" y="243">Reference footprint ${fmt(envelope.footprint, 3)} in</text><rect class="sorbo-drawing-capture" x="336" y="85" width="152" height="14" rx="3"/><path class="sorbo-drawing-element" d="M356 99 C362 124 378 139 394 145 H430 C446 139 462 124 468 99 Z"/><rect class="sorbo-drawing-capture" x="390" y="145" width="44" height="30" rx="3"/><line class="sorbo-drawing-dimension" x1="516" y1="85" x2="516" y2="175"/><text class="sorbo-drawing-dim-label sorbo-drawing-vertical-label" x="540" y="130">H ${fmt(envelope.height, 3)} in</text><text class="sorbo-drawing-note" x="412" y="205">Body Ø ${fmt(envelope.bodyDiameter, 3)} in</text><text class="sorbo-drawing-note" x="412" y="224">Family envelope · schematic only</text></svg><figcaption>Reference-envelope schematic based on the catalog family drawing. Use the current Parker LORD procurement drawing for interfaces and tolerances.</figcaption></figure><figure class="sorbo-design-drawing"><header><div><p class="eyebrow">Installed support arrangement</p><h3>${pair ? 'Back-to-back pair' : 'Single complete mount'} · 1 of 4 points</h3></div><span>${pair ? '2 mounts / point' : '1 mount / point'}</span></header><svg viewBox="0 0 560 300" role="img" aria-label="Parker LORD mount installation arrangement"><line class="sorbo-drawing-centerline" x1="280" y1="20" x2="280" y2="280"/><rect class="sorbo-drawing-component" x="145" y="135" width="270" height="30" rx="3"/><text class="sorbo-drawing-component-label" x="280" y="154">ISOLATED COMPONENT PLATE</text>${pair ? `${mount(127, true)}${mount(173, false)}<rect class="sorbo-drawing-capture" x="170" y="52" width="220" height="14" rx="3"/><rect class="sorbo-drawing-capture" x="170" y="234" width="220" height="14" rx="3"/>` : `${mount(127, true)}<rect class="sorbo-drawing-capture" x="170" y="52" width="220" height="14" rx="3"/>`}<text class="sorbo-drawing-note" x="430" y="92">${pair ? 'Catalog-described pair:' : 'One complete bonded mount'}</text><text class="sorbo-drawing-note" x="430" y="110">${pair ? '2× capacity and rate' : 'per support point'}</text><text class="sorbo-drawing-note" x="430" y="228">${pair ? '8 mounts total' : '4 mounts total'}</text></svg><figcaption>${pair ? 'Two complete AM mounts are arranged back-to-back at each support point; the screening model doubles both rated capacity and dynamic spring rate.' : 'One complete AM mount supports each of the four component locations.'}</figcaption></figure></section>`;
+  return `<section class="sorbo-design-drawings" aria-label="Current Parker LORD mount and arrangement drawings"><figure class="sorbo-design-drawing"><header><div><p class="eyebrow">Selected complete mount</p><h3>${esc(item.productNumber)} · ${esc(item.family)}</h3></div><span>${esc(item.elastomer)}</span></header><svg viewBox="0 0 560 270" role="img" aria-label="Schematic plan and section of Parker LORD AM mount"><text class="sorbo-drawing-view-label" x="140" y="28">PLAN</text><text class="sorbo-drawing-view-label" x="412" y="28">SECTION</text><line class="sorbo-drawing-centerline" x1="45" y1="130" x2="235" y2="130"/><line class="sorbo-drawing-centerline" x1="140" y1="38" x2="140" y2="222"/><circle class="sorbo-drawing-element" cx="140" cy="130" r="57"/><circle class="sorbo-drawing-bore" cx="140" cy="130" r="19"/><path class="sorbo-drawing-capture" d="M66 80 H214 V102 H192 V158 H214 V180 H66 V158 H88 V102 H66 Z"/><line class="sorbo-drawing-dimension" x1="66" y1="218" x2="214" y2="218"/><text class="sorbo-drawing-dim-label" x="140" y="243">Reference footprint ${fmt(envelope.footprint, 3)} in</text><rect class="sorbo-drawing-capture" x="336" y="85" width="152" height="14" rx="3"/><path class="sorbo-drawing-element" d="M356 99 C362 124 378 139 394 145 H430 C446 139 462 124 468 99 Z"/><rect class="sorbo-drawing-capture" x="390" y="145" width="44" height="30" rx="3"/><line class="sorbo-drawing-dimension" x1="516" y1="85" x2="516" y2="175"/><text class="sorbo-drawing-dim-label sorbo-drawing-vertical-label" x="540" y="130">H ${fmt(envelope.height, 3)} in</text><text class="sorbo-drawing-note" x="412" y="205">Body Ø ${fmt(envelope.bodyDiameter, 3)} in</text><text class="sorbo-drawing-note" x="412" y="224">Family envelope · schematic only</text></svg><figcaption>Reference-envelope schematic based on the catalog family drawing. Use the current Parker LORD procurement drawing for interfaces and tolerances.</figcaption></figure><figure class="sorbo-design-drawing"><header><div><p class="eyebrow">Installed support arrangement</p><h3>${pair ? 'Back-to-back pair' : 'Single complete mount'} · 1 of ${config.mounts.count} points</h3></div><span>${pair ? '2 mounts / point' : '1 mount / point'}</span></header><svg viewBox="0 0 560 300" role="img" aria-label="Parker LORD mount installation arrangement"><line class="sorbo-drawing-centerline" x1="280" y1="20" x2="280" y2="280"/><rect class="sorbo-drawing-component" x="145" y="135" width="270" height="30" rx="3"/><text class="sorbo-drawing-component-label" x="280" y="154">ISOLATED COMPONENT PLATE</text>${pair ? `${mount(127, true)}${mount(173, false)}<rect class="sorbo-drawing-capture" x="170" y="52" width="220" height="14" rx="3"/><rect class="sorbo-drawing-capture" x="170" y="234" width="220" height="14" rx="3"/>` : `${mount(127, true)}<rect class="sorbo-drawing-capture" x="170" y="52" width="220" height="14" rx="3"/>`}<text class="sorbo-drawing-note" x="430" y="92">${pair ? 'Catalog-described pair:' : 'One complete bonded mount'}</text><text class="sorbo-drawing-note" x="430" y="110">${pair ? '2× capacity and rate' : 'per support point'}</text><text class="sorbo-drawing-note" x="430" y="228">${config.mounts.count * config.isolator.mountsPerPoint} mounts total</text></svg><figcaption>${pair ? 'Two complete AM mounts are arranged back-to-back at each support point; the screening model doubles both rated capacity and dynamic spring rate.' : `One complete AM mount supports each of the ${config.mounts.count} component locations.`}</figcaption></figure></section>`;
 }
 
 function explorerPanel(configInput = DEFAULT_SORBOTHANE_CONFIG, settingsInput = {}, catalogSettingsInput = {}) {
@@ -928,7 +960,7 @@ function assumptionsPanel(config, analysis) {
   const lord = isParkerLordConfig(config);
   const assumptions = lord ? [
     'Rigid component and base; linear, small-displacement six-DOF rigid-body response.',
-    'Four nominally identical support points with mount axial direction aligned to component Z and radial directions aligned to X/Y.',
+    `${config.mounts.count} nominally identical support points with mount axial direction aligned to component Z and radial directions aligned to X/Y.`,
     'Published Parker LORD axial and radial dynamic spring rates are used directly as frequency-independent complex stiffness for preliminary screening.',
     'The catalog rated-load natural frequency and spring rates are typical values at rated load, not guaranteed application-specific curves.',
     'The editable loss factor is either estimated from a typical catalog transmissibility curve or explicitly marked as an engineering assumption.',
@@ -939,7 +971,7 @@ function assumptionsPanel(config, analysis) {
   ] : [
     'Rigid component and isolated plate; rigid source/base plane.',
     'Linear, small-displacement six-DOF rigid-body response about the preloaded equilibrium.',
-    'Four nominally identical mount locations; mount stiffness axes align with component X/Y/Z.',
+    `${config.mounts.count} nominally identical mount locations; mount stiffness axes align with component X/Y/Z.`,
     'No bolt, sleeve, washer, or capture-hardware short circuit across the isolated plate.',
     'Upper and lower Sorbothane stacks remain engaged; contact loss invalidates the linear sandwich model.',
     'Storage modulus and tan delta are frequency dependent. Static load/deflection is kept separate from incremental dynamic stiffness.',
@@ -971,7 +1003,7 @@ export function renderSorbothaneIsolationWorkbench(configInput = null, explorerS
   const analysis = analyzeSorbothaneIsolation(config);
   const lord = isParkerLordConfig(config);
   return `<div class="page-shell sorbo-workbench" data-sorbothane-workbench><nav class="breadcrumbs site-breadcrumbs" aria-label="Breadcrumb"><a href="#/tools">Tools</a><span aria-hidden="true">›</span><span>Dynamics</span><span aria-hidden="true">›</span><span aria-current="page">6-DOF Isolation Designer</span></nav>
-    <section class="sorbo-hero"><div><p class="eyebrow">Aerospace component isolation · Engineering workbench</p><h1>Place the resonance deliberately.<br><span>See what gets through.</span></h1><p>Design a four-point ${lord ? 'Parker LORD complete-mount' : 'captured Sorbothane'} system with source-traceable catalog properties, full rigid-body coupling, complex frequency response, static load checks, and inspectable trade studies.</p></div><aside><strong data-sorbo-hero-mode>${fmt(analysis.modes.find(mode => mode.dominantIndex === 2)?.frequencyHz ?? analysis.modes[2].frequencyHz, 1)} Hz</strong><span>vertical bounce</span><b data-sorbo-hero-status class="${analysis.passes ? 'pass-text' : 'fail-text'}">${analysis.passes ? 'DEFINED REQUIREMENTS PASS' : 'DESIGN REVIEW REQUIRED'}</b><small>${lord ? 'Catalog spring rates are typical; damping and frequency dependence remain visible screening assumptions.' : 'Manufacturer curves end at 300 Hz; 600-2000 Hz uses the selected visible assumption.'}</small></aside></section>
+    <section class="sorbo-hero"><div><p class="eyebrow">Aerospace component isolation · Engineering workbench</p><h1>Place the resonance deliberately.<br><span>See what gets through.</span></h1><p data-sorbo-hero-description>Design ${config.mounts.count === 8 ? 'an' : 'a'} ${config.mounts.count}-leg ${lord ? 'Parker LORD complete-mount' : 'captured Sorbothane'} system with source-traceable catalog properties, full rigid-body coupling, complex frequency response, static load checks, and inspectable trade studies.</p></div><aside><strong data-sorbo-hero-mode>${fmt(analysis.modes.find(mode => mode.dominantIndex === 2)?.frequencyHz ?? analysis.modes[2].frequencyHz, 1)} Hz</strong><span>vertical bounce</span><b data-sorbo-hero-status class="${analysis.passes ? 'pass-text' : 'fail-text'}">${analysis.passes ? 'DEFINED REQUIREMENTS PASS' : 'DESIGN REVIEW REQUIRED'}</b><small>${lord ? 'Catalog spring rates are typical; damping and frequency dependence remain visible screening assumptions.' : 'Manufacturer curves end at 300 Hz; 600-2000 Hz uses the selected visible assumption.'}</small></aside></section>
     ${exportControls()}
     <section class="sorbo-shell">${inputSidebar(config)}<main class="sorbo-main"><nav class="sorbo-tabs" role="tablist">${[['overview', 'Overview'], ['modes', 'Modes'], ['transmissibility', 'Transmissibility'], ['sorbothane', 'Isolator'], ['explorer', 'Design Explorer'], ['assumptions', 'Assumptions / Validation']].map(([id, label], index) => `<button type="button" role="tab" data-sorbo-tab="${id}" class="${index === 0 ? 'active' : ''}">${label}</button>`).join('')}</nav><div data-sorbo-panels>${overviewPanel(config, analysis)}${modesPanel(config, analysis)}${transmissibilityPanel(analysis)}${sorbothanePanel(config, analysis)}${explorerPanel(config, explorerSettingsInput, catalogSettingsInput)}${assumptionsPanel(config, analysis)}</div></main></section>
     <div class="sorbo-live" aria-live="polite" data-sorbo-live></div></div>`;
@@ -1005,8 +1037,8 @@ export function engineeringReport(analysis) {
   const responsePoint = RESPONSE_POINT_CHOICES.find(choice => choice.value === config.analysis.responsePoint) ?? RESPONSE_POINT_CHOICES[0];
   const hardware = lord ? parkerLordCatalogItem(config.isolator.productNumber) : sorbothaneCatalogItem(config.isolator.productNumber);
   const hardwareSummary = lord
-    ? `- Isolator: Parker LORD ${hardware.productNumber}; ${hardware.family}; ${hardware.elastomer}\n- Catalog rates: ${hardware.dynamicAxialSpringRateLbPerIn} lb/in axial; ${hardware.dynamicRadialSpringRateLbPerIn} lb/in radial; rated load ${hardware.ratedLoadLb} lbf / mount\n- Arrangement: ${config.isolator.mountsPerPoint === 2 ? 'back-to-back pair' : 'single mount'} at each of four support points\n- Screening loss factor: ${fmt(config.isolator.lordLossFactor * config.isolator.lossScale, 3)} (${hardware.lossFactorProvenance})`
-    : `- Isolator: ${config.isolator.productNumber}; ${config.isolator.durometer} Shore 00; OD ${fmt(config.isolator.odM / INCH, 3)} in; ID ${fmt(config.isolator.idM / INCH, 3)} in; t ${fmt(config.isolator.thicknessM / INCH, 3)} in\n- Material formulation: ${sorbothaneMaterial(config.isolator.formulation).label}\n- Stack: ${config.mounts.stackTop} upper / ${config.mounts.stackBottom} lower elements per mount; four mounts\n- Nominal compression: ${fmt(analysis.preload.compressionPct, 2)}%; preload ${fmt(analysis.preload.preloadN / LBF, 3)} lbf per element\n- Shape factor: ${fmt(analysis.geometry.shapeFactor, 4)}; ${analysis.geometry.equation}\n- Above-300-Hz material assumption: ${config.isolator.extrapolation}`;
+    ? `- Isolator: Parker LORD ${hardware.productNumber}; ${hardware.family}; ${hardware.elastomer}\n- Catalog rates: ${hardware.dynamicAxialSpringRateLbPerIn} lb/in axial; ${hardware.dynamicRadialSpringRateLbPerIn} lb/in radial; rated load ${hardware.ratedLoadLb} lbf / mount\n- Arrangement: ${config.isolator.mountsPerPoint === 2 ? 'back-to-back pair' : 'single mount'} at each of ${config.mounts.count} support points\n- Screening loss factor: ${fmt(config.isolator.lordLossFactor * config.isolator.lossScale, 3)} (${hardware.lossFactorProvenance})`
+    : `- Isolator: ${config.isolator.productNumber}; ${config.isolator.durometer} Shore 00; OD ${fmt(config.isolator.odM / INCH, 3)} in; ID ${fmt(config.isolator.idM / INCH, 3)} in; t ${fmt(config.isolator.thicknessM / INCH, 3)} in\n- Material formulation: ${sorbothaneMaterial(config.isolator.formulation).label}\n- Stack: ${config.mounts.stackTop} upper / ${config.mounts.stackBottom} lower elements per mount; ${config.mounts.count} mounts\n- Nominal compression: ${fmt(analysis.preload.compressionPct, 2)}%; preload ${fmt(analysis.preload.preloadN / LBF, 3)} lbf per element\n- Shape factor: ${fmt(analysis.geometry.shapeFactor, 4)}; ${analysis.geometry.equation}\n- Above-300-Hz material assumption: ${config.isolator.extrapolation}`;
   const reportSources = lord
     ? `- ${PARKER_LORD_SOURCE.title} (${PARKER_LORD_SOURCE.document}): ${PARKER_LORD_SOURCE.url}`
     : SORBOTHANE_REFERENCES.map(reference => `- ${reference.title} (${reference.revision}): ${reference.url}`).join('\n');
@@ -1019,6 +1051,8 @@ Generated: ${new Date().toISOString()}
 - Mass: ${fmt(config.component.massKg / LB, 3)} lbm (${fmt(config.component.massKg, 3)} kg)
 - Component: ${config.component.dimensionsM.map(value => fmt(value / INCH, 3)).join(' × ')} in
 - CG: ${config.component.cgM.map(value => fmt(value / INCH, 3)).join(', ')} in from the component footprint-center / plate coordinate origin
+- Support layout: ${config.mounts.count} legs, ${config.mounts.count / 2} on each ${config.mounts.rowAxis === 'x' ? 'Y' : 'X'} side, equally spaced along ${config.mounts.rowAxis.toUpperCase()}
+- X / Y footprint extents: ${config.mounts.spacingM.map(value => fmt(value / INCH, 3)).join(' / ')} in
 ${hardwareSummary}
 - Transmissibility response location: ${responsePoint.label}
 
@@ -1045,7 +1079,7 @@ ${commentary(analysis).replaceAll(/<\/?p>/g, '').split('\n').join('\n\n')}
 
 ${analysis.warnings.length ? analysis.warnings.map(warning => `- ${warning}`).join('\n') : '- No active numerical warnings. The stated model limitations still apply.'}
 
-- Rigid component and base, linear small motion, four identical mounts, no hardware short circuit.
+- Rigid component and base, linear small motion, ${config.mounts.count} identical mounts, no hardware short circuit.
 - Static load, dynamic stiffness, modal frequency, damping, and base transmissibility remain separate quantities.
 - ${lord ? 'Published mount spring rates and estimated loss factor require application-level test correlation.' : 'The 600-2000 Hz predictions require component-level test validation because manufacturer property curves end at 300 Hz.'}
 
@@ -1156,7 +1190,9 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
     updateVisibility();
     syncSidebarControls();
     const heroMode = shell.querySelector('[data-sorbo-hero-mode]');
+    const heroDescription = shell.querySelector('[data-sorbo-hero-description]');
     const heroStatus = shell.querySelector('[data-sorbo-hero-status]');
+    if (heroDescription) heroDescription.textContent = `Design ${config.mounts.count === 8 ? 'an' : 'a'} ${config.mounts.count}-leg ${isParkerLordConfig(config) ? 'Parker LORD complete-mount' : 'captured Sorbothane'} system with source-traceable catalog properties, full rigid-body coupling, complex frequency response, static load checks, and inspectable trade studies.`;
     if (heroMode) heroMode.textContent = `${fmt(analysis.modes.find(mode => mode.dominantIndex === 2)?.frequencyHz ?? analysis.modes[2].frequencyHz, 1)} Hz`;
     if (heroStatus) {
       heroStatus.textContent = analysis.passes ? 'DEFINED REQUIREMENTS PASS' : 'DESIGN REVIEW REQUIRED';
@@ -1342,7 +1378,7 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
       save();
       const model = refreshNastranExport();
       const live = shell.querySelector('[data-sorbo-live]');
-      if (live) live.textContent = `NASTRAN export updated. ${model.counts.cquad4} CQUAD4 elements and four CBUSH isolators.`;
+      if (live) live.textContent = `NASTRAN export updated. ${model.counts.cquad4} CQUAD4 elements and ${model.counts.cbush} CBUSH isolators.`;
     }));
     shell.querySelector('[data-sorbo-action="export-nastran-bdf"]')?.addEventListener('click', () => {
       const model = refreshNastranExport();
@@ -1673,6 +1709,8 @@ export const sorbothaneIsolationCalculator = {
   confidence: 'Source-traceable screening model requiring hardware test correlation',
   inputs: [
     { key: 'mass_lb', label: 'Component mass', unit: 'lbm', type: 'number', default: 10, min: 0.1 },
+    { key: 'leg_count', label: 'Isolation legs', type: 'select', default: 4, options: [[4, '4 legs · 2 on each side'], [8, '8 legs · 4 on each side']] },
+    { key: 'row_axis', label: 'Row direction', type: 'select', default: 'x', options: [['x', 'Along X · on ±Y sides'], ['y', 'Along Y · on ±X sides']] },
     { key: 'od_in', label: 'Ring OD', unit: 'in', type: 'number', default: 1.25, min: 0.1 },
     { key: 'id_in', label: 'Ring ID', unit: 'in', type: 'number', default: 0.50, min: 0 },
     { key: 'thickness_in', label: 'Element thickness', unit: 'in', type: 'number', default: 0.25, min: 0.01 },
@@ -1683,6 +1721,8 @@ export const sorbothaneIsolationCalculator = {
   compute(values) {
     const config = deepClone(DEFAULT_SORBOTHANE_CONFIG);
     config.component.massKg = Number(values.mass_lb) * LB;
+    config.mounts.count = Number(values.leg_count) === 8 ? 8 : 4;
+    config.mounts.rowAxis = values.row_axis === 'y' ? 'y' : 'x';
     config.isolator.odM = Number(values.od_in) * INCH;
     config.isolator.idM = Number(values.id_in) * INCH;
     config.isolator.thicknessM = Number(values.thickness_in) * INCH;
@@ -1707,7 +1747,7 @@ export const sorbothaneIsolationCalculator = {
         engineeringConsiderations: ['Manufacturer dynamic-property curves end at 300 Hz; high-frequency attenuation requires an explicit extrapolation and shaker-test validation.']
       },
       assumptions: {
-        satisfied: ['Rigid component and base.', 'Four symmetric mounts.', 'Linear viscoelastic small-motion response.'],
+        satisfied: ['Rigid component and base.', `${config.mounts.count} symmetric mounts.`, 'Linear viscoelastic small-motion response.'],
         warnings: alerts,
         alerts,
         limitations: [
@@ -1734,7 +1774,7 @@ export const sorbothaneIsolationCalculator = {
     };
   },
   theory: '<p>The full workbench assembles frequency-dependent complex mount stiffness into a 6×6 rigid-body model. This quick screen exposes only the baseline geometry; use the guided view for complete design work.</p>',
-  assumptions: ['Rigid component and base.', 'Four identical captured sandwich mounts.', 'Manufacturer curves through 300 Hz; explicit assumptions above that limit.'],
+  assumptions: ['Rigid component and base.', 'Four or eight identical captured sandwich mounts.', 'Manufacturer curves through 300 Hz; explicit assumptions above that limit.'],
   references: SORBOTHANE_REFERENCES.map(reference => ({ title: reference.title, note: `${reference.organization} · ${reference.revision} · ${reference.url}` }))
 };
 

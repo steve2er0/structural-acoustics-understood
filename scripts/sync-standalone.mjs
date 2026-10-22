@@ -102,7 +102,7 @@ const sorbothaneDataBlock = 'const __sorbothaneData=(()=>{\n'+moduleSource(sorbo
 const parkerLordIsolatorsBlock = 'const __parkerLordIsolators=(()=>{\n'+moduleSource(parkerLordIsolatorsModule)+'\nreturn {PARKER_LORD_SOURCE,PARKER_LORD_AM_FAMILIES,PARKER_LORD_AM_CATALOG,parkerLordCatalogItem,parkerLordLossFactorForProduct};\n})();\n\n';
 const sorbothaneAnalysisExports = [
   'DEFAULT_SORBOTHANE_CONFIG', 'NASTRAN_PLATE_MATERIALS', 'normalizeSorbothaneConfig', 'isParkerLordConfig', 'sorbothaneDynamicProperties', 'isolatorDynamicProperties',
-  'isolatorGeometry', 'staticPreloadState', 'rigidBodyMassMatrix', 'mountDynamicStiffness',
+  'isolationMountCoordinates', 'isolatorGeometry', 'staticPreloadState', 'rigidBodyMassMatrix', 'mountDynamicStiffness',
   'assembleRigidBodyStiffness', 'solveRigidBodyModes', 'rigidBodyResponseAtFrequency',
   'frequencyResponse', 'uncertaintyEnvelope', 'analyzeSorbothaneIsolation', 'runDesignGrid',
   'screenSorbothaneCatalog', 'screenSorbothaneCatalogAsync', 'screenParkerLordCatalog', 'screenParkerLordCatalogAsync',
@@ -110,7 +110,7 @@ const sorbothaneAnalysisExports = [
 ];
 const sorbothaneAnalysisImports = sorbothaneAnalysisExports.filter(name => name !== 'SORBOTHANE_CATALOG');
 const sorbothaneAnalysisBlock = `const __sorbothaneAnalysis=(()=>{\nconst {SORBOTHANE_CATALOG,sorbothaneCatalogItem,sorbothaneMaterial}=__sorbothaneData;\nconst {PARKER_LORD_AM_CATALOG,parkerLordCatalogItem}=__parkerLordIsolators;\n${moduleSource(sorbothaneAnalysisModule)}\nreturn {${sorbothaneAnalysisExports.join(',')}};\n})();\n\n`;
-const nastranIsolationExportBlock = `const __nastranIsolationExport=(()=>{\nconst {isParkerLordConfig,mountDynamicStiffness,normalizeSorbothaneConfig,rigidBodyMassMatrix,solveRigidBodyModes}=__sorbothaneAnalysis;\n${moduleSource(nastranIsolationExportModule)}\nreturn {NASTRAN_IPS_UNITS,nastranExportSettings,generateNastranIsolationBdf};\n})();\n\n`;
+const nastranIsolationExportBlock = `const __nastranIsolationExport=(()=>{\nconst {isolationMountCoordinates,isParkerLordConfig,mountDynamicStiffness,normalizeSorbothaneConfig,rigidBodyMassMatrix,solveRigidBodyModes}=__sorbothaneAnalysis;\n${moduleSource(nastranIsolationExportModule)}\nreturn {NASTRAN_IPS_UNITS,nastranExportSettings,generateNastranIsolationBdf};\n})();\n\n`;
 const workflowExpansionDataBlock = 'const __workflowExpansionData=(()=>{\n'+moduleSource(workflowExpansionDataModule)+'\nreturn {workflowExpansionSections,workflowExpansionToolCatalog,workflowExpansionDemos,workflowExpansionCaseNotes,workflowExpansionReferenceGroups};\n})();\n\n';
 const programExpansionDataBlock = 'const __programExpansionData=(()=>{\n'+moduleSource(programExpansionDataModule)+'\nreturn {programExpansionSections,programExpansionToolCatalog,programExpansionDemos,programExpansionCaseNotes,programExpansionReferenceGroups};\n})();\n\n';
 const electronicsFatigueDataBlock = 'const __electronicsFatigueData=(()=>{\n'+moduleSource(electronicsFatigueDataModule)+'\nreturn {electronicsFatigueSections,electronicsFatigueToolCatalog,electronicsFatigueDemos,electronicsFatigueCaseNotes,electronicsFatigueReferenceGroups};\n})();\n\n';

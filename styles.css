@@ -980,6 +980,16 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
 .sorbo-current-design strong { color: #cde7f7; font-size: .65rem; font-weight: 580; }
 .sorbo-current-design button { min-height: 42px; white-space: nowrap; }
 .sorbo-design-drawings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin: 0 0 .85rem; }
+.sorbo-design-drawing.sorbo-support-footprint { margin-bottom: .85rem; }
+.sorbo-design-drawing.sorbo-support-footprint svg { aspect-ratio: 560 / 300; }
+.sorbo-support-footprint .sorbo-support-number { fill: #deebf5; font: 600 15px var(--mono); text-anchor: middle; }
+.sorbo-support-footprint .sorbo-drawing-note,
+.sorbo-support-footprint .sorbo-drawing-dim-label,
+.sorbo-support-footprint .sorbo-drawing-component-label { font-size: 12px; }
+html[data-theme="light"] .sorbo-support-footprint > header h3 { color: #243e50; }
+html[data-theme="light"] .sorbo-support-footprint > header > span { color: #36596b; border-color: #b3c9d5; }
+html[data-theme="light"] .sorbo-support-footprint .sorbo-support-number,
+html[data-theme="light"] .sorbo-support-footprint .sorbo-drawing-component-label { fill: #243e50; }
 .sorbo-design-drawing { min-width: 0; margin: 0; overflow: hidden; border: 1px solid rgba(130, 178, 215, .17); border-radius: 3px; background: rgba(3, 17, 30, .66); }
 .sorbo-design-drawing > header { display: flex; align-items: start; justify-content: space-between; gap: .7rem; padding: .75rem .85rem .55rem; border-bottom: 1px solid rgba(130, 178, 215, .11); }
 .sorbo-design-drawing > header .eyebrow { margin: 0 0 .14rem; color: #6689a3; font-size: .43rem; }
@@ -4702,6 +4712,19 @@ body.site-system-subject #main-content {
   html[data-theme="light"] :is(.sorbo-response-location, .sorbo-response-options button, .sorbo-mode-card, .sorbo-mode-selector button, .sorbo-explorer-controls, .sorbo-catalog-controls, .sorbo-catalog-criteria, .sorbo-tone-criterion, .sorbo-catalog-summary span, .sorbo-current-design, .sorbo-validation-grid article, .sorbo-nastran-controls > label, .sorbo-nastran-controls > span > label) { color: #29383f; border-color: rgba(48, 75, 87, .2); background: #faf8f2; }
   html[data-theme="light"] :is(.sorbo-response-options button:hover, .sorbo-mode-selector button:hover, .sorbo-mode-card:hover) { color: #172027; border-color: rgba(23, 107, 139, .46); background: #fff; }
   html[data-theme="light"] :is(.sorbo-response-options button.active, .sorbo-mode-selector button.active) { color: #fff; border-color: #425fc4; background: #425fc4; }
+  html[data-theme="light"] .sorbo-workbench :is(.sorbo-response-options button.active, .sorbo-mode-selector button.active) :is(b, span) { color: inherit; }
+  html[data-theme="light"] :is(.sorbo-mode-dashboard h2, .sorbo-mode-card strong, .sorbo-mode-card p) { color: var(--sorbo-text); }
+  html[data-theme="light"] :is(.sorbo-mode-dashboard > header > p, .sorbo-mode-card > span, .sorbo-mode-card strong small, .sorbo-mode-card em) { color: var(--sorbo-muted); }
+  html[data-theme="light"] .sorbo-mode-dashboard .eyebrow { color: var(--sorbo-cyan); }
+  html[data-theme="light"] .sorbo-mode-card.is-pass { border-top-color: var(--sorbo-teal); }
+  html[data-theme="light"] .sorbo-mode-card.is-review { border-top-color: var(--sorbo-red); }
+  html[data-theme="light"] .sorbo-chart text { fill: var(--sorbo-muted); }
+  html[data-theme="light"] .sorbo-frequency-marker text { fill: var(--sorbo-text); }
+  html[data-theme="light"] .sorbo-frequency-marker line { stroke: rgba(48, 75, 87, .45); }
+  html[data-theme="light"] .sorbo-mode-marker.is-rotation line { stroke: #627178; }
+  html[data-theme="light"] .sorbo-axis-label { fill: var(--sorbo-muted) !important; }
+  html[data-theme="light"] .sorbo-chart-tooltip rect { fill: var(--sorbo-panel-solid); stroke: var(--sorbo-muted); }
+  html[data-theme="light"] .sorbo-chart-tooltip text { fill: var(--sorbo-text); }
   html[data-theme="light"] .sorbo-workbench table { color: #29383f; }
   html[data-theme="light"] :is(.sorbo-workbench th, .sorbo-field em, .sorbo-caption, .sorbo-card > small, .sorbo-plot-notes span) { color: #68777d; }
   html[data-theme="light"] :is(.sorbo-design-drawing, .sorbo-design-drawing svg) { border-color: rgba(48, 75, 87, .2); background: #edf3f5; }

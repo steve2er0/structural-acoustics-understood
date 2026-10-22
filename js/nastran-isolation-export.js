@@ -1,4 +1,5 @@
 import {
+  isolationMountCoordinates,
   isParkerLordConfig,
   mountDynamicStiffness,
   normalizeSorbothaneConfig,
@@ -85,9 +86,8 @@ export function generateNastranIsolationBdf(configInput, analysisInput = null) {
   const plateWidthIn = config.component.dimensionsM[1] * inchPerM;
   const plateZIn = config.mounts.planeZM * inchPerM;
   const cgIn = config.component.cgM.map(value => value * inchPerM);
-  const mountSpacingIn = config.mounts.spacingM.map(value => value * inchPerM);
   const attachmentSpacingIn = [...settings.attachmentSpacingIn];
-  const mountCoordinates = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sy]) => [sx * mountSpacingIn[0] / 2, sy * mountSpacingIn[1] / 2]);
+  const mountCoordinates = isolationMountCoordinates(config).map(point => point.slice(0, 2).map(value => value * inchPerM));
   const attachmentCoordinates = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sy]) => [sx * attachmentSpacingIn[0] / 2, sy * attachmentSpacingIn[1] / 2]);
   const xCoordinates = axisCoordinates(plateLengthIn / 2, settings.meshX, [...mountCoordinates, ...attachmentCoordinates].map(point => point[0]));
   const yCoordinates = axisCoordinates(plateWidthIn / 2, settings.meshY, [...mountCoordinates, ...attachmentCoordinates].map(point => point[1]));
@@ -149,7 +149,7 @@ export function generateNastranIsolationBdf(configInput, analysisInput = null) {
   if (!isParkerLordConfig(config)) warnings.push(`Sorbothane PBUSH stiffness is frozen at ${referenceFrequencyHz.toFixed(2)} Hz; one SOL 103 property cannot reproduce the browser model's frequency-dependent modulus at every mode.`);
   if (settings.coupling === 'rbe2') warnings.push('RBE2 makes the four box attachment grids rigid relative to the CG and may increase the apparent plate stiffness.');
   const coincidentAttachmentCount = attachmentCoordinates.filter(([x, y]) => mountCoordinates.some(([mx, my]) => Math.abs(x - mx) < 1e-8 && Math.abs(y - my) < 1e-8)).length;
-  if (coincidentAttachmentCount === 4) warnings.push('The box attachment footprint coincides with all four isolator grids, so the plate is largely bypassed in the rigid-body load path.');
+  if (coincidentAttachmentCount === attachmentCoordinates.length) warnings.push('All four box attachment grids coincide with isolator grids, so the plate is bypassed at those attachment locations.');
 
   const lines = [
     'SOL 103',
@@ -170,6 +170,7 @@ export function generateNastranIsolationBdf(configInput, analysisInput = null) {
     comment('PBUSH K1/K2/K3: LBF/IN IN BASIC X/Y/Z. PBUSH GE: DIMENSIONLESS LOSS FACTOR.'),
     comment(`SOURCE CONFIGURATION: ${config.isolator.productNumber}; ${isParkerLordConfig(config) ? 'PARKER LORD COMPLETE MOUNT' : `CAPTURED ${config.isolator.formulation === 'water-resistant' ? 'WATER-RESISTANT' : 'STANDARD'} SORBOTHANE ELEMENT`}.`),
     comment(`BROWSER RIGID-BODY MODES (HZ): ${modal.modes.map(mode => mode.frequencyHz.toFixed(4)).join(', ')}.`),
+    comment(`SUPPORT LAYOUT: ${config.mounts.count} LEGS, ${config.mounts.count / 2} PER SIDE; EQUALLY SPACED ALONG ${config.mounts.rowAxis.toUpperCase()} ON THE -${config.mounts.rowAxis === 'x' ? 'Y' : 'X'} AND +${config.mounts.rowAxis === 'x' ? 'Y' : 'X'} SIDES.`),
     comment(`PBUSH STIFFNESS REFERENCE FREQUENCY: ${referenceFrequencyHz.toFixed(6)} HZ (${settings.stiffnessReferenceMode}).`),
     comment(`PLATE MATERIAL: ${settings.plateMaterial.toUpperCase()}; E = ${settings.plateYoungsModulusPsi.toExponential(7)} PSI; NU = ${settings.platePoisson}; RHO = ${settings.plateDensitySlinchPerIn3.toExponential(7)} SLINCH/IN^3.`),
     comment(`MASS ACCOUNTING: ${settings.massAccounting}. BOX CONM2 = ${boxMassSlinch.toExponential(7)} SLINCH; INCLUDED PLATE = ${includedPlateMassSlinch.toExponential(7)} SLINCH.`),
@@ -197,10 +198,12 @@ export function generateNastranIsolationBdf(configInput, analysisInput = null) {
   } else {
     lines.push(card('RBE2', rbeId, cgGridId, 123456, ...attachmentGridIds));
   }
-  lines.push(comment('FOUR ZERO-LENGTH CBUSHES TO FIXED BASE GRIDS; CID=0 ALIGNS K1/K2/K3 WITH BASIC X/Y/Z.'));
+  lines.push(comment(`${mountGridIds.length} ZERO-LENGTH CBUSHES TO FIXED BASE GRIDS; CID=0 ALIGNS K1/K2/K3 WITH BASIC X/Y/Z.`));
   groundGrids.forEach(grid => lines.push(card('GRID', grid.id, '', grid.x, grid.y, grid.z)));
-  mountGridIds.forEach((topGridId, index) => lines.push(card('CBUSH', 4001 + index, pbushId, topGridId, groundGrids[index].id, '', '', '', 0)));
-  lines.push(card('SPC1', 1, 123456, ...groundGrids.map(grid => grid.id)));
+  const firstBushId = Math.max(4001, nextQuadId);
+  mountGridIds.forEach((topGridId, index) => lines.push(card('CBUSH', firstBushId + index, pbushId, topGridId, groundGrids[index].id, '', '', '', 0)));
+  const groundGridIds = groundGrids.map(grid => grid.id);
+  lines.push(...wrapContinuation('SPC1', [1, 123456, ...groundGridIds.slice(0, 6)], groundGridIds.slice(6)));
   lines.push('ENDDATA');
 
   const deck = `${lines.join('\n')}\n`;
@@ -213,7 +216,7 @@ export function generateNastranIsolationBdf(configInput, analysisInput = null) {
     counts: {
       grids: grids.length + groundGrids.length + 1,
       cquad4: quads.length,
-      cbush: 4,
+      cbush: mountGridIds.length,
       conm2: 1,
       rbe2: settings.coupling === 'rbe2' ? 1 : 0,
       rbe3: settings.coupling === 'rbe3' ? 1 : 0

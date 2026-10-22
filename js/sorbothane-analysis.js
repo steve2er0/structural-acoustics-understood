@@ -35,6 +35,7 @@ export const DEFAULT_SORBOTHANE_CONFIG = {
   },
   mounts: {
     count: 4,
+    rowAxis: 'x',
     spacingM: [8.5 * INCH, 6.5 * INCH],
     planeZM: 0,
     stackTop: 1,
@@ -123,6 +124,8 @@ export function normalizeSorbothaneConfig(input = {}) {
   config.component.cgM = [...(source.component?.cgM ?? config.component.cgM)].map((value, index) => finite(value, config.component.cgM[index]));
   config.component.inertiaKgM2 = [...(source.component?.inertiaKgM2 ?? config.component.inertiaKgM2)].map((value, index) => finite(value, config.component.inertiaKgM2[index]));
   config.component.massKg = Math.max(finite(config.component.massKg, DEFAULT_SORBOTHANE_CONFIG.component.massKg), 1e-6);
+  config.mounts.count = Number(config.mounts.count) === 8 ? 8 : 4;
+  if (!['x', 'y'].includes(config.mounts.rowAxis)) config.mounts.rowAxis = 'x';
   config.mounts.spacingM = [...(source.mounts?.spacingM ?? config.mounts.spacingM)].map((value, index) => Math.max(finite(value, config.mounts.spacingM[index]), 1e-5));
   config.mounts.stackTop = Math.max(1, Math.round(finite(config.mounts.stackTop, 1)));
   config.mounts.stackBottom = Math.max(1, Math.round(finite(config.mounts.stackBottom, 1)));
@@ -357,16 +360,26 @@ function compressionForPreload(config, preloadN) {
   return (low + high) / 2;
 }
 
-function mountPositions(config) {
+export function isolationMountCoordinates(configInput) {
+  const config = normalizeSorbothaneConfig(configInput);
   const [spacingX, spacingY] = config.mounts.spacingM;
-  const [cgX, cgY, cgZ] = config.component.cgM;
-  const plane = config.mounts.planeZM;
-  return [
-    [-spacingX / 2 - cgX, -spacingY / 2 - cgY, plane - cgZ],
-    [ spacingX / 2 - cgX, -spacingY / 2 - cgY, plane - cgZ],
-    [ spacingX / 2 - cgX,  spacingY / 2 - cgY, plane - cgZ],
-    [-spacingX / 2 - cgX,  spacingY / 2 - cgY, plane - cgZ]
+  const perSide = config.mounts.count / 2;
+  const alongY = config.mounts.rowAxis === 'y';
+  const rowSpan = alongY ? spacingY : spacingX;
+  // Number each row in sequence; the default X rows retain the original corner numbering.
+  const row = Array.from({ length: perSide }, (_, index) => -rowSpan / 2 + index * rowSpan / (perSide - 1));
+  if (alongY) return [
+    ...row.map(y => [-spacingX / 2, y, config.mounts.planeZM]),
+    ...[...row].reverse().map(y => [spacingX / 2, y, config.mounts.planeZM])
   ];
+  return [
+    ...row.map(x => [x, -spacingY / 2, config.mounts.planeZM]),
+    ...[...row].reverse().map(x => [x, spacingY / 2, config.mounts.planeZM])
+  ];
+}
+
+function mountPositions(config) {
+  return isolationMountCoordinates(config).map(point => point.map((value, axis) => value - config.component.cgM[axis]));
 }
 
 function inverse(matrix) {
@@ -546,7 +559,7 @@ export function mountDynamicStiffness(configInput, frequencyHz) {
       mountItem: item,
       sandwichRule: config.isolator.mountsPerPoint === 2
         ? 'Two complete AM mounts are installed back-to-back at each support point; catalog capacity and spring rate are doubled.'
-        : 'One complete AM mount is installed at each of the four support points.'
+        : `One complete AM mount is installed at each of the ${config.mounts.count} support points.`
     };
   }
   const geometry = isolatorGeometry(config);
@@ -1172,6 +1185,8 @@ function finalizeCatalogScreen(context, evaluated, exclusions) {
   nearMisses.sort((left, right) => left.score - right.score || left.stackCount - right.stackCount);
   return {
     library: 'sorbothane',
+    supportCount: context.config.mounts.count,
+    rowAxis: context.config.mounts.rowAxis,
     formulation: context.config.isolator.formulation,
     settings: { geometry: context.geometry, odRange: context.odRange, idRange: context.idRange, thicknessRange: context.thicknessRange, stackRange: [context.stackMin, context.stackMax] },
     criteria: context.criteria,
@@ -1316,6 +1331,8 @@ function finalizeParkerLordScreen(context, evaluated, exclusions) {
   nearMisses.sort((left, right) => left.score - right.score || left.mountsPerPoint - right.mountsPerPoint);
   return {
     library: 'parker-lord-am',
+    supportCount: context.config.mounts.count,
+    rowAxis: context.config.mounts.rowAxis,
     settings: { family: context.family, elastomer: context.elastomer, ratedLoadRange: context.ratedLoadRange, mountsPerPointRange: [context.mountMin, context.mountMax] },
     criteria: context.criteria,
     catalogPartCount: PARKER_LORD_AM_CATALOG.length,

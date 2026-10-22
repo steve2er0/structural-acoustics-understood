@@ -1831,6 +1831,28 @@ test('light and dark themes are selectable, persistent, and standalone-safe',()=
   assert.match(sync,/const themeBootstrap = index\.match/);
 });
 
+test('isolation mode readouts use contrasting light-theme text, including selected frequencies',()=>{
+  const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+  const lightPalette=css.match(/html\[data-theme="light"\] :is\(\.sorbo-workbench, \.capstone-workbench, \.engineering-analysis\)\s*\{([^}]+)\}/)?.[1];
+  assert.ok(lightPalette);
+  assert.match(css,/html\[data-theme="light"\] :is\(\.sorbo-mode-dashboard h2, \.sorbo-mode-card strong, \.sorbo-mode-card p\)\s*\{ color: var\(--sorbo-text\); \}/);
+  assert.match(css,/html\[data-theme="light"\] :is\(\.sorbo-mode-dashboard > header > p, \.sorbo-mode-card > span, \.sorbo-mode-card strong small, \.sorbo-mode-card em\)\s*\{ color: var\(--sorbo-muted\); \}/);
+  assert.match(css,/html\[data-theme="light"\] \.sorbo-workbench :is\(\.sorbo-response-options button.active, \.sorbo-mode-selector button.active\) :is\(b, span\)\s*\{ color: inherit; \}/);
+  assert.match(css,/html\[data-theme="light"\] \.sorbo-frequency-marker text\s*\{ fill: var\(--sorbo-text\); \}/);
+  assert.match(css,/html\[data-theme="light"\] \.sorbo-axis-label\s*\{ fill: var\(--sorbo-muted\) !important; \}/);
+  const luminance=hex=>{
+    const channels=hex.replace('#','').match(/../g).map(value=>parseInt(value,16)/255).map(value=>value<=.04045?value/12.92:((value+.055)/1.055)**2.4);
+    return channels[0]*.2126+channels[1]*.7152+channels[2]*.0722;
+  };
+  const contrast=(fg,bg)=>(Math.max(luminance(fg),luminance(bg))+.05)/(Math.min(luminance(fg),luminance(bg))+.05);
+  for(const token of ['text','muted']){
+    const color=lightPalette.match(new RegExp(`--sorbo-${token}: (#[0-9a-f]{6})`))?.[1];
+    assert.ok(color);
+    assert.ok(contrast(color,'#faf8f2')>=4.5,`${token} must meet 4.5:1 on mode cards`);
+  }
+  assert.ok(contrast('#ffffff','#425fc4')>=4.5,'Selected mode frequencies must meet 4.5:1');
+});
+
 test('wheel homepage is data-driven, accessible, and linked to real content',()=>{
   const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
   const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
@@ -1935,7 +1957,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes current interactive runtimes',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v141-sp8072-typography'/);
+  assert.match(worker,/const CACHE = 'sau-v144-isolation-light-contrast'/);
   for (const module of ['sp8072-data','sp8072-physics','sp8072-tool']) assert.ok(worker.includes(`./js/${module}.js`));
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);

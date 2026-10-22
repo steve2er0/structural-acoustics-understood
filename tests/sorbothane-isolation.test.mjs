@@ -8,6 +8,7 @@ import {
   analyzeSorbothaneIsolation,
   assembleRigidBodyStiffness,
   frequencyResponse,
+  isolationMountCoordinates,
   mountDynamicStiffness,
   normalizeSorbothaneConfig,
   rigidBodyMassMatrix,
@@ -58,6 +59,210 @@ test('baseline vertical bounce mode is calculated in the intended 140-150 Hz reg
   assert.ok(vertical, 'vertical mode was not classified');
   assert.ok(vertical.frequencyHz >= 140 && vertical.frequencyHz <= 150, `vertical mode was ${vertical.frequencyHz} Hz`);
   assert.equal(vertical.dominant, 'Z / bounce');
+});
+
+test('support layout preserves four corners and adds two inner legs to each Y side', () => {
+  const config = baseline();
+  const [x, y] = config.mounts.spacingM;
+  assert.deepEqual(isolationMountCoordinates(config), [
+    [-x / 2, -y / 2, 0], [x / 2, -y / 2, 0], [x / 2, y / 2, 0], [-x / 2, y / 2, 0]
+  ]);
+  config.mounts.count = 8;
+  const points = isolationMountCoordinates(config);
+  assert.equal(points.length, 8);
+  const rows = [-y / 2, y / 2].map(rowY => points.filter(point => point[1] === rowY).sort((a, b) => a[0] - b[0]));
+  for (const row of rows) {
+    assert.equal(row.length, 4);
+    row.forEach((point, index) => close(point[0], [-x / 2, -x / 6, x / 6, x / 2][index], 1e-12));
+  }
+  assert.equal(normalizeSorbothaneConfig({ mounts: { count: '8' } }).mounts.count, 8);
+  assert.equal(normalizeSorbothaneConfig({ mounts: { count: 6 } }).mounts.count, 4);
+  assert.equal(normalizeSorbothaneConfig({}).mounts.count, 4);
+});
+
+test('row direction moves the inner legs onto the other sides while retaining the X/Y footprint', () => {
+  const config = baseline();
+  const originalCorners = isolationMountCoordinates(config).map(point => point.join(',')).sort();
+  config.mounts.rowAxis = 'y';
+  assert.deepEqual(isolationMountCoordinates(config).map(point => point.join(',')).sort(), originalCorners);
+  config.mounts.count = 8;
+  const [x, y] = config.mounts.spacingM;
+  const points = isolationMountCoordinates(config);
+  for (const sideX of [-x / 2, x / 2]) {
+    const row = points.filter(point => point[0] === sideX).sort((a, b) => a[1] - b[1]);
+    assert.equal(row.length, 4);
+    row.forEach((point, index) => close(point[1], [-y / 2, -y / 6, y / 6, y / 2][index], 1e-12));
+  }
+  assert.equal(normalizeSorbothaneConfig({}).mounts.rowAxis, 'x');
+  assert.equal(normalizeSorbothaneConfig({mounts: {rowAxis: 'invalid'}}).mounts.rowAxis, 'x');
+  assert.equal(normalizeSorbothaneConfig(config).mounts.rowAxis, 'y');
+});
+
+test('eight-leg static loads balance weight and overturning moments about an offset CG', () => {
+  const config = baseline();
+  config.mounts.count = 8;
+  const centered = staticPreloadState(config);
+  const weightN = config.component.massKg * SORBOTHANE_UNITS.G0;
+  assert.equal(centered.mounts.length, 8);
+  centered.mounts.forEach(mount => {
+    close(mount.payloadN, weightN / 8, 1e-12);
+    close(mount.lowerLoadN - mount.upperLoadN, weightN / 8, 1e-12);
+  });
+  config.component.cgM = [0.4, -0.25, 2].map(value => value * SORBOTHANE_UNITS.INCH);
+  config.environment.accelerationG = [0.3, -0.2, 0.5];
+  const z = config.mounts.planeZM - config.component.cgM[2];
+  for (const rowAxis of ['x', 'y']) {
+    config.mounts.rowAxis = rowAxis;
+    const loaded = staticPreloadState(config);
+    close(loaded.mounts.reduce((sum, mount) => sum + mount.payloadN, 0), weightN * 1.5, 1e-12);
+    close(loaded.mounts.reduce((sum, mount) => sum + mount.positionM[1] * mount.payloadN, 0), z * weightN * -0.2, 1e-12);
+    close(loaded.mounts.reduce((sum, mount) => sum + mount.positionM[0] * mount.payloadN, 0), z * weightN * 0.3, 1e-12);
+  }
+});
+
+test('eight-leg stiffness uses the actual inner-leg moment arms and closes to analytical bounce response', () => {
+  const config = baseline();
+  config.mounts.count = 8;
+  config.component.cgM = [0, 0, 0];
+  config.isolator.extrapolation = 'user';
+  const mount = mountDynamicStiffness(config, 180);
+  const k = assembleRigidBodyStiffness(config, 180).matrix;
+  const [x, y] = config.mounts.spacingM;
+  close(k[0][0], 8 * mount.kxNPerM, 1e-12);
+  close(k[1][1], 8 * mount.kyNPerM, 1e-12);
+  close(k[2][2], 8 * mount.kzNPerM, 1e-12);
+  close(k[3][3], 2 * mount.kzNPerM * y ** 2, 1e-12);
+  close(k[4][4], 10 / 9 * mount.kzNPerM * x ** 2, 1e-12);
+  close(k[5][5], 2 * mount.kxNPerM * y ** 2 + 10 / 9 * mount.kyNPerM * x ** 2, 1e-12);
+  k.forEach((row, i) => row.forEach((value, j) => close(value, k[j][i], 1e-12)));
+  const four = clone(config);
+  four.mounts.count = 4;
+  const fourBounce = solveRigidBodyModes(four).modes.find(mode => mode.dominantIndex === 2);
+  const eightBounce = solveRigidBodyModes(config).modes.find(mode => mode.dominantIndex === 2);
+  close(eightBounce.frequencyHz, fourBounce.frequencyHz * Math.SQRT2, 1e-8);
+  const omega = 2 * Math.PI * 180;
+  const eta = mount.material.tanDelta;
+  const expectedT = k[2][2] * Math.hypot(1, eta) / Math.hypot(k[2][2] - omega ** 2 * config.component.massKg, k[2][2] * eta);
+  close(rigidBodyResponseAtFrequency(config, 180, 'z').magnitude[2], expectedT, 1e-10);
+
+  config.mounts.rowAxis = 'y';
+  const rotated = assembleRigidBodyStiffness(config, 180).matrix;
+  close(rotated[2][2], k[2][2], 1e-12);
+  close(rotated[3][3], 10 / 9 * mount.kzNPerM * y ** 2, 1e-12);
+  close(rotated[4][4], 2 * mount.kzNPerM * x ** 2, 1e-12);
+  close(rotated[5][5], 10 / 9 * mount.kxNPerM * y ** 2 + 2 * mount.kyNPerM * x ** 2, 1e-12);
+  const rotatedBounce = solveRigidBodyModes(config).modes.find(mode => mode.dominantIndex === 2);
+  close(rotatedBounce.frequencyHz, eightBounce.frequencyHz, 1e-8);
+});
+
+test('eight-leg BDF connects eight distinct shell locations and constrains every base grid', () => {
+  const config = baseline();
+  config.mounts.count = 8;
+  config.mounts.rowAxis = 'y';
+  const model = generateNastranIsolationBdf(config);
+  const gridLines = model.deck.split('\n').filter(line => line.startsWith('GRID,'));
+  const grids = new Map(gridLines.map(line => {
+    const fields = line.split(',');
+    return [Number(fields[1]), fields.slice(3, 6).map(Number)];
+  }));
+  const bushes = model.deck.split('\n').filter(line => line.startsWith('CBUSH,')).map(line => line.split(','));
+  const plateNodes = new Set(model.deck.split('\n').filter(line => line.startsWith('CQUAD4,')).flatMap(line => line.split(',').slice(3).map(Number)));
+  assert.equal(model.counts.cbush, 8);
+  assert.equal(bushes.length, 8);
+  assert.equal(new Set(model.isolators.mountGridIds).size, 8);
+  isolationMountCoordinates(config).forEach((point, index) => {
+    const top = Number(bushes[index][3]);
+    const base = Number(bushes[index][4]);
+    assert.ok(plateNodes.has(top));
+    grids.get(top).forEach((value, axis) => close(value, point[axis] / SORBOTHANE_UNITS.INCH, 1e-8));
+    assert.deepEqual(grids.get(top), grids.get(base));
+  });
+  assert.match(model.deck, /^SPC1,1,123456,8001,8002,8003,8004,8005,8006\n\+,8007,8008$/m);
+  assert.match(model.deck, /SUPPORT LAYOUT: 8 LEGS, 4 PER SIDE/);
+  assert.match(model.deck, /EQUALLY SPACED ALONG Y ON THE -X AND \+X SIDES/);
+  config.validation.nastran.meshX = config.validation.nastran.meshY = 40;
+  const fine = generateNastranIsolationBdf(config);
+  const elementIds = fine.deck.split('\n').filter(line => /^(CQUAD4|CBUSH),/.test(line)).map(line => line.split(',')[1]);
+  assert.equal(new Set(elementIds).size, elementIds.length, 'shell and bush element IDs must remain unique at maximum mesh density');
+});
+
+test('eight-leg studies retain the layout and count hardware for all eight supports', () => {
+  const config = baseline();
+  config.mounts.count = 8;
+  config.mounts.rowAxis = 'y';
+  const criteria = { lateralModeMinimumHz: [0.1, 0.1], verticalModeRangeHz: [0.1, 3000], resonanceBandHz: [1, 300], resonanceMaximumDb: 100, tones: [] };
+  const screen = screenSorbothaneCatalog(config, {
+    geometry: 'washer', odRange: [0.99, 1.01], idRange: [0.44, 0.46], thicknessRange: [0.124, 0.126], stackRange: [1, 1], criteria
+  });
+  assert.equal(screen.supportCount, 8);
+  assert.equal(screen.rowAxis, 'y');
+  assert.ok(screen.recommendations.length > 0);
+  screen.recommendations.forEach(candidate => {
+    assert.equal(candidate.config.mounts.count, 8);
+    assert.equal(candidate.config.mounts.rowAxis, 'y');
+    assert.equal(candidate.analysis.preload.mounts.length, 8);
+    assert.equal(candidate.totalElementCount, 16);
+  });
+  const grid = runDesignGrid(config, { xVariable: 'thickness', yVariable: 'od', xRange: [0.2, 0.3], yRange: [1.1, 1.4], gridSize: 3 });
+  assert.equal(grid.candidates.length, 9);
+  assert.ok(grid.candidates.every(candidate => candidate.config.mounts.count === 8 && candidate.config.mounts.rowAxis === 'y' && candidate.analysis.preload.mounts.length === 8));
+
+  const lord = lordBaseline('AM-006-1');
+  lord.mounts.count = 8;
+  lord.mounts.rowAxis = 'y';
+  const lordState = staticPreloadState(lord);
+  assert.equal(lordState.mounts.length, 8);
+  lordState.mounts.forEach(mount => close(mount.payloadN / SORBOTHANE_UNITS.LBF, 10 / 8, 1e-10));
+  const lordScreen = screenParkerLordCatalog(lord, { family: 'AM-006', mountsPerPointRange: [1, 2], criteria });
+  assert.ok(lordScreen.recommendations.length > 0);
+  assert.equal(lordScreen.rowAxis, 'y');
+  lordScreen.recommendations.forEach(candidate => assert.equal(candidate.totalMountCount, candidate.mountsPerPoint * 8));
+});
+
+test('eight-leg workbench, drawings, report, and uncertainty all reflect the selected layout', () => {
+  const config = baseline();
+  config.mounts.count = 8;
+  const html = renderSorbothaneIsolationWorkbench(config);
+  const isolator = tabPanelHtml(html, 'sorbothane', 'explorer');
+  assert.match(html, /data-sorbo-field="mounts.count"/);
+  assert.match(html, /data-sorbo-field="mounts.rowAxis"/);
+  assert.match(html, /value="8" selected>8 legs · 4 on each side/);
+  assert.match(html, /Design an 8-leg captured Sorbothane/);
+  assert.match(html, /Component on 8 captured mounts/);
+  assert.match(isolator, /8 legs · 4 on each side/);
+  assert.match(isolator, /Captured stack · 1 of 8 mounts/);
+  assert.match(isolator, /16 Sorbothane elements total/);
+  assert.equal((isolator.match(/data-sorbo-support-marker=/g) ?? []).length, 8);
+  assert.match(html, /SUPPORT LAYOUT: 8 LEGS, 4 PER SIDE/);
+
+  config.uncertainty.enabled = true;
+  config.uncertainty.samples = 8;
+  config.analysis.frequencyPoints = 41;
+  const analysis = analyzeSorbothaneIsolation(config);
+  for (const axis of ['x', 'y', 'z']) {
+    assert.ok(analysis.uncertainty.directionalBands[axis].lowerDb.every(Number.isFinite));
+    assert.ok(analysis.uncertainty.directionalBands[axis].upperDb.every(Number.isFinite));
+  }
+  const report = engineeringReport(analysis);
+  assert.match(report, /Support layout: 8 legs, 4 on each Y side/);
+  assert.doesNotMatch(report, /four identical mounts|four support points/);
+});
+
+test('row direction is shown consistently in footprint dimensions, screening, report, and BDF', () => {
+  const config = baseline();
+  config.mounts.count = 8;
+  config.mounts.rowAxis = 'y';
+  const html = renderSorbothaneIsolationWorkbench(config);
+  const isolator = tabPanelHtml(html, 'sorbothane', 'explorer');
+  assert.match(html, /value="y" selected>Along Y · on ±X sides/);
+  assert.match(isolator, /rows along Y/);
+  assert.match(isolator, /Y row span 6\.5 in · Adjacent legs 2\.167 in/);
+  assert.match(isolator, /X row separation 8\.5 in/);
+  assert.match(isolator, /−X side/);
+  assert.match(isolator, /\+X side/);
+  assert.match(html, /Active support layout: 8 legs · rows along Y on the ±X sides/);
+  const report = engineeringReport(analyzeSorbothaneIsolation(config, {skipUncertainty: true}));
+  assert.match(report, /Support layout: 8 legs, 4 on each X side, equally spaced along Y/);
 });
 
 test('lateral translation criteria follow modal participation rather than mode order', () => {
