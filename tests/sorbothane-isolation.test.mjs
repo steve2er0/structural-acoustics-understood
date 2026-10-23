@@ -776,7 +776,7 @@ test('workbench preserves trailing-zero requirement frequencies in rendered labe
   assert.match(html, />600 Hz · Tyy</);
   assert.match(html, />600 Hz · Tzz</);
   assert.equal((html.match(/data-sorbo-action="remove-catalog-tone"/g) ?? []).length, 3);
-  assert.doesNotMatch(html, /sorbo-fixed-criterion|>Baseline</);
+  assert.doesNotMatch(html, /sorbo-fixed-criterion/);
   const noToneConfig = baseline();
   noToneConfig.analysis.tones = [];
   const noToneHtml = renderSorbothaneIsolationWorkbench(noToneConfig);

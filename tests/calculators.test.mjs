@@ -1610,7 +1610,8 @@ test('standalone build contains the current catalogs, renderers, and demo takeaw
   assert.match(html,/const __nastranIsolationExport=\(\(\)=>\{/);
   assert.match(html,/function generateNastranIsolationBdf\(configInput, analysisInput = null\)/);
   assert.match(html,/data-sorbo-action="export-nastran-bdf"/);
-  assert.match(html,/return \{[^}]*screenSorbothaneCatalog,screenSorbothaneCatalogAsync[^}]*\};\n\}\)\(\);\n\nconst __nastranIsolationExport=/);
+  assert.match(html,/return \{[^}]*screenSorbothaneCatalog,screenSorbothaneCatalogAsync[^}]*\};\n\}\)\(\);\n\nconst __sorbothaneConfigurations=/);
+  assert.match(html,/return \{SORBOTHANE_SAVED_CONFIGURATIONS,loadSorbothaneConfiguration,matchingSorbothaneConfiguration\};\n\}\)\(\);\n\nconst __nastranIsolationExport=/);
   assert.match(html,/return \{NASTRAN_IPS_UNITS,nastranExportSettings,generateNastranIsolationBdf\};\n\}\)\(\);\n\nconst __sorbothaneIsolation=/);
   assert.match(html,/const \{[^}]*screenSorbothaneCatalog,screenSorbothaneCatalogAsync[^}]*\}=__sorbothaneAnalysis;/);
   assert.match(html,/const \{generateNastranIsolationBdf\}=__nastranIsolationExport;/);
@@ -1957,7 +1958,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes current interactive runtimes',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v154-sorbothane-centered-eight-leg-baseline'/);
+  assert.match(worker,/const CACHE = 'sau-v155-sorbothane-shaker-test-configuration'/);
   for (const module of ['sp8072-data','sp8072-physics','sp8072-tool']) assert.ok(worker.includes(`./js/${module}.js`));
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);

@@ -8,6 +8,29 @@ The baseline is a 25 lbm rectangular component, 13.5 in long (X), 7.2 in wide (Y
 
 Each leg has one upper and one lower custom 50 Shore 00 annular element by default, with 1.25 in OD, 0.50 in ID, 0.25 in free thickness, and 15% nominal precompression. Isolator and acceptance-criteria defaults are unchanged; this baseline is not a claim that all requirements pass. The result is calculated from the implemented model; no mode frequency or target transmissibility is hard-coded. A fresh design and **Reset baseline** use these dimensions in both the modular site and rebuilt standalone file. Explicit browser-saved and imported settings retain their own geometry; updating the file does not overwrite an existing design.
 
+## Saved configurations
+
+The **Saved configuration** selector above the export controls includes the
+eight-leg **Baseline** and **shaker test**, a separate snapshot provided through
+the owner's Configuration JSON export. Choose a name, then press **Load
+configuration** to replace all inputs together. Selection alone does not change
+the design. Loading clears old catalog/sweep results and recalculates modes,
+responses and uncertainty with the saved requirements.
+
+The shaker test snapshot is 12 lbm, 3.5 × 3.5 × 4 in, with CG at (0, 0, 2) in,
+four legs on a 2 × 2 in footprint, and one 0510012-70-10 washer on each side of
+each leg. It preserves the 15% compression basis, 1200 Hz ≤ −20 dB tone,
+50 Hz X/Y mode minimums, 100–200 Hz vertical/resonance bands, +6 dB resonance
+limit, seeded uncertainty and NASTRAN settings from the export. It is an input
+configuration, not a measured shaker-test result or qualification claim.
+
+Both snapshots are embedded in the rebuilt `standalone.html`; no network fetch
+or JSON import is required. Edits change only the current browser-local design,
+not a saved snapshot. The selector indicates modified settings until an exact
+saved configuration is restored. **Reset baseline** continues to restore only
+the eight-leg baseline. **Configuration JSON** exports the current inputs,
+using `shaker-test.json` when they exactly match the saved shaker configuration.
+
 ## Coordinate system
 
 The component coordinate origin is the center of its footprint on the isolated plate. +X and +Y lie in the plate. +Z points upward. Component dimensions extend from `-Lx/2` to `+Lx/2`, `-Ly/2` to `+Ly/2`, and from the plate (`z = 0`) to the entered height. CG and mount-plane coordinates use this common system.

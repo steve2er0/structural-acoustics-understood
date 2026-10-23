@@ -1,5 +1,6 @@
-const CACHE = 'sau-v154-sorbothane-centered-eight-leg-baseline';
+const CACHE = 'sau-v155-sorbothane-shaker-test-configuration';
 const CORE = [
+  './js/sorbothane-configurations.js',
   './', './index.html', './styles.css', './manifest.webmanifest', './assets/favicon.svg',
   './js/app.js', './js/unit-system.js', './js/homepage.js', './js/tool-discovery.js', './js/site-components.js', './js/engineering-system.js', './js/data.js', './js/calculators.js', './js/pcb-accelerometers-data.js', './js/extra-calculators.js',
   './js/extra-data.js', './js/charts.js', './js/demos.js', './js/demo-takeaways.js', './js/engineering-results.js',

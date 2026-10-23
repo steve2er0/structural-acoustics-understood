@@ -18,6 +18,7 @@ import {
 import { generateNastranIsolationBdf } from './nastran-isolation-export.js';
 import { isSorbothaneAssemblyConfig, sorbothaneAssemblyBillOfMaterials, SORBOTHANE_ASSEMBLY_PARTS } from './sorbothane-assemblies.js';
 import { renderSorbothaneAssemblyPanel } from './sorbothane-assembly-ui.js';
+import { SORBOTHANE_SAVED_CONFIGURATIONS, loadSorbothaneConfiguration, matchingSorbothaneConfiguration } from './sorbothane-configurations.js';
 
 const { INCH, LB, LBF, PSI } = SORBOTHANE_UNITS;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
@@ -1142,13 +1143,18 @@ function exportControls() {
   return `<div class="sorbo-export-bar"><span>Browser-local · no data uploaded</span><button type="button" class="button-quiet" data-sorbo-action="export-json">Configuration JSON</button><button type="button" class="button-quiet" data-sorbo-action="export-csv">Response CSV</button><button type="button" class="button-quiet" data-sorbo-action="export-report">Engineering summary</button><button type="button" class="button-quiet" data-sorbo-action="add-project">Add to project</button></div>`;
 }
 
+function savedConfigurationControls(config) {
+  const current = matchingSorbothaneConfiguration(config);
+  return `<section class="sorbo-saved-configurations" aria-label="Saved isolation configurations"><label><span>Saved configuration</span><select data-sorbo-saved-configuration aria-label="Saved configuration"><option value="" disabled${current ? '' : ' selected'}>Current design · modified settings</option>${SORBOTHANE_SAVED_CONFIGURATIONS.map(item => `<option value="${item.id}"${current?.id === item.id ? ' selected' : ''}>${esc(item.name)}</option>`).join('')}</select></label><button type="button" class="button-secondary" data-sorbo-action="load-configuration"${current ? '' : ' disabled'}>Load configuration</button><div><p data-sorbo-configuration-status role="status">${current ? `Saved configuration: ${esc(current.name)}. ${esc(current.description)}` : 'Current inputs differ from the saved configurations.'}</p><small>Loading replaces all design inputs, requirements, uncertainty and validation settings. Saved snapshots stay unchanged; Reset baseline always restores the separate eight-leg baseline.</small></div></section>`;
+}
+
 export function renderSorbothaneIsolationWorkbench(configInput = null, explorerSettingsInput = {}, catalogSettingsInput = {}, analysisInput = null) {
   const config = updateSorbothaneCriteria(configInput ?? DEFAULT_SORBOTHANE_CONFIG);
   const analysis = analysisInput ?? analyzeSorbothaneIsolation(config);
   const lord = isParkerLordConfig(config);
   return `<div class="page-shell sorbo-workbench" data-sorbothane-workbench><nav class="breadcrumbs site-breadcrumbs" aria-label="Breadcrumb"><a href="#/tools">Tools</a><span aria-hidden="true">›</span><span>Dynamics</span><span aria-hidden="true">›</span><span aria-current="page">6-DOF Isolation Designer</span></nav>
     <section class="sorbo-hero"><div><p class="eyebrow">Aerospace component isolation · Engineering workbench</p><h1>Place the resonance deliberately.<br><span>See what gets through.</span></h1><p data-sorbo-hero-description>Design ${config.mounts.count === 8 ? 'an' : 'a'} ${config.mounts.count}-leg ${lord ? 'Parker LORD complete-mount' : 'captured Sorbothane'} system with source-traceable catalog properties, full rigid-body coupling, complex frequency response, static load checks, and inspectable trade studies.</p></div><aside><strong data-sorbo-hero-mode>${fmt(analysis.verticalModeResult.frequencyHz, 1)} Hz</strong><span>vertical bounce</span><b data-sorbo-hero-status class="${analysis.passes ? 'pass-text' : 'fail-text'}">${analysis.passes ? 'DEFINED REQUIREMENTS PASS' : 'DESIGN REVIEW REQUIRED'}</b><small>${lord ? 'Catalog spring rates are typical; damping and frequency dependence remain visible screening assumptions.' : 'Manufacturer curves end at 300 Hz; 600-2000 Hz uses the selected visible assumption.'}</small></aside></section>
-    ${exportControls()}
+    ${savedConfigurationControls(config)}${exportControls()}
     <section class="sorbo-shell">${inputSidebar(config)}<main class="sorbo-main"><nav class="sorbo-tabs" role="tablist">${[['overview', 'Overview'], ['modes', 'Modes'], ['transmissibility', 'Transmissibility'], ['sorbothane', 'Isolator'], ['explorer', 'Design Explorer'], ['assumptions', 'Assumptions / Validation']].map(([id, label], index) => `<button type="button" role="tab" data-sorbo-tab="${id}" class="${index === 0 ? 'active' : ''}">${label}</button>`).join('')}</nav><div data-sorbo-panels>${overviewPanel(config, analysis)}${modesPanel(config, analysis)}${transmissibilityPanel(analysis)}${sorbothanePanel(config, analysis)}${explorerPanel(config, explorerSettingsInput, catalogSettingsInput)}${assumptionsPanel(config, analysis)}</div></main></section>
     <div class="sorbo-live" aria-live="polite" data-sorbo-live></div></div>`;
 }
@@ -1300,6 +1306,15 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
     shell.querySelectorAll('[data-sorbo-panel]').forEach(panel => panel.classList.toggle('is-active', panel.dataset.sorboPanel === id));
   };
   const save = () => localStorage.setItem('sau-sorbothane-isolation-v1', JSON.stringify(config));
+  const syncSavedConfigurationControls = () => {
+    const current = matchingSorbothaneConfiguration(config);
+    const select = shell.querySelector('[data-sorbo-saved-configuration]');
+    const button = shell.querySelector('[data-sorbo-action="load-configuration"]');
+    const status = shell.querySelector('[data-sorbo-configuration-status]');
+    if (select) select.value = current?.id ?? '';
+    if (button) button.disabled = !current;
+    if (status) status.textContent = current ? `Saved configuration: ${current.name}. ${current.description}` : 'Current inputs differ from the saved configurations.';
+  };
   const syncSidebarControls = () => {
     shell.querySelectorAll('[data-sorbo-field]').forEach(control => {
       const path = control.dataset.sorboField;
@@ -1314,6 +1329,7 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
     });
     const relativePlane = shell.querySelector('[data-sorbo-plane-relative]');
     if (relativePlane) relativePlane.value = fmt(unitDefinitions.length[config.units].fromSI(config.mounts.planeZM - config.component.cgM[2]), 4);
+    syncSavedConfigurationControls();
   };
   const currentCatalogSelection = () => {
     const target = catalogScreen?.assemblyTarget;
@@ -1378,6 +1394,19 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
     updateVisibility();
     syncSidebarControls();
     save();
+  };
+  const restoreSavedConfiguration = id => {
+    config = updateSorbothaneCriteria(loadSorbothaneConfiguration(id));
+    explorerSettings = defaultExplorerSettings(config);
+    catalogSettings = defaultCatalogScreenSettings(config);
+    catalogScreen = null;
+    explorerGrid = null;
+    assemblyUpdateToken += 1;
+    selectedMode = 0;
+    activeTab = 'overview';
+    rerenderWorkbench();
+    const name = SORBOTHANE_SAVED_CONFIGURATIONS.find(item => item.id === id).name;
+    shell.querySelector('[data-sorbo-live]').textContent = `Loaded saved configuration: ${name}. All design inputs and criteria restored; previous catalog and sweep results cleared.`;
   };
   const applySharedCriteria = (changes, message = 'Shared analysis criteria updated.') => {
     config = updateSorbothaneCriteria(config, changes);
@@ -1470,25 +1499,20 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
       product.querySelectorAll('option').forEach(option => { option.hidden = Boolean(query) && !option.textContent.toLowerCase().includes(query); });
     });
     shell.querySelector('[data-sorbo-action="analyze"]')?.addEventListener('click', redrawAnalysis);
-    shell.querySelector('[data-sorbo-action="reset"]')?.addEventListener('click', () => {
-      config = normalizeSorbothaneConfig(DEFAULT_SORBOTHANE_CONFIG);
-      explorerSettings = defaultExplorerSettings(config);
-      catalogSettings = defaultCatalogScreenSettings(config);
-      catalogScreen = null;
-      explorerGrid = null;
-      catalogRunToken += 1;
-      localStorage.removeItem('sau-sorbothane-isolation-v1');
-      const replacement = document.createElement('div');
-      replacement.innerHTML = renderSorbothaneIsolationWorkbench(config, explorerSettings, catalogSettings);
-      const next = replacement.firstElementChild;
-      shell.replaceWith(next);
-      shell = next;
-      activeTab = 'overview';
-      bindInputs();
-      bindPanelControls();
-      updateVisibility();
+    shell.querySelector('[data-sorbo-saved-configuration]')?.addEventListener('change', event => {
+      const item = SORBOTHANE_SAVED_CONFIGURATIONS.find(saved => saved.id === event.target.value);
+      shell.querySelector('[data-sorbo-action="load-configuration"]').disabled = !item;
+      if (item) shell.querySelector('[data-sorbo-configuration-status]').textContent = `Ready to load ${item.name}. ${item.description}. Current design is unchanged until you press Load configuration.`;
     });
-    shell.querySelector('[data-sorbo-action="export-json"]')?.addEventListener('click', () => download('sorbothane-isolation-configuration.json', JSON.stringify(config, null, 2), 'application/json;charset=utf-8'));
+    shell.querySelector('[data-sorbo-action="load-configuration"]')?.addEventListener('click', () => {
+      const id = shell.querySelector('[data-sorbo-saved-configuration]').value;
+      if (!SORBOTHANE_SAVED_CONFIGURATIONS.some(item => item.id === id)) return;
+      restoreSavedConfiguration(id);
+    });
+    shell.querySelector('[data-sorbo-action="reset"]')?.addEventListener('click', () => {
+      restoreSavedConfiguration('baseline');
+    });
+    shell.querySelector('[data-sorbo-action="export-json"]')?.addEventListener('click', () => download(`${matchingSorbothaneConfiguration(config)?.id ?? 'sorbothane-isolation-configuration'}.json`, JSON.stringify(config, null, 2), 'application/json;charset=utf-8'));
     shell.querySelector('[data-sorbo-action="export-csv"]')?.addEventListener('click', () => download('sorbothane-isolation-response.csv', responseCsv(analysis), 'text/csv;charset=utf-8'));
     shell.querySelector('[data-sorbo-action="export-report"]')?.addEventListener('click', () => download('sorbothane-isolation-engineering-summary.md', engineeringReport(analysis), 'text/markdown;charset=utf-8'));
     shell.querySelector('[data-sorbo-action="add-project"]')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('sau:add-artifact', { detail: { type: 'Isolation design', title: 'Sorbothane 6-DOF isolation configuration', route: location.hash, takeaway: analysis.passes ? 'Defined isolation and resonance requirements pass.' : 'The configuration requires engineering review.', validity: 'Rigid-body linear viscoelastic screening model; high-frequency properties extrapolated above 300 Hz.', warnings: analysis.warnings, inputs: config, outputs: { modes: analysis.modes, lateralModeResults: analysis.lateralModeResults, verticalModeResult: analysis.verticalModeResult, tones: analysis.toneResults, peak: analysis.peak, peakResults: analysis.peakResults } } })));
