@@ -953,7 +953,14 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
 .sorbo-catalog-running { min-height: 190px; }
 .sorbo-catalog-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .55rem; margin: 1rem 0; }
 .sorbo-catalog-summary span { display: grid; gap: .18rem; padding: .75rem; color: #708aa1; border: 1px solid var(--sorbo-line); background: rgba(4, 19, 32, .68); font-size: .52rem; }
-.sorbo-catalog-summary b { color: #e1edf6; font-size: 1.1rem; font-weight: 430; }
+.sorbo-catalog-summary b { color: var(--sorbo-text); font-size: 1.1rem; font-weight: 430; }
+.sorbo-catalog-result-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem 1.2rem; margin: 1rem 0; padding: .85rem; border: 1px solid var(--sorbo-line); color: var(--sorbo-text); background: var(--sorbo-panel-solid); }
+.sorbo-catalog-result-controls label { display: grid; gap: .35rem; min-width: 150px; font-size: .7rem; }
+.sorbo-catalog-result-controls select { padding: .5rem; border: 1px solid var(--sorbo-line); color: var(--sorbo-text); background: var(--sorbo-panel-solid); }
+.sorbo-catalog-result-controls > div { flex: 1 1 230px; min-width: 0; }
+.sorbo-catalog-result-controls p { margin: 0; font-size: .75rem; }
+.sorbo-catalog-result-controls small { display: block; margin-top: .35rem; font-size: .65rem; line-height: 1.5; }
+.sorbo-catalog-result-controls .sorbo-catalog-selection-note { margin-top: .6rem; color: var(--sorbo-cyan); }
 .sorbo-catalog-recommendation { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(180px, .45fr) auto; align-items: center; gap: 1rem; margin: 1rem 0 1.2rem; padding: 1rem; border: 1px solid rgba(83, 213, 178, .3); border-left: 3px solid var(--sorbo-teal); background: rgba(30, 108, 83, .1); }
 .sorbo-catalog-recommendation h3 { margin: .2rem 0; color: #e8f6ef; font-size: 1.45rem; }
 .sorbo-catalog-recommendation p { margin: 0; color: #86a99c; font-size: .59rem; }
@@ -1074,6 +1081,14 @@ html[data-theme="light"] .sorbo-support-footprint .sorbo-drawing-component-label
 .sorbo-bushing-dimensions { display: block; margin-bottom: .4rem; color: var(--sorbo-text); font-size: .68rem; line-height: 1.6; }
 .sorbo-assembly-review { padding: .8rem; border-left: 3px solid var(--sorbo-red); margin: 1rem 0; }
 .sorbo-assembly-review h3 { color: var(--sorbo-red); }
+.sorbo-pair-table td { min-width: 145px; vertical-align: top; }
+.sorbo-pair-table td small { display: block; margin-top: .4rem; line-height: 1.7; }
+.sorbo-pair-table td:last-child { min-width: 260px; max-width: 380px; white-space: normal; }
+.sorbo-pair-table details { margin: .6rem 0; }
+.sorbo-pair-table summary { cursor: pointer; }
+.sorbo-pair-table ul { padding-left: 1.1rem; font-size: .65rem; line-height: 1.6; }
+.sorbo-pair-ranking { margin: .8rem 0; font-size: .7rem; }
+.sorbo-pair-ranking summary { cursor: pointer; color: var(--sorbo-cyan); }
 @media (max-width: 700px) {
   .sorbo-assembly-card > header { flex-direction: column; gap: .5rem; }
   .sorbo-assembly-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }

@@ -68,12 +68,53 @@ been established for that partial bearing footprint.
 
 ## Screening and export
 
-In assembly mode the existing catalog screen varies one selected group and side
-while keeping other parts, fit dimensions, clamp settings and leg assignments
-fixed. It is not an unconstrained combinatorial search over every part at every
-leg. The 147 candidate records include 15 bushings plus 132 existing flat parts.
-Every candidate reruns the installed mixed-system analysis. Unverified bushing
-models appear as REVIEW candidates rather than passing recommendations.
+In assembly mode the catalog screen defaults to an exhaustive **ordered
+upper/lower pair search** for the selected group. Upper and lower type filters
+independently include bushings, rings and washers. The same dimensional bounds
+apply to each side. Series counts are independent, within the chosen range;
+bushings are limited to one per side. The other group, fit dimensions, clamp
+basis, material formulation and leg assignments stay fixed. The nominal default
+is one element on each side; increase the count range to search flat-part stacks.
+Single-side screening remains an optional mode. The full assembly catalog has
+147 records, including 15 bushings; solid discs are not part of the default
+floating-bolt pair search because they have no bolt bore.
+
+Pairs are generated lazily, including both orientations and unequal part/count
+combinations. Definite fit failures are rejected first, followed by the entire
+system's static load, compression, contact and equilibrium checks. Every
+mechanically eligible pair receives the same six-DOF modal and three-direction
+tone/resonance analysis. MODEL flags are not pruned: a bushing pair can be the
+best REVIEW candidate, but never an unqualified passing recommendation.
+
+PASS results take precedence. Each ordered part-number pair retains its smallest
+passing total element count, breaking count ties with the modeled tone/resonance
+score. Those representatives are ranked by the same score (existing catalog
+performance score: limit-exceedance penalties, sum of worst-axis tone dB and
+worst-axis resonance dB). REVIEW pairs use fewer failed dynamic criteria, fewer
+model flags, then that score and element count. All passing part-number pairs
+are retained as compact display/application summaries from their completed
+evaluations. These records omit the full matrices, static profiles and per-pair
+configuration copies; applying one patches both slots/counts of the selected
+group and reruns the normal installed-design analysis. REVIEW candidates retain
+their full details, with the best eight displayed.
+
+The passing-results selector offers 25 (default), 50, 100 or All for mixed pairs,
+single-side Sorbothane screens and Parker LORD screens. It displays an explicit
+"Showing N of M" count, both-side loads/quantities and the system BOM. Changing
+this display preference only rerenders stored results: it never repeats catalog
+screening, changes the design or reruns uncertainty. "All" means every retained
+passing part-number pair, still with one preferred stack configuration per pair,
+not every passing stack variant. The selected hardware remains highlighted when
+visible; a note gives its rank when it is outside the current display limit.
+Evaluation errors are counted and visibly mark the result incomplete. Progress
+is based on enumerated pairs, with a separate final ranking stage; cancellation
+discards partial results without applying hardware.
+
+"Best" means nominal best within these filters and fixed settings, not a global
+optimization over both groups, assignment patterns, preload or uncertainty.
+Applying a result replaces both selected-group sides/counts together and retains
+the other group, physical settings and uncertainty configuration. Both parts are
+highlighted together, and the design can be loaded into the 7x7 matrix.
 
 The 7x7 matrix can vary group compression or a user radial rate, as well as
 mass/CG/mount spacing. Every cell includes modal, response, fit, load, compression,

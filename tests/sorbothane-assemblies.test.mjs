@@ -5,7 +5,7 @@ import { SORBOTHANE_BUSHING_CATALOG } from '../js/sorbothane-data.js';
 import { SORBOTHANE_ASSEMBLY_PARTS, sorbothaneAssemblyBillOfMaterials } from '../js/sorbothane-assemblies.js';
 import { DEFAULT_SORBOTHANE_CONFIG, SORBOTHANE_UNITS, normalizeSorbothaneConfig, staticPreloadState, analyzeSorbothaneIsolation, isolationMountCoordinates, isolationMountStiffnesses, assembleRigidBodyStiffness, rigidBodyMassMatrix, rigidBodyResponseAtFrequency, runDesignGrid, screenSorbothaneCatalog, screenSorbothaneCatalogAsync } from '../js/sorbothane-analysis.js';
 import { generateNastranIsolationBdf } from '../js/nastran-isolation-export.js';
-import { catalogScreenResult, engineeringReport, renderSorbothaneExplorerResult, renderSorbothaneIsolationWorkbench, sorbothaneExplorerVariableDefaults } from '../js/sorbothane-isolation.js';
+import { applySorbothaneCatalogCandidate, catalogScreenResult, engineeringReport, renderSorbothaneExplorerResult, renderSorbothaneIsolationWorkbench, sorbothaneExplorerVariableDefaults } from '../js/sorbothane-isolation.js';
 
 const { INCH, LBF, LB } = SORBOTHANE_UNITS;
 const close = (actual, expected, tolerance = 1e-7) => assert.ok(Math.abs(actual - expected) <= tolerance * Math.max(1, Math.abs(actual), Math.abs(expected)), `${actual} != ${expected}`);
@@ -334,5 +334,248 @@ test('standalone synchronization and offline cache include assembly model and ed
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
   assert.match(standalone,/const __sorbothaneAssemblies=/);
   assert.match(standalone,/const __sorbothaneAssemblyUi=/);
+  assert.match(standalone,/function createAssemblyPairSearch/);
   for(const file of ['sorbothane-assemblies.js','sorbothane-assembly-ui.js'])assert.ok(worker.includes(file));
+});
+
+const relaxedPairs = () => {
+  const config = fixture();
+  Object.assign(config.analysis, { lateralModeMinimumHz: [.1, .1], modeAcceptBandHz: [.1, 1e6], resonanceLimitDb: 100, tones: [] });
+  return config;
+};
+const pairFilters = { topGeometry: 'bushing', bottomGeometry: 'washer', odRange: [.99, 1.01], idRange: [.1, .51], thicknessRange: [.189, .191], stackRange: [1, 2] };
+const ringPairFilters = { topGeometry: 'ring', bottomGeometry: 'ring', odRange: [1.99, 2.01], idRange: [.49, .51], thicknessRange: [.49, .51], stackRange: [1, 2] };
+
+test('joint search enumerates ordered bushing/washer part/count pairs and keeps bushing models REVIEW', async () => {
+  const config = relaxedPairs(), snapshot = structuredClone(config);
+  const sync = screenSorbothaneCatalog(config, pairFilters);
+  assert.equal(sync.searchMode, 'assembly-pairs');
+  assert.deepEqual(sync.assemblyTarget, { group: 'A', side: 'both' });
+  assert.equal(sync.upperOptionCount, 6, 'six grade/geometry bushing choices, never stacked');
+  assert.equal(sync.lowerOptionCount, 6, 'three washer grades, with independent one/two counts');
+  assert.equal(sync.combinationCount, 36);
+  assert.equal(sync.passingPairCount, 0);
+  assert.ok(sync.nearMisses.length);
+  for (const candidate of sync.nearMisses) {
+    assert.equal(candidate.topItem.geometry, 'bushing');
+    assert.equal(candidate.bottomItem.geometry, 'washer');
+    assert.equal(candidate.topStackCount, 1);
+    assert.equal(candidate.pass, false);
+    assert.ok(candidate.analysis.preload.assemblyChecks.some(check => check.code === 'MODEL' && !check.pass));
+    assert.ok(candidate.analysis.preload.assemblyChecks.filter(check => ['FIT', 'COMP', 'LOAD', 'CONTACT', 'STATIC'].includes(check.code)).every(check => check.pass));
+    assert.equal(candidate.totalElementCount, 8 * (candidate.topStackCount + candidate.bottomStackCount));
+  }
+  assert.equal(sync.exclusions.errors, 0);
+  const progress = [];
+  const asyncResult = await screenSorbothaneCatalogAsync(config, pairFilters, { batchSize: 3, yieldControl: async () => {}, onProgress: event => progress.push(event) });
+  assert.deepEqual(asyncResult, sync);
+  assert.equal(progress[0].percent, 0);
+  assert.equal(progress.at(-1).percent, 100);
+  assert.ok(progress.some(event => event.stage === 'pair-rank'));
+  assert.ok(progress.every((event, i) => !i || event.percent >= progress[i - 1].percent));
+  assert.deepEqual(config, snapshot);
+});
+
+test('joint ring search agrees with a brute-force installed-system evaluation, including unequal stack counts and orientations', () => {
+  const config = relaxedPairs();
+  const result = screenSorbothaneCatalog(config, ringPairFilters);
+  assert.equal(result.combinationCount, 36);
+  const parts = SORBOTHANE_ASSEMBLY_PARTS.filter(item => item.geometry === 'ring' && item.odIn === 2 && item.idIn === .5 && item.thicknessIn === .5);
+  const passing = new Map();
+  let eligible = 0;
+  for (const top of parts) for (const bottom of parts) for (const topCount of [1, 2]) for (const bottomCount of [1, 2]) {
+    const candidate = structuredClone(config);
+    Object.assign(candidate.assemblies.groups.A, { topProductNumber: top.productNumber, bottomProductNumber: bottom.productNumber, topCount, bottomCount });
+    const staticState = staticPreloadState(candidate);
+    if (staticState.assemblyChecks.some(check => !check.pass && ['FIT', 'COMP', 'CONTACT', 'LOAD', 'RATE?', 'STATIC'].includes(check.code))) continue;
+    eligible++;
+    const analysis = analyzeSorbothaneIsolation(candidate, { skipResponse: true, skipUncertainty: true });
+    if (analysis.passes) {
+      const key = `${top.productNumber}|${bottom.productNumber}`;
+      passing.set(key, Math.min(passing.get(key) ?? Infinity, topCount + bottomCount));
+    }
+  }
+  assert.equal(result.dynamicallyEvaluatedCount, eligible);
+  assert.equal(result.passingPairCount, passing.size);
+  assert.ok(result.recommendations.length);
+  for (const candidate of result.recommendations) {
+    assert.equal(candidate.topStackCount + candidate.bottomStackCount, passing.get(`${candidate.topItem.productNumber}|${candidate.bottomItem.productNumber}`));
+    assert.equal(candidate.analysis.passes, true);
+  }
+  assert.ok(result.recommendations.every((candidate, i, all) => !i || candidate.score >= all[i - 1].score));
+});
+
+test('joint apply replaces both selected-group slots/counts, retains other state and highlights the complete pair', () => {
+  const config = relaxedPairs();
+  config.uncertainty.enabled = true;
+  config.uncertainty.samples = 8;
+  const result = screenSorbothaneCatalog(config, pairFilters), candidate = result.nearMisses[0];
+  const applied = applySorbothaneCatalogCandidate(config, candidate);
+  assert.equal(applied.assemblies.groups.A.topProductNumber, candidate.topItem.productNumber);
+  assert.equal(applied.assemblies.groups.A.bottomProductNumber, candidate.bottomItem.productNumber);
+  assert.equal(applied.assemblies.groups.A.topCount, candidate.topStackCount);
+  assert.equal(applied.assemblies.groups.A.bottomCount, candidate.bottomStackCount);
+  assert.deepEqual(applied.assemblies.groups.B, config.assemblies.groups.B);
+  assert.deepEqual(applied.assemblies.assignments, config.assemblies.assignments);
+  assert.deepEqual(applied.component, config.component);
+  assert.deepEqual(applied.analysis, config.analysis);
+  assert.deepEqual(applied.uncertainty, config.uncertainty);
+  assert.equal(candidate.config.uncertainty.enabled, false, 'applying must not mutate stored search candidates');
+  const html = catalogScreenResult(result, { group: 'A', ...applied.assemblies.groups.A });
+  assert.match(html, /data-sorbo-pair-use=/);
+  assert.match(html, /Selected combination/);
+  assert.match(html, /data-sorbo-selected-design/);
+  assert.match(html, /Entire-system Sorbothane BOM/);
+  assert.match(html, /No upper\/lower combination passes/);
+  const wrongSide = { group: 'A', ...applied.assemblies.groups.A, bottomCount: applied.assemblies.groups.A.bottomCount + 1 };
+  assert.doesNotMatch(catalogScreenResult(result, wrongSide), /Selected combination/);
+});
+
+test('joint search cancellation yields during enumeration and final ranking and never returns partial recommendations', async () => {
+  const config = relaxedPairs(), snapshot = structuredClone(config);
+  for (const stopStage of ['pair-search', 'pair-rank']) {
+    let cancel = false, yields = 0;
+    const result = await screenSorbothaneCatalogAsync(config, pairFilters, {
+      batchSize: 1, shouldCancel: () => cancel, yieldControl: async () => { yields++; },
+      onProgress: event => { if (event.stage === stopStage && event.completed > 0) cancel = true; }
+    });
+    assert.equal(result, null);
+    assert.ok(yields > 1);
+  }
+  assert.deepEqual(config, snapshot);
+});
+
+test('joint search handles empty geometry, impossible sleeve fit, unused groups and four/eight-leg BOMs', async () => {
+  const config = relaxedPairs();
+  const empty = await screenSorbothaneCatalogAsync(config, { ...pairFilters, odRange: [10, 11] }, { yieldControl: async () => {} });
+  assert.equal(empty.combinationCount, 0);
+  assert.deepEqual(empty.recommendations, []);
+  config.assemblies.groups.A.gripThicknessM = .5 * INCH;
+  const fit = screenSorbothaneCatalog(config, pairFilters);
+  assert.equal(fit.exclusions.fit, fit.combinationCount);
+  assert.equal(fit.dynamicallyEvaluatedCount, 0);
+  assert.throws(() => screenSorbothaneCatalog(config, { ...pairFilters, assemblyGroup: 'B' }), /Assign at least one leg/);
+  for (const count of [4, 8]) {
+    const system = relaxedPairs();
+    system.mounts.count = count;
+    system.component.massKg *= count / 8;
+    system.assemblies.assignments = Array(count).fill('B');
+    const search = screenSorbothaneCatalog(system, { ...pairFilters, assemblyGroup: 'B', stackRange: [1, 1] });
+    const candidate = search.nearMisses[0];
+    assert.ok(candidate);
+    assert.equal(candidate.topQuantity, count);
+    assert.equal(candidate.bottomQuantity, count);
+    assert.deepEqual(candidate.config.assemblies.groups.A, system.assemblies.groups.A);
+    assert.equal(candidate.billOfMaterials.reduce((sum, item) => sum + item.quantity, 0), count * 2);
+  }
+});
+
+test('mixed catalog defaults to joint search with separate upper/lower type filters and visible cancel support', () => {
+  const config = relaxedPairs(), analysis = analyzeSorbothaneIsolation(config, { skipResponse: true, skipUncertainty: true });
+  const html = renderSorbothaneIsolationWorkbench(config, {}, {}, analysis);
+  assert.match(html, /value="both" selected>Upper \+ lower combinations/);
+  assert.match(html, /data-catalog-screen="topGeometry"/);
+  assert.match(html, /data-catalog-screen="bottomGeometry"/);
+  assert.match(html, /data-sorbo-action="cancel-catalog"/);
+  assert.match(html, /Search all ordered upper\/lower part and stack-count pairs/);
+  assert.doesNotMatch(html, /data-catalog-screen="geometry"/);
+  const single = renderSorbothaneIsolationWorkbench(config, {}, { assemblySide: 'top' }, analysis);
+  assert.match(single, /data-catalog-screen="geometry"/);
+  assert.doesNotMatch(single, /data-catalog-screen="topGeometry"/);
+});
+
+test('analysis-local X/Y/Z matrix reuse preserves public FRFs and does not leak across design edits', () => {
+  const config = relaxedPairs();
+  config.analysis.responsePoint = 'corner-positive';
+  config.analysis.tones = [{ frequencyHz: 123, maximumDb: 6 }, { frequencyHz: 600, maximumDb: -10 }];
+  let previous;
+  for (const scale of [1, 1.15]) {
+    const design = structuredClone(config);
+    design.component.massKg *= scale;
+    const analysis = analyzeSorbothaneIsolation(design, { skipResponse: true, skipUncertainty: true });
+    for (const tone of analysis.toneResults) for (const [index, axis] of ['x', 'y', 'z'].entries()) {
+      close(tone.axisResults[index].db, rigidBodyResponseAtFrequency(design, tone.frequencyHz, axis).db[index], 1e-12);
+    }
+    for (const [index, axis] of ['x', 'y', 'z'].entries()) {
+      const peak = analysis.peakResults[index];
+      close(peak.db, rigidBodyResponseAtFrequency(design, peak.frequencyHz, axis).db[index], 1e-12);
+    }
+    if (previous) assert.notEqual(analysis.toneResults[0].db, previous);
+    previous = analysis.toneResults[0].db;
+  }
+});
+
+let expandedPairFixture;
+const expandedPassingPairs = () => {
+  if (!expandedPairFixture) {
+    const config = relaxedPairs();
+    const screen = screenSorbothaneCatalog(config, { topGeometry: 'ring', bottomGeometry: 'ring', odRange: [1.99, 3.01], idRange: [.49, 2.01], thicknessRange: [.49, .51], stackRange: [1, 1] });
+    expandedPairFixture = { config, screen };
+  }
+  return expandedPairFixture;
+};
+
+test('joint catalog retains every passing pair beyond 16 as a compact reusable result', async () => {
+  const { config, screen } = expandedPassingPairs();
+  assert.ok(screen.passingPairCount > 25, 'real stock-part fixture must exercise results beyond the default display limit');
+  assert.equal(screen.recommendations.length, screen.passingPairCount);
+  assert.equal(new Set(screen.recommendations.map(candidate => candidate.candidateId)).size, screen.passingPairCount);
+  assert.ok(screen.recommendations.every(candidate => candidate.pass && candidate.summaryOnly && !candidate.config));
+  const snapshot = JSON.stringify(screen);
+  const current = structuredClone(config);
+  current.uncertainty.enabled = true;
+  current.uncertainty.samples = 8;
+  const candidate = screen.recommendations.at(-1);
+  const applied = applySorbothaneCatalogCandidate(current, candidate);
+  const actual = analyzeSorbothaneIsolation(applied, { skipResponse: true, skipUncertainty: true });
+  assert.equal(actual.passes, true);
+  assert.deepEqual(actual.lateralModeResults, candidate.analysis.lateralModeResults);
+  assert.deepEqual(actual.verticalModeResult, candidate.analysis.verticalModeResult);
+  assert.deepEqual(actual.peak, candidate.analysis.peak);
+  assert.equal(applied.assemblies.groups.A.topProductNumber, candidate.topItem.productNumber);
+  assert.equal(applied.assemblies.groups.A.bottomProductNumber, candidate.bottomItem.productNumber);
+  assert.deepEqual(applied.assemblies.groups.B, current.assemblies.groups.B);
+  assert.deepEqual(applied.assemblies.assignments, current.assemblies.assignments);
+  assert.deepEqual(applied.uncertainty, current.uncertainty);
+  assert.equal(JSON.stringify(screen), snapshot, 'displaying/applying summaries must not mutate stored search results');
+  const asyncScreen = await screenSorbothaneCatalogAsync(config, screen.settings, { yieldControl: async () => {} });
+  assert.equal(asyncScreen.recommendations.length, screen.passingPairCount);
+  assert.deepEqual(asyncScreen.recommendations, screen.recommendations);
+});
+
+test('catalog result selector renders 25, 50, 100 or All without truncating or recomputing stored candidates', () => {
+  const { screen } = expandedPassingPairs();
+  // Renderer-only list-size fixture: repeat real evaluated records to exercise
+  // every display bound without another large numerical catalog search.
+  const renderScreen = { ...screen, recommendations: Array.from({ length: 125 }, (_, i) => screen.recommendations[i % screen.recommendations.length]), passingPairCount: 125, passingPartCount: 125 };
+  const snapshot = JSON.stringify(renderScreen);
+  for (const [limit, count] of [[25, 25], [50, 50], [100, 100], ['all', 125], ['invalid', 25]]) {
+    const html = catalogScreenResult(renderScreen, null, limit);
+    assert.match(html, new RegExp(`Showing ${count} of 125 passing part-number pairs`));
+    assert.equal((html.match(/data-sorbo-pair-use=/g) ?? []).length, count + 1, 'rows plus the best-pair card');
+    assert.match(html, /value="25"/);
+    assert.match(html, /value="50"/);
+    assert.match(html, /value="100"/);
+    assert.match(html, /value="all"/);
+    assert.match(html, new RegExp(`value="${limit === 'invalid' ? 25 : limit}" selected`));
+    assert.doesNotMatch(html, /best 16/);
+  }
+  assert.equal(JSON.stringify(renderScreen), snapshot);
+});
+
+test('selected catalog hardware remains selected across limits and gets an explicit rank hint when hidden', () => {
+  const { config, screen } = expandedPassingPairs();
+  const candidate = screen.recommendations.at(-1), rank = screen.recommendations.length;
+  const applied = applySorbothaneCatalogCandidate(config, candidate);
+  const selection = { group: 'A', ...applied.assemblies.groups.A };
+  const limited = catalogScreenResult(screen, selection, 25);
+  assert.match(limited, new RegExp(`Your selected design is rank ${rank}, outside this display limit`));
+  const all = catalogScreenResult(screen, selection, 'all');
+  assert.match(all, /Selected combination/);
+  assert.match(all, /data-sorbo-selected-design/);
+  assert.doesNotMatch(all, /outside this display limit/);
+  const empty = { ...screen, recommendations: [], passingPairCount: 0, passingPartCount: 0 };
+  const noPass = catalogScreenResult(empty, null, 'all');
+  assert.match(noPass, /Showing 0 of 0 passing part-number pairs/);
+  assert.match(noPass, /data-catalog-result-limit[^>]*disabled/);
 });

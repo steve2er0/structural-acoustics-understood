@@ -22,7 +22,7 @@ import {
   sorbothaneDynamicProperties,
   staticPreloadState
 } from '../js/sorbothane-analysis.js';
-import { engineeringReport, renderSorbothaneExplorerResult, renderSorbothaneIsolationWorkbench, responseCsv, sorbothaneExplorerSettingsAroundDesign, sorbothaneExplorerVariableDefaults, updateSorbothaneCriteria } from '../js/sorbothane-isolation.js';
+import { catalogScreenResult, engineeringReport, renderSorbothaneExplorerResult, renderSorbothaneIsolationWorkbench, responseCsv, sorbothaneExplorerSettingsAroundDesign, sorbothaneExplorerVariableDefaults, updateSorbothaneCriteria } from '../js/sorbothane-isolation.js';
 import { NASTRAN_IPS_UNITS, generateNastranIsolationBdf } from '../js/nastran-isolation-export.js';
 import { SORBOTHANE_CATALOG, SORBOTHANE_MATERIAL, SORBOTHANE_MATERIALS, sorbothaneMaterial } from '../js/sorbothane-data.js';
 import { PARKER_LORD_AM_CATALOG, PARKER_LORD_AM_FAMILIES, parkerLordCatalogItem } from '../js/parker-lord-isolators.js';
@@ -1065,6 +1065,27 @@ test('catalog screening filters nominal geometry and selects the minimum passing
   const twoStack = screen.recommendations.find(candidate => candidate.item.productNumber === '0510012-50-10');
   assert.equal(twoStack?.stackCount, 2);
   assert.equal(twoStack?.totalElementCount, 16);
+});
+
+test('Sorbothane and Parker LORD retain all passing catalog parts and share the display-only result selector', () => {
+  const config = baseline();
+  config.component.massKg = SORBOTHANE_UNITS.LB;
+  Object.assign(config.analysis, { lateralModeMinimumHz: [.1, .1], modeAcceptBandHz: [.1, 1e6], resonanceLimitDb: 100, tones: [] });
+  const sorbothane = screenSorbothaneCatalog(config, { stackRange: [1, 1] });
+  const lord = clone(config);
+  lord.isolator.kind = 'parker-lord-am';
+  lord.isolator.productNumber = 'AM-001-2';
+  const parker = screenParkerLordCatalog(lord, { ratedLoadRange: [0, 100], mountsPerPointRange: [1, 1] });
+  for (const screen of [sorbothane, parker]) {
+    assert.ok(screen.passingPartCount > 100);
+    assert.equal(screen.recommendations.length, screen.passingPartCount);
+    for (const limit of [25, 50, 100, 'all']) {
+      const count = limit === 'all' ? screen.passingPartCount : limit;
+      const html = catalogScreenResult(screen, null, limit);
+      assert.match(html, new RegExp(`Showing ${count} of ${screen.passingPartCount} passing part numbers`));
+      assert.equal((html.match(/data-sorbo-catalog-use=/g) ?? []).length, count + 1);
+    }
+  }
 });
 
 test('asynchronous catalog screening yields monotonic staged progress and uses added criteria', async () => {

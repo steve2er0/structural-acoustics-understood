@@ -1957,7 +1957,7 @@ test('wheel homepage is data-driven, accessible, and linked to real content',()=
 
 test('offline cache includes current interactive runtimes',()=>{
   const worker=readFileSync(new URL('../service-worker.js',import.meta.url),'utf8');
-  assert.match(worker,/const CACHE = 'sau-v151-sorbothane-mixed-assemblies'/);
+  assert.match(worker,/const CACHE = 'sau-v153-sorbothane-catalog-result-limits'/);
   for (const module of ['sp8072-data','sp8072-physics','sp8072-tool']) assert.ok(worker.includes(`./js/${module}.js`));
   assert.match(worker,/event\.request\.destination === 'document'/);
   assert.doesNotMatch(worker,/launch-vehicle-cutaway/);

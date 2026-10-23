@@ -646,7 +646,7 @@ function defaultCatalogScreenSettings(configInput = DEFAULT_SORBOTHANE_CONFIG) {
   return {
     library: isParkerLordConfig(config) ? 'parker-lord-am' : 'sorbothane',
     geometry: 'all', odMin: 0.5, odMax: 5, idMin: 0, idMax: 3.1, thicknessMin: 0.125, thicknessMax: 1, stackMin: 1, stackMax: isSorbothaneAssemblyConfig(config) ? 1 : 8,
-    assemblyGroup: 'A', assemblySide: 'top',
+    assemblyGroup: 'A', assemblySide: 'both', topGeometry: 'all', bottomGeometry: 'all',
     lordFamily: 'all', lordElastomer: 'all', lordRatedLoadMin: 0, lordRatedLoadMax: 25, lordMountsMin: 1, lordMountsMax: 2,
     xTranslationMinHz: config.analysis.lateralModeMinimumHz[0], yTranslationMinHz: config.analysis.lateralModeMinimumHz[1],
     verticalMinHz: config.analysis.modeAcceptBandHz[0], verticalMaxHz: config.analysis.modeAcceptBandHz[1],
@@ -686,7 +686,9 @@ function normalizeCatalogScreenSettings(configInput, input = {}) {
     library: ['sorbothane', 'parker-lord-am'].includes(input.library) ? input.library : defaults.library,
     geometry: ['all', 'washer', 'ring', 'disc', ...(isSorbothaneAssemblyConfig(configInput) ? ['bushing'] : [])].includes(input.geometry) ? input.geometry : defaults.geometry,
     assemblyGroup: input.assemblyGroup === 'B' ? 'B' : 'A',
-    assemblySide: input.assemblySide === 'bottom' ? 'bottom' : 'top',
+    assemblySide: ['top', 'bottom'].includes(input.assemblySide) ? input.assemblySide : 'both',
+    topGeometry: ['all', 'bushing', 'ring', 'washer'].includes(input.topGeometry) ? input.topGeometry : 'all',
+    bottomGeometry: ['all', 'bushing', 'ring', 'washer'].includes(input.bottomGeometry) ? input.bottomGeometry : 'all',
     odMin: numberOr(input.odMin, defaults.odMin),
     odMax: numberOr(input.odMax, defaults.odMax),
     idMin: numberOr(input.idMin, defaults.idMin),
@@ -713,16 +715,20 @@ function normalizeCatalogScreenSettings(configInput, input = {}) {
 
 function catalogScreenControls(config, settingsInput = {}) {
   const settings = normalizeCatalogScreenSettings(config, settingsInput);
+  const mixed = isSorbothaneAssemblyConfig(config) && settings.library === 'sorbothane';
+  const paired = mixed && settings.assemblySide === 'both';
   const range = (label, prefix, step) => `<label><span>${label}</span><span class="inline-inputs"><input data-catalog-screen="${prefix}Min" aria-label="${label} minimum" type="number" value="${fmt(settings[`${prefix}Min`], 4)}" min="0" step="${step}"/><input data-catalog-screen="${prefix}Max" aria-label="${label} maximum" type="number" value="${fmt(settings[`${prefix}Max`], 4)}" min="0" step="${step}"/></span></label>`;
+  const sideGeometry = (side, label) => `<label><span>${label} types</span><select data-catalog-screen="${side}Geometry">${[['all', 'Bushings, rings & washers'], ['bushing', 'Bushings'], ['ring', 'Isolation rings'], ['washer', 'Washers']].map(([value, text]) => `<option value="${value}"${settings[`${side}Geometry`] === value ? ' selected' : ''}>${text}</option>`).join('')}</select></label>`;
   const library = `<label><span>Isolator library</span><select data-catalog-screen="library"><option value="sorbothane"${settings.library === 'sorbothane' ? ' selected' : ''}>Sorbothane standard products</option><option value="parker-lord-am"${settings.library === 'parker-lord-am' ? ' selected' : ''}>Parker LORD AM mounts</option></select></label>`;
   const filters = settings.library === 'parker-lord-am'
     ? `<label><span>AM family</span><select data-catalog-screen="lordFamily"><option value="all"${settings.lordFamily === 'all' ? ' selected' : ''}>All AM families</option>${PARKER_LORD_AM_FAMILIES.map(family => `<option value="${family.family}"${settings.lordFamily === family.family ? ' selected' : ''}>${family.family} · ${fmt(family.ratedLoadLb, 1)} lbf</option>`).join('')}</select></label><label><span>Elastomer</span><select data-catalog-screen="lordElastomer"><option value="all"${settings.lordElastomer === 'all' ? ' selected' : ''}>All elastomers</option>${['BTR', 'BTR II', 'MEA'].map(value => `<option value="${value}"${settings.lordElastomer === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label>${range('Rated load / mount (lbf)', 'lordRatedLoad', 0.5)}${range('Mounts / support point', 'lordMounts', 1)}`
     : `<label><span>Catalog geometry</span><select data-catalog-screen="geometry"><option value="all"${settings.geometry === 'all' ? ' selected' : ''}>All standard products</option><option value="washer"${settings.geometry === 'washer' ? ' selected' : ''}>Washers</option><option value="ring"${settings.geometry === 'ring' ? ' selected' : ''}>Isolation rings</option><option value="disc"${settings.geometry === 'disc' ? ' selected' : ''}>Discs</option>${isSorbothaneAssemblyConfig(config) ? `<option value="bushing"${settings.geometry === 'bushing' ? ' selected' : ''}>Bushings</option>` : ''}</select></label>${range('OD min / max (in)', 'od', 0.025)}${range('ID min / max (in)', 'id', 0.025)}${range('Thickness min / max (in)', 'thickness', 0.025)}${range('Elements / side min / max', 'stack', 1)}`;
-  const assemblyControls = isSorbothaneAssemblyConfig(config) && settings.library === 'sorbothane' ? `<label><span>Assembly group to screen</span><select data-catalog-screen="assemblyGroup"><option${settings.assemblyGroup==='A'?' selected':''}>A</option><option${settings.assemblyGroup==='B'?' selected':''}>B</option></select></label><label><span>Replace assembly side</span><select data-catalog-screen="assemblySide"><option value="top"${settings.assemblySide==='top'?' selected':''}>Upper part</option><option value="bottom"${settings.assemblySide==='bottom'?' selected':''}>Lower part</option></select></label><p class="sorbo-caption">One group/side is varied; other parts and leg assignments stay fixed. Bushing OD=A, ID=D, thickness=C. Sleeve dimensions B/E and fit checks remain active. Bushing count is limited to one per side. Unvalidated models appear under REVIEW, not passing recommendations.</p>` : '';
+  const assemblyControls = mixed ? `<label><span>Assembly group to screen</span><select data-catalog-screen="assemblyGroup"><option${settings.assemblyGroup==='A'?' selected':''}>A</option><option${settings.assemblyGroup==='B'?' selected':''}>B</option></select></label><label><span>Search mode</span><select data-catalog-screen="assemblySide"><option value="both"${paired?' selected':''}>Upper + lower combinations</option><option value="top"${settings.assemblySide==='top'?' selected':''}>Upper part only</option><option value="bottom"${settings.assemblySide==='bottom'?' selected':''}>Lower part only</option></select></label><p class="sorbo-caption">${paired ? 'Search all ordered upper/lower part and stack-count pairs within the filters. Geometry limits apply to each side independently. The other assembly group, leg assignments, clamp basis and fit dimensions stay fixed. Large ranges can take longer; progress and Cancel remain available.' : 'One group/side is varied; other parts and leg assignments stay fixed.'} Bushing OD=A, ID=D, thickness=C; sleeve B/E fit checks remain active. Bushings are limited to one per side and retain MODEL REVIEW.</p>` : '';
   const formulationNote = settings.library === 'sorbothane' && config.isolator.formulation === 'water-resistant'
     ? '<p class="sorbo-caption">The screen applies water-resistant material curves to Standard Products Guide geometry. Confirm water-resistant availability, rated load, and the orderable part number with Sorbothane.</p>'
     : '';
-  return `<div class="sorbo-catalog-controls">${library}${assemblyControls}${filters}<button type="button" class="button" data-sorbo-action="screen-catalog">Screen full catalog</button>${formulationNote}</div><p class="sorbo-caption">Active support layout: ${config.mounts.count} legs · rows along ${config.mounts.rowAxis.toUpperCase()} on the ±${config.mounts.rowAxis === 'x' ? 'Y' : 'X'} sides.</p>`;
+  const pairFilters = paired ? `${sideGeometry('top', 'Upper')}${sideGeometry('bottom', 'Lower')}${range('OD min / max (in)', 'od', 0.025)}${range('ID min / max (in)', 'id', 0.025)}${range('Thickness min / max (in)', 'thickness', 0.025)}${range('Elements on each side min / max', 'stack', 1)}` : filters;
+  return `<div class="sorbo-catalog-controls">${library}${assemblyControls}${pairFilters}<button type="button" class="button" data-sorbo-action="screen-catalog">${paired ? 'Screen upper/lower combinations' : 'Screen full catalog'}</button>${formulationNote}</div><p class="sorbo-caption">Active support layout: ${config.mounts.count} legs · rows along ${config.mounts.rowAxis.toUpperCase()} on the ±${config.mounts.rowAxis === 'x' ? 'Y' : 'X'} sides.</p>`;
 }
 
 function catalogToneCriteriaRows(settings) {
@@ -742,13 +748,14 @@ function catalogCriteriaControls(config, settingsInput = {}) {
 }
 
 function catalogProgressPanel() {
-  return `<div class="sorbo-catalog-progress" data-sorbo-catalog-progress hidden><div><strong data-catalog-progress-label>Preparing catalog screen…</strong><span data-catalog-progress-percent>0%</span></div><progress data-catalog-progress-bar max="100" value="0">0%</progress><small data-catalog-progress-detail>The interface remains available while combinations are evaluated.</small></div>`;
+  return `<div class="sorbo-catalog-progress" data-sorbo-catalog-progress hidden><div><strong data-catalog-progress-label>Preparing catalog screen…</strong><span data-catalog-progress-percent>0%</span></div><progress data-catalog-progress-bar max="100" value="0">0%</progress><small data-catalog-progress-detail>The interface remains available while combinations are evaluated.</small><button type="button" class="button-quiet" data-sorbo-action="cancel-catalog" hidden>Cancel screen</button></div>`;
 }
 
 function catalogCandidateFailure(candidate) {
   const lateralFailures = candidate.analysis.lateralModeResults.filter(result => !result.pass).map(result => `${result.axis} translation mode`);
   const failures = candidate.analysis.toneResults.flatMap(result => result.axisResults.filter(axisResult => !axisResult.pass).map(axisResult => `${fmt(result.frequencyHz, 0)} Hz T${axisResult.axis.toLowerCase()}${axisResult.axis.toLowerCase()}`));
   failures.unshift(...lateralFailures);
+  if (!candidate.analysis.verticalModeResult.pass) failures.push('Z translation mode');
   failures.push(...candidate.analysis.peakResults.filter(result => !result.pass).map(result => `${result.axis} resonance peak`));
   if (candidate.analysis.preload.assemblyChecks) {
     const counts = new Map();
@@ -759,6 +766,9 @@ function catalogCandidateFailure(candidate) {
 }
 
 function catalogSelectionMatches(candidate, selection) {
+  if (candidate.topItem) return Boolean(selection) && selection.group === candidate.assemblyTarget.group
+    && candidate.topItem.productNumber === selection.topProductNumber && candidate.bottomItem.productNumber === selection.bottomProductNumber
+    && candidate.topStackCount === selection.topCount && candidate.bottomStackCount === selection.bottomCount;
   const library = candidate.item.mountModel === 'parker-lord-am' ? 'parker-lord-am' : 'sorbothane';
   return Boolean(selection) && library === selection.library && candidate.item.productNumber === selection.productNumber && candidate.stackCount === selection.stackCount;
 }
@@ -799,7 +809,63 @@ function catalogCandidateTable(candidates, criteria, includeStatus = false, sele
   }).join('')}</tbody></table></div>`;
 }
 
-export function catalogScreenResult(screen, selection = null) {
+function assemblyPairUseButton(candidate, selection, recommended = false) {
+  const selected = catalogSelectionMatches(candidate, selection);
+  return `<button type="button" class="${recommended ? 'button' : 'button-quiet'}" data-sorbo-pair-use="${esc(candidate.candidateId)}"${selected ? ' disabled' : ''}>${selected ? 'Selected combination' : recommended ? 'Use recommended combination' : 'Use both parts'}</button>`;
+}
+
+function assemblyPairTable(candidates, selection) {
+  const part = (candidate, side) => {
+    const item = candidate[`${side}Item`];
+    return `<strong>${esc(item.productNumber)}</strong><small>${esc(item.geometry)} · ${item.durometer} Shore 00<br/>${item.odIn} OD / ${item.idIn} ID / ${item.thicknessIn} in<br/>${candidate[`${side}StackCount`]} / leg · ${candidate[`${side}Quantity`]} in group<br/>Rated ${item.ratedLoadLb.join('–')} lbf / element<br/>Installed ${candidate.installedLoadRangesLb[side].map(value => fmt(value, 2)).join('–')} lbf</small>`;
+  };
+  return `<div class="table-wrap sorbo-pair-table"><table><thead><tr><th>Rank / status</th><th>Upper part + stack</th><th>Lower part + stack</th><th>Clamp / leg</th><th>X / Y / Z modes</th><th>Tone response · worst direction</th><th>Worst resonance</th><th>Review / BOM / apply</th></tr></thead><tbody>${candidates.map((candidate, index) => {
+    const analysis = candidate.analysis, selected = catalogSelectionMatches(candidate, selection);
+    const reviews = analysis.preload.assemblyChecks.filter(check => !check.pass);
+    return `<tr${selected ? ' class="is-selected-design" data-sorbo-selected-design' : ''}><td>${index + 1}<br/><span class="sorbo-status ${candidate.pass ? 'pass' : 'fail'}">${candidate.pass ? 'PASS' : 'REVIEW'}</span>${selected ? '<span class="sorbo-selected-tag">Selected</span>' : ''}</td><td>${part(candidate, 'top')}</td><td>${part(candidate, 'bottom')}</td><td>${fmt(candidate.nominalPreloadN / LBF, 2)} lbf</td><td>${[...analysis.lateralModeResults, analysis.verticalModeResult].map(mode => fmt(mode.frequencyHz, 1)).join(' / ')} Hz</td><td>${analysis.toneResults.length ? analysis.toneResults.map(tone => `${fmt(tone.frequencyHz, 0)} Hz: ${fmt(tone.db, 1)} dB · ${tone.worstAxis}`).join('<br/>') : 'No tone criteria'}</td><td>${fmt(analysis.peak.db, 1)} dB · ${analysis.peak.axis.toUpperCase()}<br/>${fmt(analysis.peak.frequencyHz, 1)} Hz</td><td>${candidate.pass ? 'All active criteria pass.' : esc(catalogCandidateFailure(candidate))}${reviews.length ? `<details><summary>Assembly review details (${reviews.length})</summary><ul>${reviews.map(check => `<li>${esc(check.label)} — ${esc(check.detail)}</li>`).join('')}</ul></details>` : ''}<details><summary>Entire-system Sorbothane BOM</summary><ul>${candidate.billOfMaterials.map(item => `<li>${esc(item.productNumber)} × ${item.quantity}</li>`).join('')}</ul></details>${assemblyPairUseButton(candidate, selection)}</td></tr>`;
+  }).join('')}</tbody></table></div>`;
+}
+
+function assemblyPairScreenResult(screen, selection) {
+  const summary = `<div class="sorbo-catalog-summary"><span><b>${screen.upperOptionCount}</b> upper part/count options</span><span><b>${screen.lowerOptionCount}</b> lower options</span><span><b>${screen.combinationCount}</b> ordered combinations checked</span><span><b>${screen.passingPairCount}</b> passing part-number pairs</span><span><b>${screen.dynamicallyEvaluatedCount}</b> dynamic evaluations</span></div>`;
+  const context = `<p class="sorbo-caption">Assembly ${screen.assemblyTarget.group}: upper + lower searched together. The other group, leg assignments, bolt/hole/grip dimensions, clamp basis, material formulation and shared criteria remain fixed. Limits apply to each side. Upper and lower series counts are independent; each bushing is limited to one per side. Bushing/contact assumptions retain MODEL REVIEW.</p><details class="sorbo-pair-ranking"><summary>How “best” is ranked · scope and limits</summary><p class="sorbo-caption">Ranking: PASS first. For each ordered part-number pair retain the smallest passing total element count, then the lower modeled tone/resonance score; passing pairs are ranked by that score. REVIEW pairs are ranked by fewer failed dynamic criteria, fewer model flags, then the same score. This is a nominal best-within-filters search, not a global optimum over preload, geometry, assignments or uncertainty.</p></details>`;
+  const exclusions = `<p class="sorbo-caption">Rejected before dynamic analysis: ${screen.exclusions.fit} fit, ${screen.exclusions.ratedLoad} load rating, ${screen.exclusions.compression} compression, ${screen.exclusions.engagement} contact, ${screen.exclusions.equilibrium} static equilibrium. Counts may overlap. ${screen.exclusions.errors} model-evaluation errors.${screen.errors.length ? ` Results are incomplete: ${esc(screen.errors.join('; '))}` : ''}</p>`;
+  const winner = screen.recommendations[0];
+  const recommendation = winner ? `<article class="sorbo-catalog-recommendation${catalogSelectionMatches(winner, selection) ? ' is-selected-design' : ''}"><div><p class="eyebrow">${screen.exclusions.errors ? 'Best evaluated passing combination · incomplete search' : 'Best modeled passing combination'}</p><h3>Upper ${esc(winner.topItem.productNumber)} × ${winner.topStackCount}<br/>Lower ${esc(winner.bottomItem.productNumber)} × ${winner.bottomStackCount}</h3><p>Assembly ${screen.assemblyTarget.group} · ${winner.totalElementCount} Sorbothane elements in this group · both sides applied together</p></div>${assemblyPairUseButton(winner, selection, true)}</article><h3>Passing upper/lower combinations</h3>${assemblyPairTable(screen.recommendations, selection)}`
+    : `<div class="sorbo-empty"><strong>No upper/lower combination passes every active criterion.</strong><p>${screen.nearMisses.length ? 'The best mechanically eligible REVIEW combinations are below. MODEL flags require manufacturer/test/FE correlation, not relaxed dynamic limits.' : 'Review the geometry, sleeve grip, load and compression limits above. No mechanically eligible pair reached dynamic evaluation.'}</p></div>`;
+  const review = screen.nearMisses.length ? `<h3>Best REVIEW combinations · up to 8</h3>${assemblyPairTable(screen.nearMisses, selection)}` : '';
+  return `${summary}${context}${recommendation}${review}${exclusions}`;
+}
+
+export function applySorbothaneCatalogCandidate(configInput, candidate) {
+  if (candidate.summaryOnly && candidate.assemblyTarget?.side === 'both') {
+    const config = normalizeSorbothaneConfig(configInput);
+    const group = config.assemblies.groups[candidate.assemblyTarget.group];
+    Object.assign(group, { topProductNumber: candidate.topItem.productNumber, bottomProductNumber: candidate.bottomItem.productNumber,
+      topCount: candidate.topStackCount, bottomCount: candidate.bottomStackCount });
+    return config;
+  }
+  const config = normalizeSorbothaneConfig(candidate.config);
+  config.uncertainty = deepClone(normalizeSorbothaneConfig(configInput).uncertainty);
+  return config;
+}
+
+function normalizeCatalogResultLimit(value) {
+  return value === 'all' ? 'all' : [25, 50, 100].includes(Number(value)) ? Number(value) : 25;
+}
+
+export function catalogScreenResult(screen, selection = null, resultLimit = 25) {
+  const limit = normalizeCatalogResultLimit(resultLimit);
+  const all = screen.recommendations;
+  const displayed = limit === 'all' ? all : all.slice(0, limit);
+  const selectedRank = all.findIndex(candidate => catalogSelectionMatches(candidate, selection)) + 1;
+  const noun = screen.searchMode === 'assembly-pairs' ? 'passing part-number pairs' : 'passing part numbers';
+  const controls = `<div class="sorbo-catalog-result-controls"><label><span>Show passing results</span><select data-catalog-result-limit aria-label="Show passing results"${all.length ? '' : ' disabled'}>${[25, 50, 100, 'all'].map(value => `<option value="${value}"${limit === value ? ' selected' : ''}>${value === 'all' ? 'All' : value}</option>`).join('')}</select></label><div><p data-catalog-result-count role="status" aria-live="polite">Showing ${displayed.length} of ${all.length} ${noun}</p><small>One preferred passing stack/arrangement per ${screen.searchMode === 'assembly-pairs' ? 'ordered part-number pair' : 'part number'}. Display only; no search rerun.${limit === 'all' && all.length > 100 ? ' Large result lists may take a moment to render.' : ''}</small>${selectedRank > displayed.length ? `<p class="sorbo-catalog-selection-note">Your selected design is rank ${selectedRank}, outside this display limit. Choose a larger limit or All to show it.</p>` : ''}</div></div>`;
+  return controls + renderCatalogScreenResults({ ...screen, recommendations: displayed }, selection);
+}
+
+function renderCatalogScreenResults(screen, selection = null) {
+  if (screen.searchMode === 'assembly-pairs') return assemblyPairScreenResult(screen, selection);
   if (screen.library === 'parker-lord-am') return parkerLordScreenResult(screen, selection);
   const formulation = sorbothaneMaterial(screen.formulation);
   const summary = `<div class="sorbo-catalog-summary"><span><b>${screen.catalogPartCount}</b> catalog parts</span><span><b>${screen.eligiblePartCount}</b> within geometry</span><span><b>${screen.combinationCount}</b> part/stack combinations</span><span><b>${screen.passingPartCount}</b> passing part numbers</span><span><b>${esc(formulation.label)}</b> material model</span></div>`;
@@ -944,8 +1010,8 @@ function explorerPanel(configInput = DEFAULT_SORBOTHANE_CONFIG, settingsInput = 
   const outputOptions = [['t1200', 'Worst X/Y/Z T @ 1200 Hz (dB)'], ['t600', 'Worst X/Y/Z T @ 600 Hz (dB)'], ['peak', 'Worst X/Y/Z peak (dB)'], ['verticalMode', 'Vertical mode (Hz)']];
   const catalogIsLord = catalogSettings.library === 'parker-lord-am';
   const catalogCount = catalogIsLord ? PARKER_LORD_AM_CATALOG.length : isSorbothaneAssemblyConfig(config) ? SORBOTHANE_ASSEMBLY_PARTS.length : SORBOTHANE_CATALOG.length - 1;
-  const catalogHeading = catalogIsLord ? 'Recommend a Parker LORD AM part and arrangement' : isSorbothaneAssemblyConfig(config) ? 'Screen a part within the current mixed assembly' : 'Recommend a Sorbothane part number and stack count';
-  const catalogIntro = catalogIsLord ? 'Filter all AM Low Profile Avionics Mount part numbers by family, elastomer, rated load, and single/back-to-back arrangement. Each eligible complete mount is evaluated using its published axial and radial dynamic spring rates.' : isSorbothaneAssemblyConfig(config) ? 'Replace one group’s upper or lower part while retaining the other parts, clamp basis, fit dimensions and leg assignments. Every candidate reruns mixed-support load sharing and the same active criteria. Bushings include explicit fit and model-review checks.' : 'Filter the Sorbothane catalog by nominal geometry. Every eligible part is checked at each allowed stack count using the current mass, CG, acceleration, compression basis, material model, and active criteria below.';
+  const catalogHeading = catalogIsLord ? 'Recommend a Parker LORD AM part and arrangement' : isSorbothaneAssemblyConfig(config) ? catalogSettings.assemblySide === 'both' ? 'Recommend upper/lower assembly combinations' : 'Screen one assembly side' : 'Recommend a Sorbothane part number and stack count';
+  const catalogIntro = catalogIsLord ? 'Filter all AM Low Profile Avionics Mount part numbers by family, elastomer, rated load, and single/back-to-back arrangement. Each eligible complete mount is evaluated using its published axial and radial dynamic spring rates.' : isSorbothaneAssemblyConfig(config) ? 'Recommend a complete upper/lower combination for one assembly group, or optionally screen a single side. Other groups, clamp basis, fit dimensions and leg assignments stay fixed. Every mechanically eligible pair reruns mixed-support load sharing and the same active dynamic criteria. Bushings retain explicit fit and model-review checks.' : 'Filter the Sorbothane catalog by nominal geometry. Every eligible part is checked at each allowed stack count using the current mass, CG, acceleration, compression basis, material model, and active criteria below. Enable mixed assemblies in the Isolator tab to recommend upper/lower bushing, ring and washer combinations.';
   const catalogMechanicalCriteria = catalogIsLord ? '<span>Resultant support-point load within rated capacity</span><span>Published axial / radial mount rates</span><span>Single or catalog-described back-to-back pair</span>' : '<span>Installed upper/lower load within catalog rating</span><span>10–20% recommended compression</span><span>No element unloading</span>';
   const catalogEmpty = catalogIsLord ? 'A back-to-back pair doubles both rated capacity and dynamic spring rate; it is not treated as a series pad stack.' : 'Stacked elements act in series: each element carries the same installed stack load, while additional elements reduce mount stiffness.';
   return `<section class="sorbo-tab-panel" data-sorbo-panel="explorer"><section class="sorbo-card"><header><div><p class="eyebrow">Catalog sizing</p><h2>${catalogHeading}</h2></div><span>${catalogCount} manufacturer records</span></header><p class="sorbo-catalog-intro">${catalogIntro}</p><div class="sorbo-criteria-strip">${catalogMechanicalCriteria}<span data-catalog-lateral-criterion>X / Y translation ≥ ${fmt(catalogSettings.xTranslationMinHz, 0)} / ${fmt(catalogSettings.yTranslationMinHz, 0)} Hz</span><span data-catalog-vertical-criterion>Vertical mode in ${fmt(catalogSettings.verticalMinHz, 0)}–${fmt(catalogSettings.verticalMaxHz, 0)} Hz</span><span data-catalog-criterion-count>${catalogToneCriteriaSummary(catalogSettings)}</span></div>${catalogCriteriaControls(config, catalogSettings)}${catalogScreenControls(config, catalogSettings)}${catalogProgressPanel()}<div data-sorbo-catalog-result><div class="sorbo-empty"><strong>Screen the manufacturer catalog.</strong><p>${catalogEmpty}</p></div></div></section><section class="sorbo-card"><header><div><p class="eyebrow">Transparent parametric sweep</p><h2>Isolation map and ranked candidates</h2></div><span>No opaque optimizer</span></header>${currentDesignPanel(config, settings)}<div class="sorbo-explorer-controls"><label><span>X variable</span><select data-explorer="xVariable">${options(settings.xVariable)}</select></label><label><span>X min / max</span><span class="inline-inputs"><input data-explorer="xMin" aria-label="X minimum" type="number" value="${fmt(settings.xMin, 6)}" step="${ranges[settings.xVariable].step}"/><input data-explorer="xMax" aria-label="X maximum" type="number" value="${fmt(settings.xMax, 6)}" step="${ranges[settings.xVariable].step}"/></span><small class="sorbo-explorer-range-note" data-explorer-range-note="x">${esc(ranges[settings.xVariable].note)}</small></label><label><span>Y variable</span><select data-explorer="yVariable">${options(settings.yVariable)}</select></label><label><span>Y min / max</span><span class="inline-inputs"><input data-explorer="yMin" aria-label="Y minimum" type="number" value="${fmt(settings.yMin, 6)}" step="${ranges[settings.yVariable].step}"/><input data-explorer="yMax" aria-label="Y maximum" type="number" value="${fmt(settings.yMax, 6)}" step="${ranges[settings.yVariable].step}"/></span><small class="sorbo-explorer-range-note" data-explorer-range-note="y">${esc(ranges[settings.yVariable].note)}</small></label><label><span>Color output</span><select data-explorer="output">${outputOptions.map(([value, label]) => `<option value="${value}"${value === settings.output ? ' selected' : ''}>${label}</option>`).join('')}</select></label><button type="button" class="button" data-sorbo-action="run-explorer">Run 7 × 7 sweep</button></div><div data-sorbo-explorer-result><div class="sorbo-empty"><strong>Choose two variables.</strong><p>The app evaluates every visible grid point, applies the same mechanics and requirements, and ranks inspectable candidates.</p></div></div></section></section>`;
@@ -1211,6 +1277,7 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
   let explorerSettings = defaultExplorerSettings(config);
   let catalogSettings = defaultCatalogScreenSettings(config);
   let catalogScreen = null;
+  let catalogResultLimit = 25;
   let explorerGrid = null;
   let catalogRunToken = 0;
   let assemblyUpdateToken = 0;
@@ -1248,17 +1315,21 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
     const relativePlane = shell.querySelector('[data-sorbo-plane-relative]');
     if (relativePlane) relativePlane.value = fmt(unitDefinitions.length[config.units].fromSI(config.mounts.planeZM - config.component.cgM[2]), 4);
   };
-  const currentCatalogSelection = () => catalogScreen?.assemblyTarget ? {
-    library: 'sorbothane', productNumber: config.assemblies.groups[catalogScreen.assemblyTarget.group][`${catalogScreen.assemblyTarget.side}ProductNumber`],
-    stackCount: config.assemblies.groups[catalogScreen.assemblyTarget.group][`${catalogScreen.assemblyTarget.side}Count`]
-  } : config.isolator.productNumber === 'custom-ring' ? null : {
-    library: isParkerLordConfig(config) ? 'parker-lord-am' : 'sorbothane',
-    productNumber: config.isolator.productNumber,
-    stackCount: isParkerLordConfig(config) ? config.isolator.mountsPerPoint : config.mounts.stackTop
+  const currentCatalogSelection = () => {
+    const target = catalogScreen?.assemblyTarget;
+    if (target) {
+      const group = config.assemblies.groups[target.group];
+      if (target.side === 'both') return { library: 'sorbothane', group: target.group, ...group };
+      return { library: 'sorbothane', productNumber: group[`${target.side}ProductNumber`], stackCount: group[`${target.side}Count`] };
+    }
+    return config.isolator.productNumber === 'custom-ring' ? null : {
+      library: isParkerLordConfig(config) ? 'parker-lord-am' : 'sorbothane', productNumber: config.isolator.productNumber,
+      stackCount: isParkerLordConfig(config) ? config.isolator.mountsPerPoint : config.mounts.stackTop
+    };
   };
   const restoreStudyResults = () => {
     const catalogResult = shell.querySelector('[data-sorbo-catalog-result]');
-    if (catalogScreen && catalogResult) catalogResult.innerHTML = catalogScreenResult(catalogScreen, currentCatalogSelection());
+    if (catalogScreen && catalogResult) catalogResult.innerHTML = catalogScreenResult(catalogScreen, currentCatalogSelection(), catalogResultLimit);
     const explorerResultMount = shell.querySelector('[data-sorbo-explorer-result]');
     if (explorerGrid && explorerResultMount) explorerResultMount.innerHTML = renderSorbothaneExplorerResult(explorerGrid);
   };
@@ -1531,16 +1602,23 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
       if (live) live.textContent = `Downloaded ${model.filename}.`;
     });
     const catalogResult = shell.querySelector('[data-sorbo-catalog-result]');
+    const screenButtonLabel = () => isSorbothaneAssemblyConfig(config) && catalogSettings.library === 'sorbothane' && catalogSettings.assemblySide === 'both'
+      ? 'Screen upper/lower combinations' : 'Screen full catalog';
     const cancelCatalogScreen = () => {
       catalogRunToken += 1;
       const button = shell.querySelector('[data-sorbo-action="screen-catalog"]');
       const progress = shell.querySelector('[data-sorbo-catalog-progress]');
       if (button) {
         button.disabled = false;
-        button.textContent = 'Screen full catalog';
+        button.textContent = screenButtonLabel();
       }
       if (progress) progress.hidden = true;
     };
+    shell.querySelector('[data-sorbo-action="cancel-catalog"]')?.addEventListener('click', () => {
+      cancelCatalogScreen();
+      catalogScreen = null;
+      if (catalogResult) catalogResult.innerHTML = '<div class="sorbo-empty"><strong>Catalog screen cancelled.</strong><p>No partial results were applied. Narrow the filters or run the search again.</p></div>';
+    });
     const clearCatalogResult = (title = 'Catalog limits or criteria updated.') => {
       cancelCatalogScreen();
       catalogScreen = null;
@@ -1554,10 +1632,10 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
     };
     shell.querySelectorAll('[data-catalog-screen]').forEach(control => control.addEventListener('change', event => {
       const key = event.target.dataset.catalogScreen;
-      const stringKeys = ['library', 'geometry', 'lordFamily', 'lordElastomer', 'assemblyGroup', 'assemblySide'];
+      const stringKeys = ['library', 'geometry', 'topGeometry', 'bottomGeometry', 'lordFamily', 'lordElastomer', 'assemblyGroup', 'assemblySide'];
       catalogSettings[key] = stringKeys.includes(key) ? event.target.value : Number(event.target.value);
       clearCatalogResult();
-      if (key === 'library') {
+      if (key === 'library' || key === 'assemblySide') {
         catalogSettings = normalizeCatalogScreenSettings(config, catalogSettings);
         requestAnimationFrame(rerenderWorkbench);
       }
@@ -1606,15 +1684,20 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
       }
       applySharedCriteria({ toneCriteria: [...config.analysis.tones, { frequencyHz, maximumDb }] }, `${fmt(frequencyHz, 0)} Hz criterion added.`);
     });
+    catalogResult?.addEventListener('change', event => {
+      if (!event.target.matches('[data-catalog-result-limit]') || !catalogScreen) return;
+      catalogResultLimit = normalizeCatalogResultLimit(event.target.value);
+      catalogResult.innerHTML = catalogScreenResult(catalogScreen, currentCatalogSelection(), catalogResultLimit);
+    });
     catalogResult?.addEventListener('click', event => {
-      const control = event.target.closest('[data-sorbo-catalog-use]');
+      const control = event.target.closest('[data-sorbo-catalog-use], [data-sorbo-pair-use]');
       if (!control) return;
       if (catalogScreen?.assemblyTarget) {
-        const candidate = [...catalogScreen.recommendations, ...catalogScreen.nearMisses].find(item => item.item.productNumber === control.dataset.sorboCatalogUse && item.stackCount === Number(control.dataset.sorboCatalogStack));
+        const candidate = [...catalogScreen.recommendations, ...catalogScreen.nearMisses].find(item => control.dataset.sorboPairUse
+          ? item.candidateId === control.dataset.sorboPairUse
+          : item.item.productNumber === control.dataset.sorboCatalogUse && item.stackCount === Number(control.dataset.sorboCatalogStack));
         if (!candidate) return;
-        const uncertainty = config.uncertainty;
-        config = normalizeSorbothaneConfig(candidate.config);
-        config.uncertainty = uncertainty;
+        config = applySorbothaneCatalogCandidate(config, candidate);
         explorerSettings = defaultExplorerSettings(config);
         explorerGrid = null;
         rerenderWorkbench();
@@ -1644,6 +1727,7 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
         ...catalogSettings,
         library: get('library'),
         assemblyGroup: get('assemblyGroup'), assemblySide: get('assemblySide'),
+        topGeometry: get('topGeometry'), bottomGeometry: get('bottomGeometry'),
         geometry: get('geometry'), odMin: get('odMin'), odMax: get('odMax'), idMin: get('idMin'), idMax: get('idMax'),
         thicknessMin: get('thicknessMin'), thicknessMax: get('thicknessMax'), stackMin: get('stackMin'), stackMax: get('stackMax'),
         lordFamily: get('lordFamily'), lordElastomer: get('lordElastomer'), lordRatedLoadMin: get('lordRatedLoadMin'), lordRatedLoadMax: get('lordRatedLoadMax'),
@@ -1665,14 +1749,18 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
       const progressLabel = progressPanel?.querySelector('[data-catalog-progress-label]');
       const progressPercent = progressPanel?.querySelector('[data-catalog-progress-percent]');
       const progressDetail = progressPanel?.querySelector('[data-catalog-progress-detail]');
+      const cancelButton = progressPanel?.querySelector('[data-sorbo-action="cancel-catalog"]');
       const runToken = ++catalogRunToken;
       button.disabled = true;
       button.textContent = 'Screening catalog · 0%';
       if (progressPanel) progressPanel.hidden = false;
+      if (cancelButton) cancelButton.hidden = false;
       if (catalogResult) catalogResult.innerHTML = '<div class="sorbo-empty sorbo-catalog-running"><strong>Catalog evaluation is running.</strong><p>Geometry and load checks run first; frequency-response checks follow only for viable combinations.</p></div>';
       const stageLabel = stage => ({
         'pre-screen': 'Checking geometry, installed load, and mode placement',
         dynamic: 'Evaluating tone and resonance requirements',
+        'pair-search': 'Checking upper/lower combinations and dynamic criteria',
+        'pair-rank': 'Preparing best passing and REVIEW pairs',
         complete: 'Catalog screen complete'
       }[stage] ?? 'Screening catalog');
       try {
@@ -1688,7 +1776,8 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
           idRange: [catalogSettings.idMin, catalogSettings.idMax],
           thicknessRange: [catalogSettings.thicknessMin, catalogSettings.thicknessMax],
           stackRange: [catalogSettings.stackMin, catalogSettings.stackMax]
-          ,assemblyGroup: catalogSettings.assemblyGroup, assemblySide: catalogSettings.assemblySide
+          ,assemblyGroup: catalogSettings.assemblyGroup, assemblySide: catalogSettings.assemblySide,
+          topGeometry: catalogSettings.topGeometry, bottomGeometry: catalogSettings.bottomGeometry
         };
         const screen = await screenFunction(config, screenSettings, {
           batchSize: 6,
@@ -1710,16 +1799,18 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
         });
         if (!screen || runToken !== catalogRunToken) return;
         catalogScreen = screen;
-        if (catalogResult) catalogResult.innerHTML = catalogScreenResult(screen, currentCatalogSelection());
+        if (catalogResult) catalogResult.innerHTML = catalogScreenResult(screen, currentCatalogSelection(), catalogResultLimit);
         button.disabled = false;
-        button.textContent = 'Screen full catalog';
+        button.textContent = screenButtonLabel();
+        if (cancelButton) cancelButton.hidden = true;
       } catch (error) {
         if (runToken !== catalogRunToken) return;
         catalogScreen = null;
         if (catalogResult) catalogResult.innerHTML = `<div class="sorbo-empty sorbo-catalog-empty"><strong>The catalog screen stopped.</strong><p>${esc(error?.message ?? 'Unexpected screening error.')}</p></div>`;
         button.disabled = false;
-        button.textContent = 'Screen full catalog';
+        button.textContent = screenButtonLabel();
         if (progressLabel) progressLabel.textContent = 'Catalog screen stopped';
+        if (cancelButton) cancelButton.hidden = true;
       }
     });
     const clearExplorerResult = (title = 'Ranges updated.') => {

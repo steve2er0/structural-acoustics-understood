@@ -829,11 +829,13 @@ function responsePointVector(config) {
 
 export function rigidBodyResponseAtFrequency(configInput, frequencyHz, axis = null) {
   const config = normalizeSorbothaneConfig(configInput);
+  return preparedRigidBodyResponse(config, frequencyHz, axis, rigidBodyMassMatrix(config).matrix, assembleRigidBodyStiffness(config, frequencyHz));
+}
+
+function preparedRigidBodyResponse(config, frequencyHz, axis, mass, stiffness) {
   const excitationAxis = axis ?? config.analysis.excitationAxis;
   const axisIndex = { x: 0, y: 1, z: 2 }[excitationAxis] ?? 2;
   const omega = TAU * frequencyHz;
-  const mass = rigidBodyMassMatrix(config).matrix;
-  const stiffness = assembleRigidBodyStiffness(config, frequencyHz);
   const eta = stiffness.mount.material.tanDelta;
   const dynamic = zeros(6).map((row, i) => row.map((_, j) => complex(stiffness.matrix[i][j] - omega ** 2 * mass[i][j], stiffness.lossMatrix?.[i][j] ?? stiffness.matrix[i][j] * eta)));
   const gamma = Array(6).fill(0);
@@ -860,6 +862,16 @@ export function rigidBodyResponseAtFrequency(configInput, frequencyHz, axis = nu
   };
 }
 
+function analysisResponseEvaluator(config) {
+  const mass = rigidBodyMassMatrix(config).matrix, stiffnessByFrequency = new Map();
+  // X/Y/Z share the same physical matrix. This cache lives for one immutable
+  // analysis only: no global reuse across candidate edits or uncertainty draws.
+  return (frequency, axis) => {
+    if (!stiffnessByFrequency.has(frequency)) stiffnessByFrequency.set(frequency, assembleRigidBodyStiffness(config, frequency));
+    return preparedRigidBodyResponse(config, frequency, axis, mass, stiffnessByFrequency.get(frequency));
+  };
+}
+
 function logspace(minimum, maximum, count) {
   const start = Math.log10(minimum);
   const end = Math.log10(maximum);
@@ -881,12 +893,12 @@ export function frequencyResponse(configInput, axis = null) {
   };
 }
 
-function peakDirectResponse(config, minimumHz, maximumHz, axis) {
+function peakDirectResponse(config, minimumHz, maximumHz, axis, responseAt) {
   const axisIndex = { x: 0, y: 1, z: 2 }[axis] ?? 2;
   const frequencies = logspace(minimumHz, maximumHz, 121);
   let peak = { axis: axis.toUpperCase(), frequencyHz: minimumHz, magnitude: 0, db: -Infinity };
   for (const frequency of frequencies) {
-    const response = rigidBodyResponseAtFrequency(config, frequency, axis);
+    const response = responseAt(frequency, axis);
     if (response.magnitude[axisIndex] > peak.magnitude) peak = { axis: axis.toUpperCase(), frequencyHz: frequency, magnitude: response.magnitude[axisIndex], db: response.db[axisIndex] };
   }
   return peak;
@@ -967,18 +979,19 @@ export function analyzeSorbothaneIsolation(configInput, options = {}) {
   const lateralModeResults = lateralTranslationModeResults(modes.modes, config);
   const verticalModeResult = verticalTranslationModeResult(modes.modes, config);
   const preload = staticPreloadState(config);
+  const responseAt = analysisResponseEvaluator(config);
   const directionalResponses = options.skipResponse ? null : Object.fromEntries(['x', 'y', 'z'].map(axis => [axis, frequencyResponse(config, axis)]));
   const response = directionalResponses?.[config.analysis.excitationAxis] ?? null;
   const toneResults = config.analysis.tones.map(tone => {
     const axisResults = ['x', 'y', 'z'].map((axis, axisIndex) => {
-      const result = rigidBodyResponseAtFrequency(config, tone.frequencyHz, axis);
+      const result = responseAt(tone.frequencyHz, axis);
       return { axis: axis.toUpperCase(), db: result.db[axisIndex], magnitude: result.magnitude[axisIndex], phaseDeg: result.phaseDeg[axisIndex], pass: result.db[axisIndex] <= tone.maximumDb, provenance: result.property.provenance };
     });
     const worst = axisResults.reduce((largest, result) => result.db > largest.db ? result : largest, axisResults[0]);
     return { ...tone, axisResults, worstAxis: worst.axis, db: worst.db, magnitude: worst.magnitude, phaseDeg: worst.phaseDeg, pass: axisResults.every(result => result.pass), provenance: worst.provenance };
   });
   const peakResults = ['x', 'y', 'z'].map(axis => {
-    const result = peakDirectResponse(config, ...config.analysis.resonanceBandHz, axis);
+    const result = peakDirectResponse(config, ...config.analysis.resonanceBandHz, axis, responseAt);
     const closestMode = modes.modes.reduce((best, mode) => Math.abs(mode.frequencyHz - result.frequencyHz) < Math.abs(best.frequencyHz - result.frequencyHz) ? mode : best, modes.modes[0]);
     result.modeNumber = closestMode.number;
     result.modeLabel = closestMode.dominant;
@@ -1345,12 +1358,175 @@ function finalizeCatalogScreen(context, evaluated, exclusions) {
     dynamicallyEvaluatedCount: evaluated.length,
     passingPartCount: recommendations.length,
     exclusions,
-    recommendations: recommendations.slice(0, 16),
+    recommendations,
     nearMisses: nearMisses.slice(0, 8)
   };
 }
 
+// Enumerate ordered upper/lower pairs lazily. Only small ranking summaries are
+// retained, not a full six-DOF analysis/configuration for every combination.
+function createAssemblyPairSearch(configInput, settings) {
+  const context = createCatalogScreenContext(configInput, { ...settings, stackRange: settings.stackRange ?? [1, 1], geometry: 'all', assemblySide: 'top' });
+  const groupKey = context.assemblyTarget.group;
+  const group = context.config.assemblies.groups[groupKey];
+  const geometry = side => {
+    const value = settings[`${side}Geometry`] ?? settings.geometry;
+    return ['all', 'bushing', 'ring', 'washer', 'disc'].includes(value) ? value : 'all';
+  };
+  const sideOptions = side => context.combinations.filter(({ item }) => geometry(side) === 'all'
+    ? ['bushing', 'ring', 'washer'].includes(item.geometry) : item.geometry === geometry(side));
+  const upper = sideOptions('top'), lower = sideOptions('bottom');
+  const total = upper.length * lower.length;
+  const exclusions = { fit: 0, compression: 0, engagement: 0, ratedLoad: 0, equilibrium: 0, errors: 0 };
+  const errors = [];
+  const bestByParts = new Map();
+  let dynamicallyEvaluatedCount = 0;
+  const at = index => ({ top: upper[Math.floor(index / lower.length)], bottom: lower[index % lower.length] });
+  const configFor = pair => {
+    const config = clone(context.config), target = config.assemblies.groups[groupKey];
+    for (const side of ['top', 'bottom']) {
+      target[`${side}ProductNumber`] = pair[side].item.productNumber;
+      target[`${side}Count`] = pair[side].stackCount;
+    }
+    config.uncertainty.enabled = false;
+    return config;
+  };
+  const compare = (a, b) => a.dynamicFailures - b.dynamicFailures || a.modelReviews - b.modelReviews || a.score - b.score || a.elementCount - b.elementCount || a.index - b.index;
+  const passingRecord = (pair, analysis, summary) => {
+    const mounts = analysis.preload.mounts.filter(mount => mount.group === groupKey);
+    const range = side => {
+      const loads = mounts.map(mount => (side === 'top' ? mount.upperLoadN : mount.lowerLoadN) / LBF);
+      return [Math.min(...loads), Math.max(...loads)];
+    };
+    // Retain display/application data from the completed evaluation, not the
+    // large stiffness matrices, static profiles or a config copy for every pair.
+    return { ...summary, summaryOnly: true,
+      candidateId: `${groupKey}|${pair.top.item.productNumber}|${pair.top.stackCount}|${pair.bottom.item.productNumber}|${pair.bottom.stackCount}`,
+      topItem: pair.top.item, bottomItem: pair.bottom.item, topStackCount: pair.top.stackCount, bottomStackCount: pair.bottom.stackCount,
+      topQuantity: mounts.length * pair.top.stackCount, bottomQuantity: mounts.length * pair.bottom.stackCount,
+      totalElementCount: mounts.length * summary.elementCount, billOfMaterials: analysis.preload.billOfMaterials,
+      nominalPreloadN: mounts[0].profile.preloadN, installedLoadRangesLb: { top: range('top'), bottom: range('bottom') },
+      assemblyTarget: { group: groupKey, side: 'both' },
+      analysis: { passes: true, lateralModeResults: analysis.lateralModeResults, verticalModeResult: analysis.verticalModeResult,
+        toneResults: analysis.toneResults, peak: analysis.peak, peakResults: analysis.peakResults, preload: { assemblyChecks: [] } }
+    };
+  };
+  const visit = index => {
+    const pair = at(index);
+    // Reject only definite fit failures here; MODEL flags must remain eligible
+    // for REVIEW results. In particular, a catalog bushing is not a radial rate.
+    const fits = side => {
+      const item = side.item;
+      return group.boltDiameterM > 0 && group.boltDiameterM < item.idIn * INCH
+        && group.holeDiameterM > group.boltDiameterM && group.holeDiameterM < item.odIn * INCH
+        && (item.geometry !== 'bushing' || group.holeDiameterM > item.sleeveOdIn * INCH);
+    };
+    const sleeveReach = [pair.top, pair.bottom].filter(side => side.item.geometry === 'bushing')
+      .reduce((sum, side) => sum + (side.item.overallHeightIn - side.item.thicknessIn) * INCH, 0);
+    if (!fits(pair.top) || !fits(pair.bottom) || (sleeveReach > 0 && Math.abs(sleeveReach - group.gripThicknessM) >= .002 * INCH)) {
+      exclusions.fit += 1;
+      return;
+    }
+    try {
+      const candidateConfig = configFor(pair);
+      const preload = staticPreloadState(candidateConfig);
+      const failed = preload.assemblyChecks.filter(check => !check.pass);
+      const hard = [['FIT', 'fit'], ['COMP', 'compression'], ['CONTACT', 'engagement'], ['LOAD', 'ratedLoad'], ['RATE?', 'ratedLoad'], ['STATIC', 'equilibrium']];
+      for (const category of new Set(hard.filter(([code]) => failed.some(check => check.code === code)).map(([, category]) => category))) exclusions[category] += 1;
+      if (failed.some(check => hard.some(([code]) => code === check.code))) return;
+      const analysis = analyzeSorbothaneIsolation(candidateConfig, { skipResponse: true, skipUncertainty: true });
+      dynamicallyEvaluatedCount += 1;
+      const dynamicFailures = [...analysis.lateralModeResults, analysis.verticalModeResult, ...analysis.toneResults, ...analysis.peakResults].filter(result => !result.pass).length;
+      const summary = { index, pass: analysis.passes, dynamicFailures, modelReviews: failed.length,
+        score: catalogPerformanceScore(analysis), elementCount: pair.top.stackCount + pair.bottom.stackCount };
+      const key = `${pair.top.item.productNumber}|${pair.bottom.item.productNumber}`;
+      const previous = bestByParts.get(key);
+      // For a passing part-number pair prefer its smallest total series count;
+      // across different pairs, rank modeled dynamic performance first.
+      const better = !previous || (summary.pass !== previous.pass ? summary.pass
+        : summary.pass ? summary.elementCount < previous.elementCount || summary.elementCount === previous.elementCount && compare(summary, previous) < 0
+          : compare(summary, previous) < 0);
+      if (better) {
+        if (summary.pass) summary.record = passingRecord(pair, analysis, summary);
+        bestByParts.set(key, summary);
+      }
+    } catch (error) {
+      exclusions.errors += 1;
+      if (errors.length < 3 && !errors.includes(error.message)) errors.push(error.message);
+    }
+  };
+  const shortlist = () => {
+    const all = [...bestByParts.values()];
+    const passing = all.filter(candidate => candidate.pass).sort(compare);
+    const review = all.filter(candidate => !candidate.pass).sort(compare);
+    return { passingPairCount: passing.length, reviewPairCount: review.length, passing: passing.map(summary => summary.record), review: review.slice(0, 8) };
+  };
+  const materialize = summary => {
+    const pair = at(summary.index), config = configFor(pair);
+    const analysis = analyzeSorbothaneIsolation(config, { skipResponse: true, skipUncertainty: true });
+    const mounts = analysis.preload.mounts.filter(mount => mount.group === groupKey);
+    const range = side => { const loads = mounts.map(mount => (side === 'top' ? mount.upperLoadN : mount.lowerLoadN) / LBF); return [Math.min(...loads), Math.max(...loads)]; };
+    return { ...summary, candidateId: `${groupKey}|${pair.top.item.productNumber}|${pair.top.stackCount}|${pair.bottom.item.productNumber}|${pair.bottom.stackCount}`,
+      topItem: pair.top.item, bottomItem: pair.bottom.item, topStackCount: pair.top.stackCount, bottomStackCount: pair.bottom.stackCount,
+      topQuantity: mounts.length * pair.top.stackCount, bottomQuantity: mounts.length * pair.bottom.stackCount,
+      totalElementCount: mounts.length * summary.elementCount, billOfMaterials: analysis.preload.billOfMaterials,
+      nominalPreloadN: mounts[0].profile.preloadN, installedLoadRangesLb: { top: range('top'), bottom: range('bottom') },
+      assemblyTarget: { group: groupKey, side: 'both' }, config, analysis };
+  };
+  const result = (selected, recommendations, nearMisses) => ({
+    library: 'sorbothane', searchMode: 'assembly-pairs', assemblyTarget: { group: groupKey, side: 'both' },
+    supportCount: context.config.mounts.count, rowAxis: context.config.mounts.rowAxis, formulation: context.config.isolator.formulation,
+    criteria: context.criteria, catalogPartCount: context.catalog.length, eligiblePartCount: new Set([...upper, ...lower].map(side => side.item.productNumber)).size,
+    upperOptionCount: upper.length, lowerOptionCount: lower.length, combinationCount: total, dynamicallyEvaluatedCount,
+    passingPairCount: selected.passingPairCount, reviewPairCount: selected.reviewPairCount, passingPartCount: selected.passingPairCount,
+    settings: { topGeometry: geometry('top'), bottomGeometry: geometry('bottom'), odRange: context.odRange, idRange: context.idRange, thicknessRange: context.thicknessRange, stackRange: [context.stackMin, context.stackMax] },
+    exclusions, errors, recommendations, nearMisses
+  });
+  return { total, visit, shortlist, materialize, result };
+}
+
+const isAssemblyPairSearch = (config, settings) => isSorbothaneAssemblyConfig(config) && !['top', 'bottom'].includes(settings.assemblySide);
+
+function screenAssemblyPairs(config, settings) {
+  const search = createAssemblyPairSearch(config, settings);
+  for (let index = 0; index < search.total; index++) search.visit(index);
+  const selected = search.shortlist();
+  return search.result(selected, selected.passing, selected.review.map(search.materialize));
+}
+
+async function screenAssemblyPairsAsync(config, settings, options) {
+  const search = createAssemblyPairSearch(config, settings);
+  const yieldControl = options.yieldControl ?? (() => new Promise(resolve => setTimeout(resolve, 0)));
+  const cancelled = () => Boolean(options.shouldCancel?.());
+  const batchSize = clamp(Math.round(catalogNumberOr(options.batchSize, 24)), 1, 100);
+  options.onProgress?.({ stage: 'pair-search', completed: 0, total: search.total, percent: 0 });
+  await yieldControl();
+  let index = 0;
+  while (index < search.total) {
+    const deadline = performance.now() + 20;
+    let batch = 0;
+    do {
+      if (cancelled()) return null;
+      search.visit(index++);
+    } while (index < search.total && ++batch < batchSize && performance.now() < deadline);
+    options.onProgress?.({ stage: 'pair-search', completed: index, total: search.total, percent: index / search.total * 95 });
+    await yieldControl();
+  }
+  const selected = search.shortlist(), recommendations = selected.passing, nearMisses = [];
+  const summaries = selected.review;
+  for (let rank = 0; rank < summaries.length; rank++) {
+    if (cancelled()) return null;
+    nearMisses.push(search.materialize(summaries[rank]));
+    options.onProgress?.({ stage: 'pair-rank', completed: rank + 1, total: summaries.length, percent: 95 + (rank + 1) / summaries.length * 5 });
+    await yieldControl();
+  }
+  if (cancelled()) return null;
+  options.onProgress?.({ stage: 'complete', completed: search.total, total: search.total, percent: 100 });
+  return search.result(selected, recommendations, nearMisses);
+}
+
 export function screenSorbothaneCatalog(configInput, settings = {}) {
+  if (isAssemblyPairSearch(configInput, settings)) return screenAssemblyPairs(configInput, settings);
   const context = createCatalogScreenContext(configInput, settings);
   const exclusions = { compression: 0, engagement: 0, ratedLoad: 0, xTranslation: 0, yTranslation: 0, verticalMode: 0, dynamic: 0 };
   const preliminary = context.combinations.map(combination => preScreenCatalogCombination(context, combination, exclusions)).filter(Boolean);
@@ -1359,6 +1535,7 @@ export function screenSorbothaneCatalog(configInput, settings = {}) {
 }
 
 export async function screenSorbothaneCatalogAsync(configInput, settings = {}, options = {}) {
+  if (isAssemblyPairSearch(configInput, settings)) return screenAssemblyPairsAsync(configInput, settings, options);
   const context = createCatalogScreenContext(configInput, settings);
   const exclusions = { compression: 0, engagement: 0, ratedLoad: 0, xTranslation: 0, yTranslation: 0, verticalMode: 0, dynamic: 0 };
   const preliminary = [];
@@ -1490,7 +1667,7 @@ function finalizeParkerLordScreen(context, evaluated, exclusions) {
     dynamicallyEvaluatedCount: evaluated.length,
     passingPartCount: recommendations.length,
     exclusions,
-    recommendations: recommendations.slice(0, 16),
+    recommendations,
     nearMisses: nearMisses.slice(0, 8)
   };
 }
