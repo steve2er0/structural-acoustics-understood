@@ -16456,16 +16456,16 @@ const DEFAULT_SORBOTHANE_CONFIG = {
   version: 1,
   units: 'English',
   component: {
-    massKg: 10 * LB,
-    dimensionsM: [10 * INCH, 8 * INCH, 4 * INCH],
-    cgM: [0, 0, 2 * INCH],
+    massKg: 25 * LB,
+    dimensionsM: [13.5 * INCH, 7.2 * INCH, 9 * INCH],
+    cgM: [0, 0, 4.5 * INCH],
     inertiaMode: 'auto',
     inertiaKgM2: [0.0136, 0.0219, 0.0338, 0, 0, 0]
   },
   mounts: {
-    count: 4,
-    rowAxis: 'x',
-    spacingM: [8.5 * INCH, 6.5 * INCH],
+    count: 8,
+    rowAxis: 'y',
+    spacingM: [12 * INCH, 5.7 * INCH],
     planeZM: 0,
     stackTop: 1,
     stackBottom: 1
@@ -20337,9 +20337,9 @@ const sorbothaneIsolationCalculator = {
   basis: 'Formulation- and precompression-dependent complex Sorbothane stiffness assembled into a six-DOF rigid-body model',
   confidence: 'Source-traceable screening model requiring hardware test correlation',
   inputs: [
-    { key: 'mass_lb', label: 'Component mass', unit: 'lbm', type: 'number', default: 10, min: 0.1 },
-    { key: 'leg_count', label: 'Isolation legs', type: 'select', default: 4, options: [[4, '4 legs · 2 on each side'], [8, '8 legs · 4 on each side']] },
-    { key: 'row_axis', label: 'Row direction', type: 'select', default: 'x', options: [['x', 'Along X · on ±Y sides'], ['y', 'Along Y · on ±X sides']] },
+    { key: 'mass_lb', label: 'Component mass', unit: 'lbm', type: 'number', default: DEFAULT_SORBOTHANE_CONFIG.component.massKg / LB, min: 0.1 },
+    { key: 'leg_count', label: 'Isolation legs', type: 'select', default: DEFAULT_SORBOTHANE_CONFIG.mounts.count, options: [[4, '4 legs · 2 on each side'], [8, '8 legs · 4 on each side']] },
+    { key: 'row_axis', label: 'Row direction', type: 'select', default: DEFAULT_SORBOTHANE_CONFIG.mounts.rowAxis, options: [['x', 'Along X · on ±Y sides'], ['y', 'Along Y · on ±X sides']] },
     { key: 'od_in', label: 'Ring OD', unit: 'in', type: 'number', default: 1.25, min: 0.1 },
     { key: 'id_in', label: 'Ring ID', unit: 'in', type: 'number', default: 0.50, min: 0 },
     { key: 'thickness_in', label: 'Element thickness', unit: 'in', type: 'number', default: 0.25, min: 0.01 },

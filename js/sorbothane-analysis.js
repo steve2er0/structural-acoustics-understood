@@ -28,16 +28,16 @@ export const DEFAULT_SORBOTHANE_CONFIG = {
   version: 1,
   units: 'English',
   component: {
-    massKg: 10 * LB,
-    dimensionsM: [10 * INCH, 8 * INCH, 4 * INCH],
-    cgM: [0, 0, 2 * INCH],
+    massKg: 25 * LB,
+    dimensionsM: [13.5 * INCH, 7.2 * INCH, 9 * INCH],
+    cgM: [0, 0, 4.5 * INCH],
     inertiaMode: 'auto',
     inertiaKgM2: [0.0136, 0.0219, 0.0338, 0, 0, 0]
   },
   mounts: {
-    count: 4,
-    rowAxis: 'x',
-    spacingM: [8.5 * INCH, 6.5 * INCH],
+    count: 8,
+    rowAxis: 'y',
+    spacingM: [12 * INCH, 5.7 * INCH],
     planeZM: 0,
     stackTop: 1,
     stackBottom: 1

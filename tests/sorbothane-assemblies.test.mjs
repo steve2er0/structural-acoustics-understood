@@ -13,7 +13,12 @@ const fixture = () => {
   const config = normalizeSorbothaneConfig(DEFAULT_SORBOTHANE_CONFIG);
   config.uncertainty.enabled = false;
   config.component.massKg = 25 * LB;
+  // Preserve the geometry used to validate the mixed-part search fixtures.
+  config.component.dimensionsM = [10 * INCH, 8 * INCH, 4 * INCH];
+  config.component.cgM = [0, 0, 2 * INCH];
   config.mounts.count = 8;
+  config.mounts.rowAxis = 'x';
+  config.mounts.spacingM = [8.5 * INCH, 6.5 * INCH];
   config.assemblies.enabled = true;
   config.assemblies.assignments = Array(8).fill('A');
   for (const group of Object.values(config.assemblies.groups)) Object.assign(group, {

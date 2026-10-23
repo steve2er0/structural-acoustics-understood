@@ -1,10 +1,12 @@
 # Sorbothane 6-DOF Isolation Designer
 
-This workbench designs and screens a four-point, double-sided captured Sorbothane isolation system for a rigid aerospace component. It is available at `#/tool/sorbothane-isolation` in the modular site and in `standalone.html`.
+This workbench designs and screens a four- or eight-leg, double-sided captured Sorbothane isolation system for a rigid aerospace component. It is available at `#/tool/sorbothane-isolation` in the modular site and in `standalone.html`.
 
 This workbench is also the behavioral and visual reference for the reusable [Engineering Tool Design Guidelines](../engineering-tool-design-guidelines/README.md). The guidelines extract shared decision, interaction, evidence, trust, and responsive patterns without treating isolation-specific tabs or physics as universal requirements.
 
-The baseline is a 10 lbm rectangular component on four custom 50 Shore 00 annular elements per side. Each element has a 1.25 in OD, 0.50 in ID, 0.25 in free thickness, and 15% nominal precompression. The result is calculated from the implemented model; no mode frequency or target transmissibility is hard-coded.
+The baseline is a 25 lbm rectangular component, 13.5 in long (X), 7.2 in wide (Y), and 9 in tall (Z), with its CG at (0, 0, 4.5) in. Eight legs form two Y-directed rows on the ±X sides. The overall mount center-to-center footprint is 12 × 5.7 in, leaving 0.75 in edge insets on both axes. Mounts lie at X = ±6 in and Y = −2.85, −0.95, +0.95, +2.85 in, giving 1.9 in spacing within each row. The mount plane remains at Z = 0.
+
+Each leg has one upper and one lower custom 50 Shore 00 annular element by default, with 1.25 in OD, 0.50 in ID, 0.25 in free thickness, and 15% nominal precompression. Isolator and acceptance-criteria defaults are unchanged; this baseline is not a claim that all requirements pass. The result is calculated from the implemented model; no mode frequency or target transmissibility is hard-coded. A fresh design and **Reset baseline** use these dimensions in both the modular site and rebuilt standalone file. Explicit browser-saved and imported settings retain their own geometry; updating the file does not overwrite an existing design.
 
 ## Coordinate system
 
@@ -56,7 +58,7 @@ Ecorrected = E(1 + 2 SF²)
 
 Static compressive stress at 10% and 20% strain comes from Data Sheet 101. Intermediate compression is interpolated. Compression-driven design calculates the preload per element from the corrected static stress and loaded area. Preload-driven design solves the inverse relationship for compression.
 
-The static vertical reaction distribution is the minimum-norm four-mount solution satisfying net vertical force and roll/pitch moment equilibrium. Gravity is always included; user accelerations are added in g. The mount-plane-to-CG offset converts lateral quasi-static load into a vertical reaction redistribution.
+For the uniform-element model, the static vertical reaction distribution is the minimum-norm four- or eight-mount solution satisfying net vertical force and roll/pitch moment equilibrium. Gravity is always included; user accelerations are added in g. The mount-plane-to-CG offset converts lateral quasi-static load into a vertical reaction redistribution. Mixed assemblies use the stiffness-dependent equilibrium model described in [Mixed Sorbothane assemblies](../sorbothane-mixed-assemblies.md).
 
 For a symmetric upper/lower captured pair, the payload contribution changes the two element forces by equal and opposite halves:
 

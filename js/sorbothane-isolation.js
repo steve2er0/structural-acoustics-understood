@@ -1948,9 +1948,9 @@ export const sorbothaneIsolationCalculator = {
   basis: 'Formulation- and precompression-dependent complex Sorbothane stiffness assembled into a six-DOF rigid-body model',
   confidence: 'Source-traceable screening model requiring hardware test correlation',
   inputs: [
-    { key: 'mass_lb', label: 'Component mass', unit: 'lbm', type: 'number', default: 10, min: 0.1 },
-    { key: 'leg_count', label: 'Isolation legs', type: 'select', default: 4, options: [[4, '4 legs · 2 on each side'], [8, '8 legs · 4 on each side']] },
-    { key: 'row_axis', label: 'Row direction', type: 'select', default: 'x', options: [['x', 'Along X · on ±Y sides'], ['y', 'Along Y · on ±X sides']] },
+    { key: 'mass_lb', label: 'Component mass', unit: 'lbm', type: 'number', default: DEFAULT_SORBOTHANE_CONFIG.component.massKg / LB, min: 0.1 },
+    { key: 'leg_count', label: 'Isolation legs', type: 'select', default: DEFAULT_SORBOTHANE_CONFIG.mounts.count, options: [[4, '4 legs · 2 on each side'], [8, '8 legs · 4 on each side']] },
+    { key: 'row_axis', label: 'Row direction', type: 'select', default: DEFAULT_SORBOTHANE_CONFIG.mounts.rowAxis, options: [['x', 'Along X · on ±Y sides'], ['y', 'Along Y · on ±X sides']] },
     { key: 'od_in', label: 'Ring OD', unit: 'in', type: 'number', default: 1.25, min: 0.1 },
     { key: 'id_in', label: 'Ring ID', unit: 'in', type: 'number', default: 0.50, min: 0 },
     { key: 'thickness_in', label: 'Element thickness', unit: 'in', type: 'number', default: 0.25, min: 0.01 },

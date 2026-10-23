@@ -22,7 +22,7 @@ import {
   sorbothaneDynamicProperties,
   staticPreloadState
 } from '../js/sorbothane-analysis.js';
-import { catalogScreenResult, engineeringReport, renderSorbothaneExplorerResult, renderSorbothaneIsolationWorkbench, responseCsv, sorbothaneExplorerSettingsAroundDesign, sorbothaneExplorerVariableDefaults, updateSorbothaneCriteria } from '../js/sorbothane-isolation.js';
+import { catalogScreenResult, engineeringReport, renderSorbothaneExplorerResult, renderSorbothaneIsolationWorkbench, responseCsv, sorbothaneExplorerSettingsAroundDesign, sorbothaneExplorerVariableDefaults, sorbothaneIsolationCalculator, updateSorbothaneCriteria } from '../js/sorbothane-isolation.js';
 import { NASTRAN_IPS_UNITS, generateNastranIsolationBdf } from '../js/nastran-isolation-export.js';
 import { SORBOTHANE_CATALOG, SORBOTHANE_MATERIAL, SORBOTHANE_MATERIALS, sorbothaneMaterial } from '../js/sorbothane-data.js';
 import { PARKER_LORD_AM_CATALOG, PARKER_LORD_AM_FAMILIES, parkerLordCatalogItem } from '../js/parker-lord-isolators.js';
@@ -30,6 +30,10 @@ import { PARKER_LORD_AM_CATALOG, PARKER_LORD_AM_FAMILIES, parkerLordCatalogItem 
 const clone = value => JSON.parse(JSON.stringify(value));
 const baseline = () => {
   const config = clone(DEFAULT_SORBOTHANE_CONFIG);
+  // Keep the original four-leg mechanics reference independent of UI defaults.
+  const { INCH, LB } = SORBOTHANE_UNITS;
+  Object.assign(config.component, { massKg: 10 * LB, dimensionsM: [10 * INCH, 8 * INCH, 4 * INCH], cgM: [0, 0, 2 * INCH] });
+  Object.assign(config.mounts, { count: 4, rowAxis: 'x', spacingM: [8.5 * INCH, 6.5 * INCH] });
   config.uncertainty.enabled = false;
   return config;
 };
@@ -53,7 +57,54 @@ const tabPanelHtml = (html, id, nextId) => {
   return html.slice(start, end);
 };
 
-test('baseline vertical bounce mode is calculated in the intended 140-150 Hz region', () => {
+test('default baseline is the centered 25 lbm component with eight inset supports', () => {
+  const { INCH, LB, G0 } = SORBOTHANE_UNITS;
+  const config = normalizeSorbothaneConfig({});
+  close(config.component.massKg / LB, 25);
+  config.component.dimensionsM.forEach((value, index) => close(value / INCH, [13.5, 7.2, 9][index]));
+  assert.deepEqual(config.component.cgM, [0, 0, config.component.dimensionsM[2] / 2]);
+  assert.equal(config.mounts.count, 8);
+  assert.equal(config.mounts.rowAxis, 'y');
+  config.mounts.spacingM.forEach((value, index) => {
+    close(value / INCH, [12, 5.7][index]);
+    close((config.component.dimensionsM[index] - value) / (2 * INCH), .75);
+  });
+  const mounts = isolationMountCoordinates(config);
+  for (const sideX of [-6, 6]) {
+    const row = mounts.filter(point => Math.abs(point[0] / INCH - sideX) < 1e-10).sort((a, b) => a[1] - b[1]);
+    assert.equal(row.length, 4);
+    row.forEach((point, index) => close(point[1] / INCH, [-2.85, -.95, .95, 2.85][index]));
+  }
+  const analysis = analyzeSorbothaneIsolation(config, { skipResponse: true, skipUncertainty: true });
+  analysis.preload.mounts.forEach(mount => close(mount.payloadN, 25 * LB * G0 / 8));
+  assert.equal(analysis.modes.length, 6);
+  assert.ok(analysis.modes.every(mode => Number.isFinite(mode.frequencyHz) && mode.frequencyHz > 0));
+  const html = renderSorbothaneIsolationWorkbench(config, {}, {}, analysis);
+  for (const [path, value] of [['component.dimensionsM.0', '13.5'], ['component.dimensionsM.1', '7.2'], ['component.dimensionsM.2', '9'], ['component.cgM.2', '4.5'], ['mounts.spacingM.0', '12'], ['mounts.spacingM.1', '5.7']]) {
+    assert.ok(html.includes(`data-sorbo-field="${path}" data-quantity="length" value="${value}"`));
+  }
+  assert.match(html, /value="8" selected/);
+  assert.match(html, /value="y" selected/);
+});
+
+test('new baseline defaults do not overwrite explicit saved component or layout settings', () => {
+  const saved = baseline();
+  const normalized = normalizeSorbothaneConfig(JSON.parse(JSON.stringify(saved)));
+  assert.deepEqual(normalized.component, saved.component);
+  assert.deepEqual(normalized.mounts, saved.mounts);
+});
+
+test('quick calculator shares the guided baseline mass, count and row direction', () => {
+  const defaults = Object.fromEntries(sorbothaneIsolationCalculator.inputs.map(input => [input.key, input.default]));
+  close(defaults.mass_lb, 25);
+  assert.equal(defaults.leg_count, 8);
+  assert.equal(defaults.row_axis, 'y');
+  const quick = sorbothaneIsolationCalculator.compute(defaults);
+  const guided = analyzeSorbothaneIsolation(DEFAULT_SORBOTHANE_CONFIG, { skipResponse: true, skipUncertainty: true });
+  close(quick.values[0].value, guided.verticalModeResult.frequencyHz);
+});
+
+test('legacy four-leg reference vertical bounce remains in the intended 140-150 Hz region', () => {
   const result = analyzeSorbothaneIsolation(baseline(), { skipResponse: true, skipUncertainty: true });
   const vertical = result.modes.find(mode => mode.dominantIndex === 2);
   assert.ok(vertical, 'vertical mode was not classified');
@@ -77,7 +128,7 @@ test('support layout preserves four corners and adds two inner legs to each Y si
   }
   assert.equal(normalizeSorbothaneConfig({ mounts: { count: '8' } }).mounts.count, 8);
   assert.equal(normalizeSorbothaneConfig({ mounts: { count: 6 } }).mounts.count, 4);
-  assert.equal(normalizeSorbothaneConfig({}).mounts.count, 4);
+  assert.equal(normalizeSorbothaneConfig({}).mounts.count, 8);
 });
 
 test('row direction moves the inner legs onto the other sides while retaining the X/Y footprint', () => {
@@ -93,7 +144,7 @@ test('row direction moves the inner legs onto the other sides while retaining th
     assert.equal(row.length, 4);
     row.forEach((point, index) => close(point[1], [-y / 2, -y / 6, y / 6, y / 2][index], 1e-12));
   }
-  assert.equal(normalizeSorbothaneConfig({}).mounts.rowAxis, 'x');
+  assert.equal(normalizeSorbothaneConfig({}).mounts.rowAxis, 'y');
   assert.equal(normalizeSorbothaneConfig({mounts: {rowAxis: 'invalid'}}).mounts.rowAxis, 'x');
   assert.equal(normalizeSorbothaneConfig(config).mounts.rowAxis, 'y');
 });
@@ -656,7 +707,9 @@ test('Parker LORD workbench exposes complete-mount data, library screening, and 
 });
 
 test('workbench preserves trailing-zero requirement frequencies in rendered labels', () => {
-  const html = renderSorbothaneIsolationWorkbench(DEFAULT_SORBOTHANE_CONFIG);
+  const config = baseline();
+  config.uncertainty.enabled = true;
+  const html = renderSorbothaneIsolationWorkbench(config);
   const isolatorHtml = tabPanelHtml(html, 'sorbothane', 'explorer');
   const explorerHtml = tabPanelHtml(html, 'explorer', 'assumptions');
   assert.match(html, />600 Hz · Txx</);
