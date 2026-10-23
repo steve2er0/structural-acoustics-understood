@@ -1,5 +1,6 @@
 import { SORBOTHANE_CATALOG, sorbothaneCatalogItem, sorbothaneMaterial } from './sorbothane-data.js';
 import { PARKER_LORD_AM_CATALOG, parkerLordCatalogItem } from './parker-lord-isolators.js';
+import { normalizeSorbothaneAssemblies, isSorbothaneAssemblyConfig, sorbothaneAssemblyStaticState, sorbothaneAssemblyDynamicMounts, assembleSorbothaneMountMatrices, SORBOTHANE_ASSEMBLY_PARTS } from './sorbothane-assemblies.js';
 
 const INCH = 0.0254;
 const LB = 0.45359237;
@@ -64,6 +65,7 @@ export const DEFAULT_SORBOTHANE_CONFIG = {
     lordLossFactor: 0.30
   },
   environment: { accelerationG: [0, 0, 0] },
+  assemblies: { enabled: false, groups: {}, assignments: [] },
   analysis: {
     excitationAxis: 'z',
     responsePoint: 'cg',
@@ -169,6 +171,7 @@ export function normalizeSorbothaneConfig(input = {}) {
   nastran.customReferenceFrequencyHz = clamp(finite(nastran.customReferenceFrequencyHz, 100), 0.1, 1e5);
   nastran.modeCount = clamp(Math.round(finite(nastran.modeCount, 20)), 6, 200);
   nastran.maximumFrequencyHz = clamp(finite(nastran.maximumFrequencyHz, config.analysis.frequencyMaxHz), 1, 1e6);
+  config.assemblies = normalizeSorbothaneAssemblies(config, source.assemblies ?? {});
   return config;
 }
 
@@ -409,6 +412,7 @@ function leastNormVerticalLoads(positions, targets) {
 
 export function staticPreloadState(configInput) {
   const config = normalizeSorbothaneConfig(configInput);
+  if (isSorbothaneAssemblyConfig(config)) return sorbothaneAssemblyStaticState(config, mountPositions(config), stressAtCompression);
   if (isParkerLordConfig(config)) {
     const positions = mountPositions(config);
     const [ax, ay, az] = config.environment.accelerationG;
@@ -541,6 +545,7 @@ function mountKinematics(position) {
 
 export function mountDynamicStiffness(configInput, frequencyHz) {
   const config = normalizeSorbothaneConfig(configInput);
+  if (isSorbothaneAssemblyConfig(config)) return isolationMountStiffnesses(config, frequencyHz)[0];
   if (isParkerLordConfig(config)) {
     const item = parkerLordCatalogItem(config.isolator.productNumber);
     const material = isolatorDynamicProperties(config, frequencyHz);
@@ -584,6 +589,10 @@ export function mountDynamicStiffness(configInput, frequencyHz) {
 export function assembleRigidBodyStiffness(configInput, frequencyHz) {
   const config = normalizeSorbothaneConfig(configInput);
   const positions = mountPositions(config);
+  if (isSorbothaneAssemblyConfig(config)) {
+    const mounts = isolationMountStiffnesses(config, frequencyHz);
+    return { ...assembleSorbothaneMountMatrices(positions, mounts), positions, mounts, mount: mounts[0] };
+  }
   const mount = mountDynamicStiffness(config, frequencyHz);
   const local = [[mount.kxNPerM, 0, 0], [0, mount.kyNPerM, 0], [0, 0, mount.kzNPerM]];
   const matrix = zeros(6);
@@ -593,6 +602,13 @@ export function assembleRigidBodyStiffness(configInput, frequencyHz) {
     for (let row = 0; row < 6; row += 1) for (let column = 0; column < 6; column += 1) matrix[row][column] += contribution[row][column];
   }
   return { matrix, positions, mount };
+}
+
+export function isolationMountStiffnesses(configInput, frequencyHz) {
+  const config = normalizeSorbothaneConfig(configInput);
+  if (isSorbothaneAssemblyConfig(config)) return sorbothaneAssemblyDynamicMounts(config, staticPreloadState(config), frequencyHz, sorbothaneDynamicProperties);
+  const mount = mountDynamicStiffness(config, frequencyHz);
+  return Array.from({ length: config.mounts.count }, () => mount);
 }
 
 function cholesky(matrix) {
@@ -679,6 +695,28 @@ function classifyMode(vector, config) {
 export function solveRigidBodyModes(configInput) {
   const config = normalizeSorbothaneConfig(configInput);
   const mass = rigidBodyMassMatrix(config);
+  if (isSorbothaneAssemblyConfig(config)) {
+    // Mixed grades need a frequency-specific assembled matrix for every mode;
+    // scaling all modes by one parent material modulus is not valid here.
+    const seed = generalizedModes(mass.matrix, assembleRigidBodyStiffness(config, 100).matrix);
+    const modes = seed.map((initial, modeIndex) => {
+      let frequency = Math.sqrt(initial.eigenvalue) / TAU, mode = initial;
+      for (let iteration = 0; iteration < 24; iteration++) {
+        mode = generalizedModes(mass.matrix, assembleRigidBodyStiffness(config, Math.max(frequency, 1)).matrix)[modeIndex];
+        const next = Math.sqrt(mode.eigenvalue) / TAU;
+        if (Math.abs(next - frequency) < .005) { frequency = next; break; }
+        frequency = .5 * (frequency + next);
+      }
+      const assembled = assembleRigidBodyStiffness(config, Math.max(frequency, 1));
+      const energy = matrix => mode.vector.reduce((sum, value, i) => sum + value * matrix[i].reduce((rowSum, entry, j) => rowSum + entry * mode.vector[j], 0), 0);
+      const eta = energy(assembled.lossMatrix) / Math.max(energy(assembled.matrix), 1e-30);
+      const scale = Math.sqrt(config.component.dimensionsM[0] * config.component.dimensionsM[1]);
+      const maximum = Math.max(...mode.vector.map((value, dof) => Math.abs(value) * (dof < 3 ? 1 : scale))) || 1;
+      return { number: modeIndex + 1, frequencyHz: frequency, vector: mode.vector.map((value, dof) => value * (dof < 3 ? 1 : scale) / maximum),
+        dampingRatio: eta / 2, lossFactor: eta, materialProvenance: 'engineering-assumption-mixed-assembly', ...classifyMode(mode.vector, config) };
+    });
+    return { modes, massMatrix: mass.matrix, inertiaKgM2: mass.inertiaKgM2 };
+  }
   let frequencies = Array(6).fill(100);
   let modal = [];
   for (let iteration = 0; iteration < 12; iteration += 1) {
@@ -797,7 +835,7 @@ export function rigidBodyResponseAtFrequency(configInput, frequencyHz, axis = nu
   const mass = rigidBodyMassMatrix(config).matrix;
   const stiffness = assembleRigidBodyStiffness(config, frequencyHz);
   const eta = stiffness.mount.material.tanDelta;
-  const dynamic = zeros(6).map((row, i) => row.map((_, j) => complex(stiffness.matrix[i][j] - omega ** 2 * mass[i][j], stiffness.matrix[i][j] * eta)));
+  const dynamic = zeros(6).map((row, i) => row.map((_, j) => complex(stiffness.matrix[i][j] - omega ** 2 * mass[i][j], stiffness.lossMatrix?.[i][j] ?? stiffness.matrix[i][j] * eta)));
   const gamma = Array(6).fill(0);
   gamma[axisIndex] = 1;
   const forcing = multiplyVector(mass, gamma).map(value => complex(omega ** 2 * value, 0));
@@ -894,6 +932,10 @@ export function uncertaintyEnvelope(configInput, nominalResponses = null) {
     sample.component.cgM[1] += normalRandom(random) * config.uncertainty.cgMm / 2000;
     sample.component.cgM[2] += normalRandom(random) * config.uncertainty.cgMm / 2000;
     sample.isolator.compressionPct = clamp(sample.isolator.compressionPct + normalRandom(random) * config.uncertainty.compressionPct / 2, 5, 25);
+    if (isSorbothaneAssemblyConfig(sample)) for (const group of Object.values(sample.assemblies.groups)) {
+      if (group.preloadMode === 'compression') group.compressionPct = clamp(group.compressionPct + normalRandom(random) * config.uncertainty.compressionPct / 2, 5, 25);
+      else group.preloadN *= clamp(1 + normalRandom(random) * config.uncertainty.compressionPct / 100, .5, 1.5);
+    }
     const modes = solveRigidBodyModes(sample).modes;
     const tones = config.analysis.tones.map(tone => axes.map((axis, axisIndex) => rigidBodyResponseAtFrequency(sample, tone.frequencyHz, axis).db[axisIndex]));
     const responses = Object.fromEntries(axes.map(axis => [axis, frequencyResponse({ ...sample, analysis: { ...sample.analysis, frequencyPoints: nominal[axis].frequencies.length } }, axis)]));
@@ -946,6 +988,11 @@ export function analyzeSorbothaneIsolation(configInput, options = {}) {
   const peak = peakResults.reduce((largest, result) => result.db > largest.db ? result : largest, peakResults[0]);
   const uncertainty = options.skipUncertainty || !directionalResponses ? null : uncertaintyEnvelope(config, directionalResponses);
   const warnings = [];
+  if (isSorbothaneAssemblyConfig(config)) {
+    warnings.push('Mixed assemblies: load sharing is solved from per-side static curves and bolt clamp force; dynamic complex stiffness is assembled separately at every support.');
+    warnings.push(...preload.assemblyChecks.filter(check => !check.pass).slice(0, 12).map(check => `${check.label}: ${check.detail}`));
+    warnings.push('Geometric fit checks are necessary, not sufficient: bolt/steel-washer clearance, sleeve confinement, friction, torque and nonlinear contact require installation/test validation.');
+  }
   if (isParkerLordConfig(config)) {
     const item = parkerLordCatalogItem(config.isolator.productNumber);
     warnings.push('Parker LORD catalog dynamic spring rates are treated as frequency-independent complex stiffness for preliminary screening; qualification should use current application-specific data.');
@@ -981,7 +1028,7 @@ export function analyzeSorbothaneIsolation(configInput, options = {}) {
     peakResults,
     uncertainty,
     warnings,
-    passes: lateralModeResults.every(result => result.pass) && verticalModeResult.pass && toneResults.every(result => result.pass) && peak.pass && preload.allEngaged && preload.catalogCompliant && preload.compressionCompliant
+    passes: lateralModeResults.every(result => result.pass) && verticalModeResult.pass && toneResults.every(result => result.pass) && peak.pass && preload.allEngaged && preload.catalogCompliant && preload.compressionCompliant && (preload.assemblyChecks?.every(check => check.pass) ?? true)
   };
 }
 
@@ -998,7 +1045,11 @@ const DESIGN_VARIABLES = {
   stackCount: { path: ['mounts', 'stackTop'], scale: 1 },
   stiffnessScale: { path: ['isolator', 'modulusScale'], scale: 1 },
   lossFactor: { path: ['isolator', 'lordLossFactor'], scale: 1 },
-  mountsPerPoint: { path: ['isolator', 'mountsPerPoint'], scale: 1 }
+  mountsPerPoint: { path: ['isolator', 'mountsPerPoint'], scale: 1 },
+  assemblyCompressionA: { path: ['assemblies', 'groups', 'A', 'compressionPct'], scale: 1 },
+  assemblyCompressionB: { path: ['assemblies', 'groups', 'B', 'compressionPct'], scale: 1 },
+  assemblyRadialA: { path: ['assemblies', 'groups', 'A', 'radialRateLbfPerIn'], scale: 1 },
+  assemblyRadialB: { path: ['assemblies', 'groups', 'B', 'radialRateLbfPerIn'], scale: 1 }
 };
 
 function setDesignVariable(config, variable, displayValue) {
@@ -1012,14 +1063,73 @@ function setDesignVariable(config, variable, displayValue) {
     config.mounts.stackBottom = target[definition.path.at(-1)];
   }
   if (variable === 'mountsPerPoint') target[definition.path.at(-1)] = clamp(Math.round(displayValue), 1, 2);
+  if (variable.startsWith('assemblyCompression')) config.assemblies.groups[variable.at(-1)].preloadMode = 'compression';
+  if (variable.startsWith('assemblyRadial')) config.assemblies.groups[variable.at(-1)].radialMode = 'user';
 }
 
 function getDesignVariable(config, variable) {
+  if (isSorbothaneAssemblyConfig(config) && variable.startsWith('assemblyCompression')) {
+    const key = variable.at(-1), group = config.assemblies.groups[key];
+    if (group.preloadMode === 'force') return staticPreloadState(config).mounts.find(mount => mount.group === key)?.profile.bottom.nominalPct ?? group.compressionPct;
+  }
   const definition = DESIGN_VARIABLES[variable];
   if (!definition) return NaN;
   let value = config;
   for (const key of definition.path) value = value[key];
   return value / definition.scale;
+}
+
+function designGridCatalogItem(config) {
+  // A grid point is not the parent part: dimensions and hardness must match.
+  // Washers and rings share the annular model; prefer the selected family when
+  // both exist, but never round a nearby custom geometry to a catalog size.
+  const matches = SORBOTHANE_CATALOG.filter(item => item.productNumber !== 'custom-ring'
+    && (item.geometry === 'disc') === (config.isolator.geometry === 'disc')
+    && Math.abs(item.odIn - config.isolator.odM / INCH) < 1e-6
+    && Math.abs(item.idIn - config.isolator.idM / INCH) < 1e-6
+    && Math.abs(item.thicknessIn - config.isolator.thicknessM / INCH) < 1e-6
+    && Math.abs(item.durometer - config.isolator.durometer) < 1e-6);
+  return matches.find(item => item.productNumber === config.isolator.productNumber)
+    ?? matches.find(item => item.geometry === config.isolator.geometry) ?? matches[0] ?? null;
+}
+
+function designGridChecks(analysis, catalogItem) {
+  const { config, preload } = analysis;
+  const number = value => Number.isFinite(value) ? value.toFixed(1) : 'unavailable';
+  const checks = analysis.lateralModeResults.map(result => ({
+    id: `${result.axis.toLowerCase()}-mode`, code: result.axis, label: `${result.axis} translation`, pass: result.pass,
+    detail: `${number(result.frequencyHz)} Hz; minimum ${number(result.minimumHz)} Hz (M${result.modeNumber}).`
+  }));
+  const vertical = analysis.verticalModeResult;
+  checks.push({ id: 'z-mode', code: 'Z', label: 'Z translation', pass: vertical.pass,
+    detail: `${number(vertical.frequencyHz)} Hz; required ${vertical.rangeHz.map(number).join('–')} Hz (M${vertical.modeNumber}).` });
+  for (const tone of analysis.toneResults) for (const axis of tone.axisResults) checks.push({
+    id: `tone-${tone.frequencyHz}-${axis.axis}`, code: 'TONE', label: `${axis.axis} transmissibility at ${tone.frequencyHz} Hz`, pass: axis.pass,
+    detail: `${number(axis.db)} dB; maximum ${number(tone.maximumDb)} dB.`
+  });
+  for (const peak of analysis.peakResults) checks.push({
+    id: `peak-${peak.axis.toLowerCase()}`, code: 'PEAK', label: `${peak.axis.toUpperCase()} resonance peak`, pass: peak.pass,
+    detail: `${number(peak.db)} dB at ${number(peak.frequencyHz)} Hz; maximum ${number(config.analysis.resonanceLimitDb)} dB in ${config.analysis.resonanceBandHz.map(number).join('–')} Hz.`
+  });
+  if (isSorbothaneAssemblyConfig(config)) return [...checks, ...preload.assemblyChecks];
+  const lord = isParkerLordConfig(config);
+  const loads = preload.mounts.flatMap(mount => lord ? [mount.resultantLoadN / LBF] : [mount.upperLoadN / LBF, mount.lowerLoadN / LBF]);
+  const installed = `${number(Math.min(...loads))}–${number(Math.max(...loads))} lbf`;
+  const rated = preload.ratedLoadN?.map(value => value / LBF);
+  const ratingKnown = lord || Boolean(catalogItem?.ratedLoadLb);
+  checks.push({ id: 'rated-load', code: ratingKnown ? 'LOAD' : 'RATE?', label: 'Catalog load rating', pass: ratingKnown && preload.catalogCompliant,
+    detail: ratingKnown
+      ? `${lord ? 'Resultant support-point' : 'Installed upper/lower element'} loads ${installed}; rated ${rated.map(number).join('–')} lbf ${lord ? 'per support point' : 'per element'} (${config.isolator.productNumber}).`
+      : `Installed upper/lower element loads ${installed}. No exact catalog match for this geometry and durometer; load rating unverified.` });
+  if (!lord) {
+    checks.push({ id: 'engagement', code: 'CONTACT', label: 'Element engagement', pass: preload.allEngaged,
+      detail: preload.allEngaged ? 'All upper and lower elements remain in compression.' : `Loss of contact at support point(s) ${preload.mounts.filter(mount => mount.upperLoadN <= 0 || mount.lowerLoadN <= 0).map(mount => mount.index).join(', ')}.` });
+    checks.push({ id: 'compression', code: 'COMP', label: 'Starting compression', pass: preload.compressionCompliant,
+      detail: `${number(preload.compressionPct)}%; recommended ${preload.recommendedCompressionPct.map(number).join('–')}%.` });
+    if (config.isolator.formulation === 'water-resistant') checks.push({ id: 'formulation', code: 'FORM?', label: 'Water-resistant catalog confirmation', pass: false,
+      detail: 'Standard catalog geometry does not confirm a water-resistant part number or load rating. Manufacturer confirmation required.' });
+  }
+  return checks;
 }
 
 export function runDesignGrid(configInput, settings = {}) {
@@ -1034,35 +1144,65 @@ export function runDesignGrid(configInput, settings = {}) {
   const xValues = Array.from({ length: gridSize }, (_, index) => xRange[0] + index * (xRange[1] - xRange[0]) / (gridSize - 1));
   const yValues = Array.from({ length: gridSize }, (_, index) => yRange[0] + index * (yRange[1] - yRange[0]) / (gridSize - 1));
   const candidates = [];
-  const values = yValues.map(yValue => xValues.map(xValue => {
+  const cells = yValues.map((yValue, rowIndex) => xValues.map((xValue, columnIndex) => {
     const candidateConfig = clone(config);
     candidateConfig.uncertainty.enabled = false;
     setDesignVariable(candidateConfig, xVariable, xValue);
     setDesignVariable(candidateConfig, yVariable, yValue);
-    if (!isParkerLordConfig(candidateConfig) && candidateConfig.isolator.idM >= candidateConfig.isolator.odM) return NaN;
+    const isReference = Math.abs(xValue - reference.xValue) < 1e-8 && Math.abs(yValue - reference.yValue) < 1e-8;
+    const cell = { xValue, yValue, rowIndex, columnIndex, isReference, config: candidateConfig, value: NaN, pass: false };
     try {
+      let catalogItem = null;
+      if (isSorbothaneAssemblyConfig(candidateConfig)) for (const variable of [xVariable, yVariable]) {
+        if (variable.startsWith('assembly') && !candidateConfig.assemblies.assignments.includes(variable.at(-1))) throw new Error(`No legs are assigned to assembly ${variable.at(-1)}. Assign legs before sweeping that group.`);
+        if (variable.startsWith('assemblyCompression') && !(candidateConfig.assemblies.groups[variable.at(-1)].compressionPct >= 1 && candidateConfig.assemblies.groups[variable.at(-1)].compressionPct <= 30)) throw new Error('Assembly compression sweeps require values from 1–30%; the preferred range is 10–20%.');
+        if (variable.startsWith('assemblyRadial') && !(candidateConfig.assemblies.groups[variable.at(-1)].radialRateLbfPerIn > 0)) throw new Error('Assembly radial-rate sweeps require positive user rates in lbf/in.');
+      }
+      if (!isParkerLordConfig(candidateConfig) && !isSorbothaneAssemblyConfig(candidateConfig)) {
+        const element = candidateConfig.isolator;
+        if (!(element.odM > 0 && element.thicknessM > 0 && element.idM >= 0 && element.idM < element.odM)) throw new Error('Geometry requires OD > ID ≥ 0 and positive thickness.');
+        if (element.geometry === 'disc' && element.idM > 0) throw new Error('A solid disc requires zero ID; select an annular geometry to sweep a bore.');
+        if (!(element.durometer >= 30 && element.durometer <= 70)) throw new Error('Durometer must be within the supported 30–70 Shore 00 range.');
+        catalogItem = designGridCatalogItem(candidateConfig);
+        element.productNumber = catalogItem?.productNumber ?? 'custom-ring';
+        if (catalogItem) element.geometry = catalogItem.geometry;
+      }
       const analysis = analyzeSorbothaneIsolation(candidateConfig, { skipResponse: true, skipUncertainty: true });
       const outputValues = {
-        t600: analysis.toneResults.find(result => Math.abs(result.frequencyHz - 600) < 1)?.db ?? analysis.toneResults[0]?.db,
-        t1200: analysis.toneResults.find(result => Math.abs(result.frequencyHz - 1200) < 1)?.db ?? analysis.toneResults[1]?.db,
+        // The plotted frequency remains the requested output even if its
+        // acceptance criterion was removed; never relabel another tone.
+        t600: output === 't600' ? Math.max(...['x', 'y', 'z'].map((axis, index) => rigidBodyResponseAtFrequency(candidateConfig, 600, axis).db[index])) : NaN,
+        t1200: output === 't1200' ? Math.max(...['x', 'y', 'z'].map((axis, index) => rigidBodyResponseAtFrequency(candidateConfig, 1200, axis).db[index])) : NaN,
         peak: analysis.peak.db,
-        verticalMode: analysis.modes.find(mode => mode.dominantIndex === 2)?.frequencyHz ?? analysis.modes[2].frequencyHz
+        verticalMode: analysis.verticalModeResult.frequencyHz
       };
       const score = analysis.toneResults.reduce((sum, result) => sum + result.db, 0) + Math.max(analysis.peak.db - config.analysis.resonanceLimitDb, 0) * 4 + (analysis.preload.allEngaged ? 0 : 100) + (analysis.preload.catalogCompliant ? 0 : 40);
-      const isReference = Math.abs(xValue - reference.xValue) < 1e-8 && Math.abs(yValue - reference.yValue) < 1e-8;
-      candidates.push({ xValue, yValue, value: outputValues[output], score, pass: analysis.passes, isReference, analysis, config: candidateConfig });
-      return outputValues[output];
-    } catch { return NaN; }
+      const checks = designGridChecks(analysis, catalogItem);
+      Object.assign(cell, { value: outputValues[output], score, pass: analysis.passes && checks.every(check => check.pass), analysis, catalogItem, checks });
+      candidates.push(cell);
+    } catch (error) {
+      cell.checks = [{ id: 'invalid', code: 'INVALID', label: 'Model evaluation', pass: false, detail: error.message ?? 'Unable to evaluate this design.' }];
+    }
+    cell.failures = cell.checks.filter(check => !check.pass);
+    return cell;
   }));
   candidates.sort((left, right) => left.score - right.score);
   const rankedCandidates = candidates.slice(0, 12);
   const referenceCandidate = candidates.find(candidate => candidate.isReference);
   if (referenceCandidate && !rankedCandidates.includes(referenceCandidate)) rankedCandidates[rankedCandidates.length - 1] = referenceCandidate;
-  return { xVariable, yVariable, xValues, yValues, output, values, reference, candidates: rankedCandidates };
+  return { xVariable, yVariable, xValues, yValues, output, values: cells.map(row => row.map(cell => cell.value)), cells, reference, candidates: rankedCandidates };
 }
 
-function catalogCandidateConfig(baseConfig, item, stackCount) {
+function catalogCandidateConfig(baseConfig, item, stackCount, assemblyTarget = null) {
   const config = clone(baseConfig);
+  if (isSorbothaneAssemblyConfig(config) && assemblyTarget) {
+    const group = config.assemblies.groups[assemblyTarget.group];
+    group[`${assemblyTarget.side}ProductNumber`] = item.productNumber;
+    group[`${assemblyTarget.side}Count`] = stackCount;
+    config.uncertainty.enabled = false;
+    return config;
+  }
+  config.assemblies.enabled = false;
   config.isolator.kind = 'sorbothane-element';
   config.isolator.productNumber = item.productNumber;
   config.isolator.geometry = item.geometry;
@@ -1114,26 +1254,29 @@ function createCatalogScreenContext(configInput, settings = {}) {
   config.analysis.resonanceBandHz = [...criteria.resonanceBandHz];
   config.analysis.resonanceLimitDb = criteria.resonanceMaximumDb;
   config.analysis.tones = criteria.tones.map(tone => ({ ...tone }));
-  const geometry = ['all', 'washer', 'ring', 'disc'].includes(settings.geometry) ? settings.geometry : 'all';
+  const assemblyTarget = isSorbothaneAssemblyConfig(config) ? { group: settings.assemblyGroup === 'B' ? 'B' : 'A', side: settings.assemblySide === 'bottom' ? 'bottom' : 'top' } : null;
+  if (assemblyTarget && !config.assemblies.assignments.includes(assemblyTarget.group)) throw new Error(`Assign at least one leg to assembly ${assemblyTarget.group} before screening that group.`);
+  const geometry = ['all', 'washer', 'ring', 'disc', ...(assemblyTarget ? ['bushing'] : [])].includes(settings.geometry) ? settings.geometry : 'all';
   const odRange = sortedCatalogRange(settings.odRange, [0.5, 5]);
   const idRange = sortedCatalogRange(settings.idRange, [0, 3.1]);
   const thicknessRange = sortedCatalogRange(settings.thicknessRange, [0.125, 1]);
   const stackRange = sortedCatalogRange(settings.stackRange, [1, 8]).map(value => clamp(Math.round(value), 1, 8));
   const stackMin = Math.min(...stackRange);
   const stackMax = Math.max(...stackRange);
-  const catalog = SORBOTHANE_CATALOG.filter(item => item.productNumber !== 'custom-ring');
+  const catalog = assemblyTarget ? SORBOTHANE_ASSEMBLY_PARTS : SORBOTHANE_CATALOG.filter(item => item.productNumber !== 'custom-ring');
   const eligibleParts = catalog.filter(item => (
     (geometry === 'all' || item.geometry === geometry)
     && item.odIn >= odRange[0] && item.odIn <= odRange[1]
     && item.idIn >= idRange[0] && item.idIn <= idRange[1]
     && item.thicknessIn >= thicknessRange[0] && item.thicknessIn <= thicknessRange[1]
   ));
-  const combinations = eligibleParts.flatMap(item => Array.from({ length: stackMax - stackMin + 1 }, (_, index) => ({ item, stackCount: stackMin + index })));
-  return { config, criteria, geometry, odRange, idRange, thicknessRange, stackMin, stackMax, catalog, eligibleParts, combinations };
+  const combinations = eligibleParts.flatMap(item => Array.from({ length: stackMax - stackMin + 1 }, (_, index) => ({ item, stackCount: stackMin + index })).filter(candidate => item.geometry !== 'bushing' || candidate.stackCount === 1));
+  return { config, criteria, geometry, odRange, idRange, thicknessRange, stackMin, stackMax, catalog, eligibleParts, combinations, assemblyTarget };
 }
 
 function preScreenCatalogCombination(context, combination, exclusions) {
-  const candidateConfig = catalogCandidateConfig(context.config, combination.item, combination.stackCount);
+  const candidateConfig = catalogCandidateConfig(context.config, combination.item, combination.stackCount, context.assemblyTarget);
+  if (context.assemblyTarget) return { ...combination, candidateConfig };
   const preload = staticPreloadState(candidateConfig);
   const modes = solveRigidBodyModes(candidateConfig).modes;
   const lateralModes = lateralTranslationModeResults(modes, candidateConfig);
@@ -1153,18 +1296,23 @@ function preScreenCatalogCombination(context, combination, exclusions) {
 
 function evaluateCatalogCombination(context, candidate, exclusions) {
   const analysis = analyzeSorbothaneIsolation(candidate.candidateConfig, { skipResponse: true, skipUncertainty: true });
-  const loadsLbf = analysis.preload.mounts.flatMap(mount => [mount.upperLoadN / LBF, mount.lowerLoadN / LBF]);
+  const targetMounts = context.assemblyTarget ? analysis.preload.mounts.filter(mount => mount.group === context.assemblyTarget.group) : analysis.preload.mounts;
+  const loadsLbf = context.assemblyTarget
+    ? targetMounts.map(mount => (context.assemblyTarget.side === 'top' ? mount.upperLoadN : mount.lowerLoadN) / LBF)
+    : targetMounts.flatMap(mount => [mount.upperLoadN / LBF, mount.lowerLoadN / LBF]);
   const pass = analysis.passes;
   if (!pass) exclusions.dynamic += 1;
   return {
     item: candidate.item,
     stackCount: candidate.stackCount,
-    totalElementCount: candidate.stackCount * context.config.mounts.count * 2,
+    totalElementCount: context.assemblyTarget ? analysis.preload.billOfMaterials.find(item => item.productNumber === candidate.item.productNumber)?.quantity ?? 0 : candidate.stackCount * context.config.mounts.count * 2,
+    nominalPreloadN: context.assemblyTarget ? targetMounts[0].profile.preloadN : analysis.preload.preloadN,
     installedLoadRangeLb: [Math.min(...loadsLbf), Math.max(...loadsLbf)],
-    score: catalogPerformanceScore(analysis),
+    score: catalogPerformanceScore(analysis) + (analysis.preload.assemblyChecks?.filter(check => !check.pass).length ?? 0) * 1000,
     pass,
     analysis,
-    config: candidate.candidateConfig
+    config: candidate.candidateConfig,
+    assemblyTarget: context.assemblyTarget
   };
 }
 
@@ -1188,6 +1336,7 @@ function finalizeCatalogScreen(context, evaluated, exclusions) {
     supportCount: context.config.mounts.count,
     rowAxis: context.config.mounts.rowAxis,
     formulation: context.config.isolator.formulation,
+    assemblyTarget: context.assemblyTarget,
     settings: { geometry: context.geometry, odRange: context.odRange, idRange: context.idRange, thicknessRange: context.thicknessRange, stackRange: [context.stackMin, context.stackMax] },
     criteria: context.criteria,
     catalogPartCount: context.catalog.length,

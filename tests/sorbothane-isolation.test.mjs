@@ -22,7 +22,7 @@ import {
   sorbothaneDynamicProperties,
   staticPreloadState
 } from '../js/sorbothane-analysis.js';
-import { engineeringReport, renderSorbothaneIsolationWorkbench, responseCsv, sorbothaneExplorerSettingsAroundDesign, sorbothaneExplorerVariableDefaults } from '../js/sorbothane-isolation.js';
+import { engineeringReport, renderSorbothaneExplorerResult, renderSorbothaneIsolationWorkbench, responseCsv, sorbothaneExplorerSettingsAroundDesign, sorbothaneExplorerVariableDefaults, updateSorbothaneCriteria } from '../js/sorbothane-isolation.js';
 import { NASTRAN_IPS_UNITS, generateNastranIsolationBdf } from '../js/nastran-isolation-export.js';
 import { SORBOTHANE_CATALOG, SORBOTHANE_MATERIAL, SORBOTHANE_MATERIALS, sorbothaneMaterial } from '../js/sorbothane-data.js';
 import { PARKER_LORD_AM_CATALOG, PARKER_LORD_AM_FAMILIES, parkerLordCatalogItem } from '../js/parker-lord-isolators.js';
@@ -724,9 +724,109 @@ test('workbench preserves trailing-zero requirement frequencies in rendered labe
   assert.match(html, />600 Hz · Tzz</);
   assert.equal((html.match(/data-sorbo-action="remove-catalog-tone"/g) ?? []).length, 3);
   assert.doesNotMatch(html, /sorbo-fixed-criterion|>Baseline</);
-  const noToneHtml = renderSorbothaneIsolationWorkbench(DEFAULT_SORBOTHANE_CONFIG, {}, { toneCriteria: [] });
+  const noToneConfig = baseline();
+  noToneConfig.analysis.tones = [];
+  const noToneHtml = renderSorbothaneIsolationWorkbench(noToneConfig);
   assert.match(noToneHtml, /No discrete-frequency attenuation criteria are active/);
   assert.match(noToneHtml, />0 tone criteria plus resonance limit</);
+});
+
+test('shared criteria update the saved analysis and override stale catalog-only values in both libraries', () => {
+  for (const original of [baseline(), lordBaseline()]) {
+    const snapshot = clone(original);
+    const config = updateSorbothaneCriteria(original, {
+      xTranslationMinHz: 55, yTranslationMinHz: 65, verticalMinHz: 110, verticalMaxHz: 210,
+      resonanceMinHz: 80, resonanceMaxHz: 350, resonanceMaximumDb: 10,
+      toneCriteria: [{ frequencyHz: 900, maximumDb: -17 }]
+    });
+    assert.deepEqual(original, snapshot, 'updating criteria must not mutate the previous design');
+    assert.deepEqual(config.analysis.lateralModeMinimumHz, [55, 65]);
+    assert.deepEqual(config.analysis.modeAcceptBandHz, [110, 210]);
+    assert.deepEqual(config.analysis.resonanceBandHz, [80, 350]);
+    assert.equal(config.analysis.resonanceLimitDb, 10);
+    assert.deepEqual(config.analysis.tones, [{ frequencyHz: 900, maximumDb: -17 }]);
+    const persisted = JSON.parse(JSON.stringify(config));
+    const html = renderSorbothaneIsolationWorkbench(persisted, {}, {
+      geometry: 'washer', stackMin: 2, stackMax: 3,
+      xTranslationMinHz: 1, yTranslationMinHz: 1, verticalMinHz: 1, verticalMaxHz: 2,
+      resonanceMinHz: 1, resonanceMaxHz: 2, resonanceMaximumDb: 6, toneCriteria: []
+    });
+    assert.match(html, /data-sorbo-field="analysis.resonanceLimitDb"[^>]*value="10"/);
+    for (const [key, value] of Object.entries({ xTranslationMinHz: 55, yTranslationMinHz: 65, verticalMinHz: 110, verticalMaxHz: 210, resonanceMinHz: 80, resonanceMaxHz: 350, resonanceMaximumDb: 10 })) {
+      assert.match(html, new RegExp(`data-catalog-criterion="${key}"[^>]*value="${value}"`));
+    }
+    assert.match(html, /900 Hz maximum/);
+    assert.match(html, /value="900" data-catalog-tone-index="0"/);
+    assert.match(html, /Shared analysis criteria/);
+    assert.match(html, /Synced with sidebar/);
+    assert.doesNotMatch(html, /Applied when you use a design/);
+    if (config.isolator.kind !== 'parker-lord-am') {
+      assert.match(html, /value="washer" selected>Washers/);
+      assert.match(html, /data-catalog-screen="stackMin"[^>]*value="2"/);
+    }
+  }
+});
+
+test('shared tone additions, edits and removals appear in both criteria editors', () => {
+  let config = updateSorbothaneCriteria(baseline(), { toneCriteria: [{ frequencyHz: 800, maximumDb: -15 }] });
+  config = updateSorbothaneCriteria(config, { toneCriteria: [{ frequencyHz: 850, maximumDb: -18 }] });
+  let html = renderSorbothaneIsolationWorkbench(config);
+  assert.match(html, /850 Hz maximum/);
+  assert.match(html, /data-sorbo-field="analysis.tones.0.maximumDb"[^>]*value="-18"/);
+  assert.match(html, /value="850" data-catalog-tone-index="0"/);
+  config = updateSorbothaneCriteria(config, { toneCriteria: [] });
+  html = renderSorbothaneIsolationWorkbench(config, {}, { toneCriteria: [{ frequencyHz: 1200, maximumDb: -20 }] });
+  assert.doesNotMatch(html, /data-sorbo-field="analysis.tones\./);
+  assert.equal((html.match(/data-sorbo-action="remove-catalog-tone"/g) ?? []).length, 0);
+  assert.match(html, /No discrete-frequency attenuation criteria are active/);
+});
+
+test('shared criteria preserve valid values, reject blank/nonfinite edits and normalize frequency bands', () => {
+  const original = baseline();
+  const changed = updateSorbothaneCriteria(original, { resonanceMaximumDb: '', xTranslationMinHz: NaN, resonanceMinHz: 400, resonanceMaxHz: 80, yTranslationMinHz: -1 });
+  assert.equal(changed.analysis.resonanceLimitDb, original.analysis.resonanceLimitDb);
+  assert.equal(changed.analysis.lateralModeMinimumHz[0], original.analysis.lateralModeMinimumHz[0]);
+  assert.equal(changed.analysis.lateralModeMinimumHz[1], 0.1);
+  assert.deepEqual(changed.analysis.resonanceBandHz, [80, 400]);
+  assert.equal(updateSorbothaneCriteria(changed, { resonanceMaximumDb: 0 }).analysis.resonanceLimitDb, 0);
+});
+
+test('catalog screening and design sweeps use the same saved resonance limit without a criteria override', () => {
+  const config = baseline();
+  config.component.massKg = 25 * SORBOTHANE_UNITS.LB;
+  config.mounts.count = 8;
+  config.mounts.rowAxis = 'y';
+  config.mounts.stackTop = config.mounts.stackBottom = 2;
+  const part = SORBOTHANE_CATALOG.find(item => item.productNumber === '0510945-70-10');
+  Object.assign(config.isolator, { productNumber: part.productNumber, geometry: part.geometry, durometer: part.durometer, odM: part.odIn * SORBOTHANE_UNITS.INCH, idM: part.idIn * SORBOTHANE_UNITS.INCH, thicknessM: part.thicknessIn * SORBOTHANE_UNITS.INCH });
+  const filters = { geometry: 'ring', odRange: [3.99, 4.01], idRange: [2.99, 3.01], thicknessRange: [.49, .51], stackRange: [2, 2] };
+  for (const [limit, expectedPass] of [[6, false], [10, true]]) {
+    const shared = updateSorbothaneCriteria(config, { resonanceMaximumDb: limit, resonanceMaxHz: 300, toneCriteria: [{ frequencyHz: 1200, maximumDb: -20 }] });
+    const screen = screenSorbothaneCatalog(shared, filters);
+    assert.equal(screen.criteria.resonanceMaximumDb, limit);
+    assert.equal(screen.recommendations.some(candidate => candidate.item.productNumber === part.productNumber), expectedPass);
+    const grid = runDesignGrid(shared, { xVariable: 'thickness', yVariable: 'od', xRange: [.49, .51], yRange: [3.99, 4.01], gridSize: 3 });
+    const reference = grid.candidates.find(candidate => candidate.isReference);
+    assert.ok(reference);
+    assert.equal(reference.config.analysis.resonanceLimitDb, limit);
+    assert.equal(reference.pass, expectedPass);
+  }
+});
+
+test('changing only shared acceptance limits leaves the physical uncertainty envelopes unchanged', () => {
+  const config = baseline();
+  config.uncertainty.enabled = true;
+  config.uncertainty.samples = 8;
+  config.analysis.frequencyPoints = 41;
+  const original = analyzeSorbothaneIsolation(config);
+  const updated = updateSorbothaneCriteria(config, {
+    resonanceMaximumDb: 12, resonanceMinHz: 50, resonanceMaxHz: 400,
+    toneCriteria: config.analysis.tones.map(tone => ({ ...tone, maximumDb: 0 }))
+  });
+  const changed = analyzeSorbothaneIsolation(updated);
+  assert.deepEqual(changed.uncertainty, original.uncertainty);
+  assert.deepEqual(changed.directionalResponses, original.directionalResponses);
+  assert.equal(changed.config.analysis.resonanceLimitDb, 12);
 });
 
 test('water-resistant formulation is visible in the Isolator workflow and engineering report', () => {
@@ -818,6 +918,127 @@ test('design explorer centers a seven-by-seven study on the applied design', () 
   close(grid.yValues[3], 1.25, 1e-12);
   assert.deepEqual(grid.reference, { xValue: 0.25, yValue: 1.25 });
   assert.equal(grid.candidates.filter(candidate => candidate.isReference).length, 1);
+});
+
+const matrixRingStudy = () => {
+  const config = baseline();
+  const item = SORBOTHANE_CATALOG.find(part => part.productNumber === '0510845-70-10');
+  config.component.massKg = 25 * SORBOTHANE_UNITS.LB;
+  config.mounts.count = 8;
+  config.mounts.rowAxis = 'y';
+  Object.assign(config.isolator, { productNumber: item.productNumber, geometry: item.geometry, durometer: item.durometer,
+    odM: item.odIn * SORBOTHANE_UNITS.INCH, idM: item.idIn * SORBOTHANE_UNITS.INCH, thicknessM: item.thicknessIn * SORBOTHANE_UNITS.INCH });
+  Object.assign(config.analysis, { lateralModeMinimumHz: [80, 80], modeAcceptBandHz: [80, 300], resonanceBandHz: [80, 300], resonanceLimitDb: 100, tones: [{ frequencyHz: 1200, maximumDb: 0 }] });
+  return config;
+};
+
+test('matrix points resolve their own exact geometry and durometer load rating', () => {
+  const config = matrixRingStudy();
+  const snapshot = clone(config);
+  const grid = runDesignGrid(config, { xVariable: 'thickness', yVariable: 'od', xRange: [.375, .625], yRange: [1.5, 2.5], gridSize: 3 });
+  const cell = grid.cells[1][1];
+  assert.equal(cell.config.isolator.productNumber, '0510825-70-10');
+  assert.deepEqual(cell.catalogItem.ratedLoadLb, [75, 185]);
+  cell.analysis.preload.ratedLoadN.forEach((value, index) => close(value / SORBOTHANE_UNITS.LBF, [75, 185][index]));
+  assert.equal(cell.analysis.preload.catalogCompliant, true);
+  assert.equal(cell.checks.find(check => check.id === 'rated-load').pass, true);
+  assert.equal(cell.pass, false);
+  assert.deepEqual(cell.failures.map(check => check.id), ['x-mode', 'y-mode']);
+  assert.match(cell.failures[0].detail, /65\.2 Hz; minimum 80\.0 Hz/);
+  assert.match(cell.failures[1].detail, /62\.2 Hz; minimum 80\.0 Hz/);
+  assert.equal(grid.cells[2][1].config.isolator.productNumber, snapshot.isolator.productNumber);
+  assert.equal(grid.cells[2][1].pass, true);
+  assert.deepEqual(config, snapshot, 'a sweep must not mutate the installed design');
+});
+
+test('unmatched matrix geometries never inherit a parent rating or receive an unqualified PASS', () => {
+  const config = matrixRingStudy();
+  Object.assign(config.analysis, { lateralModeMinimumHz: [.1, .1], modeAcceptBandHz: [.1, 1e6], tones: [] });
+  const grid = runDesignGrid(config, { xVariable: 'thickness', yVariable: 'od', xRange: [.49, .51], yRange: [2.03, 2.05], gridSize: 3 });
+  const cell = grid.cells[1][1];
+  assert.equal(cell.config.isolator.productNumber, 'custom-ring');
+  assert.equal(cell.catalogItem, null);
+  assert.equal(cell.analysis.preload.ratedLoadN, null);
+  assert.equal(cell.analysis.passes, true, 'the calculated dynamic checks pass');
+  assert.equal(cell.pass, false, 'catalog load verification is still required');
+  assert.deepEqual(cell.failures.map(check => check.id), ['rated-load']);
+  assert.equal(cell.failures[0].code, 'RATE?');
+  assert.match(cell.failures[0].detail, /No exact catalog match/);
+  assert.ok(grid.values.flat().every(Number.isFinite), 'removed tones must not remove the requested 1200 Hz map output');
+  const expected = Math.max(...['x', 'y', 'z'].map((axis, index) => rigidBodyResponseAtFrequency(cell.config, 1200, axis).db[index]));
+  close(cell.value, expected);
+});
+
+test('durometer sweeps use each published grade rating and mark interpolated grades unverified', () => {
+  const config = matrixRingStudy();
+  config.isolator.odM = 2 * SORBOTHANE_UNITS.INCH;
+  const grid = runDesignGrid(config, { xVariable: 'durometer', yVariable: 'mass', xRange: [30, 70], yRange: [20, 30], gridSize: 3 });
+  for (const [column, grade, rating] of [[0, 30, [6, 13]], [1, 50, [17, 39]], [2, 70, [75, 185]]]) {
+    const cell = grid.cells[1][column];
+    assert.equal(cell.config.isolator.productNumber, `0510825-${grade}-10`);
+    assert.deepEqual(cell.catalogItem.ratedLoadLb, rating);
+  }
+  const interpolated = runDesignGrid(config, { xVariable: 'durometer', yVariable: 'mass', xRange: [40, 60], yRange: [20, 30], gridSize: 3 });
+  assert.equal(interpolated.cells[1][0].catalogItem, null);
+  assert.equal(interpolated.cells[1][0].pass, false);
+});
+
+test('matrix catalog matching supports annular washers and solid discs without mixing their geometry models', () => {
+  const config = matrixRingStudy();
+  config.isolator.odM = 1.5 * SORBOTHANE_UNITS.INCH;
+  const washerGrid = runDesignGrid(config, { xVariable: 'mass', yVariable: 'compression', xRange: [20, 30], yRange: [10, 20], gridSize: 3 });
+  assert.equal(washerGrid.cells[1][1].config.isolator.productNumber, '0510050-70-10');
+  assert.equal(washerGrid.cells[1][1].config.isolator.geometry, 'washer');
+  Object.assign(config.isolator, { geometry: 'disc', odM: SORBOTHANE_UNITS.INCH, idM: 0 });
+  const discGrid = runDesignGrid(config, { xVariable: 'mass', yVariable: 'compression', xRange: [20, 30], yRange: [10, 20], gridSize: 3 });
+  assert.equal(discGrid.cells[1][1].config.isolator.productNumber, '0531050-70-10');
+  assert.equal(discGrid.cells[1][1].config.isolator.geometry, 'disc');
+});
+
+test('every matrix cell retains status and full modal, directional response, load, compression and contact failures', () => {
+  const config = matrixRingStudy();
+  config.environment.accelerationG[2] = 1000;
+  Object.assign(config.analysis, { lateralModeMinimumHz: [1e6, 1e6], modeAcceptBandHz: [1e6, 2e6], resonanceLimitDb: -100, tones: [{ frequencyHz: 1200, maximumDb: -100 }] });
+  const grid = runDesignGrid(config, { xVariable: 'mass', yVariable: 'compression', xRange: [20, 30], yRange: [4, 6], gridSize: 3 });
+  const cell = grid.cells[1][1];
+  const ids = cell.failures.map(check => check.id);
+  for (const id of ['x-mode', 'y-mode', 'z-mode', 'tone-1200-X', 'tone-1200-Y', 'tone-1200-Z', 'peak-x', 'peak-y', 'peak-z', 'rated-load', 'engagement', 'compression']) assert.ok(ids.includes(id), `${id} failure missing`);
+  assert.equal(grid.cells.flat().length, 9);
+  assert.ok(grid.cells.flat().every(candidate => candidate.failures.length && !candidate.pass));
+  const invalid = runDesignGrid(config, { xVariable: 'id', yVariable: 'od', xRange: [2, 3], yRange: [1, 2], gridSize: 3 });
+  assert.equal(invalid.cells.flat().length, 9);
+  assert.ok(invalid.cells.flat().every(candidate => !candidate.pass && candidate.failures[0].id === 'invalid'));
+  assert.ok(invalid.values.flat().every(Number.isNaN));
+  assert.match(renderSorbothaneExplorerResult(invalid), /Geometry requires OD &gt; ID/);
+});
+
+test('matrix renders a selectable PASS or REVIEW in every cell and exposes values and limits for the selected cell', () => {
+  const grid = runDesignGrid(matrixRingStudy(), { xVariable: 'thickness', yVariable: 'od', xRange: [.375, .625], yRange: [1.5, 2.5], gridSize: 3 });
+  const html = renderSorbothaneExplorerResult(grid);
+  assert.equal((html.match(/data-explorer-row=/g) ?? []).length, 9);
+  assert.equal((html.match(/class="sorbo-cell-status /g) ?? []).length, 9);
+  assert.match(html, /class="sorbo-cell-status is-pass"[^>]*>PASS/);
+  assert.match(html, /class="sorbo-cell-status is-review"[^>]*>REVIEW/);
+  assert.match(html, /role="button" tabindex="0" aria-pressed="true"/);
+  assert.match(html, /0510825-70-10 · ring · 70 Shore 00/);
+  assert.match(html, /Failed or unverified criteria \(2\)/);
+  assert.match(html, /65\.2 Hz; minimum 80\.0 Hz/);
+  assert.match(html, /rated 75\.0–185\.0 lbf per element/);
+  grid.selectedRow = 2;
+  const selected = renderSorbothaneExplorerResult(grid);
+  assert.match(selected, /Selected cell · thickness 0\.5 \/ od 2\.5/);
+  assert.match(selected, /All active criteria and catalog load checks pass/);
+});
+
+test('Parker LORD matrix keeps the complete-mount rating and water-resistant Sorbothane flags catalog confirmation', () => {
+  const lord = lordBaseline();
+  const grid = runDesignGrid(lord, { xVariable: 'mass', yVariable: 'stiffnessScale', xRange: [5, 15], yRange: [.9, 1.1], gridSize: 3, output: 'peak' });
+  assert.ok(grid.cells.flat().every(cell => cell.config.isolator.productNumber === lord.isolator.productNumber));
+  assert.ok(grid.cells.flat().every(cell => cell.checks.find(check => check.id === 'rated-load').code === 'LOAD'));
+  const water = matrixRingStudy();
+  water.isolator.formulation = 'water-resistant';
+  const waterGrid = runDesignGrid(water, { xVariable: 'mass', yVariable: 'compression', xRange: [20, 30], yRange: [10, 20], gridSize: 3 });
+  assert.ok(waterGrid.cells.flat().every(cell => !cell.pass && cell.failures.some(check => check.id === 'formulation')));
 });
 
 test('catalog screening filters nominal geometry and selects the minimum passing stack count per part', () => {

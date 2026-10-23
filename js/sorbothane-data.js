@@ -1,4 +1,4 @@
-export const SORBOTHANE_DATA_VERSION = '2026-08-17';
+export const SORBOTHANE_DATA_VERSION = '2026-10-22';
 
 export const SORBOTHANE_REFERENCES = [
   {
@@ -337,3 +337,20 @@ export const SORBOTHANE_CATALOG = [
 export function sorbothaneCatalogItem(productNumber) {
   return SORBOTHANE_CATALOG.find(item => item.productNumber === productNumber) ?? SORBOTHANE_CATALOG[0];
 }
+
+// Standard Products Guide, revised 06/2025, p. 6. A=flange OD,
+// B=sleeve OD, C=flange thickness, D=bolt bore, E=overall height (in).
+// These are individual-part axial load ranges at 10–20% deflection,
+// not a radial spring-rate database or an assembly capacity to be summed.
+export const SORBOTHANE_BUSHING_CATALOG = [
+  ['0510030', .50, .22, .19, .12, .39, [[.25, .60], [.75, 1.75], [3.5, 8]]],
+  ['0576170', .72, .50, .15, .28, .22, [[.65, 1.5], [2, 4.5], [8, 20]]],
+  ['0510005', 1, .46, .19, .28, .31, [[2, 4], [5, 12], [24, 60]]],
+  ['0510002', 1, .45, .19, .25, .60, [[2, 4.5], [6, 13.5], [26, 65]]],
+  ['0510035', 1, .45, .38, .25, .79, [[1, 2], [3, 7], [13, 33]]]
+].flatMap(([base, a, b, c, d, e, ratings]) => [30, 50, 70].map((durometer, index) => ({
+  ...row(`${base}-${durometer}-10`, 'bushing', a, d, c, durometer, ratings[index]),
+  sleeveOdIn: b, flangeThicknessIn: c, overallHeightIn: e,
+  dimensions: { A: a, B: b, C: c, D: d, E: e }, sourcePage: 6,
+  notes: 'Floating-bolt bushing; avoid over-torque and metal-to-metal contact. Published axial load range does not specify radial stiffness.'
+})));

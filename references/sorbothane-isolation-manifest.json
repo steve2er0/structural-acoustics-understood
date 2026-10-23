@@ -1,7 +1,8 @@
 {
   "title": "Sorbothane 6-DOF isolation research manifest",
   "research_date": "2026-08-16",
-  "data_version": "2026-08-16",
+  "data_version": "2026-10-22",
+  "bushing_catalog_review_date": "2026-10-22",
   "sources": [
     {
       "id": "sorbothane-edg-2018",
@@ -28,7 +29,7 @@
       "revision": "Revised 2025-06",
       "url": "https://www.sorbothane.com/wp-content/uploads/Sorbothane-SPG.pdf",
       "local_file": "Sorbothane-Standard-Products-Guide-2025.pdf",
-      "used_for": ["washer geometry and load ratings", "isolation ring geometry and load ratings", "isolation disc geometry and load ratings", "10-20 percent deflection guidance", "floating-bolt installation warning"]
+      "used_for": ["washer geometry and load ratings", "isolation ring geometry and load ratings", "isolation disc geometry and load ratings", "bushing A/B/C/D/E dimensions and individual axial load ratings on page 6", "10-20 percent deflection guidance", "floating-bolt installation warning"]
     },
     {
       "id": "sorbothane-ds102-2015",
@@ -70,6 +71,9 @@
   "runtime_data": {
     "file": "../js/sorbothane-data.js",
     "catalog_records_including_custom": 133,
+    "bushing_catalog_records": 15,
+    "assembly_catalog_records_excluding_custom": 147,
+    "assembly_model_file": "../js/sorbothane-assemblies.js",
     "material_table": {
       "durometers_shore_00": [30, 50, 70],
       "compression_percent": [10, 15, 20],
@@ -89,6 +93,7 @@
     "calculated": "Derived from geometry, load equilibrium, matrix assembly, eigenanalysis, or complex frequency response."
   },
   "limitations": [
+    "Mixed bushing assemblies use an explicitly unvalidated flange-only approximation; sleeve confinement, radial bearing/contact, friction and torque are not established by the catalog load ratings. These models retain REVIEW status.",
     "The manufacturer dynamic-property figures end at 300 Hz. Predictions at 600, 1200, 1400, and 2000 Hz require an explicit extrapolation choice.",
     "The archived NASA test paper is application evidence, not a property database for the modeled geometry.",
     "Product availability and catalog ratings are subject to change; verify the current manufacturer product page before procurement.",

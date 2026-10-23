@@ -25,6 +25,8 @@ const frameworkModule = await read('js/engineering-results.js');
 const dataModule = await read('js/data.js');
 const pcbAccelerometersModule = await read('js/pcb-accelerometers-data.js');
 const sorbothaneDataModule = await read('js/sorbothane-data.js');
+const sorbothaneAssembliesModule = await read('js/sorbothane-assemblies.js');
+const sorbothaneAssemblyUiModule = await read('js/sorbothane-assembly-ui.js');
 const parkerLordIsolatorsModule = await read('js/parker-lord-isolators.js');
 const sorbothaneAnalysisModule = await read('js/sorbothane-analysis.js');
 const nastranIsolationExportModule = await read('js/nastran-isolation-export.js');
@@ -98,24 +100,27 @@ const moduleSource = source => stripExports(stripImports(source));
 const dataBlock = 'const __data=(()=>{\n'+moduleSource(dataModule)+'\nreturn {sections,toolCatalog,demos,caseNotes,referenceGroups,glossary};\n})();\n\n'
   + 'const __acs519Data=(()=>{\n'+moduleSource(acs519DataModule)+'\nreturn {acs519Sections,acs519ToolCatalog,acs519Demos,acs519CaseNotes,acs519ReferenceGroups};\n})();\n\n';
 const pcbAccelerometersBlock = 'const __pcbAccelerometers=(()=>{\n'+moduleSource(pcbAccelerometersModule)+'\nreturn {PCB_ACCELEROMETER_CATALOG_META,pcbAccelerometers,pcbAccelerometerByModel,pcbAccelerometerOptions};\n})();\n\n';
-const sorbothaneDataBlock = 'const __sorbothaneData=(()=>{\n'+moduleSource(sorbothaneDataModule)+'\nreturn {SORBOTHANE_DATA_VERSION,SORBOTHANE_REFERENCES,SORBOTHANE_MATERIALS,SORBOTHANE_MATERIAL,SORBOTHANE_CATALOG,sorbothaneCatalogItem,sorbothaneMaterial};\n})();\n\n';
+const sorbothaneDataBlock = 'const __sorbothaneData=(()=>{\n'+moduleSource(sorbothaneDataModule)+'\nreturn {SORBOTHANE_DATA_VERSION,SORBOTHANE_REFERENCES,SORBOTHANE_MATERIALS,SORBOTHANE_MATERIAL,SORBOTHANE_CATALOG,SORBOTHANE_BUSHING_CATALOG,sorbothaneCatalogItem,sorbothaneMaterial};\n})();\n\n';
+const assemblyExports = ['SORBOTHANE_ASSEMBLY_PARTS','isSorbothaneAssemblyConfig','normalizeSorbothaneAssemblies','sorbothaneAssemblyPart','sorbothaneAssemblyBillOfMaterials','sorbothaneAssemblyStaticState','sorbothaneAssemblyDynamicMounts','assembleSorbothaneMountMatrices'];
+const sorbothaneAssembliesBlock = `const __sorbothaneAssemblies=(()=>{\nconst {SORBOTHANE_CATALOG,SORBOTHANE_BUSHING_CATALOG}=__sorbothaneData;\n${moduleSource(sorbothaneAssembliesModule)}\nreturn {${assemblyExports.join(',')}};\n})();\n\n`;
+const sorbothaneAssemblyUiBlock = `const __sorbothaneAssemblyUi=(()=>{\nconst {SORBOTHANE_BUSHING_CATALOG}=__sorbothaneData;\nconst {SORBOTHANE_ASSEMBLY_PARTS,isSorbothaneAssemblyConfig,sorbothaneAssemblyPart}=__sorbothaneAssemblies;\n${moduleSource(sorbothaneAssemblyUiModule)}\nreturn {renderSorbothaneAssemblyPanel};\n})();\n\n`;
 const parkerLordIsolatorsBlock = 'const __parkerLordIsolators=(()=>{\n'+moduleSource(parkerLordIsolatorsModule)+'\nreturn {PARKER_LORD_SOURCE,PARKER_LORD_AM_FAMILIES,PARKER_LORD_AM_CATALOG,parkerLordCatalogItem,parkerLordLossFactorForProduct};\n})();\n\n';
 const sorbothaneAnalysisExports = [
   'DEFAULT_SORBOTHANE_CONFIG', 'NASTRAN_PLATE_MATERIALS', 'normalizeSorbothaneConfig', 'isParkerLordConfig', 'sorbothaneDynamicProperties', 'isolatorDynamicProperties',
-  'isolationMountCoordinates', 'isolatorGeometry', 'staticPreloadState', 'rigidBodyMassMatrix', 'mountDynamicStiffness',
+  'isolationMountCoordinates', 'isolationMountStiffnesses', 'isolatorGeometry', 'staticPreloadState', 'rigidBodyMassMatrix', 'mountDynamicStiffness',
   'assembleRigidBodyStiffness', 'solveRigidBodyModes', 'rigidBodyResponseAtFrequency',
   'frequencyResponse', 'uncertaintyEnvelope', 'analyzeSorbothaneIsolation', 'runDesignGrid',
   'screenSorbothaneCatalog', 'screenSorbothaneCatalogAsync', 'screenParkerLordCatalog', 'screenParkerLordCatalogAsync',
   'SORBOTHANE_UNITS', 'SORBOTHANE_CATALOG'
 ];
 const sorbothaneAnalysisImports = sorbothaneAnalysisExports.filter(name => name !== 'SORBOTHANE_CATALOG');
-const sorbothaneAnalysisBlock = `const __sorbothaneAnalysis=(()=>{\nconst {SORBOTHANE_CATALOG,sorbothaneCatalogItem,sorbothaneMaterial}=__sorbothaneData;\nconst {PARKER_LORD_AM_CATALOG,parkerLordCatalogItem}=__parkerLordIsolators;\n${moduleSource(sorbothaneAnalysisModule)}\nreturn {${sorbothaneAnalysisExports.join(',')}};\n})();\n\n`;
-const nastranIsolationExportBlock = `const __nastranIsolationExport=(()=>{\nconst {isolationMountCoordinates,isParkerLordConfig,mountDynamicStiffness,normalizeSorbothaneConfig,rigidBodyMassMatrix,solveRigidBodyModes}=__sorbothaneAnalysis;\n${moduleSource(nastranIsolationExportModule)}\nreturn {NASTRAN_IPS_UNITS,nastranExportSettings,generateNastranIsolationBdf};\n})();\n\n`;
+const sorbothaneAnalysisBlock = `const __sorbothaneAnalysis=(()=>{\nconst {SORBOTHANE_CATALOG,sorbothaneCatalogItem,sorbothaneMaterial}=__sorbothaneData;\nconst {${assemblyExports.join(',')}}=__sorbothaneAssemblies;\nconst {PARKER_LORD_AM_CATALOG,parkerLordCatalogItem}=__parkerLordIsolators;\n${moduleSource(sorbothaneAnalysisModule)}\nreturn {${sorbothaneAnalysisExports.join(',')}};\n})();\n\n`;
+const nastranIsolationExportBlock = `const __nastranIsolationExport=(()=>{\nconst {isolationMountCoordinates,isolationMountStiffnesses,isParkerLordConfig,mountDynamicStiffness,normalizeSorbothaneConfig,rigidBodyMassMatrix,solveRigidBodyModes}=__sorbothaneAnalysis;\nconst {isSorbothaneAssemblyConfig}=__sorbothaneAssemblies;\n${moduleSource(nastranIsolationExportModule)}\nreturn {NASTRAN_IPS_UNITS,nastranExportSettings,generateNastranIsolationBdf};\n})();\n\n`;
 const workflowExpansionDataBlock = 'const __workflowExpansionData=(()=>{\n'+moduleSource(workflowExpansionDataModule)+'\nreturn {workflowExpansionSections,workflowExpansionToolCatalog,workflowExpansionDemos,workflowExpansionCaseNotes,workflowExpansionReferenceGroups};\n})();\n\n';
 const programExpansionDataBlock = 'const __programExpansionData=(()=>{\n'+moduleSource(programExpansionDataModule)+'\nreturn {programExpansionSections,programExpansionToolCatalog,programExpansionDemos,programExpansionCaseNotes,programExpansionReferenceGroups};\n})();\n\n';
 const electronicsFatigueDataBlock = 'const __electronicsFatigueData=(()=>{\n'+moduleSource(electronicsFatigueDataModule)+'\nreturn {electronicsFatigueSections,electronicsFatigueToolCatalog,electronicsFatigueDemos,electronicsFatigueCaseNotes,electronicsFatigueReferenceGroups};\n})();\n\n';
 const seaParameterDataBlock = 'const __seaParameterData=(()=>{\n'+moduleSource(seaParameterDataModule)+'\nreturn {seaParameterSections,seaParameterToolCatalog,seaParameterDemos,seaParameterCaseNotes,seaParameterReferenceGroups};\n})();\n\n';
-const sorbothaneIsolationBlock = `const __sorbothaneIsolation=(()=>{\nconst {SORBOTHANE_CATALOG,SORBOTHANE_DATA_VERSION,SORBOTHANE_REFERENCES,sorbothaneCatalogItem,sorbothaneMaterial}=__sorbothaneData;\nconst {PARKER_LORD_AM_CATALOG,PARKER_LORD_AM_FAMILIES,PARKER_LORD_SOURCE,parkerLordCatalogItem}=__parkerLordIsolators;\nconst {${sorbothaneAnalysisImports.join(',')}}=__sorbothaneAnalysis;\nconst {generateNastranIsolationBdf}=__nastranIsolationExport;\n${moduleSource(sorbothaneIsolationModule)}\nreturn {renderSorbothaneIsolationWorkbench,bindSorbothaneIsolationWorkbench,sorbothaneIsolationCalculator,sorbothaneIsolationWorkbench};\n})();\n\n`;
+const sorbothaneIsolationBlock = `const __sorbothaneIsolation=(()=>{\nconst {SORBOTHANE_CATALOG,SORBOTHANE_DATA_VERSION,SORBOTHANE_REFERENCES,sorbothaneCatalogItem,sorbothaneMaterial}=__sorbothaneData;\nconst {isSorbothaneAssemblyConfig,sorbothaneAssemblyBillOfMaterials,SORBOTHANE_ASSEMBLY_PARTS}=__sorbothaneAssemblies;\nconst {renderSorbothaneAssemblyPanel}=__sorbothaneAssemblyUi;\nconst {PARKER_LORD_AM_CATALOG,PARKER_LORD_AM_FAMILIES,PARKER_LORD_SOURCE,parkerLordCatalogItem}=__parkerLordIsolators;\nconst {${sorbothaneAnalysisImports.join(',')}}=__sorbothaneAnalysis;\nconst {generateNastranIsolationBdf}=__nastranIsolationExport;\n${moduleSource(sorbothaneIsolationModule)}\nreturn {renderSorbothaneIsolationWorkbench,bindSorbothaneIsolationWorkbench,sorbothaneIsolationCalculator,sorbothaneIsolationWorkbench};\n})();\n\n`;
 const twoStageIsolationPhysicsExports = [
   'TWO_STAGE_G0', 'complex', 'complexAdd', 'complexSubtract', 'complexMultiply', 'complexScale', 'complexMagnitude', 'complexPhaseDeg', 'complexDivide',
   'solveComplexLinearSystem', 'assembleTwoStageMatrices', 'stageDampingCoefficients', 'twoStageResponseAtFrequency', 'twoStageUndampedModes',
@@ -134,7 +139,7 @@ const twoStageIsolationBlockWithCompound = twoStageIsolationBlock.replace(
   `const {${twoStageIsolationPhysicsExports.join(',')}}=__twoStageIsolationPhysics;`,
   `const {${twoStageIsolationPhysicsExports.join(',')}}=__twoStageIsolationPhysics;\nconst {${compoundIsolationPhysicsExports.join(',')}}=__compoundIsolationPhysics;`
 );
-standalone = replaceRange(standalone, 'const __data=(()=>{', 'const __calculators=(()=>{', dataBlock + workflowExpansionDataBlock + programExpansionDataBlock + electronicsFatigueDataBlock + seaParameterDataBlock + pcbAccelerometersBlock + sorbothaneDataBlock + parkerLordIsolatorsBlock + sorbothaneAnalysisBlock + nastranIsolationExportBlock + sorbothaneIsolationBlock + twoStageIsolationPhysicsBlock + compoundIsolationPhysicsBlock + twoStageIsolationBlockWithCompound);
+standalone = replaceRange(standalone, 'const __data=(()=>{', 'const __calculators=(()=>{', dataBlock + workflowExpansionDataBlock + programExpansionDataBlock + electronicsFatigueDataBlock + seaParameterDataBlock + pcbAccelerometersBlock + sorbothaneDataBlock + sorbothaneAssembliesBlock + sorbothaneAssemblyUiBlock + parkerLordIsolatorsBlock + sorbothaneAnalysisBlock + nastranIsolationExportBlock + sorbothaneIsolationBlock + twoStageIsolationPhysicsBlock + compoundIsolationPhysicsBlock + twoStageIsolationBlockWithCompound);
 
 const calculatorsSource = moduleSource(calculatorsModule).replace(
   'const calculatorRegistry = createEngineeringRegistry(calculatorDefinitions);',

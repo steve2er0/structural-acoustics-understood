@@ -1,4 +1,4 @@
-const CACHE = 'sau-v145-flight-response-time-range';
+const CACHE = 'sau-v151-sorbothane-mixed-assemblies';
 const CORE = [
   './', './index.html', './styles.css', './manifest.webmanifest', './assets/favicon.svg',
   './js/app.js', './js/unit-system.js', './js/homepage.js', './js/tool-discovery.js', './js/site-components.js', './js/engineering-system.js', './js/data.js', './js/calculators.js', './js/pcb-accelerometers-data.js', './js/extra-calculators.js',
@@ -17,7 +17,7 @@ const CORE = [
   './js/sp8072-data.js', './js/sp8072-physics.js', './js/sp8072-tool.js', './references/sp8072-manifest.json', './docs/sp8072/README.md', './docs/sp8072/VALIDATION.md', './docs/sp8072/CONTROLS.md',
   './js/flight-response-tool.js',
   './js/two-stage-isolation-physics.js', './js/compound-isolation-physics.js', './js/two-stage-isolation.js',
-  './js/sorbothane-data.js', './js/parker-lord-isolators.js', './js/sorbothane-analysis.js', './js/nastran-isolation-export.js', './js/sorbothane-isolation.js'
+  './js/sorbothane-data.js', './js/sorbothane-assemblies.js', './js/sorbothane-assembly-ui.js', './js/parker-lord-isolators.js', './js/sorbothane-analysis.js', './js/nastran-isolation-export.js', './js/sorbothane-isolation.js'
 ];
 
 self.addEventListener('install', event => {

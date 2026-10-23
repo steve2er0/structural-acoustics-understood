@@ -1024,12 +1024,61 @@ html[data-theme="light"] .sorbo-support-footprint .sorbo-drawing-component-label
 .sorbo-drawing-hardware-label { fill: #7895aa; font-size: 7px; }
 .sorbo-drawing-component-label { fill: #c4e9fb; font-size: 7px; font-weight: 680; text-anchor: middle; letter-spacing: .04em; }
 .sorbo-drawing-note { fill: #718da3; font-size: 7px; }
-.sorbo-explorer-result { display: grid; grid-template-columns: minmax(0, .8fr) minmax(480px, 1.2fr); gap: 1rem; margin-top: 1rem; }
-.sorbo-heatmap { width: 100%; min-height: 390px; border: 1px solid var(--sorbo-line); background: rgba(4, 19, 32, .8); }
+.sorbo-explorer-result { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; margin-top: 1rem; }
+.sorbo-explorer-result > section { min-width: 0; }
+.sorbo-map-scroll { overflow-x: auto; }
+.sorbo-heatmap { display: block; width: 100%; min-width: 660px; max-width: 1000px; border: 1px solid var(--sorbo-line); background: #071b2b; }
 .sorbo-heatmap text { fill: rgba(244, 249, 253, .82); font: 530 8px var(--mono); text-anchor: middle; pointer-events: none; }
 .sorbo-heatmap .axis-tick { fill: #829aaf; font-size: 9px; }
+.sorbo-map-cell { cursor: pointer; outline: none; }
+.sorbo-map-cell .sorbo-cell-fill { stroke: #071b2b; stroke-width: 1; }
+.sorbo-map-cell.is-selected .sorbo-cell-fill { stroke: #ffdf8d; stroke-width: 3; }
+.sorbo-map-cell:focus-visible .sorbo-cell-fill { stroke: #fff; stroke-width: 4; stroke-dasharray: 4 2; }
+.sorbo-heatmap .sorbo-cell-badge { fill: #071b2b; }
+.sorbo-heatmap .sorbo-cell-status { font-size: 10px; font-weight: 800; }
+.sorbo-heatmap .sorbo-cell-status.is-pass { fill: #91f2cb; }
+.sorbo-heatmap .sorbo-cell-status.is-review { fill: #ffdd9d; }
+.sorbo-heatmap .sorbo-cell-value { fill: #071b2b; font-size: 12px; font-weight: 850; }
+.sorbo-heatmap .sorbo-cell-codes { fill: #071b2b; font-size: 7px; font-weight: 750; }
+.sorbo-heatmap .is-invalid :is(.sorbo-cell-value, .sorbo-cell-codes) { fill: #e9f1f6; }
 .sorbo-heatmap rect.is-current-design { stroke: #fff; stroke-width: 3; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 5px rgba(87, 199, 255, .85)); }
 .sorbo-heatmap .current-design-label { fill: #fff; font-size: 7px; font-weight: 800; letter-spacing: .06em; }
+.sorbo-cell-details { margin-top: .8rem; padding: 1rem; border: 1px solid var(--sorbo-line); color: var(--sorbo-text); background: var(--sorbo-panel-solid); }
+.sorbo-cell-details > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.sorbo-cell-details h3 { margin: 0; font-size: .8rem; }
+.sorbo-cell-details :is(p, li, summary) { font-size: .68rem; line-height: 1.6; }
+.sorbo-cell-details p { margin: .4rem 0; }
+.sorbo-cell-details h4 { margin: .8rem 0 .4rem; font-size: .7rem; color: var(--sorbo-red); }
+.sorbo-cell-details ul { margin: .5rem 0; padding-left: 1.1rem; }
+.sorbo-cell-details li + li { margin-top: .3rem; }
+.sorbo-cell-details summary { cursor: pointer; color: var(--sorbo-cyan); }
+.sorbo-explorer-result td:last-child { min-width: 260px; max-width: 420px; white-space: normal; }
+.sorbo-explorer-result td:last-child small { display: block; margin-top: .35rem; line-height: 1.5; }
+.sorbo-assembly-card { margin-bottom: 1rem; }
+.sorbo-assembly-card > p, .sorbo-assembly-card :is(li, summary) { color: var(--sorbo-text); font-size: .7rem; line-height: 1.6; }
+.sorbo-assembly-enable { display: flex; align-items: center; gap: .6rem; padding: .8rem 0; color: var(--sorbo-cyan); font-size: .8rem; }
+.sorbo-assembly-enable input { width: 18px; height: 18px; accent-color: var(--sorbo-cyan); }
+.sorbo-assembly-group { margin: .8rem 0; border: 1px solid var(--sorbo-line); padding: .8rem; }
+.sorbo-assembly-group > summary { cursor: pointer; font-weight: 700; }
+.sorbo-assembly-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; margin-top: .8rem; }
+.sorbo-assembly-fields label, .sorbo-assembly-assign label { display: grid; gap: .35rem; min-width: 0; color: var(--sorbo-text); font-size: .65rem; }
+.sorbo-assembly-fields :is(input, select), .sorbo-assembly-assign select { width: 100%; min-width: 0; border: 1px solid var(--sorbo-line); padding: .55rem; color: var(--sorbo-text); background: var(--sorbo-panel-solid); font-size: .65rem; }
+.sorbo-assembly-part { grid-column: span 2; }
+.sorbo-assembly-fields label:has([data-assembly-path$=".radialMode"]) { grid-column: span 2; }
+.sorbo-assembly-fields input:disabled { opacity: .75; cursor: default; }
+.sorbo-assembly-assign { display: flex; flex-wrap: wrap; gap: .6rem; align-items: end; }
+.sorbo-assembly-assign label { min-width: 54px; }
+.sorbo-assembly-drawings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; }
+.sorbo-assembly-drawings .sorbo-drawing-note { font-size: 11px; }
+.sorbo-assembly-drawings .sorbo-assembly-drawing-footer { font-size: 8px; }
+.sorbo-bushing-dimensions { display: block; margin-bottom: .4rem; color: var(--sorbo-text); font-size: .68rem; line-height: 1.6; }
+.sorbo-assembly-review { padding: .8rem; border-left: 3px solid var(--sorbo-red); margin: 1rem 0; }
+.sorbo-assembly-review h3 { color: var(--sorbo-red); }
+@media (max-width: 700px) {
+  .sorbo-assembly-card > header { flex-direction: column; gap: .5rem; }
+  .sorbo-assembly-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sorbo-assembly-drawings { grid-template-columns: minmax(0, 1fr); }
+}
 .sorbo-assumption-list,
 .sorbo-warning-list { display: grid; gap: .65rem; padding-left: 1.2rem; color: #9db1c2; font-size: .65rem; line-height: 1.55; }
 .sorbo-warning-list { color: #e5a8a3; }

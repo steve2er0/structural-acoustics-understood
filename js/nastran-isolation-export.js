@@ -1,11 +1,13 @@
 import {
   isolationMountCoordinates,
+  isolationMountStiffnesses,
   isParkerLordConfig,
   mountDynamicStiffness,
   normalizeSorbothaneConfig,
   rigidBodyMassMatrix,
   solveRigidBodyModes
 } from './sorbothane-analysis.js';
+import { isSorbothaneAssemblyConfig } from './sorbothane-assemblies.js';
 
 export const NASTRAN_IPS_UNITS = Object.freeze({
   length: 'in',
@@ -75,11 +77,19 @@ export function generateNastranIsolationBdf(configInput, analysisInput = null) {
   const config = normalizeSorbothaneConfig(configInput);
   const settings = config.validation.nastran;
   const modal = analysisInput?.modes ? analysisInput : solveRigidBodyModes(config);
-  const verticalMode = modal.modes.find(mode => mode.dominantIndex === 2) ?? modal.modes[0];
+  const verticalMode = modal.modes.reduce((best, mode) => mode.participation[2] > best.participation[2] ? mode : best, modal.modes[0]);
   const referenceFrequencyHz = settings.stiffnessReferenceMode === 'custom'
     ? settings.customReferenceFrequencyHz
     : verticalMode.frequencyHz;
   const mount = mountDynamicStiffness(config, referenceFrequencyHz);
+  const mixed = isSorbothaneAssemblyConfig(config);
+  const supportMounts = isolationMountStiffnesses(config, referenceFrequencyHz);
+  const supportProperties = supportMounts.map((support, index) => ({
+    id: mixed ? 40 + index : 40, group: support.group ?? null,
+    topPart: support.topItem?.productNumber, bottomPart: support.bottomItem?.productNumber,
+    rates: [support.kxNPerM, support.kyNPerM, support.kzNPerM].map(value => value * N_PER_M_TO_LBF_PER_IN),
+    lossFactors: support.lossNPerM ? support.lossNPerM.map((value, axis) => value / [support.kxNPerM, support.kyNPerM, support.kzNPerM][axis]) : Array(3).fill(support.material.tanDelta)
+  }));
   const mass = rigidBodyMassMatrix(config);
 
   const plateLengthIn = config.component.dimensionsM[0] * inchPerM;
@@ -144,6 +154,7 @@ export function generateNastranIsolationBdf(configInput, analysisInput = null) {
   const lossFactor = finite(mount.material?.tanDelta, 0);
 
   const warnings = [];
+  if (mixed) warnings.push('Mixed-assembly flange/sleeve/contact assumptions are not validated by this linear CBUSH export. Each leg has its own PBUSH, with axis-specific effective loss factors at the reference frequency. See the browser assembly checks.');
   if (settings.massAccounting === 'box-plus-plate') warnings.push('The CQUAD4 plate mass is added to the website component mass; NASTRAN total isolated mass is therefore greater than the browser rigid-body mass.');
   else warnings.push('The plate density is omitted so the CONM2 preserves the browser total mass; plate self-mass and free plate modes are not represented.');
   if (!isParkerLordConfig(config)) warnings.push(`Sorbothane PBUSH stiffness is frozen at ${referenceFrequencyHz.toFixed(2)} Hz; one SOL 103 property cannot reproduce the browser model's frequency-dependent modulus at every mode.`);
@@ -168,7 +179,7 @@ export function generateNastranIsolationBdf(configInput, analysisInput = null) {
     comment(`1 SLINCH = ${lbmPerSlinch.toFixed(9)} LBM; G0 = ${gravityInPerSec2.toFixed(9)} IN/S^2.`),
     comment('MAT1 RHO: SLINCH/IN^3. CONM2 MASS: SLINCH. CONM2 INERTIA: SLINCH-IN^2.'),
     comment('PBUSH K1/K2/K3: LBF/IN IN BASIC X/Y/Z. PBUSH GE: DIMENSIONLESS LOSS FACTOR.'),
-    comment(`SOURCE CONFIGURATION: ${config.isolator.productNumber}; ${isParkerLordConfig(config) ? 'PARKER LORD COMPLETE MOUNT' : `CAPTURED ${config.isolator.formulation === 'water-resistant' ? 'WATER-RESISTANT' : 'STANDARD'} SORBOTHANE ELEMENT`}.`),
+    comment(`SOURCE CONFIGURATION: ${mixed ? 'MIXED SORBOTHANE ASSEMBLIES' : config.isolator.productNumber}; ${isParkerLordConfig(config) ? 'PARKER LORD COMPLETE MOUNT' : `CAPTURED ${config.isolator.formulation === 'water-resistant' ? 'WATER-RESISTANT' : 'STANDARD'} SORBOTHANE ELEMENT`}.`),
     comment(`BROWSER RIGID-BODY MODES (HZ): ${modal.modes.map(mode => mode.frequencyHz.toFixed(4)).join(', ')}.`),
     comment(`SUPPORT LAYOUT: ${config.mounts.count} LEGS, ${config.mounts.count / 2} PER SIDE; EQUALLY SPACED ALONG ${config.mounts.rowAxis.toUpperCase()} ON THE -${config.mounts.rowAxis === 'x' ? 'Y' : 'X'} AND +${config.mounts.rowAxis === 'x' ? 'Y' : 'X'} SIDES.`),
     comment(`PBUSH STIFFNESS REFERENCE FREQUENCY: ${referenceFrequencyHz.toFixed(6)} HZ (${settings.stiffnessReferenceMode}).`),
@@ -182,8 +193,11 @@ export function generateNastranIsolationBdf(configInput, analysisInput = null) {
     card('MAT1', matId, settings.plateYoungsModulusPsi, '', settings.platePoisson, deckDensity ?? ''),
     card('PSHELL', pshellId, matId, settings.plateThicknessIn, matId, 1, matId, 0.833333, 0),
     comment('EQUIVALENT ISOLATOR PROPERTY: K1=X RADIAL, K2=Y RADIAL, K3=Z AXIAL.'),
-    card('PBUSH', pbushId, 'K', kxLbfPerIn, kyLbfPerIn, kzLbfPerIn, 0, 0, 0),
-    card('+', 'GE', lossFactor, lossFactor, lossFactor, 0, 0, 0),
+    ...(mixed ? supportProperties : supportProperties.slice(0, 1)).flatMap(property => [
+      comment(`SUPPORT PROPERTY ${property.id}${property.group ? ` GROUP ${property.group}; UPPER ${property.topPart}; LOWER ${property.bottomPart}` : ''}`),
+      card('PBUSH', property.id, 'K', ...property.rates, 0, 0, 0),
+      card('+', 'GE', ...property.lossFactors, 0, 0, 0)
+    ]),
     comment('PLATE GRIDS AND CQUAD4 ELEMENTS')
   ];
 
@@ -201,13 +215,13 @@ export function generateNastranIsolationBdf(configInput, analysisInput = null) {
   lines.push(comment(`${mountGridIds.length} ZERO-LENGTH CBUSHES TO FIXED BASE GRIDS; CID=0 ALIGNS K1/K2/K3 WITH BASIC X/Y/Z.`));
   groundGrids.forEach(grid => lines.push(card('GRID', grid.id, '', grid.x, grid.y, grid.z)));
   const firstBushId = Math.max(4001, nextQuadId);
-  mountGridIds.forEach((topGridId, index) => lines.push(card('CBUSH', firstBushId + index, pbushId, topGridId, groundGrids[index].id, '', '', '', 0)));
+  mountGridIds.forEach((topGridId, index) => lines.push(card('CBUSH', firstBushId + index, supportProperties[index].id, topGridId, groundGrids[index].id, '', '', '', 0)));
   const groundGridIds = groundGrids.map(grid => grid.id);
   lines.push(...wrapContinuation('SPC1', [1, 123456, ...groundGridIds.slice(0, 6)], groundGridIds.slice(6)));
   lines.push('ENDDATA');
 
   const deck = `${lines.join('\n')}\n`;
-  const filename = `${cleanFilename(`isolation-${config.isolator.productNumber}-sol103`)}.bdf`;
+  const filename = `${cleanFilename(`isolation-${mixed ? 'mixed-assemblies' : config.isolator.productNumber}-sol103`)}.bdf`;
   return {
     deck,
     filename,
@@ -217,6 +231,7 @@ export function generateNastranIsolationBdf(configInput, analysisInput = null) {
       grids: grids.length + groundGrids.length + 1,
       cquad4: quads.length,
       cbush: mountGridIds.length,
+      pbush: mixed ? mountGridIds.length : 1,
       conm2: 1,
       rbe2: settings.coupling === 'rbe2' ? 1 : 0,
       rbe3: settings.coupling === 'rbe3' ? 1 : 0
@@ -236,7 +251,7 @@ export function generateNastranIsolationBdf(configInput, analysisInput = null) {
     box: { massLbm: boxMassLbm, massSlinch: boxMassSlinch, inertiaSlinchIn2, cgIn },
     totalIncludedMassSlinch: boxMassSlinch + includedPlateMassSlinch,
     totalIncludedMassLbm: (boxMassSlinch + includedPlateMassSlinch) * lbmPerSlinch,
-    isolators: { referenceFrequencyHz, kxLbfPerIn, kyLbfPerIn, kzLbfPerIn, lossFactor, mountGridIds, groundGridIds: groundGrids.map(grid => grid.id) },
+    isolators: { referenceFrequencyHz, kxLbfPerIn, kyLbfPerIn, kzLbfPerIn, lossFactor, supportProperties, mountGridIds, groundGridIds: groundGrids.map(grid => grid.id) },
     attachmentGridIds,
     warnings
   };
