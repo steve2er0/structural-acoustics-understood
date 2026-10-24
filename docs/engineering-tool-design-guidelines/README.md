@@ -158,7 +158,7 @@ Do not promote a quick screen to a guided workbench merely because the subject i
 Use this order unless the physics creates a stronger reason to change it:
 
 1. **Orientation:** breadcrumb, decision title, short scope, controlling metric, status, key limitation.
-2. **Actions:** unit system, copy/export, import, reset, add to project.
+2. **Actions:** unit system, copy/export, import, reset, tool-local baseline.
 3. **Controls:** grouped inputs and model/library selection.
 4. **Overview evidence:** physical view, current design, primary metrics, requirements.
 5. **Deep evidence:** plots, modes, tables, comparisons, sensitivity, uncertainty.

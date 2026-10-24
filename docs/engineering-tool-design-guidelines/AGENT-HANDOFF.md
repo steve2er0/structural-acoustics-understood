@@ -1,5 +1,12 @@
 # Other-Agent Handoff
 
+Current product decision (2026-10-23): the owner retired the site-wide Projects
+feature. Do not restore global project navigation, artifact-capture actions, or
+cross-tool project-context hydration. Preserve existing browser records without
+purging them. Tool-local versioned study state, import/export, named isolation
+configurations, and baseline comparisons remain supported; existing internal
+`project` API names are compatibility contracts, not a reason to restore the UI.
+
 Use this document when another agent or computer performs the bulk tool migrations.
 
 ## Required reading

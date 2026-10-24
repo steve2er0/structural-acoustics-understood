@@ -926,7 +926,9 @@ function percentile(values, probability) {
   return sorted[left] + (index - left) * (sorted[right] - sorted[left]);
 }
 
-export function uncertaintyEnvelope(configInput, nominalResponses = null) {
+// Both entry points consume the same seeded draws and percentile reduction.
+// Yielding between draws keeps the browser available without changing the model.
+function* uncertaintySteps(configInput, nominalResponses = null) {
   const config = normalizeSorbothaneConfig(configInput);
   if (!config.uncertainty.enabled) return null;
   const axes = ['x', 'y', 'z'];
@@ -952,6 +954,7 @@ export function uncertaintyEnvelope(configInput, nominalResponses = null) {
     const tones = config.analysis.tones.map(tone => axes.map((axis, axisIndex) => rigidBodyResponseAtFrequency(sample, tone.frequencyHz, axis).db[axisIndex]));
     const responses = Object.fromEntries(axes.map(axis => [axis, frequencyResponse({ ...sample, analysis: { ...sample.analysis, frequencyPoints: nominal[axis].frequencies.length } }, axis)]));
     samples.push({ modes, tones, responses });
+    yield { completed: index + 1, total: count };
   }
   const directionalBands = Object.fromEntries(axes.map((axis, axisIndex) => [axis, {
     lowerDb: nominal[axis].frequencies.map((_, frequencyIndex) => percentile(samples.map(sample => sample.responses[axis].db[axisIndex][frequencyIndex]), 0.05)),
@@ -971,6 +974,25 @@ export function uncertaintyEnvelope(configInput, nominalResponses = null) {
     upperDb: directionalBands.z.upperDb,
     method: `Seeded ${count}-sample Monte Carlo; each Txx, Tyy, and Tzz band shows its own 5th-95th percentile range.`
   };
+}
+
+export function uncertaintyEnvelope(configInput, nominalResponses = null) {
+  const steps = uncertaintySteps(configInput, nominalResponses);
+  let step = steps.next();
+  while (!step.done) step = steps.next();
+  return step.value;
+}
+
+export async function uncertaintyEnvelopeAsync(configInput, nominalResponses = null, options = {}) {
+  const steps = uncertaintySteps(configInput, nominalResponses);
+  const yieldControl = options.yieldControl ?? (() => new Promise(resolve => setTimeout(resolve, 0)));
+  while (true) {
+    await yieldControl();
+    if (options.isCancelled?.()) return null;
+    const step = steps.next();
+    if (step.done) return step.value;
+    options.onProgress?.(step.value);
+  }
 }
 
 export function analyzeSorbothaneIsolation(configInput, options = {}) {

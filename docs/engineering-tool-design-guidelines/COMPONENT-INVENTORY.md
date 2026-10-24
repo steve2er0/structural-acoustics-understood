@@ -12,7 +12,7 @@ This inventory separates existing reusable seams, Sorbothane-only reference patt
 | Charts | `js/charts.js` | Shared line, range, heatmap, and export helpers | Retain; add shared trace/selection conventions |
 | Generic workbench runtime | `js/workbench-runtime.js` | Project state, steps, input rendering, baseline, import/export, evidence, warnings | Evolve into the primary runtime |
 | Workbench definitions | `js/engineering-workbenches.js` | Ten configuration-driven guided workflows and domain diagrams | Migrate through the evolved runtime |
-| Project workspace | `js/engineering-system.js` and `js/app.js` | Saved artifacts, shared context, cross-tool records | Retain as the evidence destination |
+| Retired project workspace | Legacy helpers in `js/engineering-system.js` | Compatibility for old stored records; no active site UI | Do not restore capture/navigation or purge records; use tool-local exports |
 | Site visual tokens | `styles.css` | Canvas, surface, border, type, spacing, and accent tokens | Use as canonical tokens |
 
 ## Sorbothane reference patterns
@@ -22,7 +22,7 @@ These patterns are valuable, but their present `.sorbo-*` implementation is tool
 | Reference pattern | Current seam | Reusable behavior | Keep tool-specific |
 | --- | --- | --- | --- |
 | Decision hero | `renderSorbothaneIsolationWorkbench()` | Physical decision title, live controlling metric, status, key limitation | Isolation wording and vertical-mode selection |
-| Action bar | `renderSorbothaneIsolationWorkbench()` | Local-data statement, export actions, project capture | Configuration and response export formats |
+| Action bar | `renderSorbothaneIsolationWorkbench()` | Local-data statement, configuration/response exports | Configuration and response export formats |
 | Grouped sticky sidebar | `inputSidebar()` | Units, model/library selection, collapsible physical input groups, sticky actions | Sorbothane and Parker LORD fields |
 | Evidence tabs | Main tab list and panel renderer | Sticky, horizontally scrollable engineering-question navigation | Mode/isolator tab names |
 | Hardware overview | `overviewPanel()` | Physical scene beside current decision and governing metrics | Six-DOF mount geometry renderer |
@@ -72,7 +72,7 @@ Names below describe responsibilities, not final JavaScript identifiers. Impleme
 | `HardwarePanel` | Selected record, geometry, installed configuration, drawings | No | As needed | As needed |
 | `StudyExplorer` | Criteria, run/progress/cancel, sweep, recommendation, apply candidate | No | Optional | Optional |
 | `TrustPanel` | Equations, assumptions, validity, verification, required testing | Compact | Required | Required |
-| `ProjectStateActions` | Versioned persistence, import/export, baseline, add-to-project | Optional | Required | Required |
+| `ProjectStateActions` | Versioned tool-local persistence, import/export, baseline; no site project capture | Optional | Required | Required |
 | `ResponsiveTable` | Dense engineering tables with units and intentional overflow | As needed | As needed | As needed |
 | `AccessibleLiveStatus` | Concise completion/error announcements | Required | Required | Required |
 

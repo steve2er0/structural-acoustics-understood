@@ -1,4 +1,4 @@
-const CACHE = 'sau-v155-sorbothane-shaker-test-configuration';
+const CACHE = 'sau-v156-isolation-workflow-themes';
 const CORE = [
   './js/sorbothane-configurations.js',
   './', './index.html', './styles.css', './manifest.webmanifest', './assets/favicon.svg',

@@ -147,8 +147,7 @@ Add one row to the working migration tracker for each tool branch:
 - Shared calculator registries
 - `EngineeringResult` shape
 - Unit-system conversion
-- Project artifact events and stored evidence
-- Cross-tool handoff inputs
+- Tool-local state, baselines, and exports; preserve legacy stored evidence without active project UI
 - Existing quick-mode routes
 - Generated standalone module boundaries
 - Service-worker cache revision when runtime/style removals must invalidate old assets

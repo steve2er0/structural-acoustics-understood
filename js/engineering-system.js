@@ -188,7 +188,7 @@ export const learningPathways = Object.freeze([
     pathStep('Launch excitation workbench', 'Workbench', '#/tool/launch-acoustic-source', 'Define distributed forcing and accepted power.'),
     pathStep('Launch SEA capstone', 'Capstone', '#/tool/launch-vibroacoustic-capstone', 'Solve subsystem energy, coupling, and response.'),
     pathStep('Mission environment center', 'Workbench', '#/tool/mission-environment-timeline', 'Map event controllers and evidence maturity.'),
-    pathStep('Engineering project workspace', 'Project', '#/workspace', 'Package assumptions, results, provenance, and open actions.')
+    pathStep('Verification center', 'Verification', '#/validation', 'Check canonical benchmarks, assumptions, and model limits before exporting tool-local evidence.')
   ] },
   { id: 'noise-control', title: 'Noise-control engineer', role: 'Installed source–path–receiver design', summary: 'Rank parallel paths before selecting treatments and verify the installed weakest link.', steps: [
     pathStep('Noise-control foundations', 'Chapter', '#/cheat-sheet?section=noise-control-workflow', 'Separate source, path, receiver, and metric.'),

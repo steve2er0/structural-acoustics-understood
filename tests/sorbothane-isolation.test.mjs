@@ -756,8 +756,8 @@ test('workbench preserves trailing-zero requirement frequencies in rendered labe
   assert.match(html, /Y translation-dominated mode/);
   assert.match(html, /Z translation-dominated mode/);
   assert.match(html, /X translation mode minimum/);
-  assert.match(html, /Z translation mode minimum/);
-  assert.match(html, /Resonance search band start/);
+  assert.match(html, /Vertical mode minimum/);
+  assert.match(html, /Resonance band minimum/);
   assert.doesNotMatch(html, /Avoid band start|Accepted band start/);
   assert.match(html, /X LIMIT FAIL/);
   assert.match(html, /Y LIMIT FAIL/);
@@ -804,14 +804,14 @@ test('shared criteria update the saved analysis and override stale catalog-only 
       xTranslationMinHz: 1, yTranslationMinHz: 1, verticalMinHz: 1, verticalMaxHz: 2,
       resonanceMinHz: 1, resonanceMaxHz: 2, resonanceMaximumDb: 6, toneCriteria: []
     });
-    assert.match(html, /data-sorbo-field="analysis.resonanceLimitDb"[^>]*value="10"/);
+    assert.equal((html.match(/data-catalog-criterion="resonanceMaximumDb"/g) ?? []).length, 1);
+    assert.doesNotMatch(html, /data-sorbo-field="analysis.resonanceLimitDb"/);
     for (const [key, value] of Object.entries({ xTranslationMinHz: 55, yTranslationMinHz: 65, verticalMinHz: 110, verticalMaxHz: 210, resonanceMinHz: 80, resonanceMaxHz: 350, resonanceMaximumDb: 10 })) {
       assert.match(html, new RegExp(`data-catalog-criterion="${key}"[^>]*value="${value}"`));
     }
-    assert.match(html, /900 Hz maximum/);
     assert.match(html, /value="900" data-catalog-tone-index="0"/);
     assert.match(html, /Shared analysis criteria/);
-    assert.match(html, /Synced with sidebar/);
+    assert.match(html, /One shared set of requirements/);
     assert.doesNotMatch(html, /Applied when you use a design/);
     if (config.isolator.kind !== 'parker-lord-am') {
       assert.match(html, /value="washer" selected>Washers/);
@@ -820,12 +820,12 @@ test('shared criteria update the saved analysis and override stale catalog-only 
   }
 });
 
-test('shared tone additions, edits and removals appear in both criteria editors', () => {
+test('shared tone additions, edits and removals appear in the single criteria editor', () => {
   let config = updateSorbothaneCriteria(baseline(), { toneCriteria: [{ frequencyHz: 800, maximumDb: -15 }] });
   config = updateSorbothaneCriteria(config, { toneCriteria: [{ frequencyHz: 850, maximumDb: -18 }] });
   let html = renderSorbothaneIsolationWorkbench(config);
-  assert.match(html, /850 Hz maximum/);
-  assert.match(html, /data-sorbo-field="analysis.tones.0.maximumDb"[^>]*value="-18"/);
+  assert.match(html, /value="-18" data-catalog-tone-index="0" data-catalog-tone-field="maximumDb"/);
+  assert.doesNotMatch(html, /data-sorbo-field="analysis.tones\./);
   assert.match(html, /value="850" data-catalog-tone-index="0"/);
   config = updateSorbothaneCriteria(config, { toneCriteria: [] });
   html = renderSorbothaneIsolationWorkbench(config, {}, { toneCriteria: [{ frequencyHz: 1200, maximumDb: -20 }] });

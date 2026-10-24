@@ -287,9 +287,9 @@ function evidenceHtml(context) {
   if (error || !result) return '';
   const plots = (result.plots ?? []).map((plot, index) => {
     const selected = selectedTraceIndices(context, plot, index);
-    return `<section class="workbench-evidence-panel"><header><h3>${workbenchEsc(plot.title ?? 'Analysis plot')}</h3><span>live project state</span></header>${traceSelectorHtml(context, plot, index)}<div class="chart-shell site-chart-container" data-wb-chart="${index}">${lineChartSvg(plotForIndices(plot, selected))}</div><p class="capstone-panel-takeaway"><strong>Engineering takeaway</strong>${workbenchEsc(evidenceTakeaway(context, 'plot', index, plot))}</p></section>`;
+    return `<section class="workbench-evidence-panel"><header><h3>${workbenchEsc(plot.title ?? 'Analysis plot')}</h3><span>live study state</span></header>${traceSelectorHtml(context, plot, index)}<div class="chart-shell site-chart-container" data-wb-chart="${index}">${lineChartSvg(plotForIndices(plot, selected))}</div><p class="capstone-panel-takeaway"><strong>Engineering takeaway</strong>${workbenchEsc(evidenceTakeaway(context, 'plot', index, plot))}</p></section>`;
   }).join('');
-  const heatmaps = (result.heatmaps ?? []).map((heatmap, index) => `<section class="workbench-evidence-panel"><header><h3>${workbenchEsc(heatmap.title ?? 'Analysis map')}</h3><span>live project state</span></header><div class="chart-shell site-chart-container">${heatmapSvg(heatmap)}</div><p class="capstone-panel-takeaway"><strong>Engineering takeaway</strong>${workbenchEsc(evidenceTakeaway(context, 'heatmap', index, heatmap))}</p></section>`).join('');
+  const heatmaps = (result.heatmaps ?? []).map((heatmap, index) => `<section class="workbench-evidence-panel"><header><h3>${workbenchEsc(heatmap.title ?? 'Analysis map')}</h3><span>live study state</span></header><div class="chart-shell site-chart-container">${heatmapSvg(heatmap)}</div><p class="capstone-panel-takeaway"><strong>Engineering takeaway</strong>${workbenchEsc(evidenceTakeaway(context, 'heatmap', index, heatmap))}</p></section>`).join('');
   const tables = (result.tables ?? []).map((table, index) => `<section class="workbench-evidence-panel"><header><h3>${workbenchEsc(table.title ?? 'Analysis table')}</h3><span>traceable values</span></header><div class="table-wrap"><table><thead><tr>${(table.columns ?? []).map(column => `<th>${workbenchEsc(column)}</th>`).join('')}</tr></thead><tbody>${(table.rows ?? []).map(row => `<tr>${row.map(cell => `<td>${workbenchEsc(typeof cell === 'number' ? workbenchFmt(cell) : cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><p class="capstone-panel-takeaway"><strong>Engineering takeaway</strong>${workbenchEsc(evidenceTakeaway(context, 'table', index, table))}</p></section>`).join('');
   return `${plots}${heatmaps}${tables}`;
 }
@@ -320,7 +320,7 @@ function relatedHtml(context) {
 
 function commandBarHtml(context, includeStep = false) {
   const { definition, project, steps, step } = context;
-  return `<div class="capstone-commandbar workbench-commandbar"><label><span>${context.profile === 'analysis' ? 'Study name' : 'Project name'}</span><input type="text" value="${workbenchEsc(project.name)}" data-wb-project-name/></label>${includeStep ? `<label><span>Current analysis</span><select data-wb-step-select>${steps.map(item => `<option value="${workbenchEsc(item.id)}"${item.id === step.id ? ' selected' : ''}>${workbenchEsc(item.title)}</option>`).join('')}</select></label>` : ''}<label class="workbench-unit-control"><span>Display units</span><select data-wb-unit-system><option value="SI"${project.unitSystem === 'SI' ? ' selected' : ''}>SI</option><option value="English"${project.unitSystem === 'English' ? ' selected' : ''}>English</option></select></label><div class="capstone-command-actions"><button type="button" class="button-quiet" data-wb-action="project">Add to project</button><button type="button" class="button-quiet" data-wb-action="baseline">Save baseline</button><button type="button" class="button-quiet" data-wb-action="import">Import</button><input type="file" accept="application/json,.json" data-wb-import hidden/><button type="button" class="button-quiet" data-wb-action="export">Export</button><button type="button" class="button-quiet" data-wb-action="reset">Reset</button></div></div>`;
+  return `<div class="capstone-commandbar workbench-commandbar"><label><span>Study name</span><input type="text" value="${workbenchEsc(project.name)}" data-wb-project-name/></label>${includeStep ? `<label><span>Current analysis</span><select data-wb-step-select>${steps.map(item => `<option value="${workbenchEsc(item.id)}"${item.id === step.id ? ' selected' : ''}>${workbenchEsc(item.title)}</option>`).join('')}</select></label>` : ''}<label class="workbench-unit-control"><span>Display units</span><select data-wb-unit-system><option value="SI"${project.unitSystem === 'SI' ? ' selected' : ''}>SI</option><option value="English"${project.unitSystem === 'English' ? ' selected' : ''}>English</option></select></label><div class="capstone-command-actions"><button type="button" class="button-quiet" data-wb-action="baseline">Save baseline</button><button type="button" class="button-quiet" data-wb-action="import">Import</button><input type="file" accept="application/json,.json" data-wb-import hidden/><button type="button" class="button-quiet" data-wb-action="export">Export</button><button type="button" class="button-quiet" data-wb-action="reset">Reset</button></div></div>`;
 }
 
 function renderGuidedWorkbench(definition, calculators, projectInput = null) {
@@ -342,7 +342,7 @@ function renderGuidedWorkbench(definition, calculators, projectInput = null) {
         <section class="workbench-domain-panel"><header><div><p class="eyebrow">${workbenchEsc(definition.visualLabel)}</p><h3>${workbenchEsc(step.visualTitle || definition.visualTitle)}</h3></div><span>${workbenchEsc(definition.visualLegend)}</span></header>${diagram}<p class="capstone-panel-takeaway"><strong>Engineering takeaway</strong>${workbenchEsc(diagramTakeaway)}</p></section>
       </div>
       <aside class="capstone-inspector workbench-inspector" aria-label="Current analysis inputs"><div class="capstone-inspector-heading"><p class="eyebrow">Input inspector</p><h2>${workbenchEsc(step.title)}</h2><p>${workbenchEsc(step.instruction)}</p><a href="#/tool/${encodeURIComponent(step.toolId)}?mode=quick">Open this quick screen →</a></div><div class="capstone-inspector-fields">${inspectorFields.map(field => renderField(field, project.inputs[step.toolId]?.[field.key], step.toolId, project.unitSystem)).join('')}</div></aside>
-      <section class="capstone-analytics workbench-analytics"><header><div><p class="eyebrow">Live engineering evidence</p><h2>${workbenchEsc(step.title)} results</h2></div><p>Every value, plot, and table uses the same persisted project state.</p></header>${resultSummaryHtml(context)}${compareHtml(context)}<div class="workbench-evidence-grid">${evidenceHtml(context)}</div>${checksHtml(context)}${sourceHtml(context)}${relatedHtml(context)}</section>
+      <section class="capstone-analytics workbench-analytics"><header><div><p class="eyebrow">Live engineering evidence</p><h2>${workbenchEsc(step.title)} results</h2></div><p>Every value, plot, and table uses the same persisted study state.</p></header>${resultSummaryHtml(context)}${compareHtml(context)}<div class="workbench-evidence-grid">${evidenceHtml(context)}</div>${checksHtml(context)}${sourceHtml(context)}${relatedHtml(context)}</section>
     </section>
   </div>`;
 }
@@ -519,21 +519,7 @@ export function bindEngineeringWorkbench(definition, calculators, root = documen
     if (step) { project.activeStep = project.activeView = step.dataset.wbStep; render(); return; }
     const action = event.target.closest('[data-wb-action]')?.dataset.wbAction;
     if (!action) return;
-    if (action === 'project') {
-      const context = currentContext(definition, calculators, project);
-      if (context.result) window.dispatchEvent(new CustomEvent('sau:add-artifact', { detail: {
-        type: context.profile === 'analysis' ? 'Interactive analysis evidence' : 'Workbench evidence',
-        title: `${definition.title} · ${context.step.title}`,
-        route: location.hash,
-        takeaway: context.result.interpretation?.summary ?? definition.defaultTakeaway,
-        validity: `${context.result.validity?.regime ?? ''} ${context.result.validity?.confidence ?? ''}`.trim(),
-        assumptions: context.result.assumptions?.satisfied ?? [],
-        warnings: context.result.assumptions?.alerts ?? context.result.assumptions?.warnings ?? [],
-        values: context.result.values ?? [],
-        notes: `${context.profile === 'analysis' ? 'Analysis study' : 'Workbench project'}: ${project.name}${definition.retainEvidence ? '\nCanonical input / source / result record: ' + JSON.stringify({ inputs: context.inputs, result: context.nativeResult }) : ''}`,
-        provenance: `${definition.id} · ${context.step.toolId}${context.nativeResult?.provenance?.dataVersion ? ' · data ' + context.nativeResult.provenance.dataVersion : ''}`
-      } }));
-    } else if (action === 'baseline') {
+    if (action === 'baseline') {
       const context = currentContext(definition, calculators, project);
       if (context.nativeResult) project.baseline = { stepId: context.step.id, toolId: context.step.toolId, values: deepClone(context.nativeResult.values), ...(definition.retainEvidence ? { inputs: deepClone(context.inputs), result: deepClone(context.nativeResult) } : {}), unitSystem: 'SI', savedAt: new Date().toISOString() };
       render();

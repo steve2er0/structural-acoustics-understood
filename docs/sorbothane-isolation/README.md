@@ -1,5 +1,55 @@
 # Sorbothane 6-DOF Isolation Designer
 
+## Interface audit — 2026-10-23
+
+The designer now follows **Setup & checks → Isolator → Modes →
+Transmissibility → Design Explorer → Validation**. Component, CG, support
+geometry, preload, and material inputs remain in the sidebar. On narrow screens,
+**Show setup inputs** opens the controls without burying the results.
+
+**Design requirements**, above the workspace, is the only criteria editor.
+It controls the current design, catalog search, and 7 × 7 matrix together.
+The sidebar and explorer link back to it. Tone criteria can still be added,
+edited, or removed. Modal bounds constrain the translation-dominated modes;
+the separate resonance search band defines where peak transmissibility is checked.
+
+Audit findings and repairs:
+
+- Literal foreground colors and incomplete light-theme surfaces made mode
+  frequencies, labels, badges, and validation readouts hard to read. Semantic
+  foreground/surface tokens now cover both themes, including SVG labels and
+  color-matched response legends. Small interface text has a 12 px baseline.
+- The oversized introduction and duplicated criteria obscured the next action.
+  The header is compact, criteria are centralized, and tabs support arrow keys,
+  Home/End, selected state, and connected panels.
+- Every input change previously ran a complete synchronous Monte Carlo analysis.
+  Nominal results now appear first; seeded uncertainty runs cooperatively with
+  sample progress. New edits cancel obsolete work, remove old bands immediately,
+  and publish only the envelope belonging to the current solution. The async and
+  synchronous paths share the same draws and percentile reduction.
+- Selected mode, animation controls, open requirement editor, criteria focus,
+  and active view survive normal rerenders. Display-unit changes reuse the
+  physical solution rather than running a new Monte Carlo calculation.
+- Site-wide Projects navigation, capture buttons, global context hydration,
+  and artifact-event handlers are retired. Old workspace links lead to Tools.
+  Existing project records are not purged; named isolation configurations,
+  tool-local studies, baseline comparisons, and downloads remain supported.
+
+Validation boundary: this is a usability and numerical-regression audit, not
+hardware qualification. Catalog data, preload mechanics, modal classification,
+transmissibility definitions, and the BDF model contract are unchanged.
+
+Verification: 232 automated tests pass. Browser checks covered all six panels
+in both themes, a 390 px layout, saved shaker-test loading, tone editing,
+keyboard tabs, unit changes, paired-search progress/cancellation, and a 49-cell
+sweep. Computed text/background checks found no sub-4.5:1 text in the sampled
+baseline panels after repairs; a separate SVG-cell check found at least 4.71:1
+for values and 10.96:1 for status badges in the exercised matrix. These focused
+checks are not a full accessibility certification. The modular route and served
+standalone were checked independently; browser consoles showed no errors.
+Two consecutive standalone builds were byte-identical. Print behavior has an
+automated CSS contract check, not a native print-dialog/PDF acceptance test.
+
 This workbench designs and screens a four- or eight-leg, double-sided captured Sorbothane isolation system for a rigid aerospace component. It is available at `#/tool/sorbothane-isolation` in the modular site and in `standalone.html`.
 
 This workbench is also the behavioral and visual reference for the reusable [Engineering Tool Design Guidelines](../engineering-tool-design-guidelines/README.md). The guidelines extract shared decision, interaction, evidence, trust, and responsive patterns without treating isolation-specific tabs or physics as universal requirements.
