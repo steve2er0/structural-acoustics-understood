@@ -16,7 +16,7 @@ import {
   staticPreloadState,
   sorbothaneDynamicProperties
 } from './sorbothane-analysis.js';
-import { generateNastranIsolationBdf } from './nastran-isolation-export.js';
+import { generateNastranIsolationBdf, generateNastranIsolationSol111Bdf, nastranBrowserComparisonCsv } from './nastran-isolation-export.js';
 import { isSorbothaneAssemblyConfig, sorbothaneAssemblyBillOfMaterials, SORBOTHANE_ASSEMBLY_PARTS } from './sorbothane-assemblies.js';
 import { renderSorbothaneAssemblyPanel } from './sorbothane-assembly-ui.js';
 import { SORBOTHANE_SAVED_CONFIGURATIONS, loadSorbothaneConfiguration, matchingSorbothaneConfiguration } from './sorbothane-configurations.js';
@@ -1106,10 +1106,21 @@ function nastranField(path, label, value, options = {}) {
 }
 
 function nastranExportSummary(model) {
-  const coupling = model.counts.rbe3 ? 'RBE3 distributed coupling' : 'RBE2 rigid coupling';
+  const coupling = model.settings.coupling === 'rbe3' ? 'RBE3 distributed coupling' : 'RBE2 rigid coupling';
   const massBasis = model.settings.massAccounting === 'box-plus-plate' ? 'Box CONM2 + physical plate mass' : 'Browser mass preserved; massless plate';
   const material = NASTRAN_PLATE_MATERIALS[model.settings.plateMaterial];
-  return `<div class="sorbo-nastran-summary"><article><span>Plate mesh</span><strong>${model.counts.cquad4} CQUAD4</strong><small>${model.counts.grids} total grids · ${fmt(model.plate.thicknessIn, 4)} in PSHELL</small></article><article><span>Mass model</span><strong>${fmt(model.totalIncludedMassLbm, 4)} lbm</strong><small>${fmt(model.totalIncludedMassSlinch, 7)} slinch · ${esc(massBasis)}</small></article><article><span>Box CONM2</span><strong>${fmt(model.box.massSlinch, 7)} slinch</strong><small>${fmt(model.box.massLbm, 4)} lbm at the current CG</small></article><article><span>Plate contribution</span><strong>${fmt(model.plate.includedMassSlinch, 7)} slinch</strong><small>${fmt(model.plate.includedMassLbm, 4)} lbm included · ${esc(material.label)} · ρ ${model.settings.plateDensitySlinchPerIn3.toExponential(7)}</small></article><article><span>Coupling</span><strong>${esc(coupling)}</strong><small>${model.counts.cbush} CBUSH · ${model.settings.attachmentSpacingIn.map(value => `${fmt(value, 3)} in`).join(' × ')}</small></article><article><span>Equivalent PBUSH</span><strong>${fmt(model.isolators.kzLbfPerIn, 2)} lbf/in axial</strong><small>${fmt(model.isolators.kxLbfPerIn, 2)} / ${fmt(model.isolators.kyLbfPerIn, 2)} lbf/in radial · η ${fmt(model.isolators.lossFactor, 3)}</small></article><article><span>Linearization</span><strong>${fmt(model.isolators.referenceFrequencyHz, 3)} Hz</strong><small>${model.settings.stiffnessReferenceMode === 'vertical-mode' ? 'Calculated vertical-mode frequency' : 'User-defined reference frequency'}</small></article><article><span>Deck</span><strong>SOL 103 · ${model.settings.modeCount} modes</strong><small>0–${fmt(model.settings.maximumFrequencyHz, 0)} Hz · WTMASS = 1.0</small></article></div>${model.warnings.length ? `<aside class="sorbo-nastran-warnings"><strong>Export-model differences to review</strong><ul>${model.warnings.map(warning => `<li>${esc(warning)}</li>`).join('')}</ul></aside>` : ''}<details class="sorbo-nastran-preview"><summary>Preview generated BDF</summary><pre data-nastran-preview>${esc(model.deck)}</pre></details>`;
+  const stats = [
+    ['Plate mesh', `${model.counts.cquad4} CQUAD4`, `${model.counts.grids} total grids · ${fmt(model.plate.thicknessIn, 4)} in PSHELL`],
+    ['Mass model', `${fmt(model.totalIncludedMassLbm, 4)} lbm`, `${fmt(model.totalIncludedMassSlinch, 7)} slinch · ${massBasis}`],
+    ['Box CONM2', `${fmt(model.box.massSlinch, 7)} slinch`, `${fmt(model.box.massLbm, 4)} lbm at the current CG`],
+    ['Plate contribution', `${fmt(model.plate.includedMassSlinch, 7)} slinch`, `${fmt(model.plate.includedMassLbm, 4)} lbm included · ${material.label} · ρ ${model.settings.plateDensitySlinchPerIn3.toExponential(7)}`],
+    ['Coupling', coupling, `${model.counts.cbush} CBUSH · ${model.settings.attachmentSpacingIn.map(value => `${fmt(value, 3)} in`).join(' × ')}`],
+    ['Equivalent PBUSH', `${fmt(model.isolators.kzLbfPerIn, 2)} lbf/in axial`, `${fmt(model.isolators.kxLbfPerIn, 2)} / ${fmt(model.isolators.kyLbfPerIn, 2)} lbf/in radial · η ${fmt(model.isolators.lossFactor, 3)}`],
+    ['Nominal modal stiffness', `${fmt(model.isolators.referenceFrequencyHz, 3)} Hz`, model.settings.stiffnessReferenceMode === 'vertical-mode' ? 'Calculated vertical-mode frequency' : 'User-defined reference frequency'],
+    ['Deck', model.solution === 111 ? 'SOL 111 · X / Y / Z' : `SOL 103 · ${model.settings.modeCount} modes`, model.response ? `${model.response.frequencies.length} excitation frequencies · all modes through ${fmt(model.response.modalCutoffHz, 0)} Hz` : `0–${fmt(model.settings.maximumFrequencyHz, 0)} Hz · WTMASS = 1.0`]
+  ];
+  if (model.response) stats.push(['Response location', `GRID ${model.response.responseGridId}`, `${model.response.responsePoint} · base reference GRID ${model.response.baseGridId}`]);
+  return `<div class="sorbo-nastran-summary">${stats.map(([label, value, detail]) => `<article><span>${esc(label)}</span><strong>${esc(value)}</strong><small>${esc(detail)}</small></article>`).join('')}</div>${model.warnings.length ? `<aside class="sorbo-nastran-warnings"><strong>Export-model differences to review</strong><ul>${model.warnings.map(warning => `<li>${esc(warning)}</li>`).join('')}</ul></aside>` : ''}<details class="sorbo-nastran-preview"><summary>Preview generated SOL ${model.solution} BDF</summary><pre data-nastran-preview>${esc(model.deck)}</pre></details>`;
 }
 
 function nastranExportOutput(model) {
@@ -1122,7 +1133,29 @@ function nastranExportPanel(config, analysis) {
   const model = generateNastranIsolationBdf(config, analysis);
   const settings = model.settings;
   const materialHelp = 'Sets MAT1 modulus, Poisson ratio, and slinch/in³ density together.';
-  return `<section class="sorbo-card sorbo-nastran-card" data-nastran-export><header><div><p class="eyebrow">NASTRAN correlation model</p><h2>Export the isolation system as a SOL 103 BDF</h2></div><button type="button" class="button" data-sorbo-action="export-nastran-bdf">Download BDF</button></header><div class="sorbo-nastran-unit-contract"><strong>IPS mass-unit contract</strong><span>in · lbf · s · slinch</span><p>CONM2 mass is converted from lbm to slinch. MAT1 density is slinch/in³, inertia is slinch·in², CBUSH stiffness is lbf/in, and <code>PARAM,WTMASS,1.0</code> prevents a second mass conversion.</p></div><div class="sorbo-nastran-controls">${nastranField('plateThicknessIn', 'Plate thickness', settings.plateThicknessIn, { unit: 'in', min: 0.005, max: 5, step: 0.005 })}${nastranField('plateMaterial', 'Plate material', settings.plateMaterial, { options: Object.entries(NASTRAN_PLATE_MATERIALS).map(([key, item]) => [key, item.label]), help: materialHelp })}${nastranField('massAccounting', 'Mass accounting', settings.massAccounting, { options: [['box-plus-plate', 'Box CONM2 + physical plate'], ['preserve-browser', 'Preserve browser mass']] })}${nastranField('coupling', 'Box-to-plate coupling', settings.coupling, { options: [['rbe3', 'RBE3 distributed'], ['rbe2', 'RBE2 rigid footprint']] })}${nastranField('stiffnessReferenceMode', 'CBUSH stiffness basis', settings.stiffnessReferenceMode, { options: [['vertical-mode', 'Calculated vertical mode'], ['custom', 'Custom frequency']] })}<span data-nastran-custom-frequency${settings.stiffnessReferenceMode === 'custom' ? '' : ' hidden'}>${nastranField('customReferenceFrequencyHz', 'Custom reference', settings.customReferenceFrequencyHz, { unit: 'Hz', min: 0.1, max: 100000, step: 1 })}</span></div><details class="sorbo-nastran-advanced"><summary>Mesh and attachment controls</summary><div class="sorbo-nastran-controls">${nastranField('meshX', 'Nominal X divisions', settings.meshX, { min: 2, max: 40, step: 1 })}${nastranField('meshY', 'Nominal Y divisions', settings.meshY, { min: 2, max: 40, step: 1 })}${nastranField('attachmentSpacingIn.0', 'Box attachment X spacing', settings.attachmentSpacingIn[0], { unit: 'in', min: 0.01, step: 0.05 })}${nastranField('attachmentSpacingIn.1', 'Box attachment Y spacing', settings.attachmentSpacingIn[1], { unit: 'in', min: 0.01, step: 0.05 })}${nastranField('modeCount', 'Requested modes', settings.modeCount, { min: 6, max: 200, step: 1 })}${nastranField('maximumFrequencyHz', 'Maximum extraction frequency', settings.maximumFrequencyHz, { unit: 'Hz', min: 1, step: 100 })}</div></details><div data-nastran-output>${nastranExportOutput(model)}</div></section>`;
+  const controls = [
+    nastranField('plateThicknessIn', 'Plate thickness', settings.plateThicknessIn, { unit: 'in', min: 0.005, max: 5, step: 0.005 }),
+    nastranField('plateMaterial', 'Plate material', settings.plateMaterial, { options: Object.entries(NASTRAN_PLATE_MATERIALS).map(([key, item]) => [key, item.label]), help: materialHelp }),
+    nastranField('massAccounting', 'Mass accounting', settings.massAccounting, { options: [['box-plus-plate', 'Box CONM2 + physical plate'], ['preserve-browser', 'Preserve browser mass']] }),
+    nastranField('coupling', 'Box-to-plate coupling', settings.coupling, { options: [['rbe3', 'RBE3 distributed'], ['rbe2', 'RBE2 rigid footprint']] }),
+    nastranField('stiffnessReferenceMode', 'Nominal modal stiffness basis', settings.stiffnessReferenceMode, { options: [['vertical-mode', 'Calculated vertical mode'], ['custom', 'Custom frequency']], help: 'SOL 111 updates response stiffness/loss with PBUSHT tables; this reference defines its real modal basis.' }),
+    `<span data-nastran-custom-frequency${settings.stiffnessReferenceMode === 'custom' ? '' : ' hidden'}>${nastranField('customReferenceFrequencyHz', 'Custom reference', settings.customReferenceFrequencyHz, { unit: 'Hz', min: 0.1, max: 100000, step: 1 })}</span>`
+  ].join('');
+  const advanced = [
+    nastranField('meshX', 'Nominal X divisions', settings.meshX, { min: 2, max: 40, step: 1 }),
+    nastranField('meshY', 'Nominal Y divisions', settings.meshY, { min: 2, max: 40, step: 1 }),
+    nastranField('attachmentSpacingIn.0', 'Box attachment X spacing', settings.attachmentSpacingIn[0], { unit: 'in', min: 0.01, step: 0.05 }),
+    nastranField('attachmentSpacingIn.1', 'Box attachment Y spacing', settings.attachmentSpacingIn[1], { unit: 'in', min: 0.01, step: 0.05 }),
+    nastranField('modeCount', 'SOL 103 requested modes', settings.modeCount, { min: 6, max: 200, step: 1, help: 'SOL 111 extracts all modes through its cutoff, without this count cap.' }),
+    nastranField('maximumFrequencyHz', 'Modal extraction cutoff', settings.maximumFrequencyHz, { unit: 'Hz', min: 1, step: 100, help: 'SOL 111 uses at least 2× the highest response frequency. Raise for convergence checks.' })
+  ].join('');
+  return `<section class="sorbo-card sorbo-nastran-card" data-nastran-export>
+    <header><div><p class="eyebrow">NASTRAN correlation model</p><h2>Normal modes and transmissibility</h2></div></header>
+    <div class="sorbo-nastran-actions"><button type="button" class="button-secondary" data-sorbo-action="export-nastran-bdf">Download SOL 103 BDF</button><button type="button" class="button" data-sorbo-action="export-nastran-sol111">Download SOL 111 BDF</button><button type="button" class="button-quiet" data-sorbo-action="export-nastran-reference">Browser comparison CSV</button></div>
+    <p class="sorbo-caption">SOL 111: three coherent 1 g base-excitation subcases (X / Y / Z), frequency-dependent PBUSHT stiffness/loss, and complex acceleration output at the selected response point (${esc(config.analysis.responsePoint)}). The browser CSV uses the same excitation frequencies. Export prepares input; it does not run NASTRAN.</p>
+    <p class="sorbo-caption">Compute Txx, Tyy and Tzz as response/base complex acceleration, then 20 log10(|T|). OP2/F06/PUNCH output includes base reference GRID 8001 and response GRID ${config.analysis.responsePoint === 'cg' ? 9001 : 9002}. Compare magnitudes and phases, not raw solver accelerations.</p>
+    <div class="sorbo-nastran-unit-contract"><strong>IPS mass-unit contract</strong><span>in · lbf · s · slinch</span><p>CONM2 mass is converted from lbm to slinch. MAT1 density is slinch/in³, inertia is slinch·in², CBUSH stiffness is lbf/in, and <code>PARAM,WTMASS,1.0</code> prevents a second mass conversion.</p></div>
+    <div class="sorbo-nastran-controls">${controls}</div><details class="sorbo-nastran-advanced"><summary>Mesh and attachment controls</summary><div class="sorbo-nastran-controls">${advanced}</div></details><div data-nastran-output>${nastranExportOutput(model)}</div></section>`;
 }
 
 function assumptionsPanel(config, analysis) {
@@ -1773,6 +1806,21 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
       const live = shell.querySelector('[data-sorbo-live]');
       if (live) live.textContent = `Downloaded ${model.filename}.`;
     });
+    const downloadSol111 = referenceOnly => {
+      const live = shell.querySelector('[data-sorbo-live]');
+      try {
+        const model = generateNastranIsolationSol111Bdf(config, analysis);
+        shell.querySelector('[data-nastran-output]').innerHTML = nastranExportOutput(model);
+        if (referenceOnly) download(model.filename.replace('.bdf', '-browser-reference.csv'), nastranBrowserComparisonCsv(config, model), 'text/csv;charset=utf-8');
+        else download(model.filename, model.deck, 'text/plain;charset=utf-8');
+        if (live) live.textContent = referenceOnly ? 'Downloaded browser reference curves for the SOL 111 excitation frequencies.' : `Downloaded ${model.filename}. Run it in NASTRAN to obtain solver response curves.`;
+      } catch (error) {
+        shell.querySelector('[data-nastran-output]').innerHTML = `<aside class="sorbo-nastran-warnings" role="alert"><strong>SOL 111 export stopped</strong><p>${esc(error.message)}</p></aside>`;
+        if (live) live.textContent = `SOL 111 export stopped: ${error.message}`;
+      }
+    };
+    shell.querySelector('[data-sorbo-action="export-nastran-sol111"]')?.addEventListener('click', () => downloadSol111(false));
+    shell.querySelector('[data-sorbo-action="export-nastran-reference"]')?.addEventListener('click', () => downloadSol111(true));
     const catalogResult = shell.querySelector('[data-sorbo-catalog-result]');
     const screenButtonLabel = () => isSorbothaneAssemblyConfig(config) && catalogSettings.library === 'sorbothane' && catalogSettings.assemblySide === 'both'
       ? 'Screen upper/lower combinations' : 'Screen full catalog';

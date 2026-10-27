@@ -91,6 +91,111 @@ Monte Carlo loss-factor tolerance acts on η around the nominal 1/Q, so sampled 
 also varies. Set loss-factor tolerance to 0% to keep Q fixed across samples;
 other tolerances still affect the response. Invalid Q inputs are rejected.
 
+## NASTRAN correlation exports — SOL 103 and SOL 111
+
+In **Validation**, the two BDF downloads share the current component, CG, four/eight
+support coordinates and row direction, upper/lower stacks, per-leg mixed assemblies,
+Sorbothane formulation or Parker LORD rates, manual-Q assumption, and plate settings.
+The unit system is **in · lbf · s · slinch**, with `WTMASS=1.0`.
+Real-valued fields are written as reals, integer IDs/coordinate-system fields as
+integers. PBUSH GE continuation alignment is explicit. Signed manual products of
+inertia are preserved in CONM2 (not converted to absolute values).
+
+- **Download SOL 103 BDF:** CQUAD4/PSHELL plate, CBUSH/PBUSH isolators, CONM2 box and
+  RBE3/RBE2 coupling. Isolator stiffness is frozen at the selected reference
+  frequency. This is a real normal-modes calculation, not a damping or response
+  calculation.
+- **Download SOL 111 BDF:** three modal frequency-response subcases, 1=X, 2=Y,
+  3=Z. SPCD + RLOAD2 (ACCE) + DLOAD apply **coherent 1 g = 386.088582677 in/s²** to
+  every base grid in that subcase's direction. This is enforced base motion,
+  not a force applied to the isolated mass. All ground DOFs remain in SPC1.
+  FREQ samples follow the browser logarithmic grid, with additional modal and tone
+  frequencies. Frequency-dependent PBUSHT K and GE tables contain actual stiffness
+  and loss values at every excitation frequency. No TABDMP1/global damping is
+  added on top of element GE. Q=6 therefore sets isolator GE=1/6 exactly once.
+- **Browser comparison CSV:** nominal rigid-body complex Txx/Tyy/Tzz at exactly
+  the SOL 111 excitation frequencies. The metadata records response/base grids,
+  damping basis, mass accounting and coupling. This is explicitly browser data,
+  not simulated NASTRAN output or uncertainty bands.
+
+SOL 111 extracts **all modes through at least twice the highest response
+frequency**, or the larger selected modal cutoff; the SOL 103 mode-count cap is
+not used. `RESVEC=YES` requests residual augmentation. Raise the cutoff and refine
+the plate mesh to check convergence. A finite modal basis and interpolated material
+tables are not proof of exact direct-response equivalence.
+
+Complex acceleration output is requested in OP2, F06 and PUNCH for CG GRID 9001,
+all base grids (reference 8001), and the selected top corner (GRID 9002 when used).
+A massless RBE2 offset to the box CG gives corner response the same translational
+and rotational contributions as the browser response-point selection.
+
+### Run and compare
+
+1. Download the SOL 111 deck and browser comparison CSV from the **same settings**.
+2. Run the BDF with your NASTRAN installation; retain its OP2 output. The web app
+   prepares files but does not contain or execute a licensed NASTRAN solver.
+3. Install the converter/parser dependency and optionally matplotlib:
+
+   ```sh
+   python3 -m pip install -r tests/requirements-nastran.txt
+   python3 -m pip install matplotlib
+   ```
+
+4. Convert the solver output to ratios and a single three-direction plot:
+
+   ```sh
+   python3 scripts/nastran-transmissibility.py isolation-sol111.op2 \
+     --browser-csv isolation-sol111-browser-reference.csv \
+     --output nastran-transmissibility.csv --plot comparison.png
+   ```
+
+   Substitute the actual downloaded filenames. Response/base grid IDs are read
+   from the browser CSV metadata; without a CSV, defaults are 9001/8001 and can
+   be changed with `--response-grid` / `--base-grid`. The converter divides
+   **complex response acceleration by complex base acceleration** in the same
+   axis. Magnitude is dimensionless, dB is `20 log10(|T|)`, and phase is the ratio's
+   phase. Raw acceleration in in/s² is not transmissibility. CSV comparison includes
+   dB and wrapped phase differences; mismatched frequency grids are rejected rather
+   than silently interpolated. Both CLI inputs must belong to the same exported
+   configuration; matching grids alone cannot prove that configuration identity.
+
+The NASTRAN model has a **flexible plate**, whereas the browser is rigid-body only.
+By default, physical plate mass is added to the box mass. **Preserve browser mass**
+removes plate density but does not remove plate flexibility. RBE2/RBE3 footprint
+choices also affect correlation. Isolator Q=6 does not force every extra flexible-
+plate mode to Q=6: its effective damping depends on how much strain energy is in
+the damped isolators. Preload/contact validity, bushing confinement/sleeve assumptions,
+manufacturer high-frequency extrapolation and hardware short circuits still need
+review. This deck does not solve Monte Carlo envelopes or evaluate browser criteria.
+
+### Parser regression boundary
+
+`npm run test:nastran` (also included in `npm test`) generates eighteen full decks:
+both solution sequences across baseline, shaker, signed manual inertia/steel/RBE2,
+mixed assemblies, mixed Q=6, water-resistant material, Parker LORD, unequal stacks/
+offset CG/preload, and fine-mesh cases. The
+tests require pyNastran 1.4.1 and **fail**, rather than silently skip, if unavailable.
+Set `NASTRAN_TEST_PYTHON` if a different Python executable holds that dependency.
+They parse, validate and cross-reference complete decks, inspect actual parsed
+inertia, loss, dynamic-load chains and property tables, and compare sampled table
+values to the browser stiffness functions. Synthetic OP2-array arithmetic tests
+check units, phase, normalization and error handling; they are not solver results.
+The converter also round-trips synthetic acceleration data through a genuine OP2
+file and its CLI (and PNG plotting when matplotlib is installed), still without
+claiming a NASTRAN solve.
+An independent rigid-box surrogate reconstructed from parsed CONM2/CBUSH/PBUSHT
+cards also reproduces the browser's complex response at sampled frequencies.
+That surrogate deliberately excludes shell mass/flexibility and is not a finite-
+element solution of the exported plate or a NASTRAN execution.
+
+Parser success is not a NASTRAN solve. A real solver run, dialect/version acceptance,
+mesh/modal convergence and physical/test correlation remain separate validation gates.
+
+References: [RLOAD2 enforced acceleration](https://help.autodesk.com/cloudhelp/2025/DEU/NSTRN-Reference/files/GUID-35C6EC65-9C22-4BCC-ADDF-A546EFD6F943.htm),
+[PBUSH format and damping](https://help.altair.com/hwsolvers/os/topics/solvers/os/pbush_bulk_r.htm),
+[PBUSHT frequency-dependent properties](https://2022.help.altair.com/2022/simulation/pdfs/os/Altair_OptiStruct_2022_Reference_Guide.pdf),
+[residual vectors](https://nexus.hexagon.com/documentationcenter/en-US/bundle/MSC_Nastran_2025.2/page/Nastran/ACMS_User_Guide/11_Residual_Vectors.htm).
+
 ## Saved configurations
 
 The **Saved configuration** selector above the export controls includes the

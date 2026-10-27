@@ -1,4 +1,4 @@
-const CACHE = 'sau-v158-isolation-manual-q';
+const CACHE = 'sau-v159-isolation-sol111';
 const CORE = [
   './js/sorbothane-configurations.js',
   './', './index.html', './styles.css', './manifest.webmanifest', './assets/favicon.svg',

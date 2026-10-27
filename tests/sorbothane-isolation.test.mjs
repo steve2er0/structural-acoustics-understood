@@ -599,13 +599,13 @@ test('NASTRAN export uses the IPS slinch contract and a four-point shell-and-bus
   assert.match(model.deck, /^PARAM,WTMASS,1\.0$/m);
   assert.match(model.deck, /^MAT1,10,1\.0300000E7,,0\.33,2\.6684000E-4$/m);
   assert.match(model.deck, /^PSHELL,20,10,0\.125,/m);
-  assert.match(model.deck, /^CONM2,7001,9001,0\.,/m);
-  assert.match(model.deck, /^RBE3,6001,,9001,123456,1,123,/m);
+  assert.match(model.deck, /^CONM2,7001,9001,0,/m);
+  assert.match(model.deck, /^RBE3,6001,,9001,123456,1\.,123,/m);
   assert.doesNotMatch(model.deck, /^RBE2,/m);
   assert.equal((model.deck.match(/^CQUAD4,/gm) ?? []).length, model.counts.cquad4);
   const cbushCards = model.deck.match(/^CBUSH,.*$/gm) ?? [];
   assert.equal(cbushCards.length, 4);
-  assert.ok(cbushCards.every(line => line.endsWith(',,,,0.')));
+  assert.ok(cbushCards.every(line => line.endsWith(',,,,0')));
   assert.match(model.deck, /^SPC1,1,123456,8001,8002,8003,8004$/m);
   assert.ok(model.isolators.mountGridIds.every(id => model.plate.xCoordinates.length && model.deck.includes(`,${id},800`)));
 });
