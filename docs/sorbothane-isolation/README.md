@@ -67,8 +67,29 @@ each mode at its calculated frequency, including the existing strain-energy
 weighting for mixed assemblies. They are equivalent loss-factor-based estimates,
 not measured decay damping or the peak transmissibility at a response location.
 Zero modal loss is displayed as Q = ∞; very small nonzero values use scientific
-notation rather than rounding to zero. These readouts do not change the solver,
-design criteria, saved configurations, or frequency response.
+notation rather than rounding to zero.
+
+### Manual Q design assumption
+
+In **Damping / effective Q**, choose **Manual effective Q** and enter a finite
+positive Q (for example, 6). This sets a constant structural loss factor
+η = 1/Q for all supports, axes, frequencies and modes. Q = 6 gives η = 0.1667
+and equivalent critical damping ≈ 8.33%. It replaces the system's material-derived
+loss, including any nominal loss-scale setting, but leaves storage stiffness,
+static equilibrium and real natural frequencies unchanged. Manufacturer material
+curves remain unchanged. This is a user engineering assumption, not measured
+damping or a guarantee that peak transmissibility equals Q.
+
+The response curves, tone/resonance requirements, catalog candidates, 7×7 matrix,
+engineering summary and PBUSH GE export all use the same override. SOL 103 real
+eigenvalues do not use PBUSH damping. The active basis is visible beside the
+mode cards; **Edit damping / Q** opens the control. Configuration JSON and local
+saved state retain the override. Older configurations default to **Material-derived**,
+which restores the original damping model.
+
+Monte Carlo loss-factor tolerance acts on η around the nominal 1/Q, so sampled Q
+also varies. Set loss-factor tolerance to 0% to keep Q fixed across samples;
+other tolerances still affect the response. Invalid Q inputs are rejected.
 
 ## Saved configurations
 

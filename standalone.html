@@ -787,6 +787,8 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
 .sorbo-input-group[open] summary { color: var(--sorbo-cyan); background: rgba(70, 164, 218, .07); }
 .sorbo-input-group[open] summary span { transform: rotate(45deg); }
 .sorbo-input-group > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; padding: 0 .8rem 1rem; }
+.sorbo-damping-controls { grid-column: 1 / -1; display: grid; gap: .65rem; min-width: 0; }
+.sorbo-damping-controls .sorbo-caption { margin: 0; }
 .sorbo-field { min-width: 0; display: grid; gap: .25rem; align-content: start; }
 .sorbo-field > span { min-height: 27px; display: flex; align-items: end; justify-content: space-between; gap: .4rem; color: var(--sorbo-muted); font-size: .75rem; line-height: 1.25; }
 .sorbo-field > span small { color: var(--sorbo-muted); font: 500 .75rem var(--mono); white-space: nowrap; }
@@ -16627,6 +16629,7 @@ const DEFAULT_SORBOTHANE_CONFIG = {
     mountsPerPoint: 1,
     lordLossFactor: 0.30
   },
+  damping: { mode: 'material', effectiveQ: 6 },
   environment: { accelerationG: [0, 0, 0] },
   assemblies: { enabled: false, groups: {}, assignments: [] },
   analysis: {
@@ -16681,7 +16684,7 @@ function normalizeSorbothaneConfig(input = {}) {
   const source = input && typeof input === 'object' ? input : {};
   const config = clone(DEFAULT_SORBOTHANE_CONFIG);
   for (const key of ['units', 'schema', 'version']) if (source[key] != null) config[key] = source[key];
-  for (const section of ['component', 'mounts', 'isolator', 'environment', 'analysis', 'uncertainty', 'validation']) {
+  for (const section of ['component', 'mounts', 'isolator', 'damping', 'environment', 'analysis', 'uncertainty', 'validation']) {
     config[section] = { ...config[section], ...(source[section] ?? {}) };
   }
   config.validation.nastran = { ...DEFAULT_SORBOTHANE_CONFIG.validation.nastran, ...(source.validation?.nastran ?? {}) };
@@ -16706,6 +16709,10 @@ function normalizeSorbothaneConfig(input = {}) {
   config.isolator.lossScale = clamp(finite(config.isolator.lossScale, 1), 0.05, 20);
   config.isolator.mountsPerPoint = clamp(Math.round(finite(config.isolator.mountsPerPoint, 1)), 1, 2);
   config.isolator.lordLossFactor = clamp(finite(config.isolator.lordLossFactor, 0.30), 0.01, 1);
+  if (!['material', 'manual-q'].includes(config.damping.mode)) config.damping.mode = 'material';
+  const effectiveQ = Number(config.damping.effectiveQ);
+  config.damping.effectiveQ = Number.isFinite(effectiveQ) && effectiveQ > 0 && Number.isFinite(1 / effectiveQ)
+    ? effectiveQ : DEFAULT_SORBOTHANE_CONFIG.damping.effectiveQ;
   config.environment.accelerationG = [...(source.environment?.accelerationG ?? config.environment.accelerationG)].map((value, index) => finite(value, config.environment.accelerationG[index]));
   config.analysis.frequencyPoints = clamp(Math.round(finite(config.analysis.frequencyPoints, 181)), 41, 501);
   if (!['cg', 'corner-positive', 'corner-negative'].includes(config.analysis.responsePoint)) config.analysis.responsePoint = 'cg';
@@ -16847,12 +16854,21 @@ function sorbothaneDynamicProperties(configInput, frequencyHz) {
   };
 }
 
+// Override system damping, not the underlying manufacturer material curves.
+// Uniform eta gives K'' = K' / Q in every direction, including mixed assemblies.
+function withSystemDamping(config, material) {
+  if (config.damping.mode !== 'manual-q') return material;
+  const tanDelta = 1 / config.damping.effectiveQ;
+  return { ...material, tanDelta, lossModulusPa: material.storageModulusPa * tanDelta,
+    dampingProvenance: 'engineering-assumption-manual-q' };
+}
+
 function isolatorDynamicProperties(configInput, frequencyHz) {
   const config = normalizeSorbothaneConfig(configInput);
-  if (!isParkerLordConfig(config)) return sorbothaneDynamicProperties(config, frequencyHz);
+  if (!isParkerLordConfig(config)) return withSystemDamping(config, sorbothaneDynamicProperties(config, frequencyHz));
   const item = parkerLordCatalogItem(config.isolator.productNumber);
   const tanDelta = config.isolator.lordLossFactor * config.isolator.lossScale;
-  return {
+  return withSystemDamping(config, {
     frequencyHz,
     storageModulusPa: config.isolator.modulusScale,
     storageModulusPsi: null,
@@ -16862,7 +16878,7 @@ function isolatorDynamicProperties(configInput, frequencyHz) {
     supported: true,
     model: 'catalog-dynamic-spring-rate',
     productNumber: item.productNumber
-  };
+  });
 }
 
 function isolatorGeometry(configInput) {
@@ -17131,7 +17147,7 @@ function mountDynamicStiffness(configInput, frequencyHz) {
     };
   }
   const geometry = isolatorGeometry(config);
-  const material = sorbothaneDynamicProperties(config, frequencyHz);
+  const material = isolatorDynamicProperties(config, frequencyHz);
   const singleCompression = material.storageModulusPa * geometry.shapeCorrection * geometry.loadedAreaM2 / config.isolator.thicknessM;
   const shearModulusPa = material.storageModulusPa / (2 * (1 + config.isolator.poisson));
   const singleShear = shearModulusPa * geometry.loadedAreaM2 / config.isolator.thicknessM;
@@ -17169,7 +17185,8 @@ function assembleRigidBodyStiffness(configInput, frequencyHz) {
 
 function isolationMountStiffnesses(configInput, frequencyHz) {
   const config = normalizeSorbothaneConfig(configInput);
-  if (isSorbothaneAssemblyConfig(config)) return sorbothaneAssemblyDynamicMounts(config, staticPreloadState(config), frequencyHz, sorbothaneDynamicProperties);
+  if (isSorbothaneAssemblyConfig(config)) return sorbothaneAssemblyDynamicMounts(config, staticPreloadState(config), frequencyHz,
+    (element, frequency) => withSystemDamping(config, sorbothaneDynamicProperties(element, frequency)));
   const mount = mountDynamicStiffness(config, frequencyHz);
   return Array.from({ length: config.mounts.count }, () => mount);
 }
@@ -17503,7 +17520,10 @@ function* uncertaintySteps(configInput, nominalResponses = null) {
     const sample = clone(config);
     sample.uncertainty.enabled = false;
     sample.isolator.modulusScale *= clamp(1 + normalRandom(random) * config.uncertainty.modulusPct / 200, 0.35, 2);
-    sample.isolator.lossScale *= clamp(1 + normalRandom(random) * config.uncertainty.lossPct / 200, 0.35, 2);
+    const lossMultiplier = clamp(1 + normalRandom(random) * config.uncertainty.lossPct / 200, 0.35, 2);
+    sample.isolator.lossScale *= lossMultiplier;
+    // The existing loss tolerance acts on eta around the nominal override, not Q.
+    if (sample.damping.mode === 'manual-q') sample.damping.effectiveQ /= lossMultiplier;
     sample.component.massKg *= clamp(1 + normalRandom(random) * config.uncertainty.massPct / 200, 0.5, 1.5);
     sample.component.cgM[0] += normalRandom(random) * config.uncertainty.cgMm / 2000;
     sample.component.cgM[1] += normalRandom(random) * config.uncertainty.cgMm / 2000;
@@ -17586,6 +17606,7 @@ function analyzeSorbothaneIsolation(configInput, options = {}) {
   const peak = peakResults.reduce((largest, result) => result.db > largest.db ? result : largest, peakResults[0]);
   const uncertainty = options.skipUncertainty || !directionalResponses ? null : uncertaintyEnvelope(config, directionalResponses);
   const warnings = [];
+  if (config.damping.mode === 'manual-q') warnings.push(`Manual damping assumption: effective Q = ${config.damping.effectiveQ}; uniform loss factor η = 1/Q replaces material-derived damping for all supports, axes and frequencies. Storage stiffness, static loads and real natural frequencies are unchanged. Loss-factor uncertainty is applied around this nominal η; Q is not the peak transmissibility.`);
   if (isSorbothaneAssemblyConfig(config)) {
     warnings.push('Mixed assemblies: load sharing is solved from per-side static curves and bolt clamp force; dynamic complex stiffness is assembled separately at every support.');
     warnings.push(...preload.assemblyChecks.filter(check => !check.pass).slice(0, 12).map(check => `${check.label}: ${check.detail}`));
@@ -18525,6 +18546,7 @@ function generateNastranIsolationBdf(configInput, analysisInput = null) {
   const lossFactor = finite(mount.material?.tanDelta, 0);
 
   const warnings = [];
+  if (config.damping.mode === 'manual-q') warnings.push(`Manual effective Q = ${config.damping.effectiveQ}: PBUSH GE = 1/Q is a user damping assumption, not manufacturer data. SOL 103 real eigenvalues do not use this damping.`);
   if (mixed) warnings.push('Mixed-assembly flange/sleeve/contact assumptions are not validated by this linear CBUSH export. Each leg has its own PBUSH, with axis-specific effective loss factors at the reference frequency. See the browser assembly checks.');
   if (settings.massAccounting === 'box-plus-plate') warnings.push('The CQUAD4 plate mass is added to the website component mass; NASTRAN total isolated mass is therefore greater than the browser rigid-body mass.');
   else warnings.push('The plate density is omitted so the CONM2 preserves the browser total mass; plate self-mass and free plate modes are not represented.');
@@ -18709,7 +18731,20 @@ function input(config, path, label, options = {}) {
   const definition = quantity ? unitDefinitions[quantity][config.units] : null;
   const value = displayValue(config, path, quantity);
   const unit = options.unit ?? definition?.unit ?? '';
-  return `<label class="sorbo-field"><span>${esc(label)}${unit ? `<small>${esc(unit)}</small>` : ''}</span><input type="${options.type ?? 'number'}" data-sorbo-field="${esc(path)}"${quantity ? ` data-quantity="${quantity}"` : ''} value="${esc(fmt(value, options.digits ?? 4))}"${options.min != null ? ` min="${options.min}"` : ''}${options.max != null ? ` max="${options.max}"` : ''}${options.step != null ? ` step="${options.step}"` : ' step="any"'}/>${options.help ? `<em>${esc(options.help)}</em>` : ''}</label>`;
+  const formattedValue = path === 'damping.effectiveQ' ? String(value) : fmt(value, options.digits ?? 4);
+  return `<label class="sorbo-field"><span>${esc(label)}${unit ? `<small>${esc(unit)}</small>` : ''}</span><input type="${options.type ?? 'number'}" data-sorbo-field="${esc(path)}"${quantity ? ` data-quantity="${quantity}"` : ''} value="${esc(formattedValue)}"${options.min != null ? ` min="${options.min}"` : ''}${options.max != null ? ` max="${options.max}"` : ''}${options.step != null ? ` step="${options.step}"` : ' step="any"'}${options.disabled ? ' disabled' : ''}/>${options.help ? `<em>${esc(options.help)}</em>` : ''}</label>`;
+}
+
+function dampingNumber(value, digits) {
+  if (!Number.isFinite(value) || value < 0) return '—';
+  if (value > 0 && (value < 10 ** -digits || value >= 10000)) return value.toExponential(2);
+  return fmt(value, digits);
+}
+
+function dampingSummary(config) {
+  return config.damping.mode === 'manual-q'
+    ? `Manual Q = ${dampingNumber(config.damping.effectiveQ, 4)} active · η = ${dampingNumber(1 / config.damping.effectiveQ, 4)} · ${dampingNumber(50 / config.damping.effectiveQ, 2)}% critical damping (eq.). Applies to all six modes, response plots, shared requirements, catalog and matrix checks.`
+    : 'Material-derived damping active. Each mode uses the material loss at its own frequency; no Q override is applied.';
 }
 
 function derivedLengthInput(config, label, valueM, attribute, help = '') {
@@ -18781,6 +18816,12 @@ function inputSidebar(config) {
       input(config, 'component.dimensionsM.1', 'Y width', { quantity: 'length', min: 0.1, step: 0.05 }),
       input(config, 'component.dimensionsM.2', 'Z height', { quantity: 'length', min: 0.1, step: 0.05 })
     ].join(''), true)}
+    ${group('Damping / effective Q', `<div class="sorbo-damping-controls">${[
+      select(config, 'damping.mode', 'Damping basis', [['material', 'Material-derived'], ['manual-q', 'Manual effective Q']], { help: 'Manual Q replaces damping only, not stiffness or static load. It is a user assumption, not manufacturer data.' }),
+      input(config, 'damping.effectiveQ', 'Effective Q override', { min: 0, disabled: config.damping.mode !== 'manual-q', help: 'Enter a finite Q greater than zero, for example 6. One constant Q applies to every support, axis and frequency.' }),
+      `<p class="sorbo-caption" data-sorbo-damping-summary aria-live="polite">${esc(dampingSummary(config))}</p>`,
+      '<p class="sorbo-caption">With uncertainty enabled, loss-factor tolerance varies η = 1/Q around this nominal value. Use 0% loss-factor tolerance to hold Q fixed across samples.</p>'
+    ].join('')}</div>`, true)}
     ${group('CG & inertia', [
       input(config, 'component.cgM.0', 'CG X', { quantity: 'length', step: 0.01 }),
       input(config, 'component.cgM.1', 'CG Y', { quantity: 'length', step: 0.01 }),
@@ -18903,11 +18944,6 @@ function modeStatus(mode, analysis) {
 }
 
 function modeCards(analysis) {
-  const dampingNumber = (value, digits) => {
-    if (!Number.isFinite(value) || value < 0) return '—';
-    if (value > 0 && (value < 10 ** -digits || value >= 10000)) return value.toExponential(2);
-    return fmt(value, digits);
-  };
   return analysis.modes.map(mode => {
     const status = modeStatus(mode, analysis);
     const validLoss = Number.isFinite(mode.lossFactor) && mode.lossFactor >= 0;
@@ -19054,7 +19090,9 @@ function overviewPanel(config, analysis) {
   return `<section class="sorbo-tab-panel is-active" data-sorbo-panel="overview">
     <div class="sorbo-overview-grid"><section class="sorbo-card sorbo-geometry-card"><header><div><p class="eyebrow">Hardware geometry</p><h2>Component on ${config.mounts.count} ${lord ? 'complete mounts' : 'captured mounts'}</h2></div><span>Drag to rotate</span></header><div data-sorbo-overview-scene>${sceneSvg(config, analysis)}</div><p class="sorbo-caption">Coordinate origin: component footprint center on the isolated plate. +Z is upward. CG and mount offsets are rendered from the same coordinates.</p></section>
     <section class="sorbo-card sorbo-decision-card"><p class="eyebrow">Current decision</p><h2 class="${analysis.passes ? 'pass-text' : 'fail-text'}">${analysis.passes ? 'All defined criteria pass' : 'Design review required'}</h2><dl><div><dt>Isolator</dt><dd>${esc(isSorbothaneAssemblyConfig(config) ? 'Mixed Sorbothane assemblies' : catalog.productNumber)}</dd></div>${decisionDetails}</dl></section></div>
-    <section class="sorbo-mode-dashboard"><header><div><p class="eyebrow">Calculated eigenproblem</p><h2>Six rigid-body modes</h2></div><p>Modes are classified by normalized translational and characteristic-length rotational participation; coupling is retained.</p></header><p class="sorbo-caption sorbo-mode-damping-note">Effective Q = 1/η; equivalent critical damping ≈ 50η (%), evaluated at each mode’s frequency. These are loss-factor-based modal estimates, not the plotted peak transmissibility or measured ringdown damping.</p><div class="sorbo-mode-cards">${modeCards(analysis)}</div></section>
+    <section class="sorbo-mode-dashboard"><header><div><p class="eyebrow">Calculated eigenproblem</p><h2>Six rigid-body modes</h2></div><p>Modes are classified by normalized translational and characteristic-length rotational participation; coupling is retained.</p></header>
+    <p class="sorbo-caption" data-sorbo-damping-summary>${esc(dampingSummary(config))}</p><button type="button" class="button-quiet" data-sorbo-damping-link>Edit damping / Q ↑</button>
+    <p class="sorbo-caption sorbo-mode-damping-note">Effective Q = 1/η; equivalent critical damping ≈ 50η (%), evaluated at each mode’s frequency. These are loss-factor-based modal estimates, not the plotted peak transmissibility or measured ringdown damping.</p><div class="sorbo-mode-cards">${modeCards(analysis)}</div></section>
     <section class="sorbo-card"><header><div><p class="eyebrow">Pass / fail</p><h2>Isolation and resonance requirements</h2></div><span>Direct X / Y / Z base excitation</span></header>${requirementTable(analysis)}</section>
     <div class="sorbo-lower-grid"><section class="sorbo-card sorbo-commentary"><p class="eyebrow">Engineering interpretation</p><h2>What the design is doing physically</h2>${commentary(analysis)}</section><section class="sorbo-card"><p class="eyebrow">Sensitivity envelope</p><h2>Input uncertainty propagated</h2><div data-sorbo-uncertainty-summary>${uncertaintySummary(analysis)}</div></section></div>
     ${analysis.warnings.length ? `<aside class="sorbo-warning-stack"><strong>Active engineering warnings</strong><ul>${analysis.warnings.map(warning => `<li>${esc(warning)}</li>`).join('')}</ul></aside>` : ''}
@@ -19836,12 +19874,14 @@ Generated: ${new Date().toISOString()}
 - X / Y footprint extents: ${config.mounts.spacingM.map(value => fmt(value / INCH, 3)).join(' / ')} in
 ${hardwareSummary}
 - Transmissibility response location: ${responsePoint.label}
+- Damping basis: ${dampingSummary(config)}
+- Loss-factor uncertainty: ±${config.uncertainty.lossPct}% around nominal η${config.damping.mode === 'manual-q' ? ' = 1/Q (set to 0% for fixed-Q samples)' : ''}; envelope ${config.uncertainty.enabled ? 'enabled' : 'disabled'}.
 
 ## Rigid-body modes
 
-| Mode | Frequency | Dominant | Secondary | Loss factor |
-|---|---:|---|---|---:|
-${analysis.modes.map(mode => `| ${mode.number} | ${fmt(mode.frequencyHz, 3)} Hz | ${mode.dominant} | ${mode.secondary} | ${fmt(mode.lossFactor, 3)} |`).join('\n')}
+| Mode | Frequency | Dominant | Secondary | Loss factor | Effective Q | Critical damping (eq.) |
+|---|---:|---|---|---:|---:|---:|
+${analysis.modes.map(mode => `| ${mode.number} | ${fmt(mode.frequencyHz, 3)} Hz | ${mode.dominant} | ${mode.secondary} | ${fmt(mode.lossFactor, 3)} | ${mode.lossFactor > 0 ? fmt(1 / mode.lossFactor, 3) : '∞'} | ${fmt(100 * mode.dampingRatio, 2)}% |`).join('\n')}
 
 ## Requirements
 
@@ -19963,8 +20003,10 @@ function bindSorbothaneIsolationWorkbench(root = document) {
       const path = control.dataset.sorboField;
       let value = pathGet(config, path);
       if (control.dataset.quantity) value = unitDefinitions[control.dataset.quantity][config.units].fromSI(Number(value));
-      control.value = typeof value === 'number' ? fmt(value, 4) : String(value);
+      control.value = typeof value === 'number' && path !== 'damping.effectiveQ' ? fmt(value, 4) : String(value);
+      if (path === 'damping.effectiveQ') control.disabled = config.damping.mode !== 'manual-q';
     });
+    shell.querySelectorAll('[data-sorbo-damping-summary]').forEach(node => { node.textContent = dampingSummary(config); });
     shell.querySelectorAll('[data-sorbo-inset-axis]').forEach(control => {
       const axis = Number(control.dataset.sorboInsetAxis);
       const insetM = (config.component.dimensionsM[axis] - config.mounts.spacingM[axis]) / 2;
@@ -20149,6 +20191,15 @@ function bindSorbothaneIsolationWorkbench(root = document) {
       tabs[next].focus();
     });
     shell.addEventListener('click', event => {
+      if (event.target.closest('[data-sorbo-damping-link]')) {
+        const control = shell.querySelector('[data-sorbo-field="damping.mode"]');
+        const group = control.closest('.sorbo-input-group');
+        setInputsCollapsed(false);
+        group.open = true;
+        group.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        control.focus({ preventScroll: true });
+        return;
+      }
       if (!event.target.closest('[data-sorbo-criteria-link]')) return;
       const requirements = shell.querySelector('[data-sorbo-requirements]');
       requirements.open = true;
@@ -20194,6 +20245,14 @@ function bindSorbothaneIsolationWorkbench(root = document) {
       const current = pathGet(config, path);
       if (typeof current === 'number') value = Number(value);
       if (typeof current === 'boolean') value = value === 'true';
+      if (path === 'damping.effectiveQ' && (!Number.isFinite(value) || value <= 0 || !Number.isFinite(1 / value))) {
+        control.value = String(current);
+        control.setCustomValidity('Enter a finite effective Q greater than zero.');
+        control.reportValidity();
+        control.addEventListener('input', () => control.setCustomValidity(''), { once: true });
+        return;
+      }
+      control.setCustomValidity('');
       if (control.dataset.quantity) value = unitDefinitions[control.dataset.quantity][config.units].toSI(Number(value));
       if (path === 'isolator.kind') {
         changeIsolatorKind(value);

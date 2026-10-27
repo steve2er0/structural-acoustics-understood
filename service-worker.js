@@ -1,4 +1,4 @@
-const CACHE = 'sau-v157-isolation-modal-damping';
+const CACHE = 'sau-v158-isolation-manual-q';
 const CORE = [
   './js/sorbothane-configurations.js',
   './', './index.html', './styles.css', './manifest.webmanifest', './assets/favicon.svg',

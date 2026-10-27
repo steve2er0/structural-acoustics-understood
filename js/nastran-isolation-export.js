@@ -154,6 +154,7 @@ export function generateNastranIsolationBdf(configInput, analysisInput = null) {
   const lossFactor = finite(mount.material?.tanDelta, 0);
 
   const warnings = [];
+  if (config.damping.mode === 'manual-q') warnings.push(`Manual effective Q = ${config.damping.effectiveQ}: PBUSH GE = 1/Q is a user damping assumption, not manufacturer data. SOL 103 real eigenvalues do not use this damping.`);
   if (mixed) warnings.push('Mixed-assembly flange/sleeve/contact assumptions are not validated by this linear CBUSH export. Each leg has its own PBUSH, with axis-specific effective loss factors at the reference frequency. See the browser assembly checks.');
   if (settings.massAccounting === 'box-plus-plate') warnings.push('The CQUAD4 plate mass is added to the website component mass; NASTRAN total isolated mass is therefore greater than the browser rigid-body mass.');
   else warnings.push('The plate density is omitted so the CONM2 preserves the browser total mass; plate self-mass and free plate modes are not represented.');
