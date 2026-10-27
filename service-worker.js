@@ -1,4 +1,4 @@
-const CACHE = 'sau-v156-isolation-workflow-themes';
+const CACHE = 'sau-v157-isolation-modal-damping';
 const CORE = [
   './js/sorbothane-configurations.js',
   './', './index.html', './styles.css', './manifest.webmanifest', './assets/favicon.svg',

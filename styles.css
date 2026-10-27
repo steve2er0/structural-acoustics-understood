@@ -859,6 +859,10 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
 .sorbo-mode-card strong small { color: var(--sorbo-muted); font: 550 .75rem var(--mono); }
 .sorbo-mode-card p { margin: 0; color: var(--sorbo-text); font-size: .75rem; }
 .sorbo-mode-card em { margin-top: auto; color: var(--sorbo-muted); font-size: .75rem; font-style: normal; line-height: 1.4; }
+.sorbo-mode-card > .sorbo-mode-damping { display: grid; justify-content: stretch; gap: .3rem; margin-top: .3rem; padding-top: .55rem; border-top: 1px solid var(--sorbo-line); font: 500 .75rem/1.4 var(--sans); letter-spacing: 0; text-transform: none; }
+.sorbo-mode-damping-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: .35rem; }
+.sorbo-mode-damping-value { font-family: var(--mono); font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sorbo-mode-dashboard > .sorbo-mode-damping-note { margin: 0; padding: 0 1.2rem; }
 .sorbo-lower-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .sorbo-commentary p { margin: .8rem 0 0; color: var(--sorbo-text); font-size: .75rem; line-height: 1.68; }
 .sorbo-warning-stack { padding: 1rem 1.25rem; color: var(--sorbo-amber); border: 1px solid rgba(255, 126, 114, .32); border-left: 3px solid var(--sorbo-red); background: rgba(89, 35, 36, .2); }
@@ -4950,6 +4954,8 @@ html[data-theme] .sorbo-workbench .sorbo-chart-tooltip rect { fill: var(--sorbo-
 html[data-theme] .sorbo-workbench :is(.sorbo-nastran-advanced, .sorbo-nastran-summary article, .sorbo-reference-grid article, .sorbo-nastran-preview pre) { background: var(--sorbo-inset); }
 html[data-theme] .sorbo-workbench code { color: var(--sorbo-text); }
 html[data-theme] .sorbo-workbench .sorbo-mode-card strong { font-size: 1.85rem; font-weight: 560; }
+html[data-theme] .sorbo-workbench .sorbo-mode-damping-label { color: var(--sorbo-muted); }
+html[data-theme] .sorbo-workbench .sorbo-mode-damping-value { color: var(--sorbo-text); }
 html[data-theme] .sorbo-workbench .eyebrow { color: var(--sorbo-cyan); font-size: .75rem; }
 html[data-theme] body.site-system-route .sorbo-workbench .site-breadcrumbs :is(a, span) { color: var(--sorbo-muted); font-size: .75rem; }
 html[data-theme] .sorbo-workbench .sorbo-axis-label { fill: var(--sorbo-muted) !important; }

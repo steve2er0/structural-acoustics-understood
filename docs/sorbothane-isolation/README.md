@@ -58,6 +58,18 @@ The baseline is a 25 lbm rectangular component, 13.5 in long (X), 7.2 in wide (Y
 
 Each leg has one upper and one lower custom 50 Shore 00 annular element by default, with 1.25 in OD, 0.50 in ID, 0.25 in free thickness, and 15% nominal precompression. Isolator and acceptance-criteria defaults are unchanged; this baseline is not a claim that all requirements pass. The result is calculated from the implemented model; no mode frequency or target transmissibility is hard-coded. A fresh design and **Reset baseline** use these dimensions in both the modular site and rebuilt standalone file. Explicit browser-saved and imported settings retain their own geometry; updating the file does not overwrite an existing design.
 
+## Modal damping readouts
+
+Each of the six mode cards shows effective Q, modal loss factor η, and equivalent
+percent critical damping. Q is defined here as 1/η; percent critical damping
+uses the solver's existing damping ratio, 100ζ ≈ 50η. Values are evaluated for
+each mode at its calculated frequency, including the existing strain-energy
+weighting for mixed assemblies. They are equivalent loss-factor-based estimates,
+not measured decay damping or the peak transmissibility at a response location.
+Zero modal loss is displayed as Q = ∞; very small nonzero values use scientific
+notation rather than rounding to zero. These readouts do not change the solver,
+design criteria, saved configurations, or frequency response.
+
 ## Saved configurations
 
 The **Saved configuration** selector above the export controls includes the

@@ -285,9 +285,23 @@ function modeStatus(mode, analysis) {
 }
 
 function modeCards(analysis) {
+  const dampingNumber = (value, digits) => {
+    if (!Number.isFinite(value) || value < 0) return '—';
+    if (value > 0 && (value < 10 ** -digits || value >= 10000)) return value.toExponential(2);
+    return fmt(value, digits);
+  };
   return analysis.modes.map(mode => {
     const status = modeStatus(mode, analysis);
-    return `<button type="button" class="sorbo-mode-card ${status.className}" data-sorbo-mode="${mode.number - 1}"><span>Mode ${mode.number}<b>${status.label}</b></span><strong>${fmt(mode.frequencyHz, 2)} <small>Hz</small></strong><p>${esc(mode.dominant)}</p><em>Secondary: ${esc(mode.secondary)} · η ${fmt(mode.lossFactor, 2)}</em></button>`;
+    const validLoss = Number.isFinite(mode.lossFactor) && mode.lossFactor >= 0;
+    const effectiveQ = !validLoss ? '—' : mode.lossFactor === 0 ? '∞' : dampingNumber(1 / mode.lossFactor, 2);
+    const dampingPct = Number.isFinite(mode.dampingRatio) && mode.dampingRatio >= 0 ? dampingNumber(100 * mode.dampingRatio, 1) + '%' : '—';
+    const metrics = [
+      ['effective-q', 'Effective Q', effectiveQ, 'Q = 1 / modal loss factor. Equivalent modal Q, not peak transmissibility. Zero modal loss gives unbounded Q.'],
+      ['loss-factor', 'Loss factor η', dampingNumber(mode.lossFactor, 3), 'Modal loss factor evaluated at this mode’s frequency. Mixed assemblies use modal strain-energy weighting.'],
+      ['critical-damping', 'Critical damping (eq.)', dampingPct, 'Equivalent percent critical damping = 100 × damping ratio ≈ 50 × modal loss factor. Not a measured ringdown damping value.']
+    ];
+    const damping = `<span class="sorbo-mode-damping">${metrics.map(([key, label, value, help]) => `<span class="sorbo-mode-damping-row" title="${esc(help)}"><span class="sorbo-mode-damping-label">${label}</span><span class="sorbo-mode-damping-value" data-mode-metric="${key}">${value}</span></span>`).join('')}</span>`;
+    return `<button type="button" class="sorbo-mode-card ${status.className}" data-sorbo-mode="${mode.number - 1}"><span>Mode ${mode.number}<b>${status.label}</b></span><strong>${fmt(mode.frequencyHz, 2)} <small>Hz</small></strong><p>${esc(mode.dominant)}</p>${damping}<em>Secondary: ${esc(mode.secondary)}</em></button>`;
   }).join('');
 }
 
@@ -422,7 +436,7 @@ function overviewPanel(config, analysis) {
   return `<section class="sorbo-tab-panel is-active" data-sorbo-panel="overview">
     <div class="sorbo-overview-grid"><section class="sorbo-card sorbo-geometry-card"><header><div><p class="eyebrow">Hardware geometry</p><h2>Component on ${config.mounts.count} ${lord ? 'complete mounts' : 'captured mounts'}</h2></div><span>Drag to rotate</span></header><div data-sorbo-overview-scene>${sceneSvg(config, analysis)}</div><p class="sorbo-caption">Coordinate origin: component footprint center on the isolated plate. +Z is upward. CG and mount offsets are rendered from the same coordinates.</p></section>
     <section class="sorbo-card sorbo-decision-card"><p class="eyebrow">Current decision</p><h2 class="${analysis.passes ? 'pass-text' : 'fail-text'}">${analysis.passes ? 'All defined criteria pass' : 'Design review required'}</h2><dl><div><dt>Isolator</dt><dd>${esc(isSorbothaneAssemblyConfig(config) ? 'Mixed Sorbothane assemblies' : catalog.productNumber)}</dd></div>${decisionDetails}</dl></section></div>
-    <section class="sorbo-mode-dashboard"><header><div><p class="eyebrow">Calculated eigenproblem</p><h2>Six rigid-body modes</h2></div><p>Modes are classified by normalized translational and characteristic-length rotational participation; coupling is retained.</p></header><div class="sorbo-mode-cards">${modeCards(analysis)}</div></section>
+    <section class="sorbo-mode-dashboard"><header><div><p class="eyebrow">Calculated eigenproblem</p><h2>Six rigid-body modes</h2></div><p>Modes are classified by normalized translational and characteristic-length rotational participation; coupling is retained.</p></header><p class="sorbo-caption sorbo-mode-damping-note">Effective Q = 1/η; equivalent critical damping ≈ 50η (%), evaluated at each mode’s frequency. These are loss-factor-based modal estimates, not the plotted peak transmissibility or measured ringdown damping.</p><div class="sorbo-mode-cards">${modeCards(analysis)}</div></section>
     <section class="sorbo-card"><header><div><p class="eyebrow">Pass / fail</p><h2>Isolation and resonance requirements</h2></div><span>Direct X / Y / Z base excitation</span></header>${requirementTable(analysis)}</section>
     <div class="sorbo-lower-grid"><section class="sorbo-card sorbo-commentary"><p class="eyebrow">Engineering interpretation</p><h2>What the design is doing physically</h2>${commentary(analysis)}</section><section class="sorbo-card"><p class="eyebrow">Sensitivity envelope</p><h2>Input uncertainty propagated</h2><div data-sorbo-uncertainty-summary>${uncertaintySummary(analysis)}</div></section></div>
     ${analysis.warnings.length ? `<aside class="sorbo-warning-stack"><strong>Active engineering warnings</strong><ul>${analysis.warnings.map(warning => `<li>${esc(warning)}</li>`).join('')}</ul></aside>` : ''}
