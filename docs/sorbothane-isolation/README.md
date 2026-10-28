@@ -58,6 +58,130 @@ The baseline is a 25 lbm rectangular component, 13.5 in long (X), 7.2 in wide (Y
 
 Each leg has one upper and one lower custom 50 Shore 00 annular element by default, with 1.25 in OD, 0.50 in ID, 0.25 in free thickness, and 15% nominal precompression. Isolator and acceptance-criteria defaults are unchanged; this baseline is not a claim that all requirements pass. The result is calculated from the implemented model; no mode frequency or target transmissibility is hard-coded. A fresh design and **Reset baseline** use these dimensions in both the modular site and rebuilt standalone file. Explicit browser-saved and imported settings retain their own geometry; updating the file does not overwrite an existing design.
 
+## PSD displacement and clearance
+
+Open **Displacement & clearance**. Paste or import 2–256 two-column breakpoints
+(`frequency_hz,g2_per_hz`), enable the environment, select the detailed plot's input axis,
+and apply. No demonstration PSD is assigned to a real design. The profile,
+axis, peak factor, gaps and optional shared requirement are saved with the
+configuration; legacy/saved baseline designs default to PSD disabled. Static
+X/Y/additional-Z acceleration inputs remain separate from this random environment.
+
+The input is a one-sided acceleration PSD in g²/Hz, coherent at every mount,
+one axis per test. The comparison applies the same profile in three separate
+X/Y/Z tests automatically; load different profiles when different axis
+environments are required. Simultaneous-axis loading,
+cross-spectral correlations, nonstationarity and non-Gaussian extremes are not
+assumed. Positive PSD segments use log–log/power-law interpolation; segments
+adjacent to zero use linear interpolation. No energy is extrapolated outside
+the entered band, which is independent of the transmissibility display range.
+
+The full six-DOF complex solution is used, not independently scaled mode cards:
+
+```text
+H_relative(point, f) = -(g0 / (2πf)²) B(point) qr(unit base displacement)
+S_relative(point, f) = |H_relative|² S_base_g(f)       [m²/Hz]
+σ_relative = sqrt(integral S_relative df)             [m RMS]
+estimated one-sided peak = selected factor × σ_relative
+```
+
+`B(point)` includes translation and rocking about the CG. Complex base motion
+must be subtracted before magnitudes are taken. Every response direction is
+computed for the selected input axis, including cross-axis coupling. The CG,
+all eight box corners and every mount are reported in inches/mils. A single
+three-direction PSD chart can show any of these locations, with M1–M6 markers;
+PSD peak frequencies are not independent modal RMS contributions.
+
+Integration includes input breakpoints, 80 logarithmic samples/octave initially,
+and points through ±3 modal bandwidths with 12 samples per bandwidth initially.
+Grids are doubled until all non-negligible output RMS values change by less
+than 0.5%, with up to three refinements and a 16,000-point limit. Nonconvergence
+forces review. This is numerical refinement evidence, not a rigorous error bound.
+The CSV preserves the input, frequency grid, nominal results and assumptions.
+No displacement Monte Carlo uncertainty band is claimed.
+
+### Pad compression for every excitation direction
+
+The **Pad compression · X / Y / Z inputs** card shows upper- and lower-pad
+minimum/maximum compression envelopes and the governing maximum-compression
+leg for all three independent input tests. Values are **axial** compression,
+including rocking caused by lateral inputs, not X/Y shear strain. The active
+material-derived or manual-Q basis is explicitly shown.
+
+Compression and box-clearance checks have separate status columns: a compression
+PASS does not approve the surrounding gaps. REVIEW includes >20% compression,
+predicted unloading (minimum ≤0%), existing static-model review flags or
+nonconverged integration. These are nominal factor-times-RMS screens, not
+material qualification, Monte Carlo bounds or guaranteed maxima. Unknown bonded
+LORD pad compression is shown as unavailable, never as a compression PASS.
+
+Expand **Every pad · compression for all three input directions** for a table
+of each leg's upper and lower elements, counts, installed static compression
+and X/Y/Z compression envelopes. **Download X/Y/Z pad compression CSV** exports
+one row per pad and test input, preserving the PSD, peak factor, damping and
+integration status. The engineering summary includes the direction comparison.
+
+This display does **not** silently change the environment selection or shared
+criteria: the detailed spectrum and optional catalog/matrix clearance requirement
+still use the selected input axis. The comparison reuses that axis's full solve,
+computes the two other cases and retains only compact per-pad summaries. Catalog
+and matrix candidate evaluations do not pay for this display-only comparison.
+
+Peak factors (default 3, editable 1–10) are screening assumptions for a stationary,
+approximately Gaussian response. Neither 3σ nor 4σ guarantees a test maximum.
+No duration-dependent extreme-value probability is inferred. See the primary
+[COMSOL random-vibration discussion](https://doc.comsol.com/6.3/doc/com.comsol.help.sme/sme_ug_modeling.05.201.html)
+for PSD/RMS and the distinction between RMS and peak response.
+
+Enter each axis's **minimum one-sided box gap in either sign**, measured from
+the installed, statically loaded position to base-fixed hardware. Zero means
+not specified. The factored dynamic excursion is subtracted from that gap at
+every box corner; gravity/precompression are not subtracted twice. These are
+global axis-aligned box-gap checks, not arbitrary contact geometry, bolt-hole,
+cable, sleeve, or body-to-body clearance checks. Manufacturing/installation
+tolerances must already be reserved in the entered gap.
+
+Opposed upper/lower stacks have the same local stack travel and opposite axial
+compression changes. Identical elements within one series stack divide that
+travel by their count. Mixed-assembly installed side compression comes from
+its nonlinear static equilibrium. Uniform-pad static side compression uses the
+existing equal payload-split inverse static curve (limited to 20%); unequal
+upper/lower uniform stack counts or loads beyond that curve force review.
+Minimum compression ≤0 or maximum >20% also forces review; 20% is a material
+screening boundary, not an inferred hard-stop dimension or qualified dynamic
+strain allowable. Bonded LORD mount travel is reported, but unknown compression
+and contact limits are not invented. The model remains linear after predicting
+a possible contact/unloading event; its post-contact response is not valid.
+
+The optional **Require clearance** checkbox applies this same environment,
+factor, gap and engagement/compression checks to the current design, 7×7 matrix
+(`TRAVEL`) and catalog recommendations. Without it, PSD results are informational.
+An enabled requirement with a missing/disabled/invalid environment cannot pass.
+Full catalog searches with this requirement cost more because each eligible
+candidate needs a resolved PSD integration; narrow geometry filters first.
+
+With PSD enabled, the SOL 111 deck also includes all box-corner/mount/base output
+grids and a PSD-resolved excitation frequency grid. It remains a **unit-g FRF
+deck**, not a RANDPS random-response solve. Export a matching Browser comparison
+CSV, run the solver separately, then fold complex displacement FRFs through the
+PSD using:
+
+```sh
+python3 scripts/nastran-transmissibility.py solver.op2 \
+  --browser-csv isolation-sol111-browser-reference.csv \
+  --output transmissibility.csv --clearance-output clearance-comparison.csv
+```
+
+The converter computes `(U_point - U_base) / (A_base / 386.088582677)` in in/g,
+then integrates the same PSD for RMS and factored peak. Browser CSV includes
+the PSD, selected axis/factor, grid mapping and relative complex displacement
+transfers. Only matching frequency grids are accepted; no silent interpolation.
+The comparison is nominal, on that common grid; check solver modal/mesh and
+frequency-grid convergence separately. Flexible plate motion/mass can make
+solver results differ from the rigid-box browser prediction. Synthetic OP2
+round-trip and full-deck parser tests do not constitute a solver run or test
+correlation.
+
 ## Modal damping readouts
 
 Each of the six mode cards shows effective Q, modal loss factor η, and equivalent

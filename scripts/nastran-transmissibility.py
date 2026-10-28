@@ -103,6 +103,78 @@ def plot_curves(path, frequencies, curves, browser=None):
     plt.close(figure)
 
 
+def write_clearance(path, model, browser_path):
+    """Fold one shaker-axis FRF through the matching one-sided base PSD.
+
+    Displacements are absolute solver inches. Subtract the complex base motion
+    BEFORE taking magnitudes, and normalize by actual complex input in g.
+    This is linear statistical postprocessing, not a contact/peak simulation.
+    """
+    metadata, frequencies, _ = read_browser_csv(browser_path)
+    spec = metadata.get("clearance")
+    if not spec:
+        raise ValueError("Matching browser CSV must contain a PSD clearance environment")
+    environment = spec["environment"]
+    sid = "xyz".index(environment["axis"]) + 1
+
+    def case(table):
+        cases = [r for key, r in table.items() if getattr(r, "isubcase", key[0] if isinstance(key, tuple) else key) == sid]
+        if len(cases) != 1 or not np.iscomplexobj(cases[0].data):
+            raise ValueError("Clearance needs one complex displacement and acceleration result for the selected subcase")
+        result = cases[0]
+        if result._times.shape != frequencies.shape or not np.allclose(result._times, frequencies, rtol=3e-6, atol=1e-5):
+            raise ValueError("Displacement/acceleration frequencies do not match the browser CSV")
+        return result
+
+    displacement = case(model.displacements)
+    acceleration = case(model.accelerations)
+
+    def node(result, grid):
+        indices = np.flatnonzero(result.node_gridtype[:, 0] == grid)
+        if len(indices) != 1:
+            raise ValueError(f"Clearance result must contain GRID {grid} exactly once")
+        return result.data[:, int(indices[0]), :3]
+
+    points = np.asarray(environment["points"], dtype=float)
+    if points.ndim != 2 or points.shape[1] != 2 or len(points) < 2 or np.any(~np.isfinite(points)) or np.any(points[:, 0] <= 0) or np.any(np.diff(points[:, 0]) <= 0) or np.any(points[:, 1] < 0):
+        raise ValueError("Invalid PSD breakpoints in comparison metadata")
+    factor = environment["peakFactor"]
+    if not np.isfinite(factor) or not 1 <= factor <= 10:
+        raise ValueError("Invalid statistical peak factor")
+    # Include the full PSD band, not any extra displayed-FRF frequencies.
+    mask = (frequencies >= points[0, 0] * (1 - 1e-10)) & (frequencies <= points[-1, 0] * (1 + 1e-10))
+    f = frequencies[mask]
+    if len(f) < 2 or not np.isclose(f[0], points[0, 0]) or not np.isclose(f[-1], points[-1, 0]):
+        raise ValueError("Solver grid does not cover both PSD endpoints")
+    levels = np.zeros_like(f)
+    for index, ((f0, s0), (f1, s1)) in enumerate(zip(points[:-1], points[1:])):
+        selected = (f >= f0 * (1 - 1e-10)) & (f <= f1 * (1 + 1e-10))
+        levels[selected] = s0 * (f[selected] / f0) ** (np.log(s1 / s0) / np.log(f1 / f0)) if s0 > 0 and s1 > 0 else s0 + (s1 - s0) * (f[selected] - f0) / (f1 - f0)
+    levels = np.maximum(levels, 0)
+    with open(browser_path, newline="", encoding="utf-8") as stream:
+        rows = list(csv.DictReader(line for line in stream if not line.startswith("#")))
+    output = []
+    for location in spec["locations"]:
+        base = node(acceleration, location["baseGridId"])[:, sid - 1] / 386.08858267716535
+        if np.any(~np.isfinite(base)) or np.any(np.abs(base) < 1e-12):
+            raise ValueError("Zero or non-finite base acceleration in clearance result")
+        relative = (node(displacement, location["gridId"]) - node(displacement, location["baseGridId"])) / base[:, None]
+        if np.any(~np.isfinite(relative)):
+            raise ValueError("Non-finite complex displacement")
+        for axis, name in enumerate("xyz"):
+            key = f"{location['id']}_{name}_relative_in_per_g_"
+            reference = np.array([complex(float(row[key + "real"]), float(row[key + "imag"])) for row in rows])
+            rms = np.sqrt(np.trapz(np.abs(relative[mask, axis]) ** 2 * levels, f))
+            browser_rms = np.sqrt(np.trapz(np.abs(reference[mask]) ** 2 * levels, f))
+            gap = environment["gapsM"][axis] / .0254 if location["kind"] == "box" else 0
+            output.append([location["id"], name, environment["axis"], rms, factor * rms, browser_rms, rms - browser_rms, gap - factor * rms if gap > 0 else ""])
+    with open(path, "w", newline="", encoding="utf-8") as stream:
+        stream.write("# Nominal linear stationary prediction; factor times RMS is not a guaranteed maximum. Check grid convergence, contact and model differences.\n")
+        writer = csv.writer(stream)
+        writer.writerow(["location", "response_axis", "input_axis", "solver_rms_in", "solver_factored_peak_in", "browser_rms_in", "delta_rms_in", "remaining_gap_in"])
+        writer.writerows(output)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("op2", type=Path)
@@ -111,6 +183,7 @@ def main():
     parser.add_argument("--base-grid", type=int)
     parser.add_argument("--output", type=Path, default=Path("nastran-transmissibility.csv"))
     parser.add_argument("--plot", type=Path, help="Optional single plot of all three translational curves")
+    parser.add_argument("--clearance-output", type=Path, help="PSD displacement RMS/peak comparison; requires matching --browser-csv exported with PSD enabled")
     args = parser.parse_args()
     try:
         from pyNastran.op2.op2 import read_op2
@@ -125,6 +198,10 @@ def main():
         write_curves(args.output, frequencies, curves, browser)
         if args.plot:
             plot_curves(args.plot, frequencies, curves, browser)
+        if args.clearance_output:
+            if not args.browser_csv:
+                raise ValueError("--clearance-output requires --browser-csv")
+            write_clearance(args.clearance_output, model, args.browser_csv)
         print(f"Wrote {args.output}: {len(frequencies)} frequencies; response GRID {response_grid}, base GRID {base_grid}")
         print("Review mesh/modal convergence, plate mass/flexibility, coupling and material assumptions before interpreting differences.")
     except (ValueError, KeyError, OSError, ImportError) as error:

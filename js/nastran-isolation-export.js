@@ -6,7 +6,8 @@ import {
   normalizeSorbothaneConfig,
   rigidBodyResponseAtFrequency,
   rigidBodyMassMatrix,
-  solveRigidBodyModes
+  solveRigidBodyModes,
+  randomVibrationClearance, isolationClearanceLocations, isolationRelativeDisplacement
 } from './sorbothane-analysis.js';
 import { isSorbothaneAssemblyConfig } from './sorbothane-assemblies.js';
 
@@ -90,7 +91,11 @@ function responseFrequencies(config, modes) {
   // not hidden between logarithmically spaced excitation frequencies.
   const extra = modes.flatMap(mode => [.98, 1, 1.02].map(scale => scale * mode.frequencyHz));
   extra.push(...config.analysis.tones.map(tone => tone.frequencyHz));
-  return [...new Set([...base, ...extra].filter(frequency => frequency >= minimum && frequency <= maximum).map(frequency => Number(frequency.toPrecision(12))))].sort((a, b) => a - b);
+  const random = config.environment.random;
+  const clearance = random.enabled ? randomVibrationClearance(config, modes) : null;
+  if (clearance && (!clearance.valid || !clearance.converged)) throw new Error(clearance.error ?? 'PSD integration has not converged; review before exporting a solver comparison.');
+  const psdFrequencies = clearance?.frequencies ?? [];
+  return [...new Set([...base, ...extra.filter(frequency => frequency >= minimum && frequency <= maximum), ...psdFrequencies].map(frequency => Number(frequency.toPrecision(12))))].sort((a, b) => a - b);
 }
 
 export function generateNastranIsolationSol111Bdf(configInput, analysisInput = null) {
@@ -103,12 +108,15 @@ export function nastranBrowserComparisonCsv(configInput, modelInput = null) {
   const metadata = { source: 'browser rigid-body prediction, not NASTRAN results', responseGrid: model.response.responseGridId,
     baseGrid: model.response.baseGridId, responsePoint: config.analysis.responsePoint, damping: config.damping,
     massAccounting: model.settings.massAccounting, coupling: model.settings.coupling, nominalOnly: true };
+  if (config.environment.random.enabled) metadata.clearance = { environment: config.environment.random, locations: model.response.clearanceLocations, units: 'in/g', frequencyGrid: 'converged browser PSD grid plus displayed response band; verify solver grid convergence separately' };
   const axes = ['x', 'y', 'z'];
   const header = ['frequency_hz', ...axes.flatMap(axis => [`T${axis}${axis}_real`, `T${axis}${axis}_imag`, `T${axis}${axis}_magnitude`, `T${axis}${axis}_db`, `T${axis}${axis}_phase_deg`])];
+  const locations = metadata.clearance?.locations ?? [];
+  header.push(...locations.flatMap(location => axes.flatMap(axis => [`${location.id}_${axis}_relative_in_per_g_real`, `${location.id}_${axis}_relative_in_per_g_imag`])));
   const rows = model.response.frequencies.map(frequency => [frequency, ...axes.flatMap((axis, index) => {
     const response = rigidBodyResponseAtFrequency(config, frequency, axis);
     return [response.complex[index].re, response.complex[index].im, response.magnitude[index], response.db[index], response.phaseDeg[index]];
-  })].join(','));
+  }), ...(locations.length ? isolationRelativeDisplacement(config, frequency, config.environment.random.axis, locations).flatMap(motion => motion.flatMap(value => [value.re * inchPerM, value.im * inchPerM])) : [])].join(','));
   return `# ${JSON.stringify(metadata)}\n${header.join(',')}\n${rows.join('\n')}\n`;
 }
 
@@ -182,6 +190,10 @@ export function generateNastranIsolationBdf(configInput, analysisInput = null, o
   const groundGrids = mountCoordinates.map(([x, y], index) => ({ id: 8001 + index, x, y, z: plateZIn }));
   const cgGridId = 9001;
   const responseGridId = frequencyResponse && config.analysis.responsePoint !== 'cg' ? 9002 : cgGridId;
+  const clearanceLocations = frequencyResponse && config.environment.random.enabled ? isolationClearanceLocations(config).map((location, index) => ({ ...location,
+    gridId: location.id === 'cg' ? cgGridId : location.kind === 'mount' ? mountGridIds[location.mountIndex] : 9002 + index,
+    baseGridId: location.kind === 'mount' ? groundGrids[location.mountIndex].id : groundGrids[0].id })) : [];
+  const cornerGrids = clearanceLocations.filter(location => location.kind === 'box' && location.id !== 'cg');
   const matId = 10;
   const pshellId = 20;
   const pbushId = 40;
@@ -216,7 +228,7 @@ export function generateNastranIsolationBdf(configInput, analysisInput = null, o
     warnings.push('The flexible CQUAD4 plate and selected plate mass/coupling can differ from the browser rigid-component model. No uncertainty envelope or design criteria are solved by this nominal deck.');
     warnings.push('Coherent 1 g enforced base acceleration is applied to all ground grids, one axis per subcase. Transmissibility is the complex response acceleration divided by the same-axis base acceleration, not raw acceleration in g.');
   }
-  const outputGrids = [...new Set([cgGridId, responseGridId, ...groundGrids.map(grid => grid.id)])];
+  const outputGrids = [...new Set([cgGridId, responseGridId, ...groundGrids.map(grid => grid.id), ...clearanceLocations.map(location => location.gridId)])];
   const lines = [
     `SOL ${solution}`,
     'CEND',
@@ -224,11 +236,11 @@ export function generateNastranIsolationBdf(configInput, analysisInput = null, o
     'ECHO = NONE',
     ...(frequencyResponse ? [
       'RESVEC = YES',
-      `SET 99 = ${outputGrids.join(',')}`,
+      ...outputGrids.reduce((rows, grid, index) => { if (index % 8 === 0) rows.push(`${index ? '  ' : 'SET 99 = '}${outputGrids.slice(index, index + 8).join(',')}${index + 8 < outputGrids.length ? ',' : ''}`); return rows; }, []),
       ...['X', 'Y', 'Z'].flatMap((axis, index) => [
         `SUBCASE ${index + 1}`, `  LABEL = ${axis} BASE TO ${axis} RESPONSE`,
         '  METHOD = 42', '  SPC = 1', '  FREQUENCY = 50', `  DLOAD = ${201 + index}`,
-        '  ACCELERATION(SORT1,REAL,PRINT,PLOT,PUNCH) = 99', '  DISPLACEMENT(PLOT) = 99'
+        '  ACCELERATION(SORT1,REAL,PRINT,PLOT,PUNCH) = 99', '  DISPLACEMENT(SORT1,REAL,PLOT) = 99'
       ])
     ] : ['SUBCASE 1',
     '  LABEL = ISOLATED ASSEMBLY NORMAL MODES',
@@ -283,6 +295,10 @@ export function generateNastranIsolationBdf(configInput, analysisInput = null, o
     lines.push(card('RBE2', 6002, cgGridId, 123456, responseGridId));
   }
   groundGrids.forEach(grid => lines.push(card('GRID', grid.id, '', ...[grid.x, grid.y, grid.z].map(real))));
+  cornerGrids.forEach((location, index) => {
+    lines.push(card('GRID', location.gridId, '', ...location.positionM.map(value => real(value * inchPerM))));
+    lines.push(card('RBE2', 6100 + index, cgGridId, 123456, location.gridId));
+  });
   const firstBushId = Math.max(4001, nextQuadId);
   mountGridIds.forEach((topGridId, index) => lines.push(card('CBUSH', firstBushId + index, supportProperties[index].id, topGridId, groundGrids[index].id, '', '', '', 0)));
   const groundGridIds = groundGrids.map(grid => grid.id);
@@ -320,18 +336,18 @@ export function generateNastranIsolationBdf(configInput, analysisInput = null, o
   const filename = `${cleanFilename(`isolation-${mixed ? 'mixed-assemblies' : config.isolator.productNumber}-sol${solution}`)}.bdf`;
   return {
     solution,
-    response: frequencyResponse ? { frequencies, responseGridId, baseGridId: groundGridIds[0], responsePoint: config.analysis.responsePoint, baseAccelerationInPerSec2: gravityInPerSec2, modalCutoffHz, subcases: { x: 1, y: 2, z: 3 } } : null,
+    response: frequencyResponse ? { frequencies, responseGridId, baseGridId: groundGridIds[0], responsePoint: config.analysis.responsePoint, baseAccelerationInPerSec2: gravityInPerSec2, modalCutoffHz, clearanceLocations, subcases: { x: 1, y: 2, z: 3 } } : null,
     deck,
     filename,
     settings: { ...settings, attachmentSpacingIn },
     units: NASTRAN_IPS_UNITS,
     counts: {
-      grids: grids.length + groundGrids.length + 1 + Number(responseGridId !== cgGridId),
+      grids: grids.length + groundGrids.length + 1 + Number(responseGridId !== cgGridId) + cornerGrids.length,
       cquad4: quads.length,
       cbush: mountGridIds.length,
       pbush: mixed ? mountGridIds.length : 1,
       conm2: 1,
-      rbe2: (settings.coupling === 'rbe2' ? 1 : 0) + Number(responseGridId !== cgGridId),
+      rbe2: (settings.coupling === 'rbe2' ? 1 : 0) + Number(responseGridId !== cgGridId) + cornerGrids.length,
       rbe3: settings.coupling === 'rbe3' ? 1 : 0
     },
     plate: {

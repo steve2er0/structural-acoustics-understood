@@ -731,6 +731,22 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
 }
 .sorbo-workbench .site-breadcrumbs { max-width: 1680px; margin: 0 auto; padding-top: 18px; }
 .sorbo-hero { max-width: 1680px; min-height: 180px; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, .48fr); align-items: end; gap: 4vw; margin: 0 auto; padding: 24px 0; border-bottom: 1px solid var(--sorbo-line); }
+.sorbo-clearance-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+.sorbo-compression-comparison table { width: 100%; }
+.sorbo-compression-comparison :is(th, td) { vertical-align: top; }
+.sorbo-compression-comparison thead th { white-space: normal; }
+.sorbo-compression-comparison th small { white-space: normal; }
+.sorbo-compression-comparison th[scope="row"] { white-space: nowrap; }
+.sorbo-compression-comparison small { display: block; margin-top: .35rem; color: var(--sorbo-muted); font-size: .72rem; }
+.sorbo-compression-comparison .is-selected-input { background: color-mix(in srgb, var(--sorbo-cyan) 9%, transparent); }
+.sorbo-compression-comparison details { margin: 1rem 0; }
+.sorbo-compression-comparison summary { min-height: 44px; cursor: pointer; color: var(--sorbo-text); }
+[data-sorbo-psd-form] label { display: block; color: var(--sorbo-text); font-size: .85rem; margin: .5rem 0; }
+[data-sorbo-psd-form] :is(input:not([type="checkbox"]), textarea, select), [data-sorbo-clearance-location] { display: block; max-width: 100%; width: 100%; min-width: 0; padding: .65rem; border: 1px solid var(--sorbo-line); border-radius: 4px; color: var(--sorbo-text); background: var(--sorbo-panel-solid); font: inherit; }
+[data-sorbo-psd-form] textarea { resize: vertical; font-family: var(--mono); }
+[data-sorbo-panel="clearance"] { --sorbo-x: var(--sorbo-cyan); --sorbo-y: #c27526; --sorbo-z: #38976d; }
+.sorbo-grid-line { stroke: var(--sorbo-line); stroke-width: 1; }
+[data-sorbo-clearance-results] td { white-space: nowrap; }
 .sorbo-hero h1 { max-width: 980px; margin: .35rem 0 1rem; color: var(--sorbo-text); font-size: clamp(1.8rem, 3vw, 3rem); font-weight: 320; letter-spacing: -.065em; line-height: 1.1; }
 .sorbo-hero h1 span { color: var(--sorbo-cyan); }
 .sorbo-hero > div > p:last-child { max-width: 900px; margin: 0; color: var(--sorbo-muted); font-size: .88rem; line-height: 1.7; }

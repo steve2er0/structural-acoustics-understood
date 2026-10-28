@@ -1,4 +1,4 @@
-const CACHE = 'sau-v159-isolation-sol111';
+const CACHE = 'sau-v161-directional-pad-compression';
 const CORE = [
   './js/sorbothane-configurations.js',
   './', './index.html', './styles.css', './manifest.webmanifest', './assets/favicon.svg',

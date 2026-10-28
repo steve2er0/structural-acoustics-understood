@@ -757,6 +757,22 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
 }
 .sorbo-workbench .site-breadcrumbs { max-width: 1680px; margin: 0 auto; padding-top: 18px; }
 .sorbo-hero { max-width: 1680px; min-height: 180px; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, .48fr); align-items: end; gap: 4vw; margin: 0 auto; padding: 24px 0; border-bottom: 1px solid var(--sorbo-line); }
+.sorbo-clearance-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+.sorbo-compression-comparison table { width: 100%; }
+.sorbo-compression-comparison :is(th, td) { vertical-align: top; }
+.sorbo-compression-comparison thead th { white-space: normal; }
+.sorbo-compression-comparison th small { white-space: normal; }
+.sorbo-compression-comparison th[scope="row"] { white-space: nowrap; }
+.sorbo-compression-comparison small { display: block; margin-top: .35rem; color: var(--sorbo-muted); font-size: .72rem; }
+.sorbo-compression-comparison .is-selected-input { background: color-mix(in srgb, var(--sorbo-cyan) 9%, transparent); }
+.sorbo-compression-comparison details { margin: 1rem 0; }
+.sorbo-compression-comparison summary { min-height: 44px; cursor: pointer; color: var(--sorbo-text); }
+[data-sorbo-psd-form] label { display: block; color: var(--sorbo-text); font-size: .85rem; margin: .5rem 0; }
+[data-sorbo-psd-form] :is(input:not([type="checkbox"]), textarea, select), [data-sorbo-clearance-location] { display: block; max-width: 100%; width: 100%; min-width: 0; padding: .65rem; border: 1px solid var(--sorbo-line); border-radius: 4px; color: var(--sorbo-text); background: var(--sorbo-panel-solid); font: inherit; }
+[data-sorbo-psd-form] textarea { resize: vertical; font-family: var(--mono); }
+[data-sorbo-panel="clearance"] { --sorbo-x: var(--sorbo-cyan); --sorbo-y: #c27526; --sorbo-z: #38976d; }
+.sorbo-grid-line { stroke: var(--sorbo-line); stroke-width: 1; }
+[data-sorbo-clearance-results] td { white-space: nowrap; }
 .sorbo-hero h1 { max-width: 980px; margin: .35rem 0 1rem; color: var(--sorbo-text); font-size: clamp(1.8rem, 3vw, 3rem); font-weight: 320; letter-spacing: -.065em; line-height: 1.1; }
 .sorbo-hero h1 span { color: var(--sorbo-cyan); }
 .sorbo-hero > div > p:last-child { max-width: 900px; margin: 0; color: var(--sorbo-muted); font-size: .88rem; line-height: 1.7; }
@@ -16632,7 +16648,9 @@ const DEFAULT_SORBOTHANE_CONFIG = {
     lordLossFactor: 0.30
   },
   damping: { mode: 'material', effectiveQ: 6 },
-  environment: { accelerationG: [0, 0, 0] },
+  environment: { accelerationG: [0, 0, 0], random: {
+    enabled: false, axis: 'z', points: [], peakFactor: 3, gapsM: [0, 0, 0], checkClearance: false
+  } },
   assemblies: { enabled: false, groups: {}, assignments: [] },
   analysis: {
     excitationAxis: 'z',
@@ -16716,6 +16734,14 @@ function normalizeSorbothaneConfig(input = {}) {
   config.damping.effectiveQ = Number.isFinite(effectiveQ) && effectiveQ > 0 && Number.isFinite(1 / effectiveQ)
     ? effectiveQ : DEFAULT_SORBOTHANE_CONFIG.damping.effectiveQ;
   config.environment.accelerationG = [...(source.environment?.accelerationG ?? config.environment.accelerationG)].map((value, index) => finite(value, config.environment.accelerationG[index]));
+  config.environment.random = { ...DEFAULT_SORBOTHANE_CONFIG.environment.random, ...(source.environment?.random ?? {}) };
+  const random = config.environment.random;
+  random.enabled = random.enabled === true;
+  random.checkClearance = random.checkClearance === true;
+  if (typeof random.peakFactor !== 'number') random.peakFactor = null;
+  // Do not silently repair invalid spectra, factors or gaps into a passing case.
+  random.points = clone(random.points);
+  random.gapsM = Array.isArray(random.gapsM) ? [...random.gapsM] : [null, null, null];
   config.analysis.frequencyPoints = clamp(Math.round(finite(config.analysis.frequencyPoints, 181)), 41, 501);
   if (!['cg', 'corner-positive', 'corner-negative'].includes(config.analysis.responsePoint)) config.analysis.responsePoint = 'cg';
   const lateralModeMinimumHz = source.analysis?.lateralModeMinimumHz ?? config.analysis.lateralModeMinimumHz;
@@ -17436,6 +17462,8 @@ function preparedRigidBodyResponse(config, frequencyHz, axis, mass, stiffness) {
   return {
     frequencyHz,
     axis: excitationAxis,
+    relativeComplex: relative,
+    absoluteCgComplex: absolute,
     complex: output,
     magnitude: output.map(cAbs),
     db: output.map(value => 20 * Math.log10(Math.max(cAbs(value), 1e-12))),
@@ -17452,6 +17480,196 @@ function analysisResponseEvaluator(config) {
     if (!stiffnessByFrequency.has(frequency)) stiffnessByFrequency.set(frequency, assembleRigidBodyStiffness(config, frequency));
     return preparedRigidBodyResponse(config, frequency, axis, mass, stiffnessByFrequency.get(frequency));
   };
+}
+
+// One-sided acceleration PSD in g²/Hz, coherent at all supports, ONE input axis.
+function parseIsolationPsd(text) {
+  const lines = String(text).split(/\r?\n/).map(line => line.trim()).filter(line => line && !line.startsWith('#'));
+  if (lines[0] && /[a-z]/i.test(lines[0].replace(/[eE][+-]?\d+/g, '')) && /freq/i.test(lines[0])) lines.shift();
+  const points = lines.map((line, index) => {
+    const fields = line.split(/[,;\s]+/);
+    if (fields.length !== 2 || fields.some(field => field === '' || !Number.isFinite(Number(field)))) throw new Error(`PSD row ${index + 1}: enter frequency, g²/Hz (two numeric columns).`);
+    return fields.map(Number);
+  });
+  validateIsolationPsd(points);
+  return points;
+}
+
+function validateIsolationPsd(points) {
+  if (!Array.isArray(points) || points.length < 2 || points.length > 256) throw new Error('PSD requires 2–256 frequency / g²/Hz breakpoints.');
+  points.forEach((point, index) => {
+    if (!Array.isArray(point) || point.length !== 2 || point.some(value => typeof value !== 'number' || !Number.isFinite(value)) || point[0] < .001 || point[0] > 1e5 || point[1] < 0 || index && point[0] <= points[index - 1][0]) throw new Error('PSD frequencies must increase strictly (0.001 ≤ f ≤ 100,000 Hz); levels must be finite and nonnegative.');
+  });
+  return points;
+}
+
+function isolationPsdAt(points, frequency) {
+  if (frequency < points[0][0] || frequency > points.at(-1)[0]) return 0;
+  const right = points.findIndex(point => point[0] >= frequency);
+  if (right === 0) return points[0][1];
+  const [f0, s0] = points[right - 1], [f1, s1] = points[right];
+  // Power-law interpolation for positive levels; linear near explicit zeros.
+  return s0 > 0 && s1 > 0 ? s0 * (frequency / f0) ** (Math.log(s1 / s0) / Math.log(f1 / f0)) : s0 + (s1 - s0) * (frequency - f0) / (f1 - f0);
+}
+
+function randomVibrationFrequencies(configInput, modesInput = null, refinement = 0) {
+  const config = normalizeSorbothaneConfig(configInput), points = validateIsolationPsd(config.environment.random.points);
+  const modes = modesInput ?? solveRigidBodyModes(config).modes;
+  const low = points[0][0], high = points.at(-1)[0], frequencies = points.map(point => point[0]);
+  const count = Math.ceil(Math.log2(high / low) * 80) * 2 ** refinement;
+  for (let i = 0; i <= count; i++) frequencies.push(low * (high / low) ** (i / Math.max(count, 1)));
+  // Resolve narrow resonances independently of the plotted response resolution.
+  for (const mode of modes) {
+    const width = mode.frequencyHz * Math.max(mode.lossFactor, 1e-8);
+    for (let i = -36 * 2 ** refinement; i <= 36 * 2 ** refinement; i++) {
+      const f = mode.frequencyHz + i * width / (12 * 2 ** refinement);
+      if (f >= low && f <= high) frequencies.push(f);
+    }
+  }
+  const result = [...new Set([low, high, ...frequencies.filter(f => f >= low && f <= high)])].sort((a, b) => a - b);
+  if (result.length > 16000) throw new Error('PSD integration exceeds 16,000 samples; reduce the bandwidth or review extremely low damping.');
+  return result;
+}
+
+function isolationClearanceLocations(configInput) {
+  const config = normalizeSorbothaneConfig(configInput), [length, width, height] = config.component.dimensionsM;
+  const points = [{ id: 'cg', label: 'CG', positionM: [...config.component.cgM], kind: 'box' }];
+  for (const z of [0, height]) for (const y of [-width / 2, width / 2]) for (const x of [-length / 2, length / 2]) points.push({
+    id: `corner-${points.length}`, label: `${z === 0 ? 'Bottom' : 'Top'} ${x > 0 ? '+X' : '−X'}/${y > 0 ? '+Y' : '−Y'}`, positionM: [x, y, z], kind: 'box'
+  });
+  return [...points, ...isolationMountCoordinates(config).map((point, index) => ({ id: `mount-${index + 1}`, label: `Leg ${index + 1}`, positionM: point, kind: 'mount', mountIndex: index }))];
+}
+
+function isolationRelativeDisplacement(configInput, frequencyHz, axis, locationsInput = null, responseInput = null) {
+  const config = normalizeSorbothaneConfig(configInput);
+  const response = responseInput ?? rigidBodyResponseAtFrequency(config, frequencyHz, axis);
+  const locations = locationsInput ?? isolationClearanceLocations(config);
+  // qr is relative to the translating base. Its rotational entries are rad/m.
+  // Multiply by g0/ω² to return metres per g of base acceleration; the common
+  // minus sign converts the unit-base-displacement phasor to acceleration phase.
+  const factor = -G0 / (TAU * frequencyHz) ** 2;
+  return locations.map(location => mountKinematics(location.positionM.map((value, i) => value - config.component.cgM[i])).map(row =>
+    row.reduce((sum, coefficient, i) => cAdd(sum, cMul(response.relativeComplex[i], complex(coefficient * factor))), complex())));
+}
+
+function randomVibrationClearance(configInput, modesInput = null) {
+  const config = normalizeSorbothaneConfig(configInput), settings = config.environment.random;
+  if (!settings.enabled) return null;
+  try {
+    validateIsolationPsd(settings.points);
+    if (!['x', 'y', 'z'].includes(settings.axis)) throw new Error('Select one PSD excitation axis: X, Y or Z.');
+    if (!(Number.isFinite(settings.peakFactor) && settings.peakFactor >= 1 && settings.peakFactor <= 10)) throw new Error('Peak factor must be finite, from 1 to 10.');
+    if (settings.gapsM.length !== 3 || settings.gapsM.some(gap => !Number.isFinite(gap) || gap < 0)) throw new Error('Clearance gaps must be finite and nonnegative.');
+    if (settings.checkClearance && !settings.gapsM.some(gap => gap > 0)) throw new Error('Enter at least one positive one-sided clearance gap before enabling the clearance requirement.');
+    const modes = modesInput ?? solveRigidBodyModes(config).modes, locations = isolationClearanceLocations(config);
+    const mass = rigidBodyMassMatrix(config).matrix, cache = new Map();
+    const evaluate = frequency => {
+      if (!cache.has(frequency)) {
+        const response = preparedRigidBodyResponse(config, frequency, settings.axis, mass, assembleRigidBodyStiffness(config, frequency));
+        const transfer = isolationRelativeDisplacement(config, frequency, settings.axis, locations, response);
+        const input = isolationPsdAt(settings.points, frequency);
+        cache.set(frequency, { input, transfer, psd: transfer.map(values => values.map(value => cAbs(value) ** 2 * input)) });
+      }
+      return cache.get(frequency);
+    };
+    let frequencies, spectra, variances, inputVariance, previous, converged = false, error = Infinity;
+    for (let refinement = 0; refinement <= 3; refinement++) {
+      frequencies = randomVibrationFrequencies(config, modes, refinement);
+      spectra = frequencies.map(evaluate);
+      variances = locations.map(() => [0, 0, 0]); inputVariance = 0;
+      for (let i = 1; i < frequencies.length; i++) {
+        const df = frequencies[i] - frequencies[i - 1], a = spectra[i - 1], b = spectra[i];
+        inputVariance += df * (a.input + b.input) / 2;
+        variances.forEach((row, p) => row.forEach((_, axis) => { row[axis] += df * (a.psd[p][axis] + b.psd[p][axis]) / 2; }));
+      }
+      if (!Number.isFinite(inputVariance) || variances.flat().some(value => !Number.isFinite(value))) throw new Error('Non-finite PSD response; review excitation levels, frequency range and damping.');
+      if (previous) {
+        const floor = Math.max(...variances.flat(), 1e-30) * 1e-10;
+        error = Math.max(...variances.flat().map((value, i) => Math.abs(Math.sqrt(value) - Math.sqrt(previous[i])) / Math.sqrt(Math.max(value, floor))));
+        if (error < .005) { converged = true; break; }
+      }
+      previous = variances.flat();
+    }
+    const preload = staticPreloadState(config);
+    const results = locations.map((location, index) => {
+      const rmsM = variances[index].map(Math.sqrt), peakM = rmsM.map(value => value * settings.peakFactor);
+      const gaps = location.kind === 'box' ? settings.gapsM : [0, 0, 0];
+      const marginM = gaps.map((gap, axis) => gap > 0 ? gap - peakM[axis] : null);
+      const spectralFloor = Math.max(...variances.flat(), 1e-30) * 1e-20;
+      const peakPsdHz = [0, 1, 2].map(axis => variances[index][axis] < spectralFloor ? null : frequencies[spectra.reduce((best, value, i) => value.psd[index][axis] > spectra[best].psd[index][axis] ? i : best, 0)]);
+      const result = { ...location, rmsM, peakM, marginM, peakPsdHz };
+      if (location.kind === 'mount' && !isParkerLordConfig(config)) {
+        const mount = preload.mounts[location.mountIndex];
+        result.sides = ['top', 'bottom'].map(side => {
+          const profile = mount.profile?.[side];
+          const count = profile?.count ?? config.mounts[side === 'top' ? 'stackTop' : 'stackBottom'];
+          const thickness = profile?.thicknessM ?? config.isolator.thicknessM;
+          const staticPct = profile ? mount[side === 'top' ? 'topCompressionPct' : 'bottomCompressionPct']
+            : compressionForPreload(config, mount[side === 'top' ? 'upperLoadN' : 'lowerLoadN']);
+          const deltaPct = 100 * peakM[2] / (thickness * count);
+          return { side, count, staticPct, minimumPct: staticPct - deltaPct, maximumPct: staticPct + deltaPct,
+            stackPeakM: [...peakM], perElementPeakM: peakM.map(value => value / count), review: staticPct - deltaPct <= 0 || staticPct + deltaPct > 20
+              || !profile && (config.mounts.stackTop !== config.mounts.stackBottom || mount[side === 'top' ? 'upperLoadN' : 'lowerLoadN'] > stressAtCompression(config, 20) * PSI * isolatorGeometry(config).loadedAreaM2 * isolatorGeometry(config).shapeCorrection) };
+        });
+      }
+      return result;
+    });
+    const pass = converged && results.every(result => result.marginM.every(margin => margin == null || margin >= 0) && (result.sides ?? []).every(side => !side.review));
+    return { valid: true, pass, converged, integrationError: error, inputGrms: Math.sqrt(inputVariance), axis: settings.axis, peakFactor: settings.peakFactor,
+      frequencies, inputPsd: spectra.map(value => value.input), locations: results,
+      displacementPsdM2PerHz: results.map((_, index) => [0, 1, 2].map(axis => spectra.map(value => value.psd[index][axis]))),
+      modes: modes.map(mode => ({ number: mode.number, frequencyHz: mode.frequencyHz, inBand: mode.frequencyHz >= frequencies[0] && mode.frequencyHz <= frequencies.at(-1),
+        maxPsdM2PerHz: Math.max(...evaluate(mode.frequencyHz).psd.flat()) })),
+      warnings: ['Nominal linear stationary response; not a Monte Carlo bound. Peak factor is an assumption, not a guaranteed test maximum.',
+        'All three response directions include rocking/cross-axis coupling. No simultaneous-axis correlation is assumed.',
+        'Side travel is the full opposed-stack motion, not stiffness-proportioned; identical elements within each stack share travel equally. Upper/lower axial compression changes have opposite signs.',
+        'Gaps are measured from installed loaded equilibrium to base-fixed surfaces. Tolerances, cables, bolt/sleeve radial contact and nonlinear contact need separate review.',
+        ...(isParkerLordConfig(config) ? ['Bonded LORD mount compression/contact limits are not available; travel only is reported.'] : []),
+        ...(!isParkerLordConfig(config) && !isSorbothaneAssemblyConfig(config) ? ['Uniform-pad side compression uses the existing equal payload-split static estimate and inverse curves limited to 20%. Loads beyond those curves or unequal upper/lower stack counts force REVIEW. Use mixed assemblies for per-side nonlinear static load sharing.'] : []),
+        ...(!isParkerLordConfig(config) && settings.points.at(-1)[0] > sorbothaneMaterial(config.isolator.formulation).digitizedCurveMaxHz
+          ? [`PSD extends to ${settings.points.at(-1)[0]} Hz, beyond the ${sorbothaneMaterial(config.isolator.formulation).digitizedCurveMaxHz} Hz material curve. The selected ${config.isolator.extrapolation} assumption is used.`] : []),
+        ...(!converged ? ['Integration did not converge within 0.5% RMS; refine/review before accepting clearance.'] : [])] };
+  } catch (error) { return { valid: false, pass: false, error: error.message, locations: [] }; }
+}
+
+// Compact comparison only: reuse the selected solve and discard the other
+// spectra after extracting each pad's extrema. This does not change which
+// single-axis environment the catalog/shared requirement evaluates.
+function randomVibrationDirectionalSummary(configInput, selectedInput = null, modesInput = null) {
+  const config = normalizeSorbothaneConfig(configInput);
+  if (!config.environment.random.enabled) return null;
+  const modes = modesInput ?? solveRigidBodyModes(config).modes;
+  const selected = selectedInput ?? randomVibrationClearance(config, modes);
+  const cases = ['x', 'y', 'z'].map(axis => {
+    const candidate = { ...config, environment: { ...config.environment, random: { ...config.environment.random, axis } } };
+    const result = !selected?.valid || selected.axis === axis ? selected : randomVibrationClearance(candidate, modes);
+    if (!result?.valid) return { axis, valid: false, error: result?.error ?? 'PSD result unavailable.', pads: [] };
+    const pads = result.locations.flatMap(location => (location.sides ?? []).map(side => ({
+      leg: location.mountIndex + 1, side: side.side, count: side.count, staticPct: side.staticPct,
+      minimumPct: side.minimumPct, maximumPct: side.maximumPct, review: side.review,
+      axialPeakM: side.stackPeakM[2], perElementAxialPeakM: side.perElementPeakM[2]
+    })));
+    const envelope = side => {
+      const values = pads.filter(pad => pad.side === side);
+      return values.length ? { minimumPct: Math.min(...values.map(pad => pad.minimumPct)), maximumPct: Math.max(...values.map(pad => pad.maximumPct)) } : null;
+    };
+    const criticalPad = pads.length ? pads.reduce((worst, pad) => pad.maximumPct > worst.maximumPct ? pad : worst) : null;
+    const box = result.locations.filter(location => location.kind === 'box');
+    return { axis, valid: true, converged: result.converged, integrationError: result.integrationError,
+      inputGrms: result.inputGrms, peakFactor: result.peakFactor, pads, upper: envelope('top'), lower: envelope('bottom'), criticalPad,
+      minimumPct: pads.length ? Math.min(...pads.map(pad => pad.minimumPct)) : null,
+      maximumPct: criticalPad?.maximumPct ?? null,
+      compressionPass: pads.length ? result.converged && pads.every(pad => !pad.review) : null,
+      boxClearancePass: config.environment.random.gapsM.some(gap => gap > 0)
+        ? result.converged && box.every(location => location.marginM.every(margin => margin == null || margin >= 0)) : null,
+      maxBoxTravelM: [0, 1, 2].map(dof => Math.max(...box.map(location => location.peakM[dof]))),
+      unloading: pads.some(pad => pad.minimumPct <= 0),
+      staticModelReview: pads.some(pad => pad.review && pad.minimumPct > 0 && pad.maximumPct <= 20)
+    };
+  });
+  return { selectedAxis: config.environment.random.axis, cases,
+    allCompressionPass: cases.every(result => result.valid && result.compressionPass === true),
+    allBoxClearancePass: cases.every(result => result.valid && result.boxClearancePass === true) };
 }
 
 function logspace(minimum, maximum, count) {
@@ -17587,6 +17805,8 @@ function analyzeSorbothaneIsolation(configInput, options = {}) {
   const verticalModeResult = verticalTranslationModeResult(modes.modes, config);
   const preload = staticPreloadState(config);
   const responseAt = analysisResponseEvaluator(config);
+  const clearance = !options.skipResponse || config.environment.random.checkClearance ? randomVibrationClearance(config, modes.modes) : null;
+  const directionalClearance = !options.skipResponse ? randomVibrationDirectionalSummary(config, clearance, modes.modes) : null;
   const directionalResponses = options.skipResponse ? null : Object.fromEntries(['x', 'y', 'z'].map(axis => [axis, frequencyResponse(config, axis)]));
   const response = directionalResponses?.[config.analysis.excitationAxis] ?? null;
   const toneResults = config.analysis.tones.map(tone => {
@@ -17647,9 +17867,12 @@ function analyzeSorbothaneIsolation(configInput, options = {}) {
     toneResults,
     peak,
     peakResults,
+    clearance,
+    directionalClearance,
     uncertainty,
     warnings,
     passes: lateralModeResults.every(result => result.pass) && verticalModeResult.pass && toneResults.every(result => result.pass) && peak.pass && preload.allEngaged && preload.catalogCompliant && preload.compressionCompliant && (preload.assemblyChecks?.every(check => check.pass) ?? true)
+      && (!config.environment.random.checkClearance || config.environment.random.enabled && clearance?.pass === true)
   };
 }
 
@@ -17721,6 +17944,8 @@ function designGridChecks(analysis, catalogItem) {
     id: `${result.axis.toLowerCase()}-mode`, code: result.axis, label: `${result.axis} translation`, pass: result.pass,
     detail: `${number(result.frequencyHz)} Hz; minimum ${number(result.minimumHz)} Hz (M${result.modeNumber}).`
   }));
+  if (config.environment.random.checkClearance) checks.push({ id: 'random-clearance', code: 'TRAVEL', label: 'PSD displacement / clearance', pass: analysis.clearance?.pass === true,
+    detail: analysis.clearance?.valid ? `${config.environment.random.peakFactor} × RMS; ${String(config.environment.random.axis).toUpperCase()} input; gap, engagement, compression and integration checks.` : analysis.clearance?.error ?? 'Enable and define a valid PSD environment.' });
   const vertical = analysis.verticalModeResult;
   checks.push({ id: 'z-mode', code: 'Z', label: 'Z translation', pass: vertical.pass,
     detail: `${number(vertical.frequencyHz)} Hz; required ${vertical.rangeHz.map(number).join('–')} Hz (M${vertical.modeNumber}).` });
@@ -18044,7 +18269,8 @@ function createAssemblyPairSearch(configInput, settings) {
       if (failed.some(check => hard.some(([code]) => code === check.code))) return;
       const analysis = analyzeSorbothaneIsolation(candidateConfig, { skipResponse: true, skipUncertainty: true });
       dynamicallyEvaluatedCount += 1;
-      const dynamicFailures = [...analysis.lateralModeResults, analysis.verticalModeResult, ...analysis.toneResults, ...analysis.peakResults].filter(result => !result.pass).length;
+      const dynamicFailures = [...analysis.lateralModeResults, analysis.verticalModeResult, ...analysis.toneResults, ...analysis.peakResults].filter(result => !result.pass).length
+        + Number(candidateConfig.environment.random.checkClearance && !analysis.clearance?.pass);
       const summary = { index, pass: analysis.passes, dynamicFailures, modelReviews: failed.length,
         score: catalogPerformanceScore(analysis), elementCount: pair.top.stackCount + pair.bottom.stackCount };
       const key = `${pair.top.item.productNumber}|${pair.bottom.item.productNumber}`;
@@ -18324,7 +18550,7 @@ async function screenParkerLordCatalogAsync(configInput, settings = {}, options 
 const SORBOTHANE_UNITS = { INCH, LB, LBF, PSI, G0 };
 { PARKER_LORD_AM_CATALOG, SORBOTHANE_CATALOG };
 
-return {DEFAULT_SORBOTHANE_CONFIG,NASTRAN_PLATE_MATERIALS,normalizeSorbothaneConfig,isParkerLordConfig,sorbothaneDynamicProperties,isolatorDynamicProperties,isolationMountCoordinates,isolationMountStiffnesses,isolatorGeometry,staticPreloadState,rigidBodyMassMatrix,mountDynamicStiffness,assembleRigidBodyStiffness,solveRigidBodyModes,rigidBodyResponseAtFrequency,frequencyResponse,uncertaintyEnvelope,uncertaintyEnvelopeAsync,analyzeSorbothaneIsolation,runDesignGrid,screenSorbothaneCatalog,screenSorbothaneCatalogAsync,screenParkerLordCatalog,screenParkerLordCatalogAsync,SORBOTHANE_UNITS,SORBOTHANE_CATALOG};
+return {DEFAULT_SORBOTHANE_CONFIG,NASTRAN_PLATE_MATERIALS,normalizeSorbothaneConfig,isParkerLordConfig,sorbothaneDynamicProperties,isolatorDynamicProperties,isolationMountCoordinates,isolationMountStiffnesses,isolatorGeometry,staticPreloadState,rigidBodyMassMatrix,mountDynamicStiffness,assembleRigidBodyStiffness,solveRigidBodyModes,rigidBodyResponseAtFrequency,parseIsolationPsd,validateIsolationPsd,isolationPsdAt,randomVibrationFrequencies,isolationClearanceLocations,isolationRelativeDisplacement,randomVibrationClearance,randomVibrationDirectionalSummary,frequencyResponse,uncertaintyEnvelope,uncertaintyEnvelopeAsync,analyzeSorbothaneIsolation,runDesignGrid,screenSorbothaneCatalog,screenSorbothaneCatalogAsync,screenParkerLordCatalog,screenParkerLordCatalogAsync,SORBOTHANE_UNITS,SORBOTHANE_CATALOG};
 })();
 
 const __sorbothaneConfigurations=(()=>{
@@ -18401,7 +18627,7 @@ return {SORBOTHANE_SAVED_CONFIGURATIONS,loadSorbothaneConfiguration,matchingSorb
 })();
 
 const __nastranIsolationExport=(()=>{
-const {isolationMountCoordinates,isolationMountStiffnesses,isParkerLordConfig,mountDynamicStiffness,normalizeSorbothaneConfig,rigidBodyMassMatrix,rigidBodyResponseAtFrequency,solveRigidBodyModes}=__sorbothaneAnalysis;
+const {isolationMountCoordinates,isolationMountStiffnesses,isParkerLordConfig,mountDynamicStiffness,normalizeSorbothaneConfig,rigidBodyMassMatrix,rigidBodyResponseAtFrequency,solveRigidBodyModes,randomVibrationClearance,isolationClearanceLocations,isolationRelativeDisplacement}=__sorbothaneAnalysis;
 const {isSorbothaneAssemblyConfig}=__sorbothaneAssemblies;
 const NASTRAN_IPS_UNITS = Object.freeze({
   length: 'in',
@@ -18483,7 +18709,11 @@ function responseFrequencies(config, modes) {
   // not hidden between logarithmically spaced excitation frequencies.
   const extra = modes.flatMap(mode => [.98, 1, 1.02].map(scale => scale * mode.frequencyHz));
   extra.push(...config.analysis.tones.map(tone => tone.frequencyHz));
-  return [...new Set([...base, ...extra].filter(frequency => frequency >= minimum && frequency <= maximum).map(frequency => Number(frequency.toPrecision(12))))].sort((a, b) => a - b);
+  const random = config.environment.random;
+  const clearance = random.enabled ? randomVibrationClearance(config, modes) : null;
+  if (clearance && (!clearance.valid || !clearance.converged)) throw new Error(clearance.error ?? 'PSD integration has not converged; review before exporting a solver comparison.');
+  const psdFrequencies = clearance?.frequencies ?? [];
+  return [...new Set([...base, ...extra.filter(frequency => frequency >= minimum && frequency <= maximum), ...psdFrequencies].map(frequency => Number(frequency.toPrecision(12))))].sort((a, b) => a - b);
 }
 
 function generateNastranIsolationSol111Bdf(configInput, analysisInput = null) {
@@ -18496,12 +18726,15 @@ function nastranBrowserComparisonCsv(configInput, modelInput = null) {
   const metadata = { source: 'browser rigid-body prediction, not NASTRAN results', responseGrid: model.response.responseGridId,
     baseGrid: model.response.baseGridId, responsePoint: config.analysis.responsePoint, damping: config.damping,
     massAccounting: model.settings.massAccounting, coupling: model.settings.coupling, nominalOnly: true };
+  if (config.environment.random.enabled) metadata.clearance = { environment: config.environment.random, locations: model.response.clearanceLocations, units: 'in/g', frequencyGrid: 'converged browser PSD grid plus displayed response band; verify solver grid convergence separately' };
   const axes = ['x', 'y', 'z'];
   const header = ['frequency_hz', ...axes.flatMap(axis => [`T${axis}${axis}_real`, `T${axis}${axis}_imag`, `T${axis}${axis}_magnitude`, `T${axis}${axis}_db`, `T${axis}${axis}_phase_deg`])];
+  const locations = metadata.clearance?.locations ?? [];
+  header.push(...locations.flatMap(location => axes.flatMap(axis => [`${location.id}_${axis}_relative_in_per_g_real`, `${location.id}_${axis}_relative_in_per_g_imag`])));
   const rows = model.response.frequencies.map(frequency => [frequency, ...axes.flatMap((axis, index) => {
     const response = rigidBodyResponseAtFrequency(config, frequency, axis);
     return [response.complex[index].re, response.complex[index].im, response.magnitude[index], response.db[index], response.phaseDeg[index]];
-  })].join(','));
+  }), ...(locations.length ? isolationRelativeDisplacement(config, frequency, config.environment.random.axis, locations).flatMap(motion => motion.flatMap(value => [value.re * inchPerM, value.im * inchPerM])) : [])].join(','));
   return `# ${JSON.stringify(metadata)}\n${header.join(',')}\n${rows.join('\n')}\n`;
 }
 
@@ -18575,6 +18808,10 @@ function generateNastranIsolationBdf(configInput, analysisInput = null, options 
   const groundGrids = mountCoordinates.map(([x, y], index) => ({ id: 8001 + index, x, y, z: plateZIn }));
   const cgGridId = 9001;
   const responseGridId = frequencyResponse && config.analysis.responsePoint !== 'cg' ? 9002 : cgGridId;
+  const clearanceLocations = frequencyResponse && config.environment.random.enabled ? isolationClearanceLocations(config).map((location, index) => ({ ...location,
+    gridId: location.id === 'cg' ? cgGridId : location.kind === 'mount' ? mountGridIds[location.mountIndex] : 9002 + index,
+    baseGridId: location.kind === 'mount' ? groundGrids[location.mountIndex].id : groundGrids[0].id })) : [];
+  const cornerGrids = clearanceLocations.filter(location => location.kind === 'box' && location.id !== 'cg');
   const matId = 10;
   const pshellId = 20;
   const pbushId = 40;
@@ -18609,7 +18846,7 @@ function generateNastranIsolationBdf(configInput, analysisInput = null, options 
     warnings.push('The flexible CQUAD4 plate and selected plate mass/coupling can differ from the browser rigid-component model. No uncertainty envelope or design criteria are solved by this nominal deck.');
     warnings.push('Coherent 1 g enforced base acceleration is applied to all ground grids, one axis per subcase. Transmissibility is the complex response acceleration divided by the same-axis base acceleration, not raw acceleration in g.');
   }
-  const outputGrids = [...new Set([cgGridId, responseGridId, ...groundGrids.map(grid => grid.id)])];
+  const outputGrids = [...new Set([cgGridId, responseGridId, ...groundGrids.map(grid => grid.id), ...clearanceLocations.map(location => location.gridId)])];
   const lines = [
     `SOL ${solution}`,
     'CEND',
@@ -18617,11 +18854,11 @@ function generateNastranIsolationBdf(configInput, analysisInput = null, options 
     'ECHO = NONE',
     ...(frequencyResponse ? [
       'RESVEC = YES',
-      `SET 99 = ${outputGrids.join(',')}`,
+      ...outputGrids.reduce((rows, grid, index) => { if (index % 8 === 0) rows.push(`${index ? '  ' : 'SET 99 = '}${outputGrids.slice(index, index + 8).join(',')}${index + 8 < outputGrids.length ? ',' : ''}`); return rows; }, []),
       ...['X', 'Y', 'Z'].flatMap((axis, index) => [
         `SUBCASE ${index + 1}`, `  LABEL = ${axis} BASE TO ${axis} RESPONSE`,
         '  METHOD = 42', '  SPC = 1', '  FREQUENCY = 50', `  DLOAD = ${201 + index}`,
-        '  ACCELERATION(SORT1,REAL,PRINT,PLOT,PUNCH) = 99', '  DISPLACEMENT(PLOT) = 99'
+        '  ACCELERATION(SORT1,REAL,PRINT,PLOT,PUNCH) = 99', '  DISPLACEMENT(SORT1,REAL,PLOT) = 99'
       ])
     ] : ['SUBCASE 1',
     '  LABEL = ISOLATED ASSEMBLY NORMAL MODES',
@@ -18676,6 +18913,10 @@ function generateNastranIsolationBdf(configInput, analysisInput = null, options 
     lines.push(card('RBE2', 6002, cgGridId, 123456, responseGridId));
   }
   groundGrids.forEach(grid => lines.push(card('GRID', grid.id, '', ...[grid.x, grid.y, grid.z].map(real))));
+  cornerGrids.forEach((location, index) => {
+    lines.push(card('GRID', location.gridId, '', ...location.positionM.map(value => real(value * inchPerM))));
+    lines.push(card('RBE2', 6100 + index, cgGridId, 123456, location.gridId));
+  });
   const firstBushId = Math.max(4001, nextQuadId);
   mountGridIds.forEach((topGridId, index) => lines.push(card('CBUSH', firstBushId + index, supportProperties[index].id, topGridId, groundGrids[index].id, '', '', '', 0)));
   const groundGridIds = groundGrids.map(grid => grid.id);
@@ -18713,18 +18954,18 @@ function generateNastranIsolationBdf(configInput, analysisInput = null, options 
   const filename = `${cleanFilename(`isolation-${mixed ? 'mixed-assemblies' : config.isolator.productNumber}-sol${solution}`)}.bdf`;
   return {
     solution,
-    response: frequencyResponse ? { frequencies, responseGridId, baseGridId: groundGridIds[0], responsePoint: config.analysis.responsePoint, baseAccelerationInPerSec2: gravityInPerSec2, modalCutoffHz, subcases: { x: 1, y: 2, z: 3 } } : null,
+    response: frequencyResponse ? { frequencies, responseGridId, baseGridId: groundGridIds[0], responsePoint: config.analysis.responsePoint, baseAccelerationInPerSec2: gravityInPerSec2, modalCutoffHz, clearanceLocations, subcases: { x: 1, y: 2, z: 3 } } : null,
     deck,
     filename,
     settings: { ...settings, attachmentSpacingIn },
     units: NASTRAN_IPS_UNITS,
     counts: {
-      grids: grids.length + groundGrids.length + 1 + Number(responseGridId !== cgGridId),
+      grids: grids.length + groundGrids.length + 1 + Number(responseGridId !== cgGridId) + cornerGrids.length,
       cquad4: quads.length,
       cbush: mountGridIds.length,
       pbush: mixed ? mountGridIds.length : 1,
       conm2: 1,
-      rbe2: (settings.coupling === 'rbe2' ? 1 : 0) + Number(responseGridId !== cgGridId),
+      rbe2: (settings.coupling === 'rbe2' ? 1 : 0) + Number(responseGridId !== cgGridId) + cornerGrids.length,
       rbe3: settings.coupling === 'rbe3' ? 1 : 0
     },
     plate: {
@@ -18757,7 +18998,7 @@ const {isSorbothaneAssemblyConfig,sorbothaneAssemblyBillOfMaterials,SORBOTHANE_A
 const {renderSorbothaneAssemblyPanel}=__sorbothaneAssemblyUi;
 const {SORBOTHANE_SAVED_CONFIGURATIONS,loadSorbothaneConfiguration,matchingSorbothaneConfiguration}=__sorbothaneConfigurations;
 const {PARKER_LORD_AM_CATALOG,PARKER_LORD_AM_FAMILIES,PARKER_LORD_SOURCE,parkerLordCatalogItem}=__parkerLordIsolators;
-const {DEFAULT_SORBOTHANE_CONFIG,NASTRAN_PLATE_MATERIALS,normalizeSorbothaneConfig,isParkerLordConfig,sorbothaneDynamicProperties,isolatorDynamicProperties,isolationMountCoordinates,isolationMountStiffnesses,isolatorGeometry,staticPreloadState,rigidBodyMassMatrix,mountDynamicStiffness,assembleRigidBodyStiffness,solveRigidBodyModes,rigidBodyResponseAtFrequency,frequencyResponse,uncertaintyEnvelope,uncertaintyEnvelopeAsync,analyzeSorbothaneIsolation,runDesignGrid,screenSorbothaneCatalog,screenSorbothaneCatalogAsync,screenParkerLordCatalog,screenParkerLordCatalogAsync,SORBOTHANE_UNITS}=__sorbothaneAnalysis;
+const {DEFAULT_SORBOTHANE_CONFIG,NASTRAN_PLATE_MATERIALS,normalizeSorbothaneConfig,isParkerLordConfig,sorbothaneDynamicProperties,isolatorDynamicProperties,isolationMountCoordinates,isolationMountStiffnesses,isolatorGeometry,staticPreloadState,rigidBodyMassMatrix,mountDynamicStiffness,assembleRigidBodyStiffness,solveRigidBodyModes,rigidBodyResponseAtFrequency,parseIsolationPsd,validateIsolationPsd,isolationPsdAt,randomVibrationFrequencies,isolationClearanceLocations,isolationRelativeDisplacement,randomVibrationClearance,randomVibrationDirectionalSummary,frequencyResponse,uncertaintyEnvelope,uncertaintyEnvelopeAsync,analyzeSorbothaneIsolation,runDesignGrid,screenSorbothaneCatalog,screenSorbothaneCatalogAsync,screenParkerLordCatalog,screenParkerLordCatalogAsync,SORBOTHANE_UNITS}=__sorbothaneAnalysis;
 const {generateNastranIsolationBdf,generateNastranIsolationSol111Bdf,nastranBrowserComparisonCsv}=__nastranIsolationExport;
 const { INCH, LB, LBF, PSI } = SORBOTHANE_UNITS;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
@@ -19063,7 +19304,8 @@ function requirementTable(analysis) {
   const verticalRow = `<tr><td>Z translation-dominated mode</td><td>Mode ${vertical.modeNumber} · ${fmt(vertical.frequencyHz, 2)} Hz</td><td>${fmt(vertical.rangeHz[0], 1)}–${fmt(vertical.rangeHz[1], 1)} Hz</td><td><span class="sorbo-status ${vertical.pass ? 'pass' : 'fail'}">${vertical.pass ? 'PASS' : 'FAIL'}</span></td><td>${fmt(vertical.participationPct, 1)}% Z participation</td></tr>`;
   const toneRows = analysis.toneResults.flatMap(result => result.axisResults.map(axisResult => `<tr><td>${fmt(result.frequencyHz, 0)} Hz · T${axisResult.axis.toLowerCase()}${axisResult.axis.toLowerCase()}</td><td>${fmtSignedDb(axisResult.db)}</td><td>≤ ${fmtSignedDb(result.maximumDb)}</td><td><span class="sorbo-status ${axisResult.pass ? 'pass' : 'fail'}">${axisResult.pass ? 'PASS' : 'FAIL'}</span></td><td>${axisResult.axis} base → ${axisResult.axis} response · ${esc(axisResult.provenance.replaceAll('-', ' '))}</td></tr>`)).join('');
   const peakRows = analysis.peakResults.map(result => `<tr><td>${fmt(analysis.config.analysis.resonanceBandHz[0], 0)}-${fmt(analysis.config.analysis.resonanceBandHz[1], 0)} Hz · T${result.axis.toLowerCase()}${result.axis.toLowerCase()} peak</td><td>${fmtSignedDb(result.db)} @ ${fmt(result.frequencyHz, 1)} Hz</td><td>≤ ${fmtSignedDb(analysis.config.analysis.resonanceLimitDb)}</td><td><span class="sorbo-status ${result.pass ? 'pass' : 'fail'}">${result.pass ? 'PASS' : 'FAIL'}</span></td><td>Mode ${result.modeNumber} · ${esc(result.modeLabel)}</td></tr>`).join('');
-  return `<div class="table-wrap"><table class="sorbo-requirements"><thead><tr><th>Target</th><th>Calculated response</th><th>Requirement</th><th>Status</th><th>Basis</th></tr></thead><tbody>${lateralRows}${verticalRow}${toneRows}${peakRows}</tbody></table></div>`;
+  const travelRow = analysis.config.environment.random.checkClearance ? `<tr><td>PSD displacement / clearance</td><td>${esc(analysis.clearance?.error ?? `${analysis.config.environment.random.peakFactor} × RMS, ${String(analysis.config.environment.random.axis).toUpperCase()} input`)}</td><td>Gaps, engagement & compression</td><td>${analysis.clearance?.pass ? 'PASS' : 'REVIEW'}</td><td>See Displacement & clearance; shared with matrix / catalog</td></tr>` : '';
+  return `<div class="table-wrap"><table class="sorbo-requirements"><thead><tr><th>Target</th><th>Calculated response</th><th>Requirement</th><th>Status</th><th>Basis</th></tr></thead><tbody>${lateralRows}${verticalRow}${toneRows}${peakRows}${travelRow}</tbody></table></div>`;
 }
 
 function commentary(analysis) {
@@ -19217,6 +19459,120 @@ function responsePointControl(config) {
 function transmissibilityPanel(analysis) {
   const selected = RESPONSE_POINT_CHOICES.find(choice => choice.value === analysis.config.analysis.responsePoint) ?? RESPONSE_POINT_CHOICES[0];
   return `<section class="sorbo-tab-panel" data-sorbo-panel="transmissibility"><section class="sorbo-card"><header><div><p class="eyebrow">All translational directions</p><h2>Direct-axis transmissibility · Txx, Tyy, Tzz</h2></div><span>Response at ${esc(selected.label)}</span></header>${responsePointControl(analysis.config)}<p class="sorbo-caption">Each curve uses a separate unit base excitation in the named direction and reports acceleration at the selected measurement location in that same direction. Off-CG locations include the rigid-body rocking contribution, u<sub>point</sub> = u<sub>CG</sub> + θ × r. This location also governs the tone and resonance checks below. The three colored envelopes are independent Monte Carlo uncertainty bands.</p><div data-sorbo-response-chart>${transmissibilitySvg(analysis)}</div><p class="sorbo-caption" data-sorbo-band-status>${analysis.config.uncertainty.enabled && !analysis.uncertainty ? 'Calculating uncertainty bands… nominal curves shown.' : ''}</p><div class="sorbo-plot-notes"><span><b>Txx</b> X response from X base input</span><span><b>Tyy</b> Y response from Y base input</span><span><b>Tzz</b> Z response from Z base input</span><span><b>Mode dots</b> Exact response at M1–M6</span><span><b>M5 / M6</b> Roll/pitch-dominated modes may be shoulders rather than peaks when translational participation is weak</span></div></section>${requirementTable(analysis)}</section>`;
+}
+
+const travelText = value => Math.abs(value) < 1e-12 ? '≈0 in / ≈0 mil' : `${(value / INCH).toPrecision(3)} in / ${(value / INCH * 1000).toPrecision(3)} mil`;
+
+function clearancePsdSvg(result, index = 0) {
+  const curves = result.displacementPsdM2PerHz[index], frequencies = result.frequencies;
+  const positive = curves.flat().filter(value => value > 0), max = Math.max(...positive, 1e-30), min = Math.max(Math.min(...positive, max / 1000), max * 1e-8);
+  const logRange = Math.log10(max / min) || 1;
+  const lo = Math.log10(frequencies[0]), span = Math.log10(frequencies.at(-1)) - lo;
+  const x = f => 75 + 670 * (Math.log10(f) - lo) / span;
+  const y = value => 270 - 230 * (Math.log10(Math.max(value, min)) - Math.log10(min)) / logRange;
+  const path = curve => {
+    let drawing = false;
+    return curve.map((value, i) => {
+      if (value < min) { drawing = false; return ''; }
+      const command = `${drawing ? 'L' : 'M'}${x(frequencies[i]).toFixed(2)},${y(value).toFixed(2)}`;
+      drawing = true;
+      return command;
+    }).join(' ');
+  };
+  return `<svg class="sorbo-chart" viewBox="0 0 800 330" role="img" aria-label="Relative displacement PSD, X Y Z response from ${result.axis.toUpperCase()} base excitation">
+    ${[0, .25, .5, .75, 1].map(t => `<line class="sorbo-grid-line" x1="75" x2="745" y1="${40 + 230 * t}" y2="${40 + 230 * t}"/><text class="sorbo-axis-label" x="68" y="${44 + 230 * t}" text-anchor="end">${(10 ** (Math.log10(max) - t * logRange) / INCH ** 2).toExponential(1)}</text><text class="sorbo-axis-label" x="${75 + 670 * t}" y="291" text-anchor="middle">${(10 ** (lo + span * t)).toFixed(0)}</text>`).join('')}
+    ${result.modes.filter(mode => mode.inBand).map(mode => `<line class="sorbo-grid-line" stroke-dasharray="3 4" x1="${x(mode.frequencyHz)}" x2="${x(mode.frequencyHz)}" y1="40" y2="270"/><text class="sorbo-axis-label" x="${x(mode.frequencyHz)}" y="${mode.number % 2 ? 20 : 34}" text-anchor="middle">M${mode.number}</text>`).join('')}
+    ${curves.map((curve, axis) => `<path fill="none" stroke="${['var(--sorbo-x)', 'var(--sorbo-y)', 'var(--sorbo-z)'][axis]}" stroke-width="2" d="${path(curve)}"/>`).join('')}
+    <text class="sorbo-axis-label" x="400" y="320" text-anchor="middle">Frequency (Hz) · relative displacement PSD (in²/Hz) · logarithmic axes</text></svg>`;
+}
+
+function clearanceCsv(analysis) {
+  const result = analysis.clearance;
+  if (!result?.valid) throw new Error('Apply a valid PSD environment before exporting displacement results.');
+  const metadata = { source: 'nominal browser linear prediction, not test data', environment: analysis.config.environment.random,
+    inputGrms: result.inputGrms, integrationConverged: result.converged, peakInterpretation: 'factor × RMS; not a guaranteed maximum', warnings: result.warnings };
+  const rows = ['frequency_hz,input_g2_per_hz,location,response_axis,displacement_psd_in2_per_hz,rms_in,factored_peak_in,remaining_gap_in'];
+  result.locations.forEach((location, p) => ['x', 'y', 'z'].forEach((axis, d) => result.frequencies.forEach((frequency, i) => rows.push([
+    frequency, result.inputPsd[i], location.id, axis, result.displacementPsdM2PerHz[p][d][i] / INCH ** 2, location.rmsM[d] / INCH,
+    location.peakM[d] / INCH, location.marginM[d] == null ? '' : location.marginM[d] / INCH
+  ].join(',')))));
+  return `# ${JSON.stringify(metadata)}\n${rows.join('\n')}\n`;
+}
+
+function padCompressionCsv(analysis) {
+  const summary = analysis.directionalClearance;
+  if (!summary?.cases.some(result => result.valid && result.pads.length)) throw new Error('No pad compression data available. Apply a valid Sorbothane PSD environment first.');
+  const metadata = { source: 'nominal browser linear prediction, not test data', environment: analysis.config.environment.random,
+    damping: analysis.config.damping, interpretation: 'Same PSD, three separate single-axis tests; factor × RMS is not a guaranteed peak. Compression is percent of element free thickness including static compression.',
+    reviewBoundaryPct: 20, unloadingBoundaryPct: 0, selectedAxis: summary.selectedAxis,
+    cases: summary.cases.map(result => ({ axis: result.axis, valid: result.valid, converged: result.converged, error: result.error })) };
+  const rows = ['input_axis,leg,side,element_count,static_compression_pct,minimum_compression_pct,maximum_compression_pct,stack_axial_peak_in,per_element_axial_peak_in,compression_check,integration_converged'];
+  summary.cases.forEach(result => result.pads.forEach(pad => rows.push([result.axis.toUpperCase(), pad.leg, pad.side === 'top' ? 'upper' : 'lower', pad.count,
+    pad.staticPct, pad.minimumPct, pad.maximumPct, pad.axialPeakM / INCH, pad.perElementAxialPeakM / INCH,
+    pad.review || !result.converged ? 'REVIEW' : 'PASS', result.converged].join(','))));
+  return `# ${JSON.stringify(metadata)}\n${rows.join('\n')}\n`;
+}
+
+function directionalPadCompressionPanel(analysis) {
+  const summary = analysis.directionalClearance;
+  if (!summary) return '';
+  const hasPads = summary.cases.some(result => result.valid && result.pads.length);
+  const rangeText = range => range ? `${fmt(range.minimumPct, 2)}–${fmt(range.maximumPct, 2)}%` : 'Not available';
+  const status = (pass, unknown = 'NOT AVAILABLE') => `<span class="sorbo-status${pass == null ? '' : pass ? ' pass' : ' fail'}">${pass == null ? unknown : pass ? 'PASS' : 'REVIEW'}</span>`;
+  const pads = summary.cases.find(result => result.pads.length)?.pads ?? [];
+  const badge = !hasPads ? 'COMPRESSION NOT AVAILABLE' : summary.allCompressionPass ? 'ALL COMPRESSION CHECKS PASS' : 'PAD COMPRESSION REVIEW';
+  const rows = summary.cases.map(result => `<tr data-sorbo-compression-case="${result.axis}"${result.axis === summary.selectedAxis ? ' class="is-selected-input"' : ''}>
+    <th scope="row">${result.axis.toUpperCase()} input${result.axis === summary.selectedAxis ? '<small>Selected plot</small>' : ''}${result.criticalPad ? `<small>Max: leg ${result.criticalPad.leg} ${result.criticalPad.side === 'top' ? 'upper' : 'lower'}</small>` : ''}</th>
+    <td>${result.valid ? rangeText(result.upper) : esc(result.error)}</td><td>${result.valid ? rangeText(result.lower) : '—'}</td>
+    <td>${status(result.valid ? result.compressionPass : false)}${result.unloading ? '<small>Unloading predicted</small>' : ''}${result.staticModelReview ? '<small>Static model review</small>' : ''}${result.valid && !result.converged ? '<small>Integration not converged</small>' : ''}</td>
+    <td>${status(result.valid ? result.boxClearancePass : false, 'GAPS NOT SET')}</td></tr>`).join('');
+  const detail = pads.map(pad => `<tr><th scope="row">Leg ${pad.leg} · ${pad.side === 'top' ? 'upper' : 'lower'}</th><td>${pad.count}</td><td>${fmt(pad.staticPct, 2)}%</td>${summary.cases.map(result => {
+    const value = result.pads.find(item => item.leg === pad.leg && item.side === pad.side);
+    return `<td${value && (value.review || !result.converged) ? ' class="fail-text"' : ''}>${value ? rangeText(value) : 'Not available'}${value && (value.review || !result.converged) ? ' · REVIEW' : ''}</td>`;
+  }).join('')}</tr>`).join('');
+  return `<section class="sorbo-card sorbo-compression-comparison" data-sorbo-compression-comparison>
+    <header><div><p class="eyebrow">Same environment · three separate tests</p><h2>Pad compression · X / Y / Z inputs</h2></div><span class="sorbo-status${hasPads ? summary.allCompressionPass ? ' pass' : ' fail' : ''}">${badge}</span></header>
+    <p>${esc(dampingSummary(analysis.config))}</p>
+    <div class="table-wrap"><table aria-label="Pad compression and box clearance for separate X Y Z PSD inputs"><thead><tr><th>Test input</th><th>Upper pads min–max</th><th>Lower pads min–max</th><th>Compression only</th><th>Box clearance</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="sorbo-caption">Each row applies the same PSD in one input direction, independently—not simultaneously. All values are axial pad compression, including rocking from lateral inputs—not X/Y shear strain. Upper/lower envelopes include every pad's static compression ± ${analysis.config.environment.random.peakFactor} × RMS dynamic compression, as a percentage of free element thickness. REVIEW if a pad exceeds 20%, reaches zero compression, the static model needs review, or integration has not converged. The 20% boundary is a screening rule, not a qualified dynamic strain allowable.</p>
+    <p class="sorbo-caption">Compression and box-clearance statuses are separate. Only the selected ${esc(String(summary.selectedAxis).toUpperCase())} input governs the detailed plot and the optional shared catalog/matrix clearance requirement; this comparison does not change that selection. Nominal predictions only—not Monte Carlo bounds or guaranteed test peaks.</p>
+    ${hasPads ? `<details data-sorbo-compression-details><summary>Every pad · compression for all three input directions</summary><div class="table-wrap"><table aria-label="Each upper and lower pad compression envelope under X Y Z input"><thead><tr><th>Leg / side</th><th>Elements</th><th>Static compression</th><th>X input min–max</th><th>Y input min–max</th><th>Z input min–max</th></tr></thead><tbody>${detail}</tbody></table></div></details><button type="button" class="button-secondary" data-sorbo-action="export-pad-compression">Download X/Y/Z pad compression CSV</button>` : isParkerLordConfig(analysis.config) ? '<p>Bonded LORD mount compression/contact limits are not modeled; unavailable data are not treated as a compression PASS.</p>' : '<p>No valid PSD pad results are available. Correct the environment errors and recalculate.</p>'}
+  </section>`;
+}
+
+function clearancePanel(analysis) {
+  const { config, clearance: result } = analysis, settings = config.environment.random;
+  const psdText = Array.isArray(settings.points) ? settings.points.map(point => Array.isArray(point) ? point.join(', ') : String(point)).join('\n') : '';
+  const controls = `<form data-sorbo-psd-form><div class="sorbo-clearance-controls">
+    <label><input type="checkbox" name="enabled"${settings.enabled ? ' checked' : ''}/> Use PSD environment</label>
+    <label>Shaker input axis <select name="axis">${['x', 'y', 'z'].map(axis => `<option value="${axis}"${axis === settings.axis ? ' selected' : ''}>${axis.toUpperCase()} only</option>`).join('')}</select></label>
+    <label>Peak factor × RMS <input name="peakFactor" type="number" min="1" max="10" step="0.1" value="${esc(settings.peakFactor)}" required/></label>
+    <label><input name="checkClearance" type="checkbox"${settings.checkClearance ? ' checked' : ''}/> Require clearance in shared design / catalog / matrix checks</label>
+    ${['X', 'Y', 'Z'].map((axis, i) => `<label>${axis} one-sided minimum box gap (in) <input name="gap${i}" type="number" min="0" step="any" value="${settings.gapsM[i] / INCH}" required/></label>`).join('')}
+    </div><label>Environment PSD · frequency Hz, acceleration g²/Hz <textarea name="psd" rows="6" spellcheck="false" placeholder="Paste your two-column PSD here; no demonstration environment is assumed.">${esc(psdText)}</textarea></label>
+    <label>Load PSD CSV / text <input data-sorbo-psd-file type="file" accept=".csv,.txt,text/csv,text/plain"/></label>
+    <p class="sorbo-caption">One-sided PSD; log–log interpolation between positive levels, linear adjacent to zero. Zero outside the entered band. One axis per test; rerun for each environment/direction. Static X/Y/Z g loads remain separate. Gaps are the minimum available clearance in either sign, measured from loaded equilibrium to base-fixed hardware; 0 means not specified.</p>
+    <button type="submit" class="button">Apply PSD & calculate travel</button><p data-sorbo-psd-status role="status" aria-live="polite"></p></form>`;
+  let output = '<p>No PSD environment active. Enter your actual environment and enable it above; mode animations are not physical displacement amplitudes.</p>';
+  if (result && !result.valid) output = `<p class="fail-text" role="alert">${esc(result.error)}</p>`;
+  if (result?.valid) {
+    const status = !settings.gapsM.some(gap => gap > 0) ? 'BOX CLEARANCE NOT DEFINED' : result.pass ? 'DEFINED TRAVEL CHECKS PASS' : 'TRAVEL REVIEW REQUIRED';
+    const governing = [0, 1, 2].map(axis => {
+      const location = result.locations.filter(point => point.kind === 'box').reduce((worst, point) => point.peakM[axis] > worst.peakM[axis] ? point : worst);
+      return `${['X', 'Y', 'Z'][axis]}: ${travelText(location.peakM[axis])} at ${location.label}${location.peakPsdHz[axis] == null ? '' : ` (PSD peak ${fmt(location.peakPsdHz[axis], 1)} Hz)`}`;
+    });
+    output = `<header><h2>${fmt(result.inputGrms, 3)} Grms · ${result.axis.toUpperCase()} shaker input</h2><span class="sorbo-status ${result.pass ? 'pass' : 'fail'}">${status}</span></header>
+      <p>${result.peakFactor} × RMS estimated one-sided peak; estimated symmetric peak-to-peak envelope = ${2 * result.peakFactor} × RMS. Not a guaranteed maximum. ${result.converged ? 'Integration converged' : 'Integration NOT converged'} (${(result.integrationError * 100).toPrecision(2)}% RMS change). ${settings.checkClearance ? 'Shared clearance requirement active.' : 'Informational only; not used to filter catalog or matrix results.'}</p><p><strong>Largest box travel by response direction</strong><br/>${governing.map(esc).join('<br/>')}</p>
+      <p class="sorbo-caption">Nominal material/Q response, not a Monte Carlo uncertainty bound. All three output directions include cross-axis and rocking motion. Gap checks cover every box corner; leg motion is checked separately for pad unloading/compression. No radial bolt/sleeve contact allowable is inferred.</p>
+      <label>Plot location <select data-sorbo-clearance-location>${result.locations.map((location, index) => `<option value="${index}">${esc(location.label)}</option>`).join('')}</select></label>
+      <p class="sorbo-caption"><span style="color:var(--sorbo-x)">X response</span> · <span style="color:var(--sorbo-y)">Y response</span> · <span style="color:var(--sorbo-z)">Z response</span> · single ${result.axis.toUpperCase()} input</p><div data-sorbo-clearance-chart>${clearancePsdSvg(result)}</div>
+      <div class="table-wrap"><table><thead><tr><th>Location</th><th>RMS X / Y / Z (mil)</th><th>${result.peakFactor}× RMS X / Y / Z (mil)</th><th>Remaining gap X / Y / Z (mil)</th><th>PSD peak Hz X / Y / Z</th></tr></thead><tbody>${result.locations.map(location => `<tr><td>${esc(location.label)}</td><td>${location.rmsM.map(value => fmt(value / INCH * 1000, 3)).join(' / ')}</td><td>${location.peakM.map(value => fmt(value / INCH * 1000, 3)).join(' / ')}</td><td>${location.marginM.map(value => value == null ? 'not set' : fmt(value / INCH * 1000, 3)).join(' / ')}</td><td>${location.peakPsdHz.map(value => value == null ? '—' : fmt(value, 1)).join(' / ')}</td></tr>`).join('')}</tbody></table></div>
+      <details><summary>Upper / lower stack travel and compression envelope</summary><p>Opposed sides see the same stack travel with opposite axial compression changes. Per-element travel assumes identical series elements. Compression maxima above 20% or minima at/below zero require model/contact review; 20% is a material-screening boundary, not a hard-stop dimension.</p><div class="table-wrap"><table><thead><tr><th>Leg / side</th><th>Count</th><th>Stack axial peak</th><th>Per-element axial peak</th><th>Compression min–max</th><th>Check</th></tr></thead><tbody>${result.locations.flatMap(location => (location.sides ?? []).map(side => `<tr><td>${esc(location.label)} ${side.side}</td><td>${side.count}</td><td>${travelText(side.stackPeakM[2])}</td><td>${travelText(side.perElementPeakM[2])}</td><td>${fmt(side.minimumPct, 2)}–${fmt(side.maximumPct, 2)}%</td><td>${side.review ? 'REVIEW' : 'PASS'}</td></tr>`)).join('')}</tbody></table></div></details>
+      <p class="sorbo-caption">Mode markers: ${result.modes.map(mode => `M${mode.number} ${fmt(mode.frequencyHz, 1)} Hz${mode.inBand ? '' : ' (outside input band)'}`).join(' · ')}. These locate resonances, not independently additive modal RMS values.</p>
+      <button type="button" class="button-secondary" data-sorbo-action="export-clearance">Download displacement PSD / clearance CSV</button>
+      <details><summary>Assumptions and limits</summary>${result.warnings.map(warning => `<p>${esc(warning)}</p>`).join('')}<p>PSD excitation uses its full entered bandwidth, independent of the transmissibility display range. Existing manufacturer extrapolation and mixed-assembly MODEL REVIEW limitations still apply.</p></details>`;
+  }
+  return `<section class="sorbo-tab-panel" data-sorbo-panel="clearance"><section class="sorbo-card"><header><div><p class="eyebrow">Random vibration · relative motion</p><h2>PSD displacement & clearance</h2></div></header>${controls}</section>${directionalPadCompressionPanel(analysis)}<section class="sorbo-card" data-sorbo-clearance-results>${output}</section></section>`;
 }
 
 function parkerLordPanel(config, analysis) {
@@ -19520,6 +19876,7 @@ function catalogCandidateFailure(candidate) {
   failures.unshift(...lateralFailures);
   if (!candidate.analysis.verticalModeResult.pass) failures.push('Z translation mode');
   failures.push(...candidate.analysis.peakResults.filter(result => !result.pass).map(result => `${result.axis} resonance peak`));
+  if (candidate.analysis.config.environment.random.checkClearance && !candidate.analysis.clearance?.pass) failures.push('PSD displacement / clearance (TRAVEL)');
   if (candidate.analysis.preload.assemblyChecks) {
     const counts = new Map();
     for (const check of candidate.analysis.preload.assemblyChecks.filter(check => !check.pass)) counts.set(check.code, (counts.get(check.code) ?? 0) + 1);
@@ -19953,7 +20310,7 @@ function renderSorbothaneIsolationWorkbench(configInput = null, explorerSettings
     <details class="sorbo-shared-requirements" data-sorbo-requirements><summary><strong>Design requirements</strong><span>Shared by current design, catalog & matrix · peak ≤ ${fmtSignedDb(config.analysis.resonanceLimitDb)}</span><b>Edit requirements</b></summary>${catalogCriteriaControls(config, catalogSettingsInput)}</details>
     <div class="sorbo-workflow-note"><strong>Start with the physical setup.</strong> Set component and mount geometry on the left, inspect the hardware, check modes and response, then compare catalog designs. Validation contains assumptions and BDF export. Inputs save automatically in this browser.</div>
     <div class="sorbo-analysis-progress" role="status" data-sorbo-analysis-status><span data-sorbo-analysis-label>Nominal analysis ready</span><progress aria-label="Uncertainty calculation progress" max="100" value="0" hidden data-sorbo-analysis-progress></progress></div>
-    <section class="sorbo-shell">${inputSidebar(config)}<main class="sorbo-main"><nav class="sorbo-tabs" role="tablist" aria-label="Isolation design workflow">${[['overview', 'Setup & checks'], ['sorbothane', 'Isolator'], ['modes', 'Modes'], ['transmissibility', 'Transmissibility'], ['explorer', 'Design Explorer'], ['assumptions', 'Validation']].map(([id, label], index) => `<button type="button" role="tab" id="sorbo-tab-${id}" aria-controls="sorbo-panel-${id}" aria-selected="${index === 0}" tabindex="${index === 0 ? 0 : -1}" data-sorbo-tab="${id}" class="${index === 0 ? 'active' : ''}">${label}</button>`).join('')}</nav><div data-sorbo-panels>${overviewPanel(config, analysis)}${modesPanel(config, analysis)}${transmissibilityPanel(analysis)}${sorbothanePanel(config, analysis)}${explorerPanel(config, explorerSettingsInput, catalogSettingsInput)}${assumptionsPanel(config, analysis)}</div></main></section>
+    <section class="sorbo-shell">${inputSidebar(config)}<main class="sorbo-main"><nav class="sorbo-tabs" role="tablist" aria-label="Isolation design workflow">${[['overview', 'Setup & checks'], ['sorbothane', 'Isolator'], ['modes', 'Modes'], ['transmissibility', 'Transmissibility'], ['clearance', 'Displacement & clearance'], ['explorer', 'Design Explorer'], ['assumptions', 'Validation']].map(([id, label], index) => `<button type="button" role="tab" id="sorbo-tab-${id}" aria-controls="sorbo-panel-${id}" aria-selected="${index === 0}" tabindex="${index === 0 ? 0 : -1}" data-sorbo-tab="${id}" class="${index === 0 ? 'active' : ''}">${label}</button>`).join('')}</nav><div data-sorbo-panels>${overviewPanel(config, analysis)}${modesPanel(config, analysis)}${transmissibilityPanel(analysis)}${clearancePanel(analysis)}${sorbothanePanel(config, analysis)}${explorerPanel(config, explorerSettingsInput, catalogSettingsInput)}${assumptionsPanel(config, analysis)}</div></main></section>
     <div class="sorbo-live" aria-live="polite" data-sorbo-live></div></div>`;
 }
 
@@ -20022,6 +20379,19 @@ ${analysis.lateralModeResults.map(result => `| ${result.axis} translation-domina
 | Z translation-dominated mode | Mode ${analysis.verticalModeResult.modeNumber} · ${fmt(analysis.verticalModeResult.frequencyHz, 2)} Hz | ${fmt(analysis.verticalModeResult.rangeHz[0], 2)}–${fmt(analysis.verticalModeResult.rangeHz[1], 2)} Hz | ${analysis.verticalModeResult.pass ? 'PASS' : 'FAIL'} |
 ${analysis.toneResults.flatMap(result => result.axisResults.map(axisResult => `| ${fmt(result.frequencyHz, 0)} Hz · T${axisResult.axis.toLowerCase()}${axisResult.axis.toLowerCase()} | ${fmtSignedDb(axisResult.db, 2)} | ≤ ${fmtSignedDb(result.maximumDb, 2)} | ${axisResult.pass ? 'PASS' : 'FAIL'} |`)).join('\n')}
 ${analysis.peakResults.map(result => `| ${fmt(config.analysis.resonanceBandHz[0], 0)}-${fmt(config.analysis.resonanceBandHz[1], 0)} Hz · T${result.axis.toLowerCase()}${result.axis.toLowerCase()} peak | ${fmtSignedDb(result.db, 2)} @ ${fmt(result.frequencyHz, 2)} Hz | ≤ ${fmtSignedDb(config.analysis.resonanceLimitDb, 2)} | ${result.pass ? 'PASS' : 'FAIL'} |`).join('\n')}
+
+## PSD displacement / clearance
+
+${analysis.clearance?.valid ? `${analysis.clearance.inputGrms.toPrecision(4)} Grms, ${analysis.clearance.axis.toUpperCase()} input; ${analysis.clearance.peakFactor} × RMS peak assumption, not a guaranteed maximum. Integration ${analysis.clearance.converged ? 'converged' : 'requires review'}. ${config.environment.random.checkClearance ? 'Shared requirement active.' : 'Informational only.'}\n\n| Location | RMS X / Y / Z (mil) | Factored peak X / Y / Z (mil) |\n|---|---|---|\n${analysis.clearance.locations.map(location => `| ${location.label} | ${location.rmsM.map(value => fmt(value / INCH * 1000, 3)).join(' / ')} | ${location.peakM.map(value => fmt(value / INCH * 1000, 3)).join(' / ')} |`).join('\n')}` : analysis.clearance?.error ?? 'No PSD environment active.'}
+
+${analysis.directionalClearance ? `### Pad compression by test input
+
+Same PSD, separate X/Y/Z tests; static compression plus/minus ${config.environment.random.peakFactor} × RMS dynamic compression. Not simultaneous loading or a guaranteed maximum. The shared clearance criterion still uses the selected ${analysis.directionalClearance.selectedAxis.toUpperCase()} input.
+
+| Input | Upper min–max | Lower min–max | Compression only | Box clearance |
+|---|---|---|---|---|
+${analysis.directionalClearance.cases.map(result => `| ${result.axis.toUpperCase()} | ${result.upper ? `${fmt(result.upper.minimumPct, 2)}–${fmt(result.upper.maximumPct, 2)}%` : 'Not available'} | ${result.lower ? `${fmt(result.lower.minimumPct, 2)}–${fmt(result.lower.maximumPct, 2)}%` : 'Not available'} | ${!result.valid ? 'REVIEW' : result.compressionPass == null ? 'Not available' : result.compressionPass ? 'PASS' : 'REVIEW'} | ${!result.valid ? 'REVIEW' : result.boxClearancePass == null ? 'Gaps not set' : result.boxClearancePass ? 'PASS' : 'REVIEW'} |`).join('\n')}
+` : ''}
 
 ## Interpretation
 
@@ -20207,7 +20577,7 @@ function bindSorbothaneIsolationWorkbench(root = document) {
     catalogSettings = normalizeCatalogScreenSettings(config, catalogSettings);
     analysis = analyzeSorbothaneIsolation(config, { skipUncertainty: true });
     const panels = shell.querySelector('[data-sorbo-panels]');
-    panels.innerHTML = `${overviewPanel(config, analysis)}${modesPanel(config, analysis)}${transmissibilityPanel(analysis)}${sorbothanePanel(config, analysis)}${explorerPanel(config, explorerSettings, catalogSettings)}${assumptionsPanel(config, analysis)}`;
+    panels.innerHTML = `${overviewPanel(config, analysis)}${modesPanel(config, analysis)}${transmissibilityPanel(analysis)}${clearancePanel(analysis)}${sorbothanePanel(config, analysis)}${explorerPanel(config, explorerSettings, catalogSettings)}${assumptionsPanel(config, analysis)}`;
     shell.querySelector('.sorbo-catalog-criteria').outerHTML = catalogCriteriaControls(config, catalogSettings);
     showTab(activeTab);
     bindPanelControls();
@@ -20439,6 +20809,38 @@ function bindSorbothaneIsolationWorkbench(root = document) {
     animationFrame = requestAnimationFrame(animate);
   };
   const bindPanelControls = () => {
+    const psdForm = shell.querySelector('[data-sorbo-psd-form]');
+    psdForm?.addEventListener('submit', event => {
+      event.preventDefault();
+      const status = psdForm.querySelector('[data-sorbo-psd-status]');
+      try {
+        const enabled = psdForm.elements.enabled.checked;
+        const points = psdForm.elements.psd.value.trim() ? parseIsolationPsd(psdForm.elements.psd.value) : [];
+        if (enabled && !points.length) throw new Error('Enter your PSD breakpoints before enabling the environment.');
+        const settings = { enabled, points, axis: psdForm.elements.axis.value, peakFactor: Number(psdForm.elements.peakFactor.value),
+          checkClearance: psdForm.elements.checkClearance.checked, gapsM: [0, 1, 2].map(i => Number(psdForm.elements[`gap${i}`].value) * INCH) };
+        if (settings.checkClearance && (!enabled || !settings.gapsM.some(gap => gap > 0))) throw new Error('A shared clearance requirement needs an enabled PSD and at least one positive gap.');
+        config.environment.random = settings;
+        status.textContent = 'Calculating coupled PSD displacement…';
+        requestAnimationFrame(() => requestAnimationFrame(redrawAnalysis));
+      } catch (error) { status.textContent = error.message; }
+    });
+    shell.querySelector('[data-sorbo-psd-file]')?.addEventListener('change', async event => {
+      const status = psdForm.querySelector('[data-sorbo-psd-status]');
+      try {
+        const file = event.target.files[0];
+        if (!file) return;
+        if (file.size > 256000) throw new Error('PSD file must be under 256 kB (maximum 256 breakpoints).');
+        const points = parseIsolationPsd((await file.text()).replace(/^\uFEFF/, ''));
+        psdForm.elements.psd.value = points.map(point => point.join(', ')).join('\n');
+        status.textContent = `Loaded ${points.length} breakpoints from ${file.name}. Press Apply to use this environment.`;
+      } catch (error) { status.textContent = error.message; }
+    });
+    shell.querySelector('[data-sorbo-clearance-location]')?.addEventListener('change', event => {
+      shell.querySelector('[data-sorbo-clearance-chart]').innerHTML = clearancePsdSvg(analysis.clearance, Number(event.target.value));
+    });
+    shell.querySelector('[data-sorbo-action="export-clearance"]')?.addEventListener('click', () => download('isolation-psd-displacement-clearance.csv', clearanceCsv(analysis), 'text/csv;charset=utf-8'));
+    shell.querySelector('[data-sorbo-action="export-pad-compression"]')?.addEventListener('click', () => download('isolation-pad-compression-xyz.csv', padCompressionCsv(analysis), 'text/csv;charset=utf-8'));
     // Renders retain the selected mode, camera and playback controls.
     const modeTitle = shell.querySelector('[data-sorbo-mode-title]');
     if (modeTitle) modeTitle.textContent = `Mode ${selectedMode + 1} · ${analysis.modes[selectedMode].dominant}`;

@@ -10,6 +10,7 @@ import {
   isParkerLordConfig,
   normalizeSorbothaneConfig,
   rigidBodyResponseAtFrequency,
+  parseIsolationPsd,
   runDesignGrid,
   screenParkerLordCatalogAsync,
   screenSorbothaneCatalogAsync,
@@ -325,7 +326,8 @@ function requirementTable(analysis) {
   const verticalRow = `<tr><td>Z translation-dominated mode</td><td>Mode ${vertical.modeNumber} · ${fmt(vertical.frequencyHz, 2)} Hz</td><td>${fmt(vertical.rangeHz[0], 1)}–${fmt(vertical.rangeHz[1], 1)} Hz</td><td><span class="sorbo-status ${vertical.pass ? 'pass' : 'fail'}">${vertical.pass ? 'PASS' : 'FAIL'}</span></td><td>${fmt(vertical.participationPct, 1)}% Z participation</td></tr>`;
   const toneRows = analysis.toneResults.flatMap(result => result.axisResults.map(axisResult => `<tr><td>${fmt(result.frequencyHz, 0)} Hz · T${axisResult.axis.toLowerCase()}${axisResult.axis.toLowerCase()}</td><td>${fmtSignedDb(axisResult.db)}</td><td>≤ ${fmtSignedDb(result.maximumDb)}</td><td><span class="sorbo-status ${axisResult.pass ? 'pass' : 'fail'}">${axisResult.pass ? 'PASS' : 'FAIL'}</span></td><td>${axisResult.axis} base → ${axisResult.axis} response · ${esc(axisResult.provenance.replaceAll('-', ' '))}</td></tr>`)).join('');
   const peakRows = analysis.peakResults.map(result => `<tr><td>${fmt(analysis.config.analysis.resonanceBandHz[0], 0)}-${fmt(analysis.config.analysis.resonanceBandHz[1], 0)} Hz · T${result.axis.toLowerCase()}${result.axis.toLowerCase()} peak</td><td>${fmtSignedDb(result.db)} @ ${fmt(result.frequencyHz, 1)} Hz</td><td>≤ ${fmtSignedDb(analysis.config.analysis.resonanceLimitDb)}</td><td><span class="sorbo-status ${result.pass ? 'pass' : 'fail'}">${result.pass ? 'PASS' : 'FAIL'}</span></td><td>Mode ${result.modeNumber} · ${esc(result.modeLabel)}</td></tr>`).join('');
-  return `<div class="table-wrap"><table class="sorbo-requirements"><thead><tr><th>Target</th><th>Calculated response</th><th>Requirement</th><th>Status</th><th>Basis</th></tr></thead><tbody>${lateralRows}${verticalRow}${toneRows}${peakRows}</tbody></table></div>`;
+  const travelRow = analysis.config.environment.random.checkClearance ? `<tr><td>PSD displacement / clearance</td><td>${esc(analysis.clearance?.error ?? `${analysis.config.environment.random.peakFactor} × RMS, ${String(analysis.config.environment.random.axis).toUpperCase()} input`)}</td><td>Gaps, engagement & compression</td><td>${analysis.clearance?.pass ? 'PASS' : 'REVIEW'}</td><td>See Displacement & clearance; shared with matrix / catalog</td></tr>` : '';
+  return `<div class="table-wrap"><table class="sorbo-requirements"><thead><tr><th>Target</th><th>Calculated response</th><th>Requirement</th><th>Status</th><th>Basis</th></tr></thead><tbody>${lateralRows}${verticalRow}${toneRows}${peakRows}${travelRow}</tbody></table></div>`;
 }
 
 function commentary(analysis) {
@@ -479,6 +481,120 @@ function responsePointControl(config) {
 function transmissibilityPanel(analysis) {
   const selected = RESPONSE_POINT_CHOICES.find(choice => choice.value === analysis.config.analysis.responsePoint) ?? RESPONSE_POINT_CHOICES[0];
   return `<section class="sorbo-tab-panel" data-sorbo-panel="transmissibility"><section class="sorbo-card"><header><div><p class="eyebrow">All translational directions</p><h2>Direct-axis transmissibility · Txx, Tyy, Tzz</h2></div><span>Response at ${esc(selected.label)}</span></header>${responsePointControl(analysis.config)}<p class="sorbo-caption">Each curve uses a separate unit base excitation in the named direction and reports acceleration at the selected measurement location in that same direction. Off-CG locations include the rigid-body rocking contribution, u<sub>point</sub> = u<sub>CG</sub> + θ × r. This location also governs the tone and resonance checks below. The three colored envelopes are independent Monte Carlo uncertainty bands.</p><div data-sorbo-response-chart>${transmissibilitySvg(analysis)}</div><p class="sorbo-caption" data-sorbo-band-status>${analysis.config.uncertainty.enabled && !analysis.uncertainty ? 'Calculating uncertainty bands… nominal curves shown.' : ''}</p><div class="sorbo-plot-notes"><span><b>Txx</b> X response from X base input</span><span><b>Tyy</b> Y response from Y base input</span><span><b>Tzz</b> Z response from Z base input</span><span><b>Mode dots</b> Exact response at M1–M6</span><span><b>M5 / M6</b> Roll/pitch-dominated modes may be shoulders rather than peaks when translational participation is weak</span></div></section>${requirementTable(analysis)}</section>`;
+}
+
+const travelText = value => Math.abs(value) < 1e-12 ? '≈0 in / ≈0 mil' : `${(value / INCH).toPrecision(3)} in / ${(value / INCH * 1000).toPrecision(3)} mil`;
+
+export function clearancePsdSvg(result, index = 0) {
+  const curves = result.displacementPsdM2PerHz[index], frequencies = result.frequencies;
+  const positive = curves.flat().filter(value => value > 0), max = Math.max(...positive, 1e-30), min = Math.max(Math.min(...positive, max / 1000), max * 1e-8);
+  const logRange = Math.log10(max / min) || 1;
+  const lo = Math.log10(frequencies[0]), span = Math.log10(frequencies.at(-1)) - lo;
+  const x = f => 75 + 670 * (Math.log10(f) - lo) / span;
+  const y = value => 270 - 230 * (Math.log10(Math.max(value, min)) - Math.log10(min)) / logRange;
+  const path = curve => {
+    let drawing = false;
+    return curve.map((value, i) => {
+      if (value < min) { drawing = false; return ''; }
+      const command = `${drawing ? 'L' : 'M'}${x(frequencies[i]).toFixed(2)},${y(value).toFixed(2)}`;
+      drawing = true;
+      return command;
+    }).join(' ');
+  };
+  return `<svg class="sorbo-chart" viewBox="0 0 800 330" role="img" aria-label="Relative displacement PSD, X Y Z response from ${result.axis.toUpperCase()} base excitation">
+    ${[0, .25, .5, .75, 1].map(t => `<line class="sorbo-grid-line" x1="75" x2="745" y1="${40 + 230 * t}" y2="${40 + 230 * t}"/><text class="sorbo-axis-label" x="68" y="${44 + 230 * t}" text-anchor="end">${(10 ** (Math.log10(max) - t * logRange) / INCH ** 2).toExponential(1)}</text><text class="sorbo-axis-label" x="${75 + 670 * t}" y="291" text-anchor="middle">${(10 ** (lo + span * t)).toFixed(0)}</text>`).join('')}
+    ${result.modes.filter(mode => mode.inBand).map(mode => `<line class="sorbo-grid-line" stroke-dasharray="3 4" x1="${x(mode.frequencyHz)}" x2="${x(mode.frequencyHz)}" y1="40" y2="270"/><text class="sorbo-axis-label" x="${x(mode.frequencyHz)}" y="${mode.number % 2 ? 20 : 34}" text-anchor="middle">M${mode.number}</text>`).join('')}
+    ${curves.map((curve, axis) => `<path fill="none" stroke="${['var(--sorbo-x)', 'var(--sorbo-y)', 'var(--sorbo-z)'][axis]}" stroke-width="2" d="${path(curve)}"/>`).join('')}
+    <text class="sorbo-axis-label" x="400" y="320" text-anchor="middle">Frequency (Hz) · relative displacement PSD (in²/Hz) · logarithmic axes</text></svg>`;
+}
+
+export function clearanceCsv(analysis) {
+  const result = analysis.clearance;
+  if (!result?.valid) throw new Error('Apply a valid PSD environment before exporting displacement results.');
+  const metadata = { source: 'nominal browser linear prediction, not test data', environment: analysis.config.environment.random,
+    inputGrms: result.inputGrms, integrationConverged: result.converged, peakInterpretation: 'factor × RMS; not a guaranteed maximum', warnings: result.warnings };
+  const rows = ['frequency_hz,input_g2_per_hz,location,response_axis,displacement_psd_in2_per_hz,rms_in,factored_peak_in,remaining_gap_in'];
+  result.locations.forEach((location, p) => ['x', 'y', 'z'].forEach((axis, d) => result.frequencies.forEach((frequency, i) => rows.push([
+    frequency, result.inputPsd[i], location.id, axis, result.displacementPsdM2PerHz[p][d][i] / INCH ** 2, location.rmsM[d] / INCH,
+    location.peakM[d] / INCH, location.marginM[d] == null ? '' : location.marginM[d] / INCH
+  ].join(',')))));
+  return `# ${JSON.stringify(metadata)}\n${rows.join('\n')}\n`;
+}
+
+export function padCompressionCsv(analysis) {
+  const summary = analysis.directionalClearance;
+  if (!summary?.cases.some(result => result.valid && result.pads.length)) throw new Error('No pad compression data available. Apply a valid Sorbothane PSD environment first.');
+  const metadata = { source: 'nominal browser linear prediction, not test data', environment: analysis.config.environment.random,
+    damping: analysis.config.damping, interpretation: 'Same PSD, three separate single-axis tests; factor × RMS is not a guaranteed peak. Compression is percent of element free thickness including static compression.',
+    reviewBoundaryPct: 20, unloadingBoundaryPct: 0, selectedAxis: summary.selectedAxis,
+    cases: summary.cases.map(result => ({ axis: result.axis, valid: result.valid, converged: result.converged, error: result.error })) };
+  const rows = ['input_axis,leg,side,element_count,static_compression_pct,minimum_compression_pct,maximum_compression_pct,stack_axial_peak_in,per_element_axial_peak_in,compression_check,integration_converged'];
+  summary.cases.forEach(result => result.pads.forEach(pad => rows.push([result.axis.toUpperCase(), pad.leg, pad.side === 'top' ? 'upper' : 'lower', pad.count,
+    pad.staticPct, pad.minimumPct, pad.maximumPct, pad.axialPeakM / INCH, pad.perElementAxialPeakM / INCH,
+    pad.review || !result.converged ? 'REVIEW' : 'PASS', result.converged].join(','))));
+  return `# ${JSON.stringify(metadata)}\n${rows.join('\n')}\n`;
+}
+
+export function directionalPadCompressionPanel(analysis) {
+  const summary = analysis.directionalClearance;
+  if (!summary) return '';
+  const hasPads = summary.cases.some(result => result.valid && result.pads.length);
+  const rangeText = range => range ? `${fmt(range.minimumPct, 2)}–${fmt(range.maximumPct, 2)}%` : 'Not available';
+  const status = (pass, unknown = 'NOT AVAILABLE') => `<span class="sorbo-status${pass == null ? '' : pass ? ' pass' : ' fail'}">${pass == null ? unknown : pass ? 'PASS' : 'REVIEW'}</span>`;
+  const pads = summary.cases.find(result => result.pads.length)?.pads ?? [];
+  const badge = !hasPads ? 'COMPRESSION NOT AVAILABLE' : summary.allCompressionPass ? 'ALL COMPRESSION CHECKS PASS' : 'PAD COMPRESSION REVIEW';
+  const rows = summary.cases.map(result => `<tr data-sorbo-compression-case="${result.axis}"${result.axis === summary.selectedAxis ? ' class="is-selected-input"' : ''}>
+    <th scope="row">${result.axis.toUpperCase()} input${result.axis === summary.selectedAxis ? '<small>Selected plot</small>' : ''}${result.criticalPad ? `<small>Max: leg ${result.criticalPad.leg} ${result.criticalPad.side === 'top' ? 'upper' : 'lower'}</small>` : ''}</th>
+    <td>${result.valid ? rangeText(result.upper) : esc(result.error)}</td><td>${result.valid ? rangeText(result.lower) : '—'}</td>
+    <td>${status(result.valid ? result.compressionPass : false)}${result.unloading ? '<small>Unloading predicted</small>' : ''}${result.staticModelReview ? '<small>Static model review</small>' : ''}${result.valid && !result.converged ? '<small>Integration not converged</small>' : ''}</td>
+    <td>${status(result.valid ? result.boxClearancePass : false, 'GAPS NOT SET')}</td></tr>`).join('');
+  const detail = pads.map(pad => `<tr><th scope="row">Leg ${pad.leg} · ${pad.side === 'top' ? 'upper' : 'lower'}</th><td>${pad.count}</td><td>${fmt(pad.staticPct, 2)}%</td>${summary.cases.map(result => {
+    const value = result.pads.find(item => item.leg === pad.leg && item.side === pad.side);
+    return `<td${value && (value.review || !result.converged) ? ' class="fail-text"' : ''}>${value ? rangeText(value) : 'Not available'}${value && (value.review || !result.converged) ? ' · REVIEW' : ''}</td>`;
+  }).join('')}</tr>`).join('');
+  return `<section class="sorbo-card sorbo-compression-comparison" data-sorbo-compression-comparison>
+    <header><div><p class="eyebrow">Same environment · three separate tests</p><h2>Pad compression · X / Y / Z inputs</h2></div><span class="sorbo-status${hasPads ? summary.allCompressionPass ? ' pass' : ' fail' : ''}">${badge}</span></header>
+    <p>${esc(dampingSummary(analysis.config))}</p>
+    <div class="table-wrap"><table aria-label="Pad compression and box clearance for separate X Y Z PSD inputs"><thead><tr><th>Test input</th><th>Upper pads min–max</th><th>Lower pads min–max</th><th>Compression only</th><th>Box clearance</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="sorbo-caption">Each row applies the same PSD in one input direction, independently—not simultaneously. All values are axial pad compression, including rocking from lateral inputs—not X/Y shear strain. Upper/lower envelopes include every pad's static compression ± ${analysis.config.environment.random.peakFactor} × RMS dynamic compression, as a percentage of free element thickness. REVIEW if a pad exceeds 20%, reaches zero compression, the static model needs review, or integration has not converged. The 20% boundary is a screening rule, not a qualified dynamic strain allowable.</p>
+    <p class="sorbo-caption">Compression and box-clearance statuses are separate. Only the selected ${esc(String(summary.selectedAxis).toUpperCase())} input governs the detailed plot and the optional shared catalog/matrix clearance requirement; this comparison does not change that selection. Nominal predictions only—not Monte Carlo bounds or guaranteed test peaks.</p>
+    ${hasPads ? `<details data-sorbo-compression-details><summary>Every pad · compression for all three input directions</summary><div class="table-wrap"><table aria-label="Each upper and lower pad compression envelope under X Y Z input"><thead><tr><th>Leg / side</th><th>Elements</th><th>Static compression</th><th>X input min–max</th><th>Y input min–max</th><th>Z input min–max</th></tr></thead><tbody>${detail}</tbody></table></div></details><button type="button" class="button-secondary" data-sorbo-action="export-pad-compression">Download X/Y/Z pad compression CSV</button>` : isParkerLordConfig(analysis.config) ? '<p>Bonded LORD mount compression/contact limits are not modeled; unavailable data are not treated as a compression PASS.</p>' : '<p>No valid PSD pad results are available. Correct the environment errors and recalculate.</p>'}
+  </section>`;
+}
+
+export function clearancePanel(analysis) {
+  const { config, clearance: result } = analysis, settings = config.environment.random;
+  const psdText = Array.isArray(settings.points) ? settings.points.map(point => Array.isArray(point) ? point.join(', ') : String(point)).join('\n') : '';
+  const controls = `<form data-sorbo-psd-form><div class="sorbo-clearance-controls">
+    <label><input type="checkbox" name="enabled"${settings.enabled ? ' checked' : ''}/> Use PSD environment</label>
+    <label>Shaker input axis <select name="axis">${['x', 'y', 'z'].map(axis => `<option value="${axis}"${axis === settings.axis ? ' selected' : ''}>${axis.toUpperCase()} only</option>`).join('')}</select></label>
+    <label>Peak factor × RMS <input name="peakFactor" type="number" min="1" max="10" step="0.1" value="${esc(settings.peakFactor)}" required/></label>
+    <label><input name="checkClearance" type="checkbox"${settings.checkClearance ? ' checked' : ''}/> Require clearance in shared design / catalog / matrix checks</label>
+    ${['X', 'Y', 'Z'].map((axis, i) => `<label>${axis} one-sided minimum box gap (in) <input name="gap${i}" type="number" min="0" step="any" value="${settings.gapsM[i] / INCH}" required/></label>`).join('')}
+    </div><label>Environment PSD · frequency Hz, acceleration g²/Hz <textarea name="psd" rows="6" spellcheck="false" placeholder="Paste your two-column PSD here; no demonstration environment is assumed.">${esc(psdText)}</textarea></label>
+    <label>Load PSD CSV / text <input data-sorbo-psd-file type="file" accept=".csv,.txt,text/csv,text/plain"/></label>
+    <p class="sorbo-caption">One-sided PSD; log–log interpolation between positive levels, linear adjacent to zero. Zero outside the entered band. One axis per test; rerun for each environment/direction. Static X/Y/Z g loads remain separate. Gaps are the minimum available clearance in either sign, measured from loaded equilibrium to base-fixed hardware; 0 means not specified.</p>
+    <button type="submit" class="button">Apply PSD & calculate travel</button><p data-sorbo-psd-status role="status" aria-live="polite"></p></form>`;
+  let output = '<p>No PSD environment active. Enter your actual environment and enable it above; mode animations are not physical displacement amplitudes.</p>';
+  if (result && !result.valid) output = `<p class="fail-text" role="alert">${esc(result.error)}</p>`;
+  if (result?.valid) {
+    const status = !settings.gapsM.some(gap => gap > 0) ? 'BOX CLEARANCE NOT DEFINED' : result.pass ? 'DEFINED TRAVEL CHECKS PASS' : 'TRAVEL REVIEW REQUIRED';
+    const governing = [0, 1, 2].map(axis => {
+      const location = result.locations.filter(point => point.kind === 'box').reduce((worst, point) => point.peakM[axis] > worst.peakM[axis] ? point : worst);
+      return `${['X', 'Y', 'Z'][axis]}: ${travelText(location.peakM[axis])} at ${location.label}${location.peakPsdHz[axis] == null ? '' : ` (PSD peak ${fmt(location.peakPsdHz[axis], 1)} Hz)`}`;
+    });
+    output = `<header><h2>${fmt(result.inputGrms, 3)} Grms · ${result.axis.toUpperCase()} shaker input</h2><span class="sorbo-status ${result.pass ? 'pass' : 'fail'}">${status}</span></header>
+      <p>${result.peakFactor} × RMS estimated one-sided peak; estimated symmetric peak-to-peak envelope = ${2 * result.peakFactor} × RMS. Not a guaranteed maximum. ${result.converged ? 'Integration converged' : 'Integration NOT converged'} (${(result.integrationError * 100).toPrecision(2)}% RMS change). ${settings.checkClearance ? 'Shared clearance requirement active.' : 'Informational only; not used to filter catalog or matrix results.'}</p><p><strong>Largest box travel by response direction</strong><br/>${governing.map(esc).join('<br/>')}</p>
+      <p class="sorbo-caption">Nominal material/Q response, not a Monte Carlo uncertainty bound. All three output directions include cross-axis and rocking motion. Gap checks cover every box corner; leg motion is checked separately for pad unloading/compression. No radial bolt/sleeve contact allowable is inferred.</p>
+      <label>Plot location <select data-sorbo-clearance-location>${result.locations.map((location, index) => `<option value="${index}">${esc(location.label)}</option>`).join('')}</select></label>
+      <p class="sorbo-caption"><span style="color:var(--sorbo-x)">X response</span> · <span style="color:var(--sorbo-y)">Y response</span> · <span style="color:var(--sorbo-z)">Z response</span> · single ${result.axis.toUpperCase()} input</p><div data-sorbo-clearance-chart>${clearancePsdSvg(result)}</div>
+      <div class="table-wrap"><table><thead><tr><th>Location</th><th>RMS X / Y / Z (mil)</th><th>${result.peakFactor}× RMS X / Y / Z (mil)</th><th>Remaining gap X / Y / Z (mil)</th><th>PSD peak Hz X / Y / Z</th></tr></thead><tbody>${result.locations.map(location => `<tr><td>${esc(location.label)}</td><td>${location.rmsM.map(value => fmt(value / INCH * 1000, 3)).join(' / ')}</td><td>${location.peakM.map(value => fmt(value / INCH * 1000, 3)).join(' / ')}</td><td>${location.marginM.map(value => value == null ? 'not set' : fmt(value / INCH * 1000, 3)).join(' / ')}</td><td>${location.peakPsdHz.map(value => value == null ? '—' : fmt(value, 1)).join(' / ')}</td></tr>`).join('')}</tbody></table></div>
+      <details><summary>Upper / lower stack travel and compression envelope</summary><p>Opposed sides see the same stack travel with opposite axial compression changes. Per-element travel assumes identical series elements. Compression maxima above 20% or minima at/below zero require model/contact review; 20% is a material-screening boundary, not a hard-stop dimension.</p><div class="table-wrap"><table><thead><tr><th>Leg / side</th><th>Count</th><th>Stack axial peak</th><th>Per-element axial peak</th><th>Compression min–max</th><th>Check</th></tr></thead><tbody>${result.locations.flatMap(location => (location.sides ?? []).map(side => `<tr><td>${esc(location.label)} ${side.side}</td><td>${side.count}</td><td>${travelText(side.stackPeakM[2])}</td><td>${travelText(side.perElementPeakM[2])}</td><td>${fmt(side.minimumPct, 2)}–${fmt(side.maximumPct, 2)}%</td><td>${side.review ? 'REVIEW' : 'PASS'}</td></tr>`)).join('')}</tbody></table></div></details>
+      <p class="sorbo-caption">Mode markers: ${result.modes.map(mode => `M${mode.number} ${fmt(mode.frequencyHz, 1)} Hz${mode.inBand ? '' : ' (outside input band)'}`).join(' · ')}. These locate resonances, not independently additive modal RMS values.</p>
+      <button type="button" class="button-secondary" data-sorbo-action="export-clearance">Download displacement PSD / clearance CSV</button>
+      <details><summary>Assumptions and limits</summary>${result.warnings.map(warning => `<p>${esc(warning)}</p>`).join('')}<p>PSD excitation uses its full entered bandwidth, independent of the transmissibility display range. Existing manufacturer extrapolation and mixed-assembly MODEL REVIEW limitations still apply.</p></details>`;
+  }
+  return `<section class="sorbo-tab-panel" data-sorbo-panel="clearance"><section class="sorbo-card"><header><div><p class="eyebrow">Random vibration · relative motion</p><h2>PSD displacement & clearance</h2></div></header>${controls}</section>${directionalPadCompressionPanel(analysis)}<section class="sorbo-card" data-sorbo-clearance-results>${output}</section></section>`;
 }
 
 function parkerLordPanel(config, analysis) {
@@ -782,6 +898,7 @@ function catalogCandidateFailure(candidate) {
   failures.unshift(...lateralFailures);
   if (!candidate.analysis.verticalModeResult.pass) failures.push('Z translation mode');
   failures.push(...candidate.analysis.peakResults.filter(result => !result.pass).map(result => `${result.axis} resonance peak`));
+  if (candidate.analysis.config.environment.random.checkClearance && !candidate.analysis.clearance?.pass) failures.push('PSD displacement / clearance (TRAVEL)');
   if (candidate.analysis.preload.assemblyChecks) {
     const counts = new Map();
     for (const check of candidate.analysis.preload.assemblyChecks.filter(check => !check.pass)) counts.set(check.code, (counts.get(check.code) ?? 0) + 1);
@@ -1215,7 +1332,7 @@ export function renderSorbothaneIsolationWorkbench(configInput = null, explorerS
     <details class="sorbo-shared-requirements" data-sorbo-requirements><summary><strong>Design requirements</strong><span>Shared by current design, catalog & matrix · peak ≤ ${fmtSignedDb(config.analysis.resonanceLimitDb)}</span><b>Edit requirements</b></summary>${catalogCriteriaControls(config, catalogSettingsInput)}</details>
     <div class="sorbo-workflow-note"><strong>Start with the physical setup.</strong> Set component and mount geometry on the left, inspect the hardware, check modes and response, then compare catalog designs. Validation contains assumptions and BDF export. Inputs save automatically in this browser.</div>
     <div class="sorbo-analysis-progress" role="status" data-sorbo-analysis-status><span data-sorbo-analysis-label>Nominal analysis ready</span><progress aria-label="Uncertainty calculation progress" max="100" value="0" hidden data-sorbo-analysis-progress></progress></div>
-    <section class="sorbo-shell">${inputSidebar(config)}<main class="sorbo-main"><nav class="sorbo-tabs" role="tablist" aria-label="Isolation design workflow">${[['overview', 'Setup & checks'], ['sorbothane', 'Isolator'], ['modes', 'Modes'], ['transmissibility', 'Transmissibility'], ['explorer', 'Design Explorer'], ['assumptions', 'Validation']].map(([id, label], index) => `<button type="button" role="tab" id="sorbo-tab-${id}" aria-controls="sorbo-panel-${id}" aria-selected="${index === 0}" tabindex="${index === 0 ? 0 : -1}" data-sorbo-tab="${id}" class="${index === 0 ? 'active' : ''}">${label}</button>`).join('')}</nav><div data-sorbo-panels>${overviewPanel(config, analysis)}${modesPanel(config, analysis)}${transmissibilityPanel(analysis)}${sorbothanePanel(config, analysis)}${explorerPanel(config, explorerSettingsInput, catalogSettingsInput)}${assumptionsPanel(config, analysis)}</div></main></section>
+    <section class="sorbo-shell">${inputSidebar(config)}<main class="sorbo-main"><nav class="sorbo-tabs" role="tablist" aria-label="Isolation design workflow">${[['overview', 'Setup & checks'], ['sorbothane', 'Isolator'], ['modes', 'Modes'], ['transmissibility', 'Transmissibility'], ['clearance', 'Displacement & clearance'], ['explorer', 'Design Explorer'], ['assumptions', 'Validation']].map(([id, label], index) => `<button type="button" role="tab" id="sorbo-tab-${id}" aria-controls="sorbo-panel-${id}" aria-selected="${index === 0}" tabindex="${index === 0 ? 0 : -1}" data-sorbo-tab="${id}" class="${index === 0 ? 'active' : ''}">${label}</button>`).join('')}</nav><div data-sorbo-panels>${overviewPanel(config, analysis)}${modesPanel(config, analysis)}${transmissibilityPanel(analysis)}${clearancePanel(analysis)}${sorbothanePanel(config, analysis)}${explorerPanel(config, explorerSettingsInput, catalogSettingsInput)}${assumptionsPanel(config, analysis)}</div></main></section>
     <div class="sorbo-live" aria-live="polite" data-sorbo-live></div></div>`;
 }
 
@@ -1284,6 +1401,19 @@ ${analysis.lateralModeResults.map(result => `| ${result.axis} translation-domina
 | Z translation-dominated mode | Mode ${analysis.verticalModeResult.modeNumber} · ${fmt(analysis.verticalModeResult.frequencyHz, 2)} Hz | ${fmt(analysis.verticalModeResult.rangeHz[0], 2)}–${fmt(analysis.verticalModeResult.rangeHz[1], 2)} Hz | ${analysis.verticalModeResult.pass ? 'PASS' : 'FAIL'} |
 ${analysis.toneResults.flatMap(result => result.axisResults.map(axisResult => `| ${fmt(result.frequencyHz, 0)} Hz · T${axisResult.axis.toLowerCase()}${axisResult.axis.toLowerCase()} | ${fmtSignedDb(axisResult.db, 2)} | ≤ ${fmtSignedDb(result.maximumDb, 2)} | ${axisResult.pass ? 'PASS' : 'FAIL'} |`)).join('\n')}
 ${analysis.peakResults.map(result => `| ${fmt(config.analysis.resonanceBandHz[0], 0)}-${fmt(config.analysis.resonanceBandHz[1], 0)} Hz · T${result.axis.toLowerCase()}${result.axis.toLowerCase()} peak | ${fmtSignedDb(result.db, 2)} @ ${fmt(result.frequencyHz, 2)} Hz | ≤ ${fmtSignedDb(config.analysis.resonanceLimitDb, 2)} | ${result.pass ? 'PASS' : 'FAIL'} |`).join('\n')}
+
+## PSD displacement / clearance
+
+${analysis.clearance?.valid ? `${analysis.clearance.inputGrms.toPrecision(4)} Grms, ${analysis.clearance.axis.toUpperCase()} input; ${analysis.clearance.peakFactor} × RMS peak assumption, not a guaranteed maximum. Integration ${analysis.clearance.converged ? 'converged' : 'requires review'}. ${config.environment.random.checkClearance ? 'Shared requirement active.' : 'Informational only.'}\n\n| Location | RMS X / Y / Z (mil) | Factored peak X / Y / Z (mil) |\n|---|---|---|\n${analysis.clearance.locations.map(location => `| ${location.label} | ${location.rmsM.map(value => fmt(value / INCH * 1000, 3)).join(' / ')} | ${location.peakM.map(value => fmt(value / INCH * 1000, 3)).join(' / ')} |`).join('\n')}` : analysis.clearance?.error ?? 'No PSD environment active.'}
+
+${analysis.directionalClearance ? `### Pad compression by test input
+
+Same PSD, separate X/Y/Z tests; static compression plus/minus ${config.environment.random.peakFactor} × RMS dynamic compression. Not simultaneous loading or a guaranteed maximum. The shared clearance criterion still uses the selected ${analysis.directionalClearance.selectedAxis.toUpperCase()} input.
+
+| Input | Upper min–max | Lower min–max | Compression only | Box clearance |
+|---|---|---|---|---|
+${analysis.directionalClearance.cases.map(result => `| ${result.axis.toUpperCase()} | ${result.upper ? `${fmt(result.upper.minimumPct, 2)}–${fmt(result.upper.maximumPct, 2)}%` : 'Not available'} | ${result.lower ? `${fmt(result.lower.minimumPct, 2)}–${fmt(result.lower.maximumPct, 2)}%` : 'Not available'} | ${!result.valid ? 'REVIEW' : result.compressionPass == null ? 'Not available' : result.compressionPass ? 'PASS' : 'REVIEW'} | ${!result.valid ? 'REVIEW' : result.boxClearancePass == null ? 'Gaps not set' : result.boxClearancePass ? 'PASS' : 'REVIEW'} |`).join('\n')}
+` : ''}
 
 ## Interpretation
 
@@ -1469,7 +1599,7 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
     catalogSettings = normalizeCatalogScreenSettings(config, catalogSettings);
     analysis = analyzeSorbothaneIsolation(config, { skipUncertainty: true });
     const panels = shell.querySelector('[data-sorbo-panels]');
-    panels.innerHTML = `${overviewPanel(config, analysis)}${modesPanel(config, analysis)}${transmissibilityPanel(analysis)}${sorbothanePanel(config, analysis)}${explorerPanel(config, explorerSettings, catalogSettings)}${assumptionsPanel(config, analysis)}`;
+    panels.innerHTML = `${overviewPanel(config, analysis)}${modesPanel(config, analysis)}${transmissibilityPanel(analysis)}${clearancePanel(analysis)}${sorbothanePanel(config, analysis)}${explorerPanel(config, explorerSettings, catalogSettings)}${assumptionsPanel(config, analysis)}`;
     shell.querySelector('.sorbo-catalog-criteria').outerHTML = catalogCriteriaControls(config, catalogSettings);
     showTab(activeTab);
     bindPanelControls();
@@ -1701,6 +1831,38 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
     animationFrame = requestAnimationFrame(animate);
   };
   const bindPanelControls = () => {
+    const psdForm = shell.querySelector('[data-sorbo-psd-form]');
+    psdForm?.addEventListener('submit', event => {
+      event.preventDefault();
+      const status = psdForm.querySelector('[data-sorbo-psd-status]');
+      try {
+        const enabled = psdForm.elements.enabled.checked;
+        const points = psdForm.elements.psd.value.trim() ? parseIsolationPsd(psdForm.elements.psd.value) : [];
+        if (enabled && !points.length) throw new Error('Enter your PSD breakpoints before enabling the environment.');
+        const settings = { enabled, points, axis: psdForm.elements.axis.value, peakFactor: Number(psdForm.elements.peakFactor.value),
+          checkClearance: psdForm.elements.checkClearance.checked, gapsM: [0, 1, 2].map(i => Number(psdForm.elements[`gap${i}`].value) * INCH) };
+        if (settings.checkClearance && (!enabled || !settings.gapsM.some(gap => gap > 0))) throw new Error('A shared clearance requirement needs an enabled PSD and at least one positive gap.');
+        config.environment.random = settings;
+        status.textContent = 'Calculating coupled PSD displacement…';
+        requestAnimationFrame(() => requestAnimationFrame(redrawAnalysis));
+      } catch (error) { status.textContent = error.message; }
+    });
+    shell.querySelector('[data-sorbo-psd-file]')?.addEventListener('change', async event => {
+      const status = psdForm.querySelector('[data-sorbo-psd-status]');
+      try {
+        const file = event.target.files[0];
+        if (!file) return;
+        if (file.size > 256000) throw new Error('PSD file must be under 256 kB (maximum 256 breakpoints).');
+        const points = parseIsolationPsd((await file.text()).replace(/^\uFEFF/, ''));
+        psdForm.elements.psd.value = points.map(point => point.join(', ')).join('\n');
+        status.textContent = `Loaded ${points.length} breakpoints from ${file.name}. Press Apply to use this environment.`;
+      } catch (error) { status.textContent = error.message; }
+    });
+    shell.querySelector('[data-sorbo-clearance-location]')?.addEventListener('change', event => {
+      shell.querySelector('[data-sorbo-clearance-chart]').innerHTML = clearancePsdSvg(analysis.clearance, Number(event.target.value));
+    });
+    shell.querySelector('[data-sorbo-action="export-clearance"]')?.addEventListener('click', () => download('isolation-psd-displacement-clearance.csv', clearanceCsv(analysis), 'text/csv;charset=utf-8'));
+    shell.querySelector('[data-sorbo-action="export-pad-compression"]')?.addEventListener('click', () => download('isolation-pad-compression-xyz.csv', padCompressionCsv(analysis), 'text/csv;charset=utf-8'));
     // Renders retain the selected mode, camera and playback controls.
     const modeTitle = shell.querySelector('[data-sorbo-mode-title]');
     if (modeTitle) modeTitle.textContent = `Mode ${selectedMode + 1} · ${analysis.modes[selectedMode].dominant}`;

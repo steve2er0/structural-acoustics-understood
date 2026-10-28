@@ -65,7 +65,9 @@ export const DEFAULT_SORBOTHANE_CONFIG = {
     lordLossFactor: 0.30
   },
   damping: { mode: 'material', effectiveQ: 6 },
-  environment: { accelerationG: [0, 0, 0] },
+  environment: { accelerationG: [0, 0, 0], random: {
+    enabled: false, axis: 'z', points: [], peakFactor: 3, gapsM: [0, 0, 0], checkClearance: false
+  } },
   assemblies: { enabled: false, groups: {}, assignments: [] },
   analysis: {
     excitationAxis: 'z',
@@ -149,6 +151,14 @@ export function normalizeSorbothaneConfig(input = {}) {
   config.damping.effectiveQ = Number.isFinite(effectiveQ) && effectiveQ > 0 && Number.isFinite(1 / effectiveQ)
     ? effectiveQ : DEFAULT_SORBOTHANE_CONFIG.damping.effectiveQ;
   config.environment.accelerationG = [...(source.environment?.accelerationG ?? config.environment.accelerationG)].map((value, index) => finite(value, config.environment.accelerationG[index]));
+  config.environment.random = { ...DEFAULT_SORBOTHANE_CONFIG.environment.random, ...(source.environment?.random ?? {}) };
+  const random = config.environment.random;
+  random.enabled = random.enabled === true;
+  random.checkClearance = random.checkClearance === true;
+  if (typeof random.peakFactor !== 'number') random.peakFactor = null;
+  // Do not silently repair invalid spectra, factors or gaps into a passing case.
+  random.points = clone(random.points);
+  random.gapsM = Array.isArray(random.gapsM) ? [...random.gapsM] : [null, null, null];
   config.analysis.frequencyPoints = clamp(Math.round(finite(config.analysis.frequencyPoints, 181)), 41, 501);
   if (!['cg', 'corner-positive', 'corner-negative'].includes(config.analysis.responsePoint)) config.analysis.responsePoint = 'cg';
   const lateralModeMinimumHz = source.analysis?.lateralModeMinimumHz ?? config.analysis.lateralModeMinimumHz;
@@ -869,6 +879,8 @@ function preparedRigidBodyResponse(config, frequencyHz, axis, mass, stiffness) {
   return {
     frequencyHz,
     axis: excitationAxis,
+    relativeComplex: relative,
+    absoluteCgComplex: absolute,
     complex: output,
     magnitude: output.map(cAbs),
     db: output.map(value => 20 * Math.log10(Math.max(cAbs(value), 1e-12))),
@@ -885,6 +897,196 @@ function analysisResponseEvaluator(config) {
     if (!stiffnessByFrequency.has(frequency)) stiffnessByFrequency.set(frequency, assembleRigidBodyStiffness(config, frequency));
     return preparedRigidBodyResponse(config, frequency, axis, mass, stiffnessByFrequency.get(frequency));
   };
+}
+
+// One-sided acceleration PSD in g²/Hz, coherent at all supports, ONE input axis.
+export function parseIsolationPsd(text) {
+  const lines = String(text).split(/\r?\n/).map(line => line.trim()).filter(line => line && !line.startsWith('#'));
+  if (lines[0] && /[a-z]/i.test(lines[0].replace(/[eE][+-]?\d+/g, '')) && /freq/i.test(lines[0])) lines.shift();
+  const points = lines.map((line, index) => {
+    const fields = line.split(/[,;\s]+/);
+    if (fields.length !== 2 || fields.some(field => field === '' || !Number.isFinite(Number(field)))) throw new Error(`PSD row ${index + 1}: enter frequency, g²/Hz (two numeric columns).`);
+    return fields.map(Number);
+  });
+  validateIsolationPsd(points);
+  return points;
+}
+
+export function validateIsolationPsd(points) {
+  if (!Array.isArray(points) || points.length < 2 || points.length > 256) throw new Error('PSD requires 2–256 frequency / g²/Hz breakpoints.');
+  points.forEach((point, index) => {
+    if (!Array.isArray(point) || point.length !== 2 || point.some(value => typeof value !== 'number' || !Number.isFinite(value)) || point[0] < .001 || point[0] > 1e5 || point[1] < 0 || index && point[0] <= points[index - 1][0]) throw new Error('PSD frequencies must increase strictly (0.001 ≤ f ≤ 100,000 Hz); levels must be finite and nonnegative.');
+  });
+  return points;
+}
+
+export function isolationPsdAt(points, frequency) {
+  if (frequency < points[0][0] || frequency > points.at(-1)[0]) return 0;
+  const right = points.findIndex(point => point[0] >= frequency);
+  if (right === 0) return points[0][1];
+  const [f0, s0] = points[right - 1], [f1, s1] = points[right];
+  // Power-law interpolation for positive levels; linear near explicit zeros.
+  return s0 > 0 && s1 > 0 ? s0 * (frequency / f0) ** (Math.log(s1 / s0) / Math.log(f1 / f0)) : s0 + (s1 - s0) * (frequency - f0) / (f1 - f0);
+}
+
+export function randomVibrationFrequencies(configInput, modesInput = null, refinement = 0) {
+  const config = normalizeSorbothaneConfig(configInput), points = validateIsolationPsd(config.environment.random.points);
+  const modes = modesInput ?? solveRigidBodyModes(config).modes;
+  const low = points[0][0], high = points.at(-1)[0], frequencies = points.map(point => point[0]);
+  const count = Math.ceil(Math.log2(high / low) * 80) * 2 ** refinement;
+  for (let i = 0; i <= count; i++) frequencies.push(low * (high / low) ** (i / Math.max(count, 1)));
+  // Resolve narrow resonances independently of the plotted response resolution.
+  for (const mode of modes) {
+    const width = mode.frequencyHz * Math.max(mode.lossFactor, 1e-8);
+    for (let i = -36 * 2 ** refinement; i <= 36 * 2 ** refinement; i++) {
+      const f = mode.frequencyHz + i * width / (12 * 2 ** refinement);
+      if (f >= low && f <= high) frequencies.push(f);
+    }
+  }
+  const result = [...new Set([low, high, ...frequencies.filter(f => f >= low && f <= high)])].sort((a, b) => a - b);
+  if (result.length > 16000) throw new Error('PSD integration exceeds 16,000 samples; reduce the bandwidth or review extremely low damping.');
+  return result;
+}
+
+export function isolationClearanceLocations(configInput) {
+  const config = normalizeSorbothaneConfig(configInput), [length, width, height] = config.component.dimensionsM;
+  const points = [{ id: 'cg', label: 'CG', positionM: [...config.component.cgM], kind: 'box' }];
+  for (const z of [0, height]) for (const y of [-width / 2, width / 2]) for (const x of [-length / 2, length / 2]) points.push({
+    id: `corner-${points.length}`, label: `${z === 0 ? 'Bottom' : 'Top'} ${x > 0 ? '+X' : '−X'}/${y > 0 ? '+Y' : '−Y'}`, positionM: [x, y, z], kind: 'box'
+  });
+  return [...points, ...isolationMountCoordinates(config).map((point, index) => ({ id: `mount-${index + 1}`, label: `Leg ${index + 1}`, positionM: point, kind: 'mount', mountIndex: index }))];
+}
+
+export function isolationRelativeDisplacement(configInput, frequencyHz, axis, locationsInput = null, responseInput = null) {
+  const config = normalizeSorbothaneConfig(configInput);
+  const response = responseInput ?? rigidBodyResponseAtFrequency(config, frequencyHz, axis);
+  const locations = locationsInput ?? isolationClearanceLocations(config);
+  // qr is relative to the translating base. Its rotational entries are rad/m.
+  // Multiply by g0/ω² to return metres per g of base acceleration; the common
+  // minus sign converts the unit-base-displacement phasor to acceleration phase.
+  const factor = -G0 / (TAU * frequencyHz) ** 2;
+  return locations.map(location => mountKinematics(location.positionM.map((value, i) => value - config.component.cgM[i])).map(row =>
+    row.reduce((sum, coefficient, i) => cAdd(sum, cMul(response.relativeComplex[i], complex(coefficient * factor))), complex())));
+}
+
+export function randomVibrationClearance(configInput, modesInput = null) {
+  const config = normalizeSorbothaneConfig(configInput), settings = config.environment.random;
+  if (!settings.enabled) return null;
+  try {
+    validateIsolationPsd(settings.points);
+    if (!['x', 'y', 'z'].includes(settings.axis)) throw new Error('Select one PSD excitation axis: X, Y or Z.');
+    if (!(Number.isFinite(settings.peakFactor) && settings.peakFactor >= 1 && settings.peakFactor <= 10)) throw new Error('Peak factor must be finite, from 1 to 10.');
+    if (settings.gapsM.length !== 3 || settings.gapsM.some(gap => !Number.isFinite(gap) || gap < 0)) throw new Error('Clearance gaps must be finite and nonnegative.');
+    if (settings.checkClearance && !settings.gapsM.some(gap => gap > 0)) throw new Error('Enter at least one positive one-sided clearance gap before enabling the clearance requirement.');
+    const modes = modesInput ?? solveRigidBodyModes(config).modes, locations = isolationClearanceLocations(config);
+    const mass = rigidBodyMassMatrix(config).matrix, cache = new Map();
+    const evaluate = frequency => {
+      if (!cache.has(frequency)) {
+        const response = preparedRigidBodyResponse(config, frequency, settings.axis, mass, assembleRigidBodyStiffness(config, frequency));
+        const transfer = isolationRelativeDisplacement(config, frequency, settings.axis, locations, response);
+        const input = isolationPsdAt(settings.points, frequency);
+        cache.set(frequency, { input, transfer, psd: transfer.map(values => values.map(value => cAbs(value) ** 2 * input)) });
+      }
+      return cache.get(frequency);
+    };
+    let frequencies, spectra, variances, inputVariance, previous, converged = false, error = Infinity;
+    for (let refinement = 0; refinement <= 3; refinement++) {
+      frequencies = randomVibrationFrequencies(config, modes, refinement);
+      spectra = frequencies.map(evaluate);
+      variances = locations.map(() => [0, 0, 0]); inputVariance = 0;
+      for (let i = 1; i < frequencies.length; i++) {
+        const df = frequencies[i] - frequencies[i - 1], a = spectra[i - 1], b = spectra[i];
+        inputVariance += df * (a.input + b.input) / 2;
+        variances.forEach((row, p) => row.forEach((_, axis) => { row[axis] += df * (a.psd[p][axis] + b.psd[p][axis]) / 2; }));
+      }
+      if (!Number.isFinite(inputVariance) || variances.flat().some(value => !Number.isFinite(value))) throw new Error('Non-finite PSD response; review excitation levels, frequency range and damping.');
+      if (previous) {
+        const floor = Math.max(...variances.flat(), 1e-30) * 1e-10;
+        error = Math.max(...variances.flat().map((value, i) => Math.abs(Math.sqrt(value) - Math.sqrt(previous[i])) / Math.sqrt(Math.max(value, floor))));
+        if (error < .005) { converged = true; break; }
+      }
+      previous = variances.flat();
+    }
+    const preload = staticPreloadState(config);
+    const results = locations.map((location, index) => {
+      const rmsM = variances[index].map(Math.sqrt), peakM = rmsM.map(value => value * settings.peakFactor);
+      const gaps = location.kind === 'box' ? settings.gapsM : [0, 0, 0];
+      const marginM = gaps.map((gap, axis) => gap > 0 ? gap - peakM[axis] : null);
+      const spectralFloor = Math.max(...variances.flat(), 1e-30) * 1e-20;
+      const peakPsdHz = [0, 1, 2].map(axis => variances[index][axis] < spectralFloor ? null : frequencies[spectra.reduce((best, value, i) => value.psd[index][axis] > spectra[best].psd[index][axis] ? i : best, 0)]);
+      const result = { ...location, rmsM, peakM, marginM, peakPsdHz };
+      if (location.kind === 'mount' && !isParkerLordConfig(config)) {
+        const mount = preload.mounts[location.mountIndex];
+        result.sides = ['top', 'bottom'].map(side => {
+          const profile = mount.profile?.[side];
+          const count = profile?.count ?? config.mounts[side === 'top' ? 'stackTop' : 'stackBottom'];
+          const thickness = profile?.thicknessM ?? config.isolator.thicknessM;
+          const staticPct = profile ? mount[side === 'top' ? 'topCompressionPct' : 'bottomCompressionPct']
+            : compressionForPreload(config, mount[side === 'top' ? 'upperLoadN' : 'lowerLoadN']);
+          const deltaPct = 100 * peakM[2] / (thickness * count);
+          return { side, count, staticPct, minimumPct: staticPct - deltaPct, maximumPct: staticPct + deltaPct,
+            stackPeakM: [...peakM], perElementPeakM: peakM.map(value => value / count), review: staticPct - deltaPct <= 0 || staticPct + deltaPct > 20
+              || !profile && (config.mounts.stackTop !== config.mounts.stackBottom || mount[side === 'top' ? 'upperLoadN' : 'lowerLoadN'] > stressAtCompression(config, 20) * PSI * isolatorGeometry(config).loadedAreaM2 * isolatorGeometry(config).shapeCorrection) };
+        });
+      }
+      return result;
+    });
+    const pass = converged && results.every(result => result.marginM.every(margin => margin == null || margin >= 0) && (result.sides ?? []).every(side => !side.review));
+    return { valid: true, pass, converged, integrationError: error, inputGrms: Math.sqrt(inputVariance), axis: settings.axis, peakFactor: settings.peakFactor,
+      frequencies, inputPsd: spectra.map(value => value.input), locations: results,
+      displacementPsdM2PerHz: results.map((_, index) => [0, 1, 2].map(axis => spectra.map(value => value.psd[index][axis]))),
+      modes: modes.map(mode => ({ number: mode.number, frequencyHz: mode.frequencyHz, inBand: mode.frequencyHz >= frequencies[0] && mode.frequencyHz <= frequencies.at(-1),
+        maxPsdM2PerHz: Math.max(...evaluate(mode.frequencyHz).psd.flat()) })),
+      warnings: ['Nominal linear stationary response; not a Monte Carlo bound. Peak factor is an assumption, not a guaranteed test maximum.',
+        'All three response directions include rocking/cross-axis coupling. No simultaneous-axis correlation is assumed.',
+        'Side travel is the full opposed-stack motion, not stiffness-proportioned; identical elements within each stack share travel equally. Upper/lower axial compression changes have opposite signs.',
+        'Gaps are measured from installed loaded equilibrium to base-fixed surfaces. Tolerances, cables, bolt/sleeve radial contact and nonlinear contact need separate review.',
+        ...(isParkerLordConfig(config) ? ['Bonded LORD mount compression/contact limits are not available; travel only is reported.'] : []),
+        ...(!isParkerLordConfig(config) && !isSorbothaneAssemblyConfig(config) ? ['Uniform-pad side compression uses the existing equal payload-split static estimate and inverse curves limited to 20%. Loads beyond those curves or unequal upper/lower stack counts force REVIEW. Use mixed assemblies for per-side nonlinear static load sharing.'] : []),
+        ...(!isParkerLordConfig(config) && settings.points.at(-1)[0] > sorbothaneMaterial(config.isolator.formulation).digitizedCurveMaxHz
+          ? [`PSD extends to ${settings.points.at(-1)[0]} Hz, beyond the ${sorbothaneMaterial(config.isolator.formulation).digitizedCurveMaxHz} Hz material curve. The selected ${config.isolator.extrapolation} assumption is used.`] : []),
+        ...(!converged ? ['Integration did not converge within 0.5% RMS; refine/review before accepting clearance.'] : [])] };
+  } catch (error) { return { valid: false, pass: false, error: error.message, locations: [] }; }
+}
+
+// Compact comparison only: reuse the selected solve and discard the other
+// spectra after extracting each pad's extrema. This does not change which
+// single-axis environment the catalog/shared requirement evaluates.
+export function randomVibrationDirectionalSummary(configInput, selectedInput = null, modesInput = null) {
+  const config = normalizeSorbothaneConfig(configInput);
+  if (!config.environment.random.enabled) return null;
+  const modes = modesInput ?? solveRigidBodyModes(config).modes;
+  const selected = selectedInput ?? randomVibrationClearance(config, modes);
+  const cases = ['x', 'y', 'z'].map(axis => {
+    const candidate = { ...config, environment: { ...config.environment, random: { ...config.environment.random, axis } } };
+    const result = !selected?.valid || selected.axis === axis ? selected : randomVibrationClearance(candidate, modes);
+    if (!result?.valid) return { axis, valid: false, error: result?.error ?? 'PSD result unavailable.', pads: [] };
+    const pads = result.locations.flatMap(location => (location.sides ?? []).map(side => ({
+      leg: location.mountIndex + 1, side: side.side, count: side.count, staticPct: side.staticPct,
+      minimumPct: side.minimumPct, maximumPct: side.maximumPct, review: side.review,
+      axialPeakM: side.stackPeakM[2], perElementAxialPeakM: side.perElementPeakM[2]
+    })));
+    const envelope = side => {
+      const values = pads.filter(pad => pad.side === side);
+      return values.length ? { minimumPct: Math.min(...values.map(pad => pad.minimumPct)), maximumPct: Math.max(...values.map(pad => pad.maximumPct)) } : null;
+    };
+    const criticalPad = pads.length ? pads.reduce((worst, pad) => pad.maximumPct > worst.maximumPct ? pad : worst) : null;
+    const box = result.locations.filter(location => location.kind === 'box');
+    return { axis, valid: true, converged: result.converged, integrationError: result.integrationError,
+      inputGrms: result.inputGrms, peakFactor: result.peakFactor, pads, upper: envelope('top'), lower: envelope('bottom'), criticalPad,
+      minimumPct: pads.length ? Math.min(...pads.map(pad => pad.minimumPct)) : null,
+      maximumPct: criticalPad?.maximumPct ?? null,
+      compressionPass: pads.length ? result.converged && pads.every(pad => !pad.review) : null,
+      boxClearancePass: config.environment.random.gapsM.some(gap => gap > 0)
+        ? result.converged && box.every(location => location.marginM.every(margin => margin == null || margin >= 0)) : null,
+      maxBoxTravelM: [0, 1, 2].map(dof => Math.max(...box.map(location => location.peakM[dof]))),
+      unloading: pads.some(pad => pad.minimumPct <= 0),
+      staticModelReview: pads.some(pad => pad.review && pad.minimumPct > 0 && pad.maximumPct <= 20)
+    };
+  });
+  return { selectedAxis: config.environment.random.axis, cases,
+    allCompressionPass: cases.every(result => result.valid && result.compressionPass === true),
+    allBoxClearancePass: cases.every(result => result.valid && result.boxClearancePass === true) };
 }
 
 function logspace(minimum, maximum, count) {
@@ -1020,6 +1222,8 @@ export function analyzeSorbothaneIsolation(configInput, options = {}) {
   const verticalModeResult = verticalTranslationModeResult(modes.modes, config);
   const preload = staticPreloadState(config);
   const responseAt = analysisResponseEvaluator(config);
+  const clearance = !options.skipResponse || config.environment.random.checkClearance ? randomVibrationClearance(config, modes.modes) : null;
+  const directionalClearance = !options.skipResponse ? randomVibrationDirectionalSummary(config, clearance, modes.modes) : null;
   const directionalResponses = options.skipResponse ? null : Object.fromEntries(['x', 'y', 'z'].map(axis => [axis, frequencyResponse(config, axis)]));
   const response = directionalResponses?.[config.analysis.excitationAxis] ?? null;
   const toneResults = config.analysis.tones.map(tone => {
@@ -1080,9 +1284,12 @@ export function analyzeSorbothaneIsolation(configInput, options = {}) {
     toneResults,
     peak,
     peakResults,
+    clearance,
+    directionalClearance,
     uncertainty,
     warnings,
     passes: lateralModeResults.every(result => result.pass) && verticalModeResult.pass && toneResults.every(result => result.pass) && peak.pass && preload.allEngaged && preload.catalogCompliant && preload.compressionCompliant && (preload.assemblyChecks?.every(check => check.pass) ?? true)
+      && (!config.environment.random.checkClearance || config.environment.random.enabled && clearance?.pass === true)
   };
 }
 
@@ -1154,6 +1361,8 @@ function designGridChecks(analysis, catalogItem) {
     id: `${result.axis.toLowerCase()}-mode`, code: result.axis, label: `${result.axis} translation`, pass: result.pass,
     detail: `${number(result.frequencyHz)} Hz; minimum ${number(result.minimumHz)} Hz (M${result.modeNumber}).`
   }));
+  if (config.environment.random.checkClearance) checks.push({ id: 'random-clearance', code: 'TRAVEL', label: 'PSD displacement / clearance', pass: analysis.clearance?.pass === true,
+    detail: analysis.clearance?.valid ? `${config.environment.random.peakFactor} × RMS; ${String(config.environment.random.axis).toUpperCase()} input; gap, engagement, compression and integration checks.` : analysis.clearance?.error ?? 'Enable and define a valid PSD environment.' });
   const vertical = analysis.verticalModeResult;
   checks.push({ id: 'z-mode', code: 'Z', label: 'Z translation', pass: vertical.pass,
     detail: `${number(vertical.frequencyHz)} Hz; required ${vertical.rangeHz.map(number).join('–')} Hz (M${vertical.modeNumber}).` });
@@ -1477,7 +1686,8 @@ function createAssemblyPairSearch(configInput, settings) {
       if (failed.some(check => hard.some(([code]) => code === check.code))) return;
       const analysis = analyzeSorbothaneIsolation(candidateConfig, { skipResponse: true, skipUncertainty: true });
       dynamicallyEvaluatedCount += 1;
-      const dynamicFailures = [...analysis.lateralModeResults, analysis.verticalModeResult, ...analysis.toneResults, ...analysis.peakResults].filter(result => !result.pass).length;
+      const dynamicFailures = [...analysis.lateralModeResults, analysis.verticalModeResult, ...analysis.toneResults, ...analysis.peakResults].filter(result => !result.pass).length
+        + Number(candidateConfig.environment.random.checkClearance && !analysis.clearance?.pass);
       const summary = { index, pass: analysis.passes, dynamicFailures, modelReviews: failed.length,
         score: catalogPerformanceScore(analysis), elementCount: pair.top.stackCount + pair.bottom.stackCount };
       const key = `${pair.top.item.productNumber}|${pair.bottom.item.productNumber}`;

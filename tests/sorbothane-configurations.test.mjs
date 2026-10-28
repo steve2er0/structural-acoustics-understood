@@ -7,10 +7,11 @@ import { renderSorbothaneIsolationWorkbench } from '../js/sorbothane-isolation.j
 
 const exported = JSON.parse(readFileSync(new URL('../docs/sorbothane-isolation/configurations/shaker-test.json', import.meta.url), 'utf8'));
 const close = (a, b) => assert.ok(Math.abs(a - b) < 1e-10, `${a} != ${b}`);
+const migratedExport = () => ({ ...exported, damping: { mode: 'material', effectiveQ: 6 }, environment: { ...exported.environment, random: structuredClone(DEFAULT_SORBOTHANE_CONFIG.environment.random) } });
 
 test('shaker test exactly retains every field of the owner-provided configuration export', () => {
   const config = loadSorbothaneConfiguration('shaker-test');
-  assert.deepEqual(config, { ...exported, damping: { mode: 'material', effectiveQ: 6 } }, 'all owner-provided fields are retained; the new optional override defaults off');
+  assert.deepEqual(config, migratedExport(), 'all owner-provided fields are retained; optional Q and PSD features default off');
   assert.equal(matchingSorbothaneConfiguration(config)?.name, 'shaker test');
   const { LB, INCH } = SORBOTHANE_UNITS;
   close(config.component.massKg / LB, 12);
@@ -32,7 +33,7 @@ test('named configurations are independent copies and never overwrite the separa
   shaker.uncertainty.seed = 1;
   shaker.assemblies.assignments[0] = 'B';
   assert.equal(matchingSorbothaneConfiguration(shaker), null);
-  assert.deepEqual(loadSorbothaneConfiguration('shaker-test'), { ...exported, damping: { mode: 'material', effectiveQ: 6 } });
+  assert.deepEqual(loadSorbothaneConfiguration('shaker-test'), migratedExport());
   assert.deepEqual(loadSorbothaneConfiguration('baseline'), normalizeSorbothaneConfig(DEFAULT_SORBOTHANE_CONFIG));
   assert.equal(loadSorbothaneConfiguration('baseline').mounts.count, 8);
   assert.equal(matchingSorbothaneConfiguration(loadSorbothaneConfiguration('baseline'))?.id, 'baseline');
