@@ -732,6 +732,11 @@ th { position: sticky; top: 0; background: var(--paper-3); color: var(--muted); 
 .sorbo-workbench .site-breadcrumbs { max-width: 1680px; margin: 0 auto; padding-top: 18px; }
 .sorbo-hero { max-width: 1680px; min-height: 180px; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, .48fr); align-items: end; gap: 4vw; margin: 0 auto; padding: 24px 0; border-bottom: 1px solid var(--sorbo-line); }
 .sorbo-clearance-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+.sorbo-cumulative-displacement { margin: 1.5rem 0; padding: 1rem 0; border-block: 1px solid var(--sorbo-line); }
+.sorbo-cumulative-displacement header { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; }
+.sorbo-cumulative-displacement label { display: grid; gap: .4rem; color: var(--sorbo-text); font-size: .8rem; }
+[data-sorbo-cumulative-scale] { padding: .6rem; border: 1px solid var(--sorbo-line); color: var(--sorbo-text); background: var(--sorbo-panel-solid); font: inherit; max-width: 100%; }
+[data-sorbo-cumulative-endpoints] span { display: inline-block; margin: .35rem .4rem .35rem 0; }
 .sorbo-compression-comparison table { width: 100%; }
 .sorbo-compression-comparison :is(th, td) { vertical-align: top; }
 .sorbo-compression-comparison thead th { white-space: normal; }

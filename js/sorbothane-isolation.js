@@ -11,6 +11,7 @@ import {
   normalizeSorbothaneConfig,
   rigidBodyResponseAtFrequency,
   parseIsolationPsd,
+  cumulativeIsolationDisplacement,
   runDesignGrid,
   screenParkerLordCatalogAsync,
   screenSorbothaneCatalogAsync,
@@ -508,16 +509,46 @@ export function clearancePsdSvg(result, index = 0) {
     <text class="sorbo-axis-label" x="400" y="320" text-anchor="middle">Frequency (Hz) · relative displacement PSD (in²/Hz) · logarithmic axes</text></svg>`;
 }
 
+export function clearanceCumulativeSvg(result, index = 0, scale = 'rms') {
+  const cumulative = cumulativeIsolationDisplacement(result, index);
+  const factored = scale === 'peak', curves = factored ? cumulative.peakM : cumulative.rmsM;
+  const frequencies = cumulative.frequencies, location = result.locations[index];
+  const totals = curves.map(curve => curve.at(-1));
+  const maximumIn = Math.max(...totals) / INCH;
+  const yMax = maximumIn > 0 ? maximumIn * 1.1 : .001;
+  const low = Math.log10(frequencies[0]), span = Math.log10(frequencies.at(-1)) - low;
+  const x = f => 75 + 670 * (Math.log10(f) - low) / span;
+  const y = value => 270 - 230 * (value / INCH) / yMax;
+  const label = factored ? `${result.peakFactor} × RMS estimate (in)` : 'RMS displacement (in)';
+  const axisValue = value => value === 0 ? '0' : value >= .001 && value < 100 ? fmt(value, 5) : value.toExponential(2);
+  return `<svg class="sorbo-chart" data-sorbo-cumulative-svg viewBox="0 0 800 330" role="img" aria-label="Cumulative relative displacement, X Y Z response at ${esc(location.label)} from ${result.axis.toUpperCase()} base excitation; ${label}">
+    <title>Cumulative relative displacement · ${esc(location.label)} · ${result.axis.toUpperCase()} input</title>
+    ${[0, .25, .5, .75, 1].map(t => `<line class="sorbo-grid-line" x1="75" x2="745" y1="${270 - 230 * t}" y2="${270 - 230 * t}"/><text class="sorbo-axis-label" x="68" y="${274 - 230 * t}" text-anchor="end">${axisValue(yMax * t)}</text><text class="sorbo-axis-label" x="${75 + 670 * t}" y="291" text-anchor="middle">${fmt(10 ** (low + span * t), 2)}</text>`).join('')}
+    ${result.modes.filter(mode => mode.inBand).map(mode => `<line class="sorbo-grid-line" stroke-dasharray="3 4" x1="${x(mode.frequencyHz)}" x2="${x(mode.frequencyHz)}" y1="40" y2="270"/><text class="sorbo-axis-label" x="${x(mode.frequencyHz)}" y="${mode.number % 2 ? 20 : 34}" text-anchor="middle">M${mode.number}</text>`).join('')}
+    ${curves.map((curve, axis) => `<path data-sorbo-cumulative-axis="${'xyz'[axis]}" fill="none" stroke="${['var(--sorbo-x)', 'var(--sorbo-y)', 'var(--sorbo-z)'][axis]}" stroke-width="2" d="${curve.map((value, i) => `${i ? 'L' : 'M'}${x(frequencies[i]).toFixed(2)},${y(value).toFixed(2)}`).join(' ')}"/>`).join('')}
+    <text class="sorbo-axis-label" x="400" y="320" text-anchor="middle">Frequency (Hz, log) · cumulative ${label} · linear vertical axis</text></svg>`;
+}
+
+export function clearanceCumulativeOutput(result, index = 0, scale = 'rms') {
+  const location = result.locations[index], factored = scale === 'peak';
+  const values = factored ? location.peakM : location.rmsM;
+  return `${clearanceCumulativeSvg(result, index, scale)}<p class="sorbo-caption" data-sorbo-cumulative-endpoints><strong>Full-band ${factored ? `${result.peakFactor} × RMS estimate` : 'RMS'} · ${esc(location.label)}</strong><br/>${values.map((value, axis) => `<span style="color:${['var(--sorbo-x)', 'var(--sorbo-y)', 'var(--sorbo-z)'][axis]}"><b>${'XYZ'[axis]}</b>: ${travelText(value)}</span>`).join(' · ')}</p><p class="sorbo-caption">Low-to-high accumulation: √∫ S<sub>relative displacement</sub>(f) df${factored ? `, multiplied by ${result.peakFactor}` : ''}. Steep rises identify frequency bands driving travel; plateaus add little variance. The endpoint matches the full-band ${factored ? 'factored peak estimate' : 'RMS'} in the location table. This is not a time history or signed displacement; ${factored ? 'factor × RMS is not a guaranteed peak' : 'RMS is not peak travel'}. ${result.converged ? 'Uses the converged PSD grid.' : '<span class="fail-text">Integration has not converged; review before using these values.</span>'}</p>`;
+}
+
 export function clearanceCsv(analysis) {
   const result = analysis.clearance;
   if (!result?.valid) throw new Error('Apply a valid PSD environment before exporting displacement results.');
   const metadata = { source: 'nominal browser linear prediction, not test data', environment: analysis.config.environment.random,
-    inputGrms: result.inputGrms, integrationConverged: result.converged, peakInterpretation: 'factor × RMS; not a guaranteed maximum', warnings: result.warnings };
-  const rows = ['frequency_hz,input_g2_per_hz,location,response_axis,displacement_psd_in2_per_hz,rms_in,factored_peak_in,remaining_gap_in'];
-  result.locations.forEach((location, p) => ['x', 'y', 'z'].forEach((axis, d) => result.frequencies.forEach((frequency, i) => rows.push([
+    inputGrms: result.inputGrms, integrationConverged: result.converged, peakInterpretation: 'factor × RMS; not a guaranteed maximum', cumulativeInterpretation: 'Low-to-high square root of trapezoidal displacement PSD integral on the final integration grid; not a time history', warnings: result.warnings };
+  const rows = ['frequency_hz,input_g2_per_hz,location,response_axis,displacement_psd_in2_per_hz,rms_in,factored_peak_in,remaining_gap_in,cumulative_rms_in,cumulative_factored_peak_in'];
+  result.locations.forEach((location, p) => {
+    const cumulative = cumulativeIsolationDisplacement(result, p);
+    ['x', 'y', 'z'].forEach((axis, d) => result.frequencies.forEach((frequency, i) => rows.push([
     frequency, result.inputPsd[i], location.id, axis, result.displacementPsdM2PerHz[p][d][i] / INCH ** 2, location.rmsM[d] / INCH,
-    location.peakM[d] / INCH, location.marginM[d] == null ? '' : location.marginM[d] / INCH
-  ].join(',')))));
+    location.peakM[d] / INCH, location.marginM[d] == null ? '' : location.marginM[d] / INCH,
+    cumulative.rmsM[d][i] / INCH, cumulative.peakM[d][i] / INCH
+  ].join(','))));
+  });
   return `# ${JSON.stringify(metadata)}\n${rows.join('\n')}\n`;
 }
 
@@ -588,6 +619,7 @@ export function clearancePanel(analysis) {
       <p class="sorbo-caption">Nominal material/Q response, not a Monte Carlo uncertainty bound. All three output directions include cross-axis and rocking motion. Gap checks cover every box corner; leg motion is checked separately for pad unloading/compression. No radial bolt/sleeve contact allowable is inferred.</p>
       <label>Plot location <select data-sorbo-clearance-location>${result.locations.map((location, index) => `<option value="${index}">${esc(location.label)}</option>`).join('')}</select></label>
       <p class="sorbo-caption"><span style="color:var(--sorbo-x)">X response</span> · <span style="color:var(--sorbo-y)">Y response</span> · <span style="color:var(--sorbo-z)">Z response</span> · single ${result.axis.toUpperCase()} input</p><div data-sorbo-clearance-chart>${clearancePsdSvg(result)}</div>
+      <section class="sorbo-cumulative-displacement" data-sorbo-cumulative><header><h3>Cumulative relative displacement</h3><label>Plot scale <select data-sorbo-cumulative-scale><option value="rms">RMS displacement</option><option value="peak">${result.peakFactor} × RMS estimate</option></select></label></header><p class="sorbo-caption">All three response directions · same input axis and plot location as the PSD above.</p><div data-sorbo-cumulative-output>${clearanceCumulativeOutput(result)}</div></section>
       <div class="table-wrap"><table><thead><tr><th>Location</th><th>RMS X / Y / Z (mil)</th><th>${result.peakFactor}× RMS X / Y / Z (mil)</th><th>Remaining gap X / Y / Z (mil)</th><th>PSD peak Hz X / Y / Z</th></tr></thead><tbody>${result.locations.map(location => `<tr><td>${esc(location.label)}</td><td>${location.rmsM.map(value => fmt(value / INCH * 1000, 3)).join(' / ')}</td><td>${location.peakM.map(value => fmt(value / INCH * 1000, 3)).join(' / ')}</td><td>${location.marginM.map(value => value == null ? 'not set' : fmt(value / INCH * 1000, 3)).join(' / ')}</td><td>${location.peakPsdHz.map(value => value == null ? '—' : fmt(value, 1)).join(' / ')}</td></tr>`).join('')}</tbody></table></div>
       <details><summary>Upper / lower stack travel and compression envelope</summary><p>Opposed sides see the same stack travel with opposite axial compression changes. Per-element travel assumes identical series elements. Compression maxima above 20% or minima at/below zero require model/contact review; 20% is a material-screening boundary, not a hard-stop dimension.</p><div class="table-wrap"><table><thead><tr><th>Leg / side</th><th>Count</th><th>Stack axial peak</th><th>Per-element axial peak</th><th>Compression min–max</th><th>Check</th></tr></thead><tbody>${result.locations.flatMap(location => (location.sides ?? []).map(side => `<tr><td>${esc(location.label)} ${side.side}</td><td>${side.count}</td><td>${travelText(side.stackPeakM[2])}</td><td>${travelText(side.perElementPeakM[2])}</td><td>${fmt(side.minimumPct, 2)}–${fmt(side.maximumPct, 2)}%</td><td>${side.review ? 'REVIEW' : 'PASS'}</td></tr>`)).join('')}</tbody></table></div></details>
       <p class="sorbo-caption">Mode markers: ${result.modes.map(mode => `M${mode.number} ${fmt(mode.frequencyHz, 1)} Hz${mode.inBand ? '' : ' (outside input band)'}`).join(' · ')}. These locate resonances, not independently additive modal RMS values.</p>
@@ -1892,6 +1924,10 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
     });
     shell.querySelector('[data-sorbo-clearance-location]')?.addEventListener('change', event => {
       shell.querySelector('[data-sorbo-clearance-chart]').innerHTML = clearancePsdSvg(analysis.clearance, Number(event.target.value));
+      shell.querySelector('[data-sorbo-cumulative-output]').innerHTML = clearanceCumulativeOutput(analysis.clearance, Number(event.target.value), shell.querySelector('[data-sorbo-cumulative-scale]').value);
+    });
+    shell.querySelector('[data-sorbo-cumulative-scale]')?.addEventListener('change', event => {
+      shell.querySelector('[data-sorbo-cumulative-output]').innerHTML = clearanceCumulativeOutput(analysis.clearance, Number(shell.querySelector('[data-sorbo-clearance-location]').value), event.target.value);
     });
     shell.querySelector('[data-sorbo-action="export-clearance"]')?.addEventListener('click', () => download('isolation-psd-displacement-clearance.csv', clearanceCsv(analysis), 'text/csv;charset=utf-8'));
     shell.querySelector('[data-sorbo-action="export-pad-compression"]')?.addEventListener('click', () => download('isolation-pad-compression-xyz.csv', padCompressionCsv(analysis), 'text/csv;charset=utf-8'));

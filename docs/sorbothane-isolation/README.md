@@ -100,6 +100,24 @@ forces review. This is numerical refinement evidence, not a rigorous error bound
 The CSV preserves the input, frequency grid, nominal results and assumptions.
 No displacement Monte Carlo uncertainty band is claimed.
 
+The **Cumulative relative displacement** plot below the PSD accumulates
+`sqrt(integral S_relative_displacement df)` from the lowest input frequency to
+each plotted frequency. X/Y/Z response curves share a logarithmic frequency
+axis and a linear displacement axis (inches). Each starts at zero at the first
+breakpoint and ends at the location table's full-band RMS. Variances are
+integrated before taking the square root; RMS increments are not added.
+Steep rises show the frequency bands contributing most travel; plateaus add
+little variance. M1–M6 markers locate resonances but are not independent modal
+RMS contributions.
+
+The existing **Plot location** selector updates both the PSD and cumulative
+plots, including off-CG corners and each mount. **Plot scale** switches between
+RMS and the configured peak-factor-times-RMS estimate; the latter is not a
+guaranteed peak or a time history. Integration warnings remain visible. The
+displacement CSV now also includes `cumulative_rms_in` and
+`cumulative_factored_peak_in` on the same final integration grid. No new solve,
+catalog criterion or additional PSD environment is introduced by this view.
+
 ### Pad compression for every excitation direction
 
 The **Pad compression · X / Y / Z inputs** card shows upper- and lower-pad

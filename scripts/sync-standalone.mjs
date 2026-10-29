@@ -110,7 +110,7 @@ const sorbothaneAnalysisExports = [
   'DEFAULT_SORBOTHANE_CONFIG', 'NASTRAN_PLATE_MATERIALS', 'normalizeSorbothaneConfig', 'isParkerLordConfig', 'sorbothaneDynamicProperties', 'isolatorDynamicProperties',
   'isolationMountCoordinates', 'isolationMountStiffnesses', 'isolatorGeometry', 'staticPreloadState', 'rigidBodyMassMatrix', 'mountDynamicStiffness',
   'assembleRigidBodyStiffness', 'solveRigidBodyModes', 'rigidBodyResponseAtFrequency',
-  'parseIsolationPsd', 'validateIsolationPsd', 'isolationPsdAt', 'randomVibrationFrequencies', 'isolationClearanceLocations', 'isolationRelativeDisplacement', 'randomVibrationClearance', 'randomVibrationDirectionalSummary',
+  'parseIsolationPsd', 'validateIsolationPsd', 'isolationPsdAt', 'randomVibrationFrequencies', 'isolationClearanceLocations', 'isolationRelativeDisplacement', 'randomVibrationClearance', 'cumulativeIsolationDisplacement', 'randomVibrationDirectionalSummary',
   'frequencyResponse', 'uncertaintyEnvelope', 'uncertaintyEnvelopeAsync', 'analyzeSorbothaneIsolation', 'runDesignGrid',
   'screenSorbothaneCatalog', 'screenSorbothaneCatalogAsync', 'screenParkerLordCatalog', 'screenParkerLordCatalogAsync',
   'SORBOTHANE_UNITS', 'SORBOTHANE_CATALOG'

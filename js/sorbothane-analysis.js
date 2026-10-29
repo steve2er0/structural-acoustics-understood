@@ -1049,6 +1049,26 @@ export function randomVibrationClearance(configInput, modesInput = null) {
   } catch (error) { return { valid: false, pass: false, error: error.message, locations: [] }; }
 }
 
+// Low-to-high cumulative RMS uses the exact final PSD integration grid. Integrate
+// variance first, then take its square root: RMS increments are not additive.
+export function cumulativeIsolationDisplacement(result, locationIndex = 0) {
+  const frequencies = result?.frequencies;
+  const spectra = result?.displacementPsdM2PerHz?.[locationIndex];
+  if (!result?.valid || !Number.isInteger(locationIndex) || locationIndex < 0 || !Array.isArray(frequencies) || frequencies.length < 2
+    || frequencies.some((f, i) => !Number.isFinite(f) || f <= 0 || i > 0 && f <= frequencies[i - 1])
+    || !Array.isArray(spectra) || spectra.length !== 3 || spectra.some(curve => !Array.isArray(curve) || curve.length !== frequencies.length || curve.some(value => !Number.isFinite(value) || value < 0))
+    || !Number.isFinite(result.peakFactor) || result.peakFactor <= 0) throw new Error('Cumulative displacement requires a valid location and finite, increasing PSD integration grid.');
+  const rmsM = spectra.map(curve => {
+    let variance = 0;
+    return curve.map((value, i) => {
+      if (i) variance += (frequencies[i] - frequencies[i - 1]) * (curve[i - 1] + value) / 2;
+      if (!Number.isFinite(variance)) throw new Error('Non-finite cumulative displacement variance.');
+      return Math.sqrt(variance);
+    });
+  });
+  return { frequencies: [...frequencies], rmsM, peakM: rmsM.map(curve => curve.map(value => value * result.peakFactor)) };
+}
+
 // Compact comparison only: reuse the selected solve and discard the other
 // spectra after extracting each pad's extrema. This does not change which
 // single-axis environment the catalog/shared requirement evaluates.

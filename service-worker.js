@@ -1,4 +1,4 @@
-const CACHE = 'sau-v162-catalog-psd-flags';
+const CACHE = 'sau-v163-cumulative-displacement';
 const CORE = [
   './js/sorbothane-configurations.js',
   './', './index.html', './styles.css', './manifest.webmanifest', './assets/favicon.svg',
