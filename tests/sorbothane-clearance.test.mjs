@@ -98,9 +98,12 @@ test('invalid/disabled environments cannot silently pass an enabled shared clear
   assert.equal(grid.cells.flat().filter(cell => cell.analysis).length, 9);
   grid.cells.flat().filter(cell => cell.analysis).forEach(cell => assert.ok(cell.checks.some(check => check.code === 'TRAVEL' && !check.pass)));
   const screen = screenParkerLordCatalog(c, { family:'AM-006', mountsPerPointRange:[1,1], criteria: { lateralModeMinimumHz:[.1,.1], verticalModeRangeHz:[.1,1000], resonanceLimitDb:80, tones:[] } });
-  assert.equal(screen.recommendations.length, 0);
-  assert.ok(screen.nearMisses.length > 0);
-  screen.nearMisses.forEach(candidate => { assert.equal(candidate.config.environment.random.checkClearance, true); assert.equal(candidate.analysis.clearance.pass, false); });
+  assert.ok(screen.recommendations.length > 0, 'catalog travel is advisory, never an exclusion');
+  screen.recommendations.forEach(candidate => {
+    assert.equal(candidate.config.environment.random.checkClearance, true);
+    assert.equal(candidate.clearanceAdvisory.allBoxClearancePass, false);
+    assert.equal(candidate.clearanceAdvisory.cases.length, 3);
+  });
   c.environment.random.enabled = false;
   assert.equal(analyzeSorbothaneIsolation(c, {skipResponse:true}).passes, false);
   c.environment.random.enabled = true;

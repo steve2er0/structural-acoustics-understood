@@ -122,10 +122,36 @@ one row per pad and test input, preserving the PSD, peak factor, damping and
 integration status. The engineering summary includes the direction comparison.
 
 This display does **not** silently change the environment selection or shared
-criteria: the detailed spectrum and optional catalog/matrix clearance requirement
+criteria: the detailed spectrum and optional current-design/matrix clearance requirement
 still use the selected input axis. The comparison reuses that axis's full solve,
-computes the two other cases and retains only compact per-pad summaries. Catalog
-and matrix candidate evaluations do not pay for this display-only comparison.
+computes the two other cases and retains only compact per-pad summaries. Matrix
+candidate evaluations do not pay for this display-only comparison.
+
+### Catalog X/Y/Z flags (not exclusions)
+
+With PSD enabled, catalog screening checks **every retained recommendation and
+REVIEW result** in three independent X/Y/Z tests using the saved environment,
+active material/manual-Q damping, peak factor, gaps, and 20% compression screen.
+Each part/pair has a **PSD CLEAR / PSD REVIEW** disclosure with axis-specific
+flags, maximum corner travel in all response directions, and maximum pad
+compression. Travel excess, >20% compression, unloading, static-model review,
+nonconverged integration and invalid inputs are explicit flags. Unset gaps or
+unavailable LORD compression are not a PASS; disabled PSD is NOT CHECKED.
+
+These new dynamic PSD flags **never exclude, reorder or disable a catalog
+result**, even when the current-design/matrix clearance requirement is enabled.
+Existing geometry, fit, static preload/compression, rated-load, mode, tone and
+resonance screening are unchanged. “Passing” catalog results refer to those
+non-PSD checks; inspect the separate PSD flag before selecting hardware. The
+preferred stack per part/pair is still chosen by the existing non-PSD ranking,
+not optimized for PSD clearance. Full comparison can be inspected after applying
+any result.
+
+For efficiency, the three-axis PSD review runs after the usual part/pair ranking
+and checks retained results (all results available through the 25/50/100/All
+selector), not every discarded stack trial. A dedicated progress stage and
+Cancel cover this work. The screen keeps compact summaries, not extra spectra
+for each result. Changing the display limit does not rerun the calculations.
 
 Peak factors (default 3, editable 1–10) are screening assumptions for a stationary,
 approximately Gaussian response. Neither 3σ nor 4σ guarantees a test maximum.
@@ -154,11 +180,11 @@ and contact limits are not invented. The model remains linear after predicting
 a possible contact/unloading event; its post-contact response is not valid.
 
 The optional **Require clearance** checkbox applies this same environment,
-factor, gap and engagement/compression checks to the current design, 7×7 matrix
-(`TRAVEL`) and catalog recommendations. Without it, PSD results are informational.
+factor, gap and engagement/compression checks to the current design and 7×7 matrix
+(`TRAVEL`) for the selected input axis. Without it, their PSD results are informational.
 An enabled requirement with a missing/disabled/invalid environment cannot pass.
-Full catalog searches with this requirement cost more because each eligible
-candidate needs a resolved PSD integration; narrow geometry filters first.
+Catalog PSD checks remain all-axis advisory flags regardless of this checkbox;
+narrow geometry filters first to shorten the additional integration stage.
 
 With PSD enabled, the SOL 111 deck also includes all box-corner/mount/base output
 grids and a PSD-resolved excitation frequency grid. It remains a **unit-g FRF

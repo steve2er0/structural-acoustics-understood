@@ -1118,6 +1118,14 @@ html[data-theme="light"] .sorbo-support-footprint .sorbo-drawing-component-label
 .sorbo-pair-table ul { padding-left: 1.1rem; font-size: .75rem; line-height: 1.6; }
 .sorbo-pair-ranking { margin: .8rem 0; font-size: .75rem; }
 .sorbo-pair-ranking summary { cursor: pointer; color: var(--sorbo-cyan); }
+.sorbo-catalog-clearance-notice { margin: 1rem 0; padding: 1rem; border: 1px solid var(--sorbo-line); background: var(--sorbo-panel-solid); color: var(--sorbo-text); }
+.sorbo-catalog-clearance-notice :is(p, h4) { margin: .65rem 0; }
+.sorbo-catalog-clearance { margin-top: .65rem; color: var(--sorbo-text); font-size: .75rem; white-space: normal; }
+.sorbo-catalog-clearance summary { min-height: 44px; cursor: pointer; }
+.sorbo-catalog-clearance small { display: block; margin: .4rem 0; line-height: 1.6; color: var(--sorbo-muted); }
+.sorbo-catalog-clearance :is(p, td, th) { white-space: normal; }
+.sorbo-catalog-clearance th { position: static; }
+.sorbo-catalog-clearance table { min-width: 450px; }
 @media (max-width: 700px) {
   .sorbo-assembly-card > header { flex-direction: column; gap: .5rem; }
   .sorbo-assembly-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }

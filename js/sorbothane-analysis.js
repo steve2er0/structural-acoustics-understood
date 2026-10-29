@@ -1222,7 +1222,7 @@ export function analyzeSorbothaneIsolation(configInput, options = {}) {
   const verticalModeResult = verticalTranslationModeResult(modes.modes, config);
   const preload = staticPreloadState(config);
   const responseAt = analysisResponseEvaluator(config);
-  const clearance = !options.skipResponse || config.environment.random.checkClearance ? randomVibrationClearance(config, modes.modes) : null;
+  const clearance = !options.catalogScreen && (!options.skipResponse || config.environment.random.checkClearance) ? randomVibrationClearance(config, modes.modes) : null;
   const directionalClearance = !options.skipResponse ? randomVibrationDirectionalSummary(config, clearance, modes.modes) : null;
   const directionalResponses = options.skipResponse ? null : Object.fromEntries(['x', 'y', 'z'].map(axis => [axis, frequencyResponse(config, axis)]));
   const response = directionalResponses?.[config.analysis.excitationAxis] ?? null;
@@ -1289,7 +1289,7 @@ export function analyzeSorbothaneIsolation(configInput, options = {}) {
     uncertainty,
     warnings,
     passes: lateralModeResults.every(result => result.pass) && verticalModeResult.pass && toneResults.every(result => result.pass) && peak.pass && preload.allEngaged && preload.catalogCompliant && preload.compressionCompliant && (preload.assemblyChecks?.every(check => check.pass) ?? true)
-      && (!config.environment.random.checkClearance || config.environment.random.enabled && clearance?.pass === true)
+      && (options.catalogScreen || !config.environment.random.checkClearance || config.environment.random.enabled && clearance?.pass === true)
   };
 }
 
@@ -1485,6 +1485,47 @@ function catalogPerformanceScore(analysis) {
   return tonePenalty + peakPenalty + analysis.toneResults.reduce((sum, result) => sum + result.db, 0) + analysis.peak.db;
 }
 
+// PSD travel/compression are advisory in catalogs, never eligibility/ranking
+// criteria. Evaluate only retained results, not every discarded stack trial.
+function addCatalogClearanceReview(candidate, configInput) {
+  const config = normalizeSorbothaneConfig(configInput);
+  const environment = clone(config.environment.random);
+  const calculationConfig = { ...config, environment: { ...config.environment, random: { ...environment, checkClearance: false } } };
+  candidate.clearanceAdvisory = { enabled: environment.enabled, environment, damping: { ...config.damping },
+    ...(randomVibrationDirectionalSummary(calculationConfig, null, candidate.analysis.modes) ?? { cases: [], allCompressionPass: false, allBoxClearancePass: false }) };
+}
+
+function catalogClearanceResult(screen) {
+  const candidates = [...screen.recommendations, ...screen.nearMisses];
+  const first = candidates[0]?.clearanceAdvisory;
+  screen.clearanceAdvisory = { mode: 'flag-only', enabled: first?.enabled ?? screen.clearanceAdvisory?.enabled ?? false,
+    evaluatedCount: candidates.filter(candidate => candidate.clearanceAdvisory?.enabled).length,
+    flaggedCount: candidates.filter(candidate => candidate.clearanceAdvisory?.enabled &&
+      !(candidate.clearanceAdvisory.allCompressionPass && candidate.clearanceAdvisory.allBoxClearancePass)).length };
+  return screen;
+}
+
+function reviewCatalogClearance(screen, configForCandidate = candidate => candidate.config) {
+  for (const candidate of [...screen.recommendations, ...screen.nearMisses]) addCatalogClearanceReview(candidate, configForCandidate(candidate));
+  return catalogClearanceResult(screen);
+}
+
+async function reviewCatalogClearanceAsync(screen, options, configForCandidate = candidate => candidate.config) {
+  const candidates = [...screen.recommendations, ...screen.nearMisses];
+  const yieldControl = options.yieldControl ?? (() => new Promise(resolve => setTimeout(resolve, 0)));
+  options.onProgress?.({ stage: 'clearance-flags', completed: 0, total: candidates.length, percent: 80 });
+  await yieldControl();
+  for (let index = 0; index < candidates.length; index++) {
+    if (options.shouldCancel?.()) return null;
+    addCatalogClearanceReview(candidates[index], configForCandidate(candidates[index]));
+    options.onProgress?.({ stage: 'clearance-flags', completed: index + 1, total: candidates.length, percent: 80 + (index + 1) / candidates.length * 20 });
+    await yieldControl();
+  }
+  if (options.shouldCancel?.()) return null;
+  options.onProgress?.({ stage: 'complete', completed: candidates.length, total: candidates.length, percent: 100 });
+  return catalogClearanceResult(screen);
+}
+
 const catalogNumberOr = (value, fallback) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 
 function sortedCatalogRange(input, fallback) {
@@ -1558,7 +1599,7 @@ function preScreenCatalogCombination(context, combination, exclusions) {
 }
 
 function evaluateCatalogCombination(context, candidate, exclusions) {
-  const analysis = analyzeSorbothaneIsolation(candidate.candidateConfig, { skipResponse: true, skipUncertainty: true });
+  const analysis = analyzeSorbothaneIsolation(candidate.candidateConfig, { skipResponse: true, skipUncertainty: true, catalogScreen: true });
   const targetMounts = context.assemblyTarget ? analysis.preload.mounts.filter(mount => mount.group === context.assemblyTarget.group) : analysis.preload.mounts;
   const loadsLbf = context.assemblyTarget
     ? targetMounts.map(mount => (context.assemblyTarget.side === 'top' ? mount.upperLoadN : mount.lowerLoadN) / LBF)
@@ -1596,6 +1637,7 @@ function finalizeCatalogScreen(context, evaluated, exclusions) {
   nearMisses.sort((left, right) => left.score - right.score || left.stackCount - right.stackCount);
   return {
     library: 'sorbothane',
+    clearanceAdvisory: { enabled: context.config.environment.random.enabled },
     supportCount: context.config.mounts.count,
     rowAxis: context.config.mounts.rowAxis,
     formulation: context.config.isolator.formulation,
@@ -1684,10 +1726,9 @@ function createAssemblyPairSearch(configInput, settings) {
       const hard = [['FIT', 'fit'], ['COMP', 'compression'], ['CONTACT', 'engagement'], ['LOAD', 'ratedLoad'], ['RATE?', 'ratedLoad'], ['STATIC', 'equilibrium']];
       for (const category of new Set(hard.filter(([code]) => failed.some(check => check.code === code)).map(([, category]) => category))) exclusions[category] += 1;
       if (failed.some(check => hard.some(([code]) => code === check.code))) return;
-      const analysis = analyzeSorbothaneIsolation(candidateConfig, { skipResponse: true, skipUncertainty: true });
+      const analysis = analyzeSorbothaneIsolation(candidateConfig, { skipResponse: true, skipUncertainty: true, catalogScreen: true });
       dynamicallyEvaluatedCount += 1;
-      const dynamicFailures = [...analysis.lateralModeResults, analysis.verticalModeResult, ...analysis.toneResults, ...analysis.peakResults].filter(result => !result.pass).length
-        + Number(candidateConfig.environment.random.checkClearance && !analysis.clearance?.pass);
+      const dynamicFailures = [...analysis.lateralModeResults, analysis.verticalModeResult, ...analysis.toneResults, ...analysis.peakResults].filter(result => !result.pass).length;
       const summary = { index, pass: analysis.passes, dynamicFailures, modelReviews: failed.length,
         score: catalogPerformanceScore(analysis), elementCount: pair.top.stackCount + pair.bottom.stackCount };
       const key = `${pair.top.item.productNumber}|${pair.bottom.item.productNumber}`;
@@ -1714,7 +1755,7 @@ function createAssemblyPairSearch(configInput, settings) {
   };
   const materialize = summary => {
     const pair = at(summary.index), config = configFor(pair);
-    const analysis = analyzeSorbothaneIsolation(config, { skipResponse: true, skipUncertainty: true });
+    const analysis = analyzeSorbothaneIsolation(config, { skipResponse: true, skipUncertainty: true, catalogScreen: true });
     const mounts = analysis.preload.mounts.filter(mount => mount.group === groupKey);
     const range = side => { const loads = mounts.map(mount => (side === 'top' ? mount.upperLoadN : mount.lowerLoadN) / LBF); return [Math.min(...loads), Math.max(...loads)]; };
     return { ...summary, candidateId: `${groupKey}|${pair.top.item.productNumber}|${pair.top.stackCount}|${pair.bottom.item.productNumber}|${pair.bottom.stackCount}`,
@@ -1726,6 +1767,7 @@ function createAssemblyPairSearch(configInput, settings) {
   };
   const result = (selected, recommendations, nearMisses) => ({
     library: 'sorbothane', searchMode: 'assembly-pairs', assemblyTarget: { group: groupKey, side: 'both' },
+    clearanceAdvisory: { enabled: context.config.environment.random.enabled },
     supportCount: context.config.mounts.count, rowAxis: context.config.mounts.rowAxis, formulation: context.config.isolator.formulation,
     criteria: context.criteria, catalogPartCount: context.catalog.length, eligiblePartCount: new Set([...upper, ...lower].map(side => side.item.productNumber)).size,
     upperOptionCount: upper.length, lowerOptionCount: lower.length, combinationCount: total, dynamicallyEvaluatedCount,
@@ -1733,7 +1775,7 @@ function createAssemblyPairSearch(configInput, settings) {
     settings: { topGeometry: geometry('top'), bottomGeometry: geometry('bottom'), odRange: context.odRange, idRange: context.idRange, thicknessRange: context.thicknessRange, stackRange: [context.stackMin, context.stackMax] },
     exclusions, errors, recommendations, nearMisses
   });
-  return { total, visit, shortlist, materialize, result };
+  return { total, visit, shortlist, materialize, result, configForCandidate: candidate => configFor(at(candidate.index)) };
 }
 
 const isAssemblyPairSearch = (config, settings) => isSorbothaneAssemblyConfig(config) && !['top', 'bottom'].includes(settings.assemblySide);
@@ -1742,7 +1784,7 @@ function screenAssemblyPairs(config, settings) {
   const search = createAssemblyPairSearch(config, settings);
   for (let index = 0; index < search.total; index++) search.visit(index);
   const selected = search.shortlist();
-  return search.result(selected, selected.passing, selected.review.map(search.materialize));
+  return reviewCatalogClearance(search.result(selected, selected.passing, selected.review.map(search.materialize)), search.configForCandidate);
 }
 
 async function screenAssemblyPairsAsync(config, settings, options) {
@@ -1760,7 +1802,7 @@ async function screenAssemblyPairsAsync(config, settings, options) {
       if (cancelled()) return null;
       search.visit(index++);
     } while (index < search.total && ++batch < batchSize && performance.now() < deadline);
-    options.onProgress?.({ stage: 'pair-search', completed: index, total: search.total, percent: index / search.total * 95 });
+    options.onProgress?.({ stage: 'pair-search', completed: index, total: search.total, percent: index / search.total * 75 });
     await yieldControl();
   }
   const selected = search.shortlist(), recommendations = selected.passing, nearMisses = [];
@@ -1768,12 +1810,11 @@ async function screenAssemblyPairsAsync(config, settings, options) {
   for (let rank = 0; rank < summaries.length; rank++) {
     if (cancelled()) return null;
     nearMisses.push(search.materialize(summaries[rank]));
-    options.onProgress?.({ stage: 'pair-rank', completed: rank + 1, total: summaries.length, percent: 95 + (rank + 1) / summaries.length * 5 });
+    options.onProgress?.({ stage: 'pair-rank', completed: rank + 1, total: summaries.length, percent: 75 + (rank + 1) / summaries.length * 5 });
     await yieldControl();
   }
   if (cancelled()) return null;
-  options.onProgress?.({ stage: 'complete', completed: search.total, total: search.total, percent: 100 });
-  return search.result(selected, recommendations, nearMisses);
+  return reviewCatalogClearanceAsync(search.result(selected, recommendations, nearMisses), options, search.configForCandidate);
 }
 
 export function screenSorbothaneCatalog(configInput, settings = {}) {
@@ -1782,7 +1823,7 @@ export function screenSorbothaneCatalog(configInput, settings = {}) {
   const exclusions = { compression: 0, engagement: 0, ratedLoad: 0, xTranslation: 0, yTranslation: 0, verticalMode: 0, dynamic: 0 };
   const preliminary = context.combinations.map(combination => preScreenCatalogCombination(context, combination, exclusions)).filter(Boolean);
   const evaluated = preliminary.map(candidate => evaluateCatalogCombination(context, candidate, exclusions));
-  return finalizeCatalogScreen(context, evaluated, exclusions);
+  return reviewCatalogClearance(finalizeCatalogScreen(context, evaluated, exclusions));
 }
 
 export async function screenSorbothaneCatalogAsync(configInput, settings = {}, options = {}) {
@@ -1812,11 +1853,10 @@ export async function screenSorbothaneCatalogAsync(configInput, settings = {}, o
     if (cancelled()) return null;
     const end = Math.min(start + batchSize, preliminary.length);
     for (let index = start; index < end; index += 1) evaluated.push(evaluateCatalogCombination(context, preliminary[index], exclusions));
-    options.onProgress?.({ stage: 'dynamic', completed: end, total: preliminary.length, percent: 50 + (preliminary.length ? end / preliminary.length * 50 : 50) });
+    options.onProgress?.({ stage: 'dynamic', completed: end, total: preliminary.length, percent: 50 + (preliminary.length ? end / preliminary.length * 30 : 30) });
     await yieldControl();
   }
-  options.onProgress?.({ stage: 'complete', completed: evaluated.length, total: evaluated.length, percent: 100 });
-  return finalizeCatalogScreen(context, evaluated, exclusions);
+  return reviewCatalogClearanceAsync(finalizeCatalogScreen(context, evaluated, exclusions), options);
 }
 
 function lordCatalogCandidateConfig(baseConfig, item, mountsPerPoint) {
@@ -1873,7 +1913,7 @@ function preScreenParkerLordCombination(context, combination, exclusions) {
 }
 
 function evaluateParkerLordCombination(context, candidate, exclusions) {
-  const analysis = analyzeSorbothaneIsolation(candidate.candidateConfig, { skipResponse: true, skipUncertainty: true });
+  const analysis = analyzeSorbothaneIsolation(candidate.candidateConfig, { skipResponse: true, skipUncertainty: true, catalogScreen: true });
   const loadsLbf = analysis.preload.mounts.map(mount => mount.resultantLoadN / LBF);
   const pass = analysis.passes;
   if (!pass) exclusions.dynamic += 1;
@@ -1908,6 +1948,7 @@ function finalizeParkerLordScreen(context, evaluated, exclusions) {
   nearMisses.sort((left, right) => left.score - right.score || left.mountsPerPoint - right.mountsPerPoint);
   return {
     library: 'parker-lord-am',
+    clearanceAdvisory: { enabled: context.config.environment.random.enabled },
     supportCount: context.config.mounts.count,
     rowAxis: context.config.mounts.rowAxis,
     settings: { family: context.family, elastomer: context.elastomer, ratedLoadRange: context.ratedLoadRange, mountsPerPointRange: [context.mountMin, context.mountMax] },
@@ -1928,7 +1969,7 @@ export function screenParkerLordCatalog(configInput, settings = {}) {
   const exclusions = { compression: 0, engagement: 0, ratedLoad: 0, xTranslation: 0, yTranslation: 0, verticalMode: 0, dynamic: 0 };
   const preliminary = context.combinations.map(combination => preScreenParkerLordCombination(context, combination, exclusions)).filter(Boolean);
   const evaluated = preliminary.map(candidate => evaluateParkerLordCombination(context, candidate, exclusions));
-  return finalizeParkerLordScreen(context, evaluated, exclusions);
+  return reviewCatalogClearance(finalizeParkerLordScreen(context, evaluated, exclusions));
 }
 
 export async function screenParkerLordCatalogAsync(configInput, settings = {}, options = {}) {
@@ -1957,11 +1998,10 @@ export async function screenParkerLordCatalogAsync(configInput, settings = {}, o
     if (cancelled()) return null;
     const end = Math.min(start + batchSize, preliminary.length);
     for (let index = start; index < end; index += 1) evaluated.push(evaluateParkerLordCombination(context, preliminary[index], exclusions));
-    options.onProgress?.({ stage: 'dynamic', completed: end, total: preliminary.length, percent: 50 + (preliminary.length ? end / preliminary.length * 50 : 50) });
+    options.onProgress?.({ stage: 'dynamic', completed: end, total: preliminary.length, percent: 50 + (preliminary.length ? end / preliminary.length * 30 : 30) });
     await yieldControl();
   }
-  options.onProgress?.({ stage: 'complete', completed: evaluated.length, total: evaluated.length, percent: 100 });
-  return finalizeParkerLordScreen(context, evaluated, exclusions);
+  return reviewCatalogClearanceAsync(finalizeParkerLordScreen(context, evaluated, exclusions), options);
 }
 
 export const SORBOTHANE_UNITS = { INCH, LB, LBF, PSI, G0 };

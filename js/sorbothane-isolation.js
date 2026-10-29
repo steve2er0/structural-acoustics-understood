@@ -326,7 +326,7 @@ function requirementTable(analysis) {
   const verticalRow = `<tr><td>Z translation-dominated mode</td><td>Mode ${vertical.modeNumber} · ${fmt(vertical.frequencyHz, 2)} Hz</td><td>${fmt(vertical.rangeHz[0], 1)}–${fmt(vertical.rangeHz[1], 1)} Hz</td><td><span class="sorbo-status ${vertical.pass ? 'pass' : 'fail'}">${vertical.pass ? 'PASS' : 'FAIL'}</span></td><td>${fmt(vertical.participationPct, 1)}% Z participation</td></tr>`;
   const toneRows = analysis.toneResults.flatMap(result => result.axisResults.map(axisResult => `<tr><td>${fmt(result.frequencyHz, 0)} Hz · T${axisResult.axis.toLowerCase()}${axisResult.axis.toLowerCase()}</td><td>${fmtSignedDb(axisResult.db)}</td><td>≤ ${fmtSignedDb(result.maximumDb)}</td><td><span class="sorbo-status ${axisResult.pass ? 'pass' : 'fail'}">${axisResult.pass ? 'PASS' : 'FAIL'}</span></td><td>${axisResult.axis} base → ${axisResult.axis} response · ${esc(axisResult.provenance.replaceAll('-', ' '))}</td></tr>`)).join('');
   const peakRows = analysis.peakResults.map(result => `<tr><td>${fmt(analysis.config.analysis.resonanceBandHz[0], 0)}-${fmt(analysis.config.analysis.resonanceBandHz[1], 0)} Hz · T${result.axis.toLowerCase()}${result.axis.toLowerCase()} peak</td><td>${fmtSignedDb(result.db)} @ ${fmt(result.frequencyHz, 1)} Hz</td><td>≤ ${fmtSignedDb(analysis.config.analysis.resonanceLimitDb)}</td><td><span class="sorbo-status ${result.pass ? 'pass' : 'fail'}">${result.pass ? 'PASS' : 'FAIL'}</span></td><td>Mode ${result.modeNumber} · ${esc(result.modeLabel)}</td></tr>`).join('');
-  const travelRow = analysis.config.environment.random.checkClearance ? `<tr><td>PSD displacement / clearance</td><td>${esc(analysis.clearance?.error ?? `${analysis.config.environment.random.peakFactor} × RMS, ${String(analysis.config.environment.random.axis).toUpperCase()} input`)}</td><td>Gaps, engagement & compression</td><td>${analysis.clearance?.pass ? 'PASS' : 'REVIEW'}</td><td>See Displacement & clearance; shared with matrix / catalog</td></tr>` : '';
+  const travelRow = analysis.config.environment.random.checkClearance ? `<tr><td>PSD displacement / clearance</td><td>${esc(analysis.clearance?.error ?? `${analysis.config.environment.random.peakFactor} × RMS, ${String(analysis.config.environment.random.axis).toUpperCase()} input`)}</td><td>Gaps, engagement & compression</td><td>${analysis.clearance?.pass ? 'PASS' : 'REVIEW'}</td><td>Selected-axis current design / matrix; catalog uses all-axis flags only</td></tr>` : '';
   return `<div class="table-wrap"><table class="sorbo-requirements"><thead><tr><th>Target</th><th>Calculated response</th><th>Requirement</th><th>Status</th><th>Basis</th></tr></thead><tbody>${lateralRows}${verticalRow}${toneRows}${peakRows}${travelRow}</tbody></table></div>`;
 }
 
@@ -557,7 +557,7 @@ export function directionalPadCompressionPanel(analysis) {
     <p>${esc(dampingSummary(analysis.config))}</p>
     <div class="table-wrap"><table aria-label="Pad compression and box clearance for separate X Y Z PSD inputs"><thead><tr><th>Test input</th><th>Upper pads min–max</th><th>Lower pads min–max</th><th>Compression only</th><th>Box clearance</th></tr></thead><tbody>${rows}</tbody></table></div>
     <p class="sorbo-caption">Each row applies the same PSD in one input direction, independently—not simultaneously. All values are axial pad compression, including rocking from lateral inputs—not X/Y shear strain. Upper/lower envelopes include every pad's static compression ± ${analysis.config.environment.random.peakFactor} × RMS dynamic compression, as a percentage of free element thickness. REVIEW if a pad exceeds 20%, reaches zero compression, the static model needs review, or integration has not converged. The 20% boundary is a screening rule, not a qualified dynamic strain allowable.</p>
-    <p class="sorbo-caption">Compression and box-clearance statuses are separate. Only the selected ${esc(String(summary.selectedAxis).toUpperCase())} input governs the detailed plot and the optional shared catalog/matrix clearance requirement; this comparison does not change that selection. Nominal predictions only—not Monte Carlo bounds or guaranteed test peaks.</p>
+    <p class="sorbo-caption">Compression and box-clearance statuses are separate. Only the selected ${esc(String(summary.selectedAxis).toUpperCase())} input governs the detailed plot and the optional current-design/matrix clearance requirement; this comparison does not change that selection. Nominal predictions only—not Monte Carlo bounds or guaranteed test peaks.</p>
     ${hasPads ? `<details data-sorbo-compression-details><summary>Every pad · compression for all three input directions</summary><div class="table-wrap"><table aria-label="Each upper and lower pad compression envelope under X Y Z input"><thead><tr><th>Leg / side</th><th>Elements</th><th>Static compression</th><th>X input min–max</th><th>Y input min–max</th><th>Z input min–max</th></tr></thead><tbody>${detail}</tbody></table></div></details><button type="button" class="button-secondary" data-sorbo-action="export-pad-compression">Download X/Y/Z pad compression CSV</button>` : isParkerLordConfig(analysis.config) ? '<p>Bonded LORD mount compression/contact limits are not modeled; unavailable data are not treated as a compression PASS.</p>' : '<p>No valid PSD pad results are available. Correct the environment errors and recalculate.</p>'}
   </section>`;
 }
@@ -569,7 +569,7 @@ export function clearancePanel(analysis) {
     <label><input type="checkbox" name="enabled"${settings.enabled ? ' checked' : ''}/> Use PSD environment</label>
     <label>Shaker input axis <select name="axis">${['x', 'y', 'z'].map(axis => `<option value="${axis}"${axis === settings.axis ? ' selected' : ''}>${axis.toUpperCase()} only</option>`).join('')}</select></label>
     <label>Peak factor × RMS <input name="peakFactor" type="number" min="1" max="10" step="0.1" value="${esc(settings.peakFactor)}" required/></label>
-    <label><input name="checkClearance" type="checkbox"${settings.checkClearance ? ' checked' : ''}/> Require clearance in shared design / catalog / matrix checks</label>
+    <label><input name="checkClearance" type="checkbox"${settings.checkClearance ? ' checked' : ''}/> Require selected-axis clearance for current design / matrix (catalog flags only)</label>
     ${['X', 'Y', 'Z'].map((axis, i) => `<label>${axis} one-sided minimum box gap (in) <input name="gap${i}" type="number" min="0" step="any" value="${settings.gapsM[i] / INCH}" required/></label>`).join('')}
     </div><label>Environment PSD · frequency Hz, acceleration g²/Hz <textarea name="psd" rows="6" spellcheck="false" placeholder="Paste your two-column PSD here; no demonstration environment is assumed.">${esc(psdText)}</textarea></label>
     <label>Load PSD CSV / text <input data-sorbo-psd-file type="file" accept=".csv,.txt,text/csv,text/plain"/></label>
@@ -584,7 +584,7 @@ export function clearancePanel(analysis) {
       return `${['X', 'Y', 'Z'][axis]}: ${travelText(location.peakM[axis])} at ${location.label}${location.peakPsdHz[axis] == null ? '' : ` (PSD peak ${fmt(location.peakPsdHz[axis], 1)} Hz)`}`;
     });
     output = `<header><h2>${fmt(result.inputGrms, 3)} Grms · ${result.axis.toUpperCase()} shaker input</h2><span class="sorbo-status ${result.pass ? 'pass' : 'fail'}">${status}</span></header>
-      <p>${result.peakFactor} × RMS estimated one-sided peak; estimated symmetric peak-to-peak envelope = ${2 * result.peakFactor} × RMS. Not a guaranteed maximum. ${result.converged ? 'Integration converged' : 'Integration NOT converged'} (${(result.integrationError * 100).toPrecision(2)}% RMS change). ${settings.checkClearance ? 'Shared clearance requirement active.' : 'Informational only; not used to filter catalog or matrix results.'}</p><p><strong>Largest box travel by response direction</strong><br/>${governing.map(esc).join('<br/>')}</p>
+      <p>${result.peakFactor} × RMS estimated one-sided peak; estimated symmetric peak-to-peak envelope = ${2 * result.peakFactor} × RMS. Not a guaranteed maximum. ${result.converged ? 'Integration converged' : 'Integration NOT converged'} (${(result.integrationError * 100).toPrecision(2)}% RMS change). ${settings.checkClearance ? 'Selected-axis current-design/matrix clearance requirement active; catalog flags only.' : 'Informational only; not used to filter matrix results. Catalog PSD checks are always flags only.'}</p><p><strong>Largest box travel by response direction</strong><br/>${governing.map(esc).join('<br/>')}</p>
       <p class="sorbo-caption">Nominal material/Q response, not a Monte Carlo uncertainty bound. All three output directions include cross-axis and rocking motion. Gap checks cover every box corner; leg motion is checked separately for pad unloading/compression. No radial bolt/sleeve contact allowable is inferred.</p>
       <label>Plot location <select data-sorbo-clearance-location>${result.locations.map((location, index) => `<option value="${index}">${esc(location.label)}</option>`).join('')}</select></label>
       <p class="sorbo-caption"><span style="color:var(--sorbo-x)">X response</span> · <span style="color:var(--sorbo-y)">Y response</span> · <span style="color:var(--sorbo-z)">Z response</span> · single ${result.axis.toUpperCase()} input</p><div data-sorbo-clearance-chart>${clearancePsdSvg(result)}</div>
@@ -898,7 +898,6 @@ function catalogCandidateFailure(candidate) {
   failures.unshift(...lateralFailures);
   if (!candidate.analysis.verticalModeResult.pass) failures.push('Z translation mode');
   failures.push(...candidate.analysis.peakResults.filter(result => !result.pass).map(result => `${result.axis} resonance peak`));
-  if (candidate.analysis.config.environment.random.checkClearance && !candidate.analysis.clearance?.pass) failures.push('PSD displacement / clearance (TRAVEL)');
   if (candidate.analysis.preload.assemblyChecks) {
     const counts = new Map();
     for (const check of candidate.analysis.preload.assemblyChecks.filter(check => !check.pass)) counts.set(check.code, (counts.get(check.code) ?? 0) + 1);
@@ -915,6 +914,39 @@ function catalogSelectionMatches(candidate, selection) {
   return Boolean(selection) && library === selection.library && candidate.item.productNumber === selection.productNumber && candidate.stackCount === selection.stackCount;
 }
 
+function catalogClearanceCell(candidate) {
+  const review = candidate.clearanceAdvisory;
+  if (!review) return '';
+  if (!review.enabled) return '<div class="sorbo-catalog-clearance"><span class="sorbo-status">PSD NOT CHECKED</span><small>Enable a PSD environment to check X/Y/Z travel and compression.</small></div>';
+  const gaps = review.environment.gapsM;
+  const flags = result => {
+    if (!result.valid) return ['INPUT / MODEL ERROR'];
+    const values = [];
+    if (!result.converged) values.push('INTEGRATION');
+    const travel = result.maxBoxTravelM.map((value, i) => gaps[i] > 0 && value > gaps[i] ? 'XYZ'[i] : '').filter(Boolean);
+    if (travel.length) values.push(`TRAVEL ${travel.join('/')}`);
+    if (!gaps.some(gap => gap > 0)) values.push('GAPS NOT SET');
+    if (result.maximumPct > 20) values.push('COMP >20%');
+    if (result.unloading) values.push('UNLOADING');
+    if (result.staticModelReview) values.push('STATIC MODEL');
+    if (result.compressionPass == null) values.push('COMP N/A');
+    return values;
+  };
+  const clear = review.allCompressionPass && review.allBoxClearancePass;
+  const rows = review.cases.map(result => {
+    const issues = flags(result);
+    return `<tr><th>${result.axis.toUpperCase()} input</th><td>${result.valid ? result.maxBoxTravelM.map(value => fmt(value / INCH, 4)).join(' / ') : 'Not available'}</td><td>${result.maximumPct == null ? 'Not available' : `${fmt(result.maximumPct, 2)}%`}</td><td>${issues.length ? esc(issues.join(' · ')) : 'PASS'}${result.error ? `<small>${esc(result.error)}</small>` : ''}</td></tr>`;
+  }).join('');
+  return `<details class="sorbo-catalog-clearance" data-sorbo-catalog-clearance><summary><span class="sorbo-status ${clear ? 'pass' : 'fail'}">PSD ${clear ? 'CLEAR' : 'REVIEW'}</span><small>${review.cases.map(result => `${result.axis.toUpperCase()}: ${flags(result).join(', ') || 'PASS'}`).map(esc).join('<br/>')}</small></summary><p>Flags only · ${review.environment.peakFactor} × RMS. ${esc(dampingSummary({ damping: review.damping }))}</p><p>One-sided box gaps X / Y / Z: ${gaps.map(gap => gap > 0 ? `${fmt(gap / INCH, 4)} in` : 'not set').join(' / ')}. Pad limit: 20%; unloading also flagged.</p><div class="table-wrap"><table aria-label="Catalog X Y Z clearance and compression flags"><thead><tr><th>Test input</th><th>Max box travel X / Y / Z (in)</th><th>Max pad compression</th><th>Flags</th></tr></thead><tbody>${rows}</tbody></table></div><p>Same PSD, three separate tests; not simultaneous loading. Nominal predictions, not guaranteed peaks. Unknown compression/contact limits are not a PASS.</p></details>`;
+}
+
+function catalogClearanceNotice(screen) {
+  const review = screen.clearanceAdvisory;
+  if (!review) return '';
+  const first = screen.recommendations[0] ?? screen.nearMisses[0];
+  return `<section class="sorbo-catalog-clearance-notice" data-sorbo-catalog-clearance-notice><h3>Catalog PSD checks · flags only</h3><p>Every retained result is checked using the saved PSD in three independent X/Y/Z input tests, your one-sided box gaps, and the 20% pad-compression screen. These flags never exclude, reorder, or disable a catalog result. “Passing” elsewhere refers to the existing non-PSD criteria; review the separate PSD flags before choosing hardware.</p><p>${review.enabled ? `${review.flaggedCount} of ${review.evaluatedCount} retained results need PSD review. Open each part's PSD details for axis-specific travel and compression.` : 'No enabled PSD was available; travel and dynamic compression are NOT CHECKED. Apply an environment in Displacement & clearance and rerun the catalog.'}</p>${first && review.enabled ? `<h4>First displayed result · ${esc(first.item?.productNumber ?? `${first.topItem.productNumber} / ${first.bottomItem.productNumber}`)} · PSD review</h4>${catalogClearanceCell(first)}` : ''}</section>`;
+}
+
 function parkerLordCandidateTable(candidates, criteria, includeStatus = false, selection = null) {
   const toneHeaders = criteria.tones.map(tone => `<th>Worst T @ ${fmt(tone.frequencyHz, 0)}</th>`).join('');
   return `<div class="table-wrap"><table><thead><tr><th>Rank</th><th>Part number</th><th>Family</th><th>Elastomer</th><th>Rated / mount</th><th>Rated-load fₙ</th><th>Axial / radial rate</th><th>Mounts / point</th><th>Total qty</th><th>Installed resultant / point</th><th>X mode</th><th>Y mode</th><th>Z mode</th>${toneHeaders}<th>Worst peak</th>${includeStatus ? '<th>Review</th>' : ''}<th></th></tr></thead><tbody>${candidates.map((candidate, index) => {
@@ -922,7 +954,7 @@ function parkerLordCandidateTable(candidates, criteria, includeStatus = false, s
     const lateral = candidate.analysis.lateralModeResults;
     const vertical = candidate.analysis.verticalModeResult;
     const selected = catalogSelectionMatches(candidate, selection);
-    return `<tr${selected ? ' class="is-selected-design" data-sorbo-selected-design' : ''}><td>${index + 1}${selected ? '<span class="sorbo-selected-tag">Selected</span>' : ''}</td><td><strong>${esc(item.productNumber)}</strong></td><td>${esc(item.family)}</td><td>${esc(item.elastomer)}</td><td>${fmt(item.ratedLoadLb, 1)} lbf</td><td>${fmt(item.nominalNaturalFrequencyHz, 0)} Hz</td><td>${fmt(item.dynamicAxialSpringRateLbPerIn, 0)} / ${fmt(item.dynamicRadialSpringRateLbPerIn, 0)} lb/in</td><td>${candidate.mountsPerPoint}</td><td>${candidate.totalMountCount}</td><td>${candidate.installedLoadRangeLb.map(value => fmt(value, 2)).join('–')} lbf</td><td>${fmt(lateral[0].frequencyHz, 1)} Hz</td><td>${fmt(lateral[1].frequencyHz, 1)} Hz</td><td>${fmt(vertical.frequencyHz, 1)} Hz</td>${candidate.analysis.toneResults.map(result => `<td>${fmt(result.db, 1)} dB · ${result.worstAxis}</td>`).join('')}<td>${fmt(candidate.analysis.peak.db, 1)} dB · ${candidate.analysis.peak.axis}</td>${includeStatus ? `<td><span class="sorbo-status fail">${esc(catalogCandidateFailure(candidate))}</span></td>` : ''}<td><button type="button" class="button-quiet sorbo-use-candidate" data-sorbo-catalog-use="${esc(item.productNumber)}" data-sorbo-catalog-kind="parker-lord-am" data-sorbo-catalog-stack="${candidate.mountsPerPoint}"${selected ? ' disabled' : ''}>${selected ? 'Selected design' : 'Use design'}</button></td></tr>`;
+    return `<tr${selected ? ' class="is-selected-design" data-sorbo-selected-design' : ''}><td>${index + 1}${selected ? '<span class="sorbo-selected-tag">Selected</span>' : ''}</td><td><strong>${esc(item.productNumber)}</strong>${catalogClearanceCell(candidate)}</td><td>${esc(item.family)}</td><td>${esc(item.elastomer)}</td><td>${fmt(item.ratedLoadLb, 1)} lbf</td><td>${fmt(item.nominalNaturalFrequencyHz, 0)} Hz</td><td>${fmt(item.dynamicAxialSpringRateLbPerIn, 0)} / ${fmt(item.dynamicRadialSpringRateLbPerIn, 0)} lb/in</td><td>${candidate.mountsPerPoint}</td><td>${candidate.totalMountCount}</td><td>${candidate.installedLoadRangeLb.map(value => fmt(value, 2)).join('–')} lbf</td><td>${fmt(lateral[0].frequencyHz, 1)} Hz</td><td>${fmt(lateral[1].frequencyHz, 1)} Hz</td><td>${fmt(vertical.frequencyHz, 1)} Hz</td>${candidate.analysis.toneResults.map(result => `<td>${fmt(result.db, 1)} dB · ${result.worstAxis}</td>`).join('')}<td>${fmt(candidate.analysis.peak.db, 1)} dB · ${candidate.analysis.peak.axis}</td>${includeStatus ? `<td><span class="sorbo-status fail">${esc(catalogCandidateFailure(candidate))}</span></td>` : ''}<td><button type="button" class="button-quiet sorbo-use-candidate" data-sorbo-catalog-use="${esc(item.productNumber)}" data-sorbo-catalog-kind="parker-lord-am" data-sorbo-catalog-stack="${candidate.mountsPerPoint}"${selected ? ' disabled' : ''}>${selected ? 'Selected design' : 'Use design'}</button></td></tr>`;
   }).join('')}</tbody></table></div>`;
 }
 
@@ -947,7 +979,7 @@ function catalogCandidateTable(candidates, criteria, includeStatus = false, sele
     const lateral = candidate.analysis.lateralModeResults;
     const vertical = candidate.analysis.verticalModeResult;
     const selected = catalogSelectionMatches(candidate, selection);
-    return `<tr${selected ? ' class="is-selected-design" data-sorbo-selected-design' : ''}><td>${index + 1}${selected ? '<span class="sorbo-selected-tag">Selected</span>' : ''}</td><td><strong>${esc(item.productNumber)}</strong></td><td>${esc(item.geometry)}</td><td>${fmt(item.odIn, 3)} / ${fmt(item.idIn, 3)} / ${fmt(item.thicknessIn, 3)} in</td><td>${item.durometer} Shore 00</td><td>${candidate.stackCount}</td><td>${candidate.totalElementCount}</td><td>${item.ratedLoadLb.map(value => fmt(value, 2)).join('–')} lbf</td><td>${candidate.installedLoadRangeLb.map(value => fmt(value, 2)).join('–')} lbf</td><td>${fmt((candidate.nominalPreloadN ?? candidate.analysis.preload.preloadN) / LBF, 2)} lbf</td><td>${fmt(lateral[0].frequencyHz, 1)} Hz</td><td>${fmt(lateral[1].frequencyHz, 1)} Hz</td><td>${fmt(vertical.frequencyHz, 1)} Hz</td>${tones.map(result => `<td>${fmt(result.db, 1)} dB · ${result.worstAxis}</td>`).join('')}<td>${fmt(candidate.analysis.peak.db, 1)} dB · ${candidate.analysis.peak.axis}</td>${includeStatus ? `<td><span class="sorbo-status fail">${esc(catalogCandidateFailure(candidate))}</span></td>` : ''}<td><button type="button" class="button-quiet sorbo-use-candidate" data-sorbo-catalog-use="${esc(item.productNumber)}" data-sorbo-catalog-kind="sorbothane-element" data-sorbo-catalog-stack="${candidate.stackCount}"${selected ? ' disabled' : ''}>${selected ? 'Selected design' : 'Use design'}</button></td></tr>`;
+    return `<tr${selected ? ' class="is-selected-design" data-sorbo-selected-design' : ''}><td>${index + 1}${selected ? '<span class="sorbo-selected-tag">Selected</span>' : ''}</td><td><strong>${esc(item.productNumber)}</strong>${catalogClearanceCell(candidate)}</td><td>${esc(item.geometry)}</td><td>${fmt(item.odIn, 3)} / ${fmt(item.idIn, 3)} / ${fmt(item.thicknessIn, 3)} in</td><td>${item.durometer} Shore 00</td><td>${candidate.stackCount}</td><td>${candidate.totalElementCount}</td><td>${item.ratedLoadLb.map(value => fmt(value, 2)).join('–')} lbf</td><td>${candidate.installedLoadRangeLb.map(value => fmt(value, 2)).join('–')} lbf</td><td>${fmt((candidate.nominalPreloadN ?? candidate.analysis.preload.preloadN) / LBF, 2)} lbf</td><td>${fmt(lateral[0].frequencyHz, 1)} Hz</td><td>${fmt(lateral[1].frequencyHz, 1)} Hz</td><td>${fmt(vertical.frequencyHz, 1)} Hz</td>${tones.map(result => `<td>${fmt(result.db, 1)} dB · ${result.worstAxis}</td>`).join('')}<td>${fmt(candidate.analysis.peak.db, 1)} dB · ${candidate.analysis.peak.axis}</td>${includeStatus ? `<td><span class="sorbo-status fail">${esc(catalogCandidateFailure(candidate))}</span></td>` : ''}<td><button type="button" class="button-quiet sorbo-use-candidate" data-sorbo-catalog-use="${esc(item.productNumber)}" data-sorbo-catalog-kind="sorbothane-element" data-sorbo-catalog-stack="${candidate.stackCount}"${selected ? ' disabled' : ''}>${selected ? 'Selected design' : 'Use design'}</button></td></tr>`;
   }).join('')}</tbody></table></div>`;
 }
 
@@ -964,7 +996,7 @@ function assemblyPairTable(candidates, selection) {
   return `<div class="table-wrap sorbo-pair-table"><table><thead><tr><th>Rank / status</th><th>Upper part + stack</th><th>Lower part + stack</th><th>Clamp / leg</th><th>X / Y / Z modes</th><th>Tone response · worst direction</th><th>Worst resonance</th><th>Review / BOM / apply</th></tr></thead><tbody>${candidates.map((candidate, index) => {
     const analysis = candidate.analysis, selected = catalogSelectionMatches(candidate, selection);
     const reviews = analysis.preload.assemblyChecks.filter(check => !check.pass);
-    return `<tr${selected ? ' class="is-selected-design" data-sorbo-selected-design' : ''}><td>${index + 1}<br/><span class="sorbo-status ${candidate.pass ? 'pass' : 'fail'}">${candidate.pass ? 'PASS' : 'REVIEW'}</span>${selected ? '<span class="sorbo-selected-tag">Selected</span>' : ''}</td><td>${part(candidate, 'top')}</td><td>${part(candidate, 'bottom')}</td><td>${fmt(candidate.nominalPreloadN / LBF, 2)} lbf</td><td>${[...analysis.lateralModeResults, analysis.verticalModeResult].map(mode => fmt(mode.frequencyHz, 1)).join(' / ')} Hz</td><td>${analysis.toneResults.length ? analysis.toneResults.map(tone => `${fmt(tone.frequencyHz, 0)} Hz: ${fmt(tone.db, 1)} dB · ${tone.worstAxis}`).join('<br/>') : 'No tone criteria'}</td><td>${fmt(analysis.peak.db, 1)} dB · ${analysis.peak.axis.toUpperCase()}<br/>${fmt(analysis.peak.frequencyHz, 1)} Hz</td><td>${candidate.pass ? 'All active criteria pass.' : esc(catalogCandidateFailure(candidate))}${reviews.length ? `<details><summary>Assembly review details (${reviews.length})</summary><ul>${reviews.map(check => `<li>${esc(check.label)} — ${esc(check.detail)}</li>`).join('')}</ul></details>` : ''}<details><summary>Entire-system Sorbothane BOM</summary><ul>${candidate.billOfMaterials.map(item => `<li>${esc(item.productNumber)} × ${item.quantity}</li>`).join('')}</ul></details>${assemblyPairUseButton(candidate, selection)}</td></tr>`;
+    return `<tr${selected ? ' class="is-selected-design" data-sorbo-selected-design' : ''}><td>${index + 1}<br/><span class="sorbo-status ${candidate.pass ? 'pass' : 'fail'}">${candidate.pass ? 'PASS' : 'REVIEW'}</span>${catalogClearanceCell(candidate)}${selected ? '<span class="sorbo-selected-tag">Selected</span>' : ''}</td><td>${part(candidate, 'top')}</td><td>${part(candidate, 'bottom')}</td><td>${fmt(candidate.nominalPreloadN / LBF, 2)} lbf</td><td>${[...analysis.lateralModeResults, analysis.verticalModeResult].map(mode => fmt(mode.frequencyHz, 1)).join(' / ')} Hz</td><td>${analysis.toneResults.length ? analysis.toneResults.map(tone => `${fmt(tone.frequencyHz, 0)} Hz: ${fmt(tone.db, 1)} dB · ${tone.worstAxis}`).join('<br/>') : 'No tone criteria'}</td><td>${fmt(analysis.peak.db, 1)} dB · ${analysis.peak.axis.toUpperCase()}<br/>${fmt(analysis.peak.frequencyHz, 1)} Hz</td><td>${candidate.pass ? 'All non-PSD criteria pass.' : esc(catalogCandidateFailure(candidate))}${reviews.length ? `<details><summary>Assembly review details (${reviews.length})</summary><ul>${reviews.map(check => `<li>${esc(check.label)} — ${esc(check.detail)}</li>`).join('')}</ul></details>` : ''}<details><summary>Entire-system Sorbothane BOM</summary><ul>${candidate.billOfMaterials.map(item => `<li>${esc(item.productNumber)} × ${item.quantity}</li>`).join('')}</ul></details>${assemblyPairUseButton(candidate, selection)}</td></tr>`;
   }).join('')}</tbody></table></div>`;
 }
 
@@ -1003,7 +1035,7 @@ export function catalogScreenResult(screen, selection = null, resultLimit = 25) 
   const selectedRank = all.findIndex(candidate => catalogSelectionMatches(candidate, selection)) + 1;
   const noun = screen.searchMode === 'assembly-pairs' ? 'passing part-number pairs' : 'passing part numbers';
   const controls = `<div class="sorbo-catalog-result-controls"><label><span>Show passing results</span><select data-catalog-result-limit aria-label="Show passing results"${all.length ? '' : ' disabled'}>${[25, 50, 100, 'all'].map(value => `<option value="${value}"${limit === value ? ' selected' : ''}>${value === 'all' ? 'All' : value}</option>`).join('')}</select></label><div><p data-catalog-result-count role="status" aria-live="polite">Showing ${displayed.length} of ${all.length} ${noun}</p><small>One preferred passing stack/arrangement per ${screen.searchMode === 'assembly-pairs' ? 'ordered part-number pair' : 'part number'}. Display only; no search rerun.${limit === 'all' && all.length > 100 ? ' Large result lists may take a moment to render.' : ''}</small>${selectedRank > displayed.length ? `<p class="sorbo-catalog-selection-note">Your selected design is rank ${selectedRank}, outside this display limit. Choose a larger limit or All to show it.</p>` : ''}</div></div>`;
-  return controls + renderCatalogScreenResults({ ...screen, recommendations: displayed }, selection);
+  return controls + catalogClearanceNotice(screen) + renderCatalogScreenResults({ ...screen, recommendations: displayed }, selection);
 }
 
 function renderCatalogScreenResults(screen, selection = null) {
@@ -1408,7 +1440,7 @@ ${analysis.clearance?.valid ? `${analysis.clearance.inputGrms.toPrecision(4)} Gr
 
 ${analysis.directionalClearance ? `### Pad compression by test input
 
-Same PSD, separate X/Y/Z tests; static compression plus/minus ${config.environment.random.peakFactor} × RMS dynamic compression. Not simultaneous loading or a guaranteed maximum. The shared clearance criterion still uses the selected ${analysis.directionalClearance.selectedAxis.toUpperCase()} input.
+Same PSD, separate X/Y/Z tests; static compression plus/minus ${config.environment.random.peakFactor} × RMS dynamic compression. Not simultaneous loading or a guaranteed maximum. Catalog checks all inputs as flags only; current-design/matrix enforcement still uses the selected ${analysis.directionalClearance.selectedAxis.toUpperCase()} input.
 
 | Input | Upper min–max | Lower min–max | Compression only | Box clearance |
 |---|---|---|---|---|
@@ -2143,6 +2175,7 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
         dynamic: 'Evaluating tone and resonance requirements',
         'pair-search': 'Checking upper/lower combinations and dynamic criteria',
         'pair-rank': 'Preparing best passing and REVIEW pairs',
+        'clearance-flags': 'Checking X/Y/Z clearance and pad compression · flags only',
         complete: 'Catalog screen complete'
       }[stage] ?? 'Screening catalog');
       try {
@@ -2175,7 +2208,7 @@ export function bindSorbothaneIsolationWorkbench(root = document) {
             }
             if (progressLabel) progressLabel.textContent = stageLabel(progress.stage);
             if (progressPercent) progressPercent.textContent = `${percent}%`;
-            if (progressDetail) progressDetail.textContent = `${progress.completed} of ${progress.total} combinations in this stage`;
+            if (progressDetail) progressDetail.textContent = `${progress.completed} of ${progress.total} ${progress.stage === 'clearance-flags' ? 'retained results checked in X/Y/Z · advisory only' : 'combinations in this stage'}`;
             button.textContent = `Screening catalog · ${percent}%`;
           }
         });

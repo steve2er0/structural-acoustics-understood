@@ -1,4 +1,4 @@
-const CACHE = 'sau-v161-directional-pad-compression';
+const CACHE = 'sau-v162-catalog-psd-flags';
 const CORE = [
   './js/sorbothane-configurations.js',
   './', './index.html', './styles.css', './manifest.webmanifest', './assets/favicon.svg',

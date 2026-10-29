@@ -66,5 +66,5 @@ test('standalone includes the modal damping readouts, theme styles and equivalen
   const standalone = readFileSync(new URL('../standalone.html', import.meta.url), 'utf8');
   for (const label of ['Effective Q', 'Loss factor η', 'Critical damping (eq.)', 'sorbo-mode-damping-value', 'not the plotted peak transmissibility']) assert.ok(standalone.includes(label), label);
   const worker = readFileSync(new URL('../service-worker.js', import.meta.url), 'utf8');
-  assert.match(worker, /sau-v161-directional-pad-compression/);
+  assert.match(worker, /sau-v162-catalog-psd-flags/);
 });
